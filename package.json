@@ -54,7 +54,7 @@
     "@xchainjs/xchain-client": "^1.0.7",
     "@xchainjs/xchain-cosmos": "^2.0.10",
     "@xchainjs/xchain-crypto": "^0.3.6",
-    "@xchainjs/xchain-thorchain": "^2.0.10",
+    "@xchainjs/xchain-thorchain": "^3.0.0",
     "@xchainjs/xchain-util": "^1.0.6",
     "@xmtp/xmtp-js": "^11.6.1",
     "axios": "^1.8.4",
