@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import Image from 'next/image';
 import styles from './ChainIcon.module.css';
@@ -58,7 +59,6 @@ const chainLogoMap = {
 };
 
 const ChainIcon = ({chainName, itemType, size = 20}) => {
-  console.log('chain name', chainName);
   if (itemType !== 'token' || !chainName) {
     return null;
   }
@@ -68,7 +68,6 @@ const ChainIcon = ({chainName, itemType, size = 20}) => {
   if (!chainLogo) {
     return null;
   }
-  console.log('chainLogo', chainLogo);
   return (
     <div
       className={styles.chainIconContainer}

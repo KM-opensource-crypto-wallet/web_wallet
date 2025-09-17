@@ -1,19 +1,12 @@
-import React, {useContext} from 'react';
+'use client';
+import React from 'react';
 import Image from 'next/image';
 import ChainIcon from 'components/ChainIcon';
-import {ThemeContext} from 'theme/ThemeContext';
 import styles from './CoinIcon.module.css';
 
 const CoinIcon = ({item}) => {
-  const {theme} = useContext(ThemeContext);
-
   return (
-    <div
-      className={styles.iconBox}
-      style={{
-        color: theme.backgroundColor,
-        backgroundColor: theme.font,
-      }}>
+    <div className={styles.iconBox}>
       {item?.icon && (
         <Image
           src={item.icon}

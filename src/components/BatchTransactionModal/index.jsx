@@ -1,3 +1,4 @@
+'use client';
 import React, {useCallback, useMemo, useEffect, useState} from 'react';
 import {Close, Delete} from '@mui/icons-material';
 import DokDropdown from 'components/DokDropdown';
@@ -149,10 +150,6 @@ const BatchTransactionModal = ({isVisible, onDismiss, transactions}) => {
       }),
     );
     onDismiss();
-    router.push({
-      pathname: '/transfer',
-      query: {fromScreen: 'BatchTransaction'},
-    });
     dispatch(
       setRouteStateData({
         transfer: {

@@ -7,6 +7,8 @@
   justify-content: center;
   margin-right: 10px;
   position: relative;
+  color: var(--backgroundColor);
+  background-color: var(--font);
 }
 
 .imageStyle {

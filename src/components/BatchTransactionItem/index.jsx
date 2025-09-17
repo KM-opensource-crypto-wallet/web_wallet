@@ -1,7 +1,8 @@
+'use client';
 import React, {useCallback} from 'react';
 import {
   CheckBoxOutlineBlank,
-  Error,
+  Error as ErrorIcon,
   ArrowForward,
   ContentCopy,
   InfoOutlined,
@@ -11,6 +12,7 @@ import {currencySymbol} from 'data/currency';
 import CoinIcon from 'components/CoinIcon';
 import styles from './BatchTransactionItem.module.css';
 import {isBitcoinChain} from 'dok-wallet-blockchain-networks/helper';
+import {showToast} from 'utils/toast';
 
 const BatchTransactionItem = ({
   item,
@@ -24,20 +26,24 @@ const BatchTransactionItem = ({
 
   const onCopyAddress = useCallback(async address => {
     try {
-      await navigator.clipboard.writeText(address);
-      // You can replace this with your preferred toast notification library
-      console.log('Address copied to clipboard');
-      // Example with react-hot-toast: toast.success('Copied Address');
+      navigator.clipboard.writeText(address);
+      showToast({
+        type: 'successToast',
+        title: 'Copied!',
+        message: 'Address copied',
+      });
+      console.log('i am called');
     } catch (err) {
       console.error('Failed to copy address:', err);
     }
   }, []);
 
   return (
-    <button
+    <div
+      role='button'
+      aria-disabled={!isSelectionMode}
       className={`${styles.transactionItem} ${isSelected ? styles.selectedTransactionItem : ''}`}
       onClick={() => isSelectionMode && onToggleSelection?.(item.transactionId)}
-      disabled={!isSelectionMode}
       style={{
         backgroundColor: isSelected
           ? 'var(--lightBackground)'
@@ -49,9 +55,12 @@ const BatchTransactionItem = ({
         {isSelectionMode && (
           <div className={styles.selectionIndicator}>
             {isSelected ? (
-              <CheckBox size={24} htmlColor={'var(--background)'} />
+              <CheckBox sx={{fontSize: 24}} htmlColor={'var(--background)'} />
             ) : (
-              <CheckBoxOutlineBlank size={24} htmlColor={'var(--gray)'} />
+              <CheckBoxOutlineBlank
+                sx={{fontSize: 24}}
+                htmlColor={'var(--gray)'}
+              />
             )}
           </div>
         )}
@@ -81,7 +90,7 @@ const BatchTransactionItem = ({
               </span>
               {item.is_exceed_balance && (
                 <div className={styles.exceedBalanceContainer}>
-                  <Error size={12} htmlColor='#ff4444' />
+                  <ErrorIcon sx={{fontSize: 12}} htmlColor='#ff4444' />
                   <span className={styles.exceedBalanceText}>
                     Balance exceeded
                   </span>
@@ -104,17 +113,18 @@ const BatchTransactionItem = ({
             </div>
             <button
               className={styles.copyButton}
-              onClick={e => {
-                e.stopPropagation();
+              onClick={_ => {
                 onCopyAddress(item?.transferData?.fromAddress || '');
-              }}
-              type='button'>
-              <ContentCopy size={16} htmlColor={'var(--background)'} />
+              }}>
+              <ContentCopy
+                sx={{fontSize: 16}}
+                htmlColor={'var(--background)'}
+              />
             </button>
           </div>
 
           <div className={styles.arrowContainer}>
-            <ArrowForward size={16} htmlColor={'var(--gray)'} />
+            <ArrowForward sx={{fontSize: 16}} htmlColor={'var(--gray)'} />
           </div>
 
           <div className={styles.addressContainer}>
@@ -127,26 +137,27 @@ const BatchTransactionItem = ({
             </div>
             <button
               className={styles.copyButton}
-              onClick={e => {
-                e.stopPropagation();
+              onClick={_ => {
                 onCopyAddress(item?.transferData?.toAddress || '');
-              }}
-              type='button'>
-              <ContentCopy size={16} htmlColor={'var(--background)'} />
+              }}>
+              <ContentCopy
+                sx={{fontSize: 16}}
+                htmlColor={'var(--background)'}
+              />
             </button>
           </div>
         </div>
 
         {item.is_exceed_balance && (
           <div className={styles.requireAmountSection}>
-            <InfoOutlined size={16} htmlColor='#ff9500' />
+            <InfoOutlined sx={{fontSize: 16}} htmlColor='#ff9500' />
             <span className={styles.requireAmountText}>
               Required amount: {item.require_amount} {item.coinInfo.symbol}
             </span>
           </div>
         )}
       </div>
-    </button>
+    </div>
   );
 };
 
