@@ -15,6 +15,7 @@ import {
 import {currencySymbol} from 'data/currency';
 import Switch from '@mui/material/Switch';
 import styles from './CoinItem.module.css';
+import CoinIcon from 'components/CoinIcon';
 const icons = require(`assets/images/icons`).default;
 
 const disabledStyle = {
@@ -96,13 +97,7 @@ const CoinItem = ({
           {icons.dragVertical}
         </span>
       )}
-      <Image
-        className={styles.iconBox}
-        src={item?.icon}
-        alt={'icon'}
-        width={39}
-        height={39}
-      />
+      <CoinIcon item={item} />
 
       <div className={styles.list}>
         <button

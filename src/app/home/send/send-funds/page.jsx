@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState, useEffect, useRef, useMemo} from 'react';
+import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
 import {Formik} from 'formik';
 import {useSelector, useDispatch} from 'react-redux';
 import {validationSchemaSendFunds} from 'utils/validationSchema';
@@ -24,6 +24,7 @@ import {
   validateBigNumberStr,
   validateNumberInInput,
   isBitcoinChain,
+  isEip7702SupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
 import PageTitle from 'components/PageTitle';
 import s from './SendFunds.module.css';
@@ -31,6 +32,8 @@ import {showToast} from 'src/utils/toast';
 import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {getTransferData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSelector';
+import {v4} from 'uuid';
+import {addBatchTransaction} from 'dok-wallet-blockchain-networks/redux/batchTransaction/batchTransactionSlice';
 
 const SendFunds = () => {
   const currentCoin = useSelector(selectCurrentCoin);
@@ -46,6 +49,10 @@ const SendFunds = () => {
   const [sendInput, setSendInput] = useState(qrAddress || '');
   const dispatch = useDispatch();
   const formikRef = useRef(null);
+
+  const uuid = useMemo(() => {
+    return v4();
+  }, []);
 
   const availableAmount = useMemo(() => {
     const amount =
@@ -187,6 +194,36 @@ const SendFunds = () => {
   };
 
   const router = useRouter();
+
+  const addToBatch = useCallback(async () => {
+    const values = formikRef.current.values;
+    const currentChain = getChain(currentCoin?.chain_name);
+    const isValid = await currentChain.isValidAddress({address: values?.send});
+    let validAddress = null;
+    if (!isValid && isNameSupportChain(currentCoin?.chain_name)) {
+      validAddress = await currentChain?.isValidName({name: values?.send});
+    }
+    if (isValid || validAddress) {
+      dispatch(
+        addBatchTransaction({
+          transactionId: uuid,
+          selectedCoin: currentCoin,
+          transferData: {
+            contractAddress: currentCoin?.contractAddress,
+            fromAddress: currentCoin?.address,
+            toAddress: values?.send,
+            decimals: currentCoin?.decimal,
+            amount: validateBigNumberStr(values?.amount),
+            fiatAmount: values?.currencyAmount || '0',
+          },
+          isERC20Token: currentCoin?.type?.toLowerCase() === 'token',
+          router,
+        }),
+      );
+    } else {
+      formikRef?.current?.setFieldError('send', 'address is not valid');
+    }
+  }, [currentCoin, dispatch, router, uuid]);
 
   return (
     <>
@@ -370,6 +407,19 @@ const SendFunds = () => {
                     )}
                   </div>
                 </div>
+                {isEip7702SupportedChain(currentCoin?.chain_name) && (
+                  <button
+                    disabled={!isValid}
+                    className={s.button}
+                    style={{
+                      backgroundColor: isValid
+                        ? 'var(--background)'
+                        : 'var(--gray)',
+                    }}
+                    onClick={addToBatch}>
+                    <p className={s.buttonTitle}>Add to Batch</p>
+                  </button>
+                )}
                 <button
                   disabled={!isValid}
                   className={s.button}

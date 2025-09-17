@@ -1,0 +1,17 @@
+.chainIconContainer {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background-color: #fff;
+  border-radius: 20px;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: center;
+  z-index: 999;
+  align-items: center;
+}
+
+.chainIcon {
+  border-radius: 20px;
+  object-fit: contain;
+}
