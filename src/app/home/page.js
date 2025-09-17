@@ -68,6 +68,7 @@ import {VerifyInfoModal} from 'components/VerifyInfo';
 import TextField from '@mui/material/TextField';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import BatchTransactionBanner from 'components/BatchTransactionBanner';
 // import {
 //   setWalletConnectRequestModal,
 //   setWalletConnectTransactionModal,
@@ -205,6 +206,7 @@ export default function Home() {
       > */}
       <main className={classNames.container}>
         <div>
+          <BatchTransactionBanner />
           {!!newsMessage && (
             <div className={classNames.syncView}>
               <div className={classNames.syncTitle}>{`Important News!`}</div>

@@ -6,6 +6,7 @@ import React, {
   useRef,
   useLayoutEffect,
   useEffect,
+  useMemo,
 } from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
@@ -56,6 +57,7 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import {getSellCryptoRequestDetails} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
+import BatchTransactionItem from 'components/BatchTransactionItem';
 
 const CommonTransfer = () => {
   const localCurrency = useSelector(getLocalCurrency);
@@ -99,6 +101,7 @@ const CommonTransfer = () => {
   const isExchangeScreen = fromScreen === 'Exchange';
   const isSendFundScreen = fromScreen === 'SendFunds';
   const isSellCryptoScreen = fromScreen === 'SellCrypto';
+  const isBatchTransaction = fromScreen === 'BatchTransaction';
   const isSendNFT = fromScreen === 'SendNFT';
   const isStakingScreen = fromScreen === 'Staking';
   const isVoteStakingScreen = fromScreen === 'VoteStaking';
@@ -116,6 +119,19 @@ const CommonTransfer = () => {
 
   const isFeesOptionsEnabled = useSelector(isFeesOptions);
   const feesOptions = useSelector(getTransferDataFeesOptions);
+
+  const nativeBalanceForBatchTransactions = useMemo(() => {
+    if (isBatchTransaction && transferData?.transactionsData?.length) {
+      const totalBN = transferData?.transactionsData?.reduce((sum, item) => {
+        if (item?.coinInfo?.type === 'coin') {
+          return sum.plus(new BigNumber(item.transferData?.amount || '0'));
+        }
+        return sum;
+      }, new BigNumber(0));
+      return totalBN.toString();
+    }
+    return null;
+  }, [isBatchTransaction, transferData?.transactionsData]);
 
   useEffect(() => {
     if (feesOptions?.[0]?.gasPrice) {
@@ -142,7 +158,9 @@ const CommonTransfer = () => {
                     ? 'Confirm Deactivate Staking'
                     : isStakingRewards
                       ? 'Confirm Staking Rewards'
-                      : '';
+                      : isBatchTransaction
+                        ? 'Confirm Batch Transactions'
+                        : '';
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWithdrawStaking, isDeactivateStaking, isStakingRewards, isSendNFT]);
@@ -153,7 +171,8 @@ const CommonTransfer = () => {
       ((isSendFundScreen ||
         isSellCryptoScreen ||
         isSendNFT ||
-        isStakingScreen) &&
+        isStakingScreen ||
+        isBatchTransaction) &&
         feeSuccess)
     ) {
       setIsFetchedSuccessful('true');
@@ -165,7 +184,10 @@ const CommonTransfer = () => {
           dispatch(
             calculateEstimateFee({
               fromAddress:
-                isSendFundScreen || isSellCryptoScreen || isStakingScreen
+                isSendFundScreen ||
+                isSellCryptoScreen ||
+                isStakingScreen ||
+                isBatchTransaction
                   ? transferData?.currentCoin?.address
                   : isExchangeScreen
                     ? selectedFromAsset?.address
@@ -215,6 +237,11 @@ const CommonTransfer = () => {
               selectedVotes: isVoteStakingScreen
                 ? transferData?.selectedVotes
                 : null,
+              isBatchTransaction,
+              currentCoin: isBatchTransaction
+                ? transferData?.currentCoin
+                : null,
+              calls: isBatchTransaction ? transferData?.calls : null,
               isCreateStaking: isCreateStaking,
               isWithdrawStaking: !!isWithdrawStaking,
               isStakingRewards: !!isStakingRewards,
@@ -268,6 +295,11 @@ const CommonTransfer = () => {
           : null,
         mint: isSendNFT ? transferData?.selectedNFT?.mint : null,
         isNFT: isSendNFT,
+        isBatchTransaction,
+        calls: isBatchTransaction ? transferData?.calls : null,
+        transactionsData: isBatchTransaction
+          ? transferData?.transactionsData
+          : null,
         from:
           isStakingScreen || isSendNFT || isVoteStakingScreen
             ? transferData?.currentCoin?.address
@@ -301,6 +333,8 @@ const CommonTransfer = () => {
     transferData?.selectedNFT?.token_address,
     transferData?.selectedNFT?.associatedTokenAddress,
     transferData?.selectedNFT?.mint,
+    transferData?.calls,
+    transferData?.transactionsData,
     transferData?.stakingBalance,
     transferData?.resourceType,
     transferData?.selectedVotes,
@@ -314,6 +348,7 @@ const CommonTransfer = () => {
     selectedFromWallet,
     isSendNFT,
     currentWallet,
+    isBatchTransaction,
     isVoteStakingScreen,
     isCreateVote,
     isWithdrawStaking,
@@ -348,7 +383,11 @@ const CommonTransfer = () => {
   const isDisabled = isBalanceNotAvailable(
     transferData?.selectedUTXOsValue || balance,
     transferData?.transactionFee,
-    isExchangeScreen && selectedFromAsset?.type === 'coin' ? amountFrom : null,
+    isExchangeScreen && selectedFromAsset?.type === 'coin'
+      ? amountFrom
+      : isBatchTransaction
+        ? nativeBalanceForBatchTransactions
+        : null,
   );
 
   const currencyRate =
@@ -733,6 +772,37 @@ const CommonTransfer = () => {
     );
   };
 
+  const renderBatchTransactionUI = () => {
+    const batchTransactions = Array.isArray(transferData?.transactionsData)
+      ? transferData?.transactionsData
+      : [];
+    return (
+      <div className={s.formInput}>
+        {batchTransactions?.map((item, index) => (
+          <BatchTransactionItem
+            key={`batch_transaction_${index}`}
+            item={item}
+            isSelected={false}
+            isSelectionMode={false}
+            localCurrency={localCurrency}
+          />
+        ))}
+        <div className={s.box}>
+          <div className={s.itemView}>
+            <div className={s.title}>{'Network Fee'}</div>
+            <div className={s.boxBalance}>
+              {isFetchingFeesAgain
+                ? 'Refreshing'
+                : `${transferData?.transactionFee || '0'} ${
+                    transferData?.currentCoin?.chain_symbol
+                  }`}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={s.mainView}>
       <div className={s.goBack}>
@@ -751,7 +821,9 @@ const CommonTransfer = () => {
                 ? renderExchangeUI()
                 : isStakingScreen
                   ? renderStakingUI()
-                  : renderVotingUI()}
+                  : isBatchTransaction
+                    ? renderBatchTransactionUI()
+                    : renderVotingUI()}
           {isFeesOptionsEnabled &&
             isFeesOptionChain(convertedChainName) &&
             !!feesOptions?.length &&

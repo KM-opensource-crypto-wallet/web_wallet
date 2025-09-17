@@ -1,0 +1,16 @@
+.iconBox {
+  width: 39px;
+  height: 39px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  position: relative;
+  color: var(--backgroundColor);
+  background-color: var(--font);
+}
+
+.imageStyle {
+  border-radius: 20px;
+}
