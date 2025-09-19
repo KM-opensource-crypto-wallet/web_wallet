@@ -119,6 +119,7 @@ const CreateStaking = () => {
     );
     dispatch(
       calculateEstimateFee({
+        isFetchNonce: true,
         fromAddress: currentCoin?.address,
         amount: validateBigNumberStr(values?.amount),
         validatorPubKey: isValidatorSupport

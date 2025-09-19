@@ -41,6 +41,7 @@ import {
 import {
   getBalanceForNativeCoin,
   getCurrentWalletPhrase,
+  getFailedTransaction,
   selectCurrentWallet,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {useRouter} from 'next/navigation';
@@ -58,6 +59,8 @@ import InputLabel from '@mui/material/InputLabel';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import {getSellCryptoRequestDetails} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
 import BatchTransactionItem from 'components/BatchTransactionItem';
+import dayjs from 'dayjs';
+import DuplicateTransactionModal from 'components/DuplicateTransactionModal';
 
 const CommonTransfer = () => {
   const localCurrency = useSelector(getLocalCurrency);
@@ -68,8 +71,10 @@ const CommonTransfer = () => {
   const customError = useSelector(getTransferDataCustomError);
   const balance = useSelector(getBalanceForNativeCoin);
   const phrase = useSelector(getCurrentWalletPhrase);
+  const failedTransaction = useSelector(getFailedTransaction);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isFetchingFeesAgain, setIsFetchingFeesAgain] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [selectedFeesType, setSelectedFeesType] = useState('recommended');
   const sellCryptoRequestDetails = useSelector(getSellCryptoRequestDetails);
   const [customFees, setCustomFees] = useState('');
@@ -183,6 +188,8 @@ const CommonTransfer = () => {
           isFetchingRef.current = true;
           dispatch(
             calculateEstimateFee({
+              isFetchNonce: false,
+              existingNonce: transferData?.nonce,
               fromAddress:
                 isSendFundScreen ||
                 isSellCryptoScreen ||
@@ -358,6 +365,54 @@ const CommonTransfer = () => {
     phrase,
     router,
   ]);
+
+  useEffect(() => {
+    const validateDuplicateTransaction = () => {
+      const failedTimestamp = failedTransaction?.timestamp;
+      if (
+        failedTimestamp &&
+        dayjs().diff(dayjs(failedTimestamp), 'minutes') < 5
+      ) {
+        const currentFrom =
+          isSendFundScreen ||
+          isStakingScreen ||
+          isSellCryptoScreen ||
+          isBatchTransaction
+            ? transferData?.currentCoin?.address
+            : isExchangeScreen
+              ? selectedFromAsset?.address
+              : transferData?.selectedNFT?.coin?.address;
+        const currentTo = transferData.toAddress;
+        const currentAmount =
+          isSendFundScreen || isStakingScreen || isSellCryptoScreen
+            ? transferData?.amount
+            : isExchangeScreen
+              ? amountFrom
+              : '0';
+        const currentContractAddress = isSendNFT
+          ? transferData?.selectedNFT?.token_address ||
+            transferData?.selectedNFT?.associatedTokenAddress
+          : transferData?.currentCoin?.contractAddress;
+
+        const currentChainName = transferData?.currentCoin?.chain_name;
+        const currentSymbol = transferData?.currentCoin?.symbol;
+        const currentCalls = transferData?.calls;
+        if (
+          currentFrom === failedTransaction?.fromAddress &&
+          currentTo === failedTransaction?.toAddress &&
+          currentAmount === failedTransaction?.amount &&
+          currentContractAddress === failedTransaction?.contractAddress &&
+          currentChainName === failedTransaction?.chain_name &&
+          currentSymbol === failedTransaction?.symbol &&
+          currentCalls?.toString() === failedTransaction?.calls?.toString()
+        ) {
+          setShowDuplicateModal(true);
+        }
+      }
+    };
+    validateDuplicateTransaction();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSuccess = useCallback(async () => {
     setShowConfirmModal(false);
@@ -981,6 +1036,10 @@ const CommonTransfer = () => {
         }}
         visible={showConfirmModal}
         onSuccess={onSuccess}
+      />
+      <DuplicateTransactionModal
+        visible={showDuplicateModal}
+        onClose={() => setShowDuplicateModal(false)}
       />
     </div>
   );

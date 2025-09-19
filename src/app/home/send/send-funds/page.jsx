@@ -170,6 +170,7 @@ const SendFunds = () => {
       );
       dispatch(
         calculateEstimateFee({
+          isFetchNonce: true,
           fromAddress: currentCoin?.address,
           toAddress: validAddress || values?.send?.trim(),
           amount: validateBigNumberStr(values?.amount),
