@@ -10,6 +10,8 @@ import styles from './ModalReset.module.css';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import {useRouter} from 'next/navigation';
+import {resetCurrentTransferData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
+import {resetBatchTransactions} from 'dok-wallet-blockchain-networks/redux/batchTransaction/batchTransactionSlice';
 
 const style = {
   position: 'absolute',
@@ -58,6 +60,8 @@ const ModalReset = ({visible, hideModal, page, link}) => {
     } else if (list === 'Forgot') {
       dispatch(logOutSuccess());
       dispatch(resetWallet());
+      dispatch(resetCurrentTransferData());
+      dispatch(resetBatchTransactions());
       setTimeout(() => {
         router.push('/auth/registration');
       }, 200);

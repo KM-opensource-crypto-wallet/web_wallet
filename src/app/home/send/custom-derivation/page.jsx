@@ -83,10 +83,50 @@ const CustomDerivation = () => {
   }, [currentCoin?.chain_name]);
 
   const allDeriveAddress = useMemo(() => {
-    return Array.isArray(currentCoin?.deriveAddresses)
+    const addresses = Array.isArray(currentCoin?.deriveAddresses)
       ? currentCoin?.deriveAddresses
       : [];
-  }, [currentCoin?.deriveAddresses]);
+
+    const sortedAddresses = [...addresses].sort((a, b) => {
+      // First, prioritize the active address (currently selected)
+      if (a?.address === currentCoin?.address) {
+        return -1;
+      }
+      if (b?.address === currentCoin?.address) {
+        return 1;
+      }
+
+      // Then sort by derivation path numerically for better ordering
+      const parseDerivationPath = derivePath => {
+        if (!derivePath) {
+          return [];
+        }
+        // Extract all numbers from the derivation path and convert to integers
+        const numbers = derivePath.match(/\d+/g);
+        return numbers ? numbers.map(num => parseInt(num, 10)) : [];
+      };
+
+      const pathA = parseDerivationPath(a?.derivePath);
+      const pathB = parseDerivationPath(b?.derivePath);
+
+      // Compare each number in the path from left to right
+      const maxLength = Math.max(pathA.length, pathB.length);
+      for (let i = 0; i < maxLength; i++) {
+        const numA = pathA[i] || 0;
+        const numB = pathB[i] || 0;
+
+        if (numA !== numB) {
+          return numA - numB;
+        }
+      }
+
+      // If all numbers are equal, sort by string comparison as fallback
+      const pathStringA = a?.derivePath || '';
+      const pathStringB = b?.derivePath || '';
+      return pathStringA.localeCompare(pathStringB);
+    });
+    return sortedAddresses;
+  }, [currentCoin?.address, currentCoin?.deriveAddresses]);
 
   useEffect(() => {
     if (!currentCoin) {
