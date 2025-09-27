@@ -29,6 +29,7 @@ import tonLogo from 'assets/chain_logo/ton.png';
 import tronLogo from 'assets/chain_logo/tron.png';
 import victionLogo from 'assets/chain_logo/viction.png';
 import zksyncLogo from 'assets/chain_logo/zksync.png';
+import seiLogo from 'assets/chain_logo/sei.png';
 
 const chainLogoMap = {
   aptos: aptosLogo,
@@ -56,6 +57,7 @@ const chainLogoMap = {
   tron: tronLogo,
   viction: victionLogo,
   zksync: zksyncLogo,
+  sei: seiLogo,
 };
 
 const ChainIcon = ({chainName, itemType, size = 20}) => {
