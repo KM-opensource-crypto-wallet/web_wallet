@@ -1,7 +1,7 @@
-import React from 'react';
+import { createFilterOptions } from '@mui/material/Autocomplete';
 import Dropdown from 'components/Dropdown';
-import s from './SelectInputExchange.module.css';
 import Image from 'next/image';
+import s from './SelectInputExchange.module.css';
 
 const SelectInputExchange = ({
   listData,
@@ -12,6 +12,9 @@ const SelectInputExchange = ({
   const list = listData.map(({value, label, options}) => ({
     id: value,
     name: label,
+    searchableLabel: label,
+    searchableChainDisplayName: options?.chain_display_name || '',
+    searchableSymbol: options?.symbol || '',
     option: (
       <div key={value} className={s.option}>
         {options?.icon && (
@@ -35,12 +38,23 @@ const SelectInputExchange = ({
     ),
   }));
 
+  // Custom filter function to search by label, chain_display_name, and symbol
+  const filterOptions = createFilterOptions({
+    matchFrom: 'any',
+    stringify: option => {
+      // Combine label, chain_display_name, and symbol for searching
+      return `${option.searchableLabel} ${option.searchableChainDisplayName} ${option.searchableSymbol}`;
+    },
+  });
+
   return (
     <Dropdown
       defaultValue={selectedValue}
       onValueChange={onValueChange}
       listData={list}
       placeholder={placeholder}
+      searchable={true}
+      filterOptions={filterOptions}
     />
   );
 };

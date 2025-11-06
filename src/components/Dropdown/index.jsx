@@ -1,6 +1,12 @@
 import s from './Dropdown.module.css';
 
-import {Select as BaseSelect, FormControl, MenuItem} from '@mui/material';
+import {
+  Autocomplete,
+  Select as BaseSelect,
+  FormControl,
+  MenuItem,
+  TextField,
+} from '@mui/material';
 
 const NewIcon = props => (
   <svg
@@ -19,7 +25,94 @@ const Dropdown = ({
   defaultValue,
   renderValue,
   className,
+  searchable = false,
+  filterOptions,
 }) => {
+  // If searchable, use Autocomplete
+  if (searchable) {
+    const selectedOption = listData.find(item => item.id === defaultValue);
+
+    return (
+      <FormControl className={s.select}>
+        <Autocomplete
+          className={className}
+          options={listData}
+          value={selectedOption || null}
+          onChange={(event, newValue) => {
+            if (newValue) {
+              // Create a synthetic event similar to Select's onChange
+              const syntheticEvent = {
+                target: {
+                  value: newValue.id,
+                },
+              };
+              onValueChange(syntheticEvent);
+            }
+          }}
+          getOptionLabel={option => option.name || ''}
+          filterOptions={filterOptions}
+          renderOption={(props, option) => (
+            <li {...props} key={option.id}>
+              {option.option}
+            </li>
+          )}
+          renderInput={params => (
+            <TextField
+              {...params}
+              placeholder={placeholder}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  padding: '4px 9px',
+                  backgroundColor: 'var(--lightBackground)',
+                  color: 'var(--font)',
+                  '& fieldset': {
+                    border: 0,
+                  },
+                  '&:hover fieldset': {
+                    border: 0,
+                  },
+                  '&.Mui-focused fieldset': {
+                    border: 0,
+                  },
+                },
+                '& .MuiInputBase-input': {
+                  color: 'var(--font)',
+                },
+                '& .MuiAutocomplete-endAdornment': {
+                  '& .MuiSvgIcon-root': {
+                    fill: 'gray',
+                  },
+                },
+              }}
+            />
+          )}
+          sx={{
+            width: '100%',
+            '& .MuiAutocomplete-popupIndicator': {
+              transform: 'rotate(90deg)',
+            },
+          }}
+          popupIcon={<NewIcon style={{width: 24, height: 24, fill: 'gray'}} />}
+          ListboxProps={{
+            sx: {
+              backgroundColor: 'var(--lightBackground)',
+              color: 'var(--font)',
+              '& .MuiAutocomplete-option': {
+                '&[aria-selected="true"]': {
+                  backgroundColor: 'var(--backgroundColor)',
+                },
+                '&.Mui-focused': {
+                  backgroundColor: 'var(--backgroundColor)',
+                },
+              },
+            },
+          }}
+        />
+      </FormControl>
+    );
+  }
+
+  // Original Select implementation for non-searchable dropdowns
   return (
     <FormControl className={s.select}>
       <BaseSelect
