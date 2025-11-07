@@ -79,7 +79,7 @@ const ContactUs = () => {
                 src={
                   getAppAssets()?.['buy_card_2']?.[themeType] || cards[1].src
                 }
-                alt="OTC"
+                alt='OTC'
                 className={styles.cardItem}
                 width={160}
                 height={90}
@@ -87,7 +87,7 @@ const ContactUs = () => {
               <div className={styles.textContainer}>
                 <p className={styles.cardTitle}>OTC</p>
                 <p className={styles.cardDescription}>
-                  (Must be over {currencySymbol[localCurrency]}10000)
+                  (Must be over {currencySymbol[localCurrency] || ''}10000)
                 </p>
               </div>
             </div>

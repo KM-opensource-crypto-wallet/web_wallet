@@ -69,7 +69,15 @@ const CryptoProviders = () => {
       setModalInfoVisible(true);
       setBuyCryptoUrl(url);
     } else {
-      popupCenter({url});
+       popupCenter({
+        url,
+        title: selectedProviderRef.current?.title || 'Buy Crypto',
+        callback: (success, params) => {
+          if (success) {
+            toast.success('Transaction completed');
+          }
+        },
+      });
     }
   }, []);
 
@@ -78,12 +86,11 @@ const CryptoProviders = () => {
     setModalInfoVisible(false);
   }, []);
 
-  const handleNewTabLaunch = useCallback(
-    url => {
+  const handleNewTabLaunch = useCallback(() => {
       window.open(buyCryptoUrl, '_blank');
       handleNewTabClose();
     },
-    [handleNewTabClose, buyCryptoUrl],
+    [buyCryptoUrl, handleNewTabClose],
   );
 
   const onPressItem = useCallback(
@@ -93,12 +100,12 @@ const CryptoProviders = () => {
         const amount = formikRef.current?.values?.amount;
         const fiatCurrency = formikRef.current?.values?.fiatCurrency;
         if (!selectedCoin) {
-          formikRef?.current?.setFieldError('selectedCoin');
+          formikRef?.current?.setFieldError('selectedCoin', 'Please select a coin');
           formikRef?.current?.setFieldTouched('selectedCoin', true);
           return;
         }
         if (isNaN(Number(amount)) || !Number(amount)) {
-          formikRef?.current?.setFieldError('amount');
+          formikRef?.current?.setFieldError('amount', 'Please enter a valid amount');
           formikRef?.current?.setFieldTouched('amount', true);
           return;
         }
