@@ -69,7 +69,7 @@ const CryptoProviders = () => {
       setModalInfoVisible(true);
       setBuyCryptoUrl(url);
     } else {
-       popupCenter({
+      popupCenter({
         url,
         title: selectedProviderRef.current?.title || 'Buy Crypto',
         callback: (success, params) => {
@@ -108,12 +108,18 @@ const CryptoProviders = () => {
         const amount = formikRef.current?.values?.amount;
         const fiatCurrency = formikRef.current?.values?.fiatCurrency;
         if (!selectedCoin) {
-          formikRef?.current?.setFieldError('selectedCoin', 'Please select a coin');
+          formikRef?.current?.setFieldError(
+            'selectedCoin',
+            'Please select a coin',
+          );
           formikRef?.current?.setFieldTouched('selectedCoin', true);
           return;
         }
         if (isNaN(Number(amount)) || !Number(amount)) {
-          formikRef?.current?.setFieldError('amount', 'Please enter a valid amount');
+          formikRef?.current?.setFieldError(
+            'amount',
+            'Please enter a valid amount',
+          );
           formikRef?.current?.setFieldTouched('amount', true);
           return;
         }
@@ -135,7 +141,12 @@ const CryptoProviders = () => {
             appVersion: 'web',
             from_device: 'web',
           });
-          launchUrl(resp?.data);
+          const redirectUrl = resp?.data;
+          if (!redirectUrl) {
+            toast.error('Unable to generate provider link');
+            return;
+          }
+          launchUrl(redirectUrl);
         }
       } catch (e) {
         toast.error('Something went wrong');
@@ -171,7 +182,7 @@ const CryptoProviders = () => {
   );
 
   const onSubmit = useCallback(
-    async (values) => {
+    async values => {
       submitQuote(values, {isDebounce: false});
     },
     [submitQuote],
@@ -288,7 +299,7 @@ const CryptoProviders = () => {
                       setFieldValue('amount', tempValues);
                       submitQuote(
                         {...values, amount: tempValues},
-                        {isDebounce: true}
+                        {isDebounce: true},
                       );
                     }}
                     onBlur={handleBlur('amount')}
