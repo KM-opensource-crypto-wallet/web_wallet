@@ -87,11 +87,19 @@ const CryptoProviders = () => {
   }, []);
 
   const handleNewTabLaunch = useCallback(() => {
-      window.open(buyCryptoUrl, '_blank');
-      handleNewTabClose();
-    },
-    [buyCryptoUrl, handleNewTabClose],
-  );
+    if (!buyCryptoUrl) return;
+
+    const anchor = document.createElement('a');
+    anchor.href = buyCryptoUrl;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener';
+    anchor.referrerPolicy = 'origin';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+
+    handleNewTabClose();
+  }, [buyCryptoUrl, handleNewTabClose]);
 
   const onPressItem = useCallback(
     async item => {
@@ -137,8 +145,8 @@ const CryptoProviders = () => {
     [launchUrl],
   );
 
-  const onSubmit = useCallback(
-    async (values, isDebounce) => {
+  const submitQuote = useCallback(
+    async (values, {isDebounce = false} = {}) => {
       const chainDetails = values?.selectedCoin?.options;
       if (!chainDetails || !values.amount || values?.amount === '0') {
         return;
@@ -160,6 +168,13 @@ const CryptoProviders = () => {
       }
     },
     [dispatch],
+  );
+
+  const onSubmit = useCallback(
+    async (values) => {
+      submitQuote(values, {isDebounce: false});
+    },
+    [submitQuote],
   );
 
   return (
@@ -214,7 +229,7 @@ const CryptoProviders = () => {
                     );
                     if (foundItem) {
                       setFieldValue('selectedCoin', foundItem);
-                      onSubmit({...values, selectedCoin: foundItem}, false);
+                      submitQuote({...values, selectedCoin: foundItem});
                     }
                   }}
                   selectedValue={values?.selectedCoin?.value}
@@ -240,7 +255,7 @@ const CryptoProviders = () => {
                     listData={currencyPicker}
                     onValueChange={value => {
                       setFieldValue('fiatCurrency', value);
-                      onSubmit({...values, fiatCurrency: value}, false);
+                      submitQuote({...values, fiatCurrency: value});
                     }}
                     value={values.fiatCurrency}
                     placeholder={'Select Network'}
@@ -271,7 +286,10 @@ const CryptoProviders = () => {
                         values?.selectedCoin?.options?.decimal,
                       );
                       setFieldValue('amount', tempValues);
-                      onSubmit({...values, amount: tempValues}, true);
+                      submitQuote(
+                        {...values, amount: tempValues},
+                        {isDebounce: true}
+                      );
                     }}
                     onBlur={handleBlur('amount')}
                     value={values.amount}
