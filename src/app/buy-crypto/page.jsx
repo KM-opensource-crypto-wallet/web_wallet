@@ -1,5 +1,5 @@
 'use client';
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Formik} from 'formik';
 import styles from './CryptoProviders.module.css';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
@@ -63,13 +63,32 @@ const CryptoProviders = () => {
   const [modalInfoVisible, setModalInfoVisible] = useState(false);
   const [buyCryptoUrl, setBuyCryptoUrl] = useState(null);
   const selectedProviderRef = useRef(null);
+  const popupCleanupRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      try {
+        popupCleanupRef.current?.();
+      } catch {}
+    };
+  }, []);
 
   const launchUrl = useCallback(async url => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:') {
+        toast.error('Invalid redirect URL');
+        return;
+      }
+    } catch {
+      toast.error('Invalid redirect URL');
+      return;
+    }
     if (getIsBuyCryptoInNewTab()) {
       setModalInfoVisible(true);
       setBuyCryptoUrl(url);
     } else {
-      popupCenter({
+      const cleanup = await popupCenter({
         url,
         title: selectedProviderRef.current?.title || 'Buy Crypto',
         callback: (success, params) => {
@@ -78,6 +97,9 @@ const CryptoProviders = () => {
           }
         },
       });
+      if (typeof cleanup === 'function') {
+        popupCleanupRef.current = cleanup;
+      }
     }
   }, []);
 
