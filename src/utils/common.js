@@ -76,6 +76,7 @@ export const popupCenter = async ({url, title, callback}) => {
       url,
       title,
       `
+      noopener,
       scrollbars=yes,
       width=${w / systemZoom}, 
       height=${h / systemZoom}, 
@@ -83,6 +84,13 @@ export const popupCenter = async ({url, title, callback}) => {
       left=${left}
       `,
     );
+
+    if (newWindow) {
+      try { 
+        newWindow.opener = null; 
+      } catch {}
+    }
+
 
     if (callback == null || typeof callback !== 'function') {
       return;
