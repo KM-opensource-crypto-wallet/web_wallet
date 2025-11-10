@@ -86,11 +86,10 @@ export const popupCenter = async ({url, title, callback}) => {
     );
 
     if (newWindow) {
-      try { 
-        newWindow.opener = null; 
+      try {
+        newWindow.opener = null;
       } catch {}
     }
-
 
     if (callback == null || typeof callback !== 'function') {
       return;
