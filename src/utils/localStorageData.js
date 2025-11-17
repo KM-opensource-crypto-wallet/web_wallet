@@ -25,3 +25,21 @@ export const createAIDIfNotExists = aid => {
 
 export const getAIDFromLocalStorage = () =>
   typeof window !== 'undefined' && window.localStorage.getItem('aid');
+
+/** Read from localStorage safely */
+export const getLocalStorageData = key => {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage.getItem(key);
+};
+
+/** Save to localStorage safely */
+export const setLocalStorageData = (key, value) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(key, value);
+};
+
+/** Remove value from localStorage safely */
+export const removeLocalStorageData = key => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(key);
+};

@@ -257,3 +257,11 @@ export const masterClickHost = [
   'wallet.masterclick.ltd',
   'www.wallet.masterclick.ltd',
 ];
+
+export const Constants = {
+  lastAttempt: {
+    title: 'Last Attempt',
+    subTitle:
+      'You have one more attempt if you type a wrong password again your wallet will delete completely.',
+  },
+};

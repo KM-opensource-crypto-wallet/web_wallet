@@ -6,8 +6,10 @@ import {
   getLockTimeDisplay,
   isChatOptions,
   isFeesOptions,
+  isWalletReset,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {
+  setResetWallet,
   updateChatOptions,
   updateFeesOptions,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
@@ -30,6 +32,7 @@ const Settings = ({navigation}) => {
   const lockTimeDisplay = useSelector(getLockTimeDisplay);
   const feesOptions = useSelector(isFeesOptions);
   const chatOptions = useSelector(isChatOptions);
+  const rateLimitCheck = useSelector(isWalletReset);
   const currentLocale = useLocale();
   const t = useTranslations('settings');
 
@@ -60,7 +63,10 @@ const Settings = ({navigation}) => {
       dispatch(updateChatOptions(value));
     }
   };
-
+  const onChangeApplyRateLimit = e => {
+    const value = e?.target.checked;
+    dispatch(setResetWallet(value));
+  };
   return (
     <div className={s.container}>
       <div className={s.list}>
@@ -72,7 +78,6 @@ const Settings = ({navigation}) => {
             <p className={s.btnText}>{localCurrency}</p>
           </div>
         </Link>
-        {/* /////////////////////////////// */}
         <Link href='/manage-coins' className={s.btn}>
           {icons.setCurrency}
           <div className={s.box}>
@@ -87,16 +92,6 @@ const Settings = ({navigation}) => {
             <p className={s.btnText}>Manage your app theme</p>
           </div>
         </Link>
-        {/* /////////////////////////////// */}
-        {/*<p className={s.title}>Notifications settings</p>*/}
-        {/*<Link href='/settings/notifications' className={s.btn}>*/}
-        {/*  {icons.notifications}*/}
-        {/*  <div className={s.box}>*/}
-        {/*    <p className={s.btnTitle}>Push Notifications</p>*/}
-        {/*    <p className={s.btnText}>Manage push notifications</p>*/}
-        {/*  </div>*/}
-        {/*</Link>*/}
-        {/* /////////////////////////////// */}
         <p className={s.title}>Security</p>
         <Link href='/settings/change-password' className={s.btn}>
           <Password />
@@ -112,7 +107,6 @@ const Settings = ({navigation}) => {
             <p className={s.btnText}>{lockTimeDisplay}</p>
           </div>
         </Link>
-        {/* /////////////////////////////// */}
         <Link href='/verify/verify-login' className={s.btn}>
           {icons.showPhrase}
 
@@ -193,6 +187,25 @@ const Settings = ({navigation}) => {
               checked={chatOptions}
               defaultChecked={chatOptions}
               onChange={onChangeChatOptions}
+              color='warning'
+            />
+          </div>
+        </div>
+        <div className={s.btn}>
+          {AllIcons.chatIcon}
+          <div className={s.box}>
+            <div className={s.subBox}>
+              <p className={s.btnTitle}>{'Wallet Reset on Failure'}</p>
+              <p className={s.btnText}>
+                {
+                  'The wallet resets automatically after 5 failed password attempts.'
+                }
+              </p>
+            </div>
+            <Switch
+              checked={rateLimitCheck}
+              defaultChecked={rateLimitCheck}
+              onChange={onChangeApplyRateLimit}
               color='warning'
             />
           </div>
