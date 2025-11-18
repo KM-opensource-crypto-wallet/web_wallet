@@ -192,7 +192,7 @@ const Settings = ({navigation}) => {
           </div>
         </div>
         <div className={s.btn}>
-          {AllIcons.chatIcon}
+          <Security />
           <div className={s.box}>
             <div className={s.subBox}>
               <p className={s.btnTitle}>{'Wallet Reset on Failure'}</p>

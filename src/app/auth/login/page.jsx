@@ -17,11 +17,13 @@ import {
   loadingOff,
   logInSuccess,
   resetAttempts,
+  setLastAttempt,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   getAttempts,
   getIsLocked,
+  getLastAttempt,
   getMaxAttempt,
   getUserPassword,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
@@ -31,7 +33,6 @@ import {getAppSubTitle} from 'whitelabel/whiteLabelInfo';
 import {isWalletReset} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import ModalInfo from 'src/components/ModalInfo';
 import {Constants} from 'src/utils/common';
-import {showToast} from 'src/utils/toast';
 
 const LoginScreen = () => {
   const [hide, setHide] = useState(true);
@@ -43,7 +44,7 @@ const LoginScreen = () => {
   const storePassword = useSelector(getUserPassword);
   const allWallets = useSelector(selectAllWallets);
   const rateLimitCheck = useSelector(isWalletReset);
-  const [lastAttempt, setLastAttempt] = useState(false);
+  const lastAttempt = useSelector(getLastAttempt).payload;
   const searchParams = useSearchParams();
 
   const attempts = useSelector(getAttempts);
@@ -85,28 +86,7 @@ const LoginScreen = () => {
           router.replace('/auth/reset-wallet');
         }
       } else if (rateLimitCheck) {
-        const failureCount = attempts.length;
-        const attemptsLeft = MAX_ATTEMPT - failureCount;
-        // NOTE: show warning pop case
-        if (attemptsLeft === 1) {
-          setLastAttempt(true);
-        } else if (attemptsLeft <= 0 && isLocked) {
-          showToast({
-            type: 'warningToast',
-            title: 'Wallet Deleted',
-            message: 'Too many failed login attempts',
-          });
-        } else {
-          showToast({
-            type: 'warningToast',
-            title: 'Invalid password',
-            message: `${attemptsLeft} Attempts left`,
-          });
-          setWrong(true);
-          dispatch(loadingOff());
-        }
         dispatch(handleAttempts({router}));
-
         setWrong(true);
         dispatch(loadingOff());
       } else {
@@ -114,17 +94,7 @@ const LoginScreen = () => {
         dispatch(loadingOff());
       }
     },
-    [
-      MAX_ATTEMPT,
-      attempts.length,
-      dispatch,
-      hasWallet,
-      isLocked,
-      rateLimitCheck,
-      router,
-      searchParams,
-      storePassword,
-    ],
+    [dispatch, hasWallet, rateLimitCheck, router, searchParams, storePassword],
   );
 
   const onKeyDown = useCallback(e => {
@@ -245,7 +215,7 @@ const LoginScreen = () => {
         visible={lastAttempt}
         title={Constants.lastAttempt.title}
         message={Constants.lastAttempt.subTitle}
-        handleClose={() => setLastAttempt(false)}
+        handleClose={() => dispatch(setLastAttempt(false))}
       />
 
       <ModalReset
