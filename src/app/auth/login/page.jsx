@@ -44,7 +44,7 @@ const LoginScreen = () => {
   const storePassword = useSelector(getUserPassword);
   const allWallets = useSelector(selectAllWallets);
   const rateLimitCheck = useSelector(isWalletReset);
-  const lastAttempt = useSelector(getLastAttempt).payload;
+  const lastAttempt = useSelector(getLastAttempt);
   const searchParams = useSearchParams();
 
   const attempts = useSelector(getAttempts);
