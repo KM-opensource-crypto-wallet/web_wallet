@@ -6,6 +6,7 @@ import {
   FormControl,
   MenuItem,
   TextField,
+  Popper,
 } from '@mui/material';
 
 const NewIcon = props => (
@@ -28,75 +29,78 @@ const Dropdown = ({
   searchable = false,
   filterOptions,
 }) => {
-  // If searchable, use Autocomplete
-  if (searchable) {
-    const selectedOption = listData.find(item => item.id === defaultValue);
+  const selectedOption = listData.find(item => item.id === defaultValue) || null;
 
-    return (
-      <FormControl className={s.select}>
+  const CustomPopper = (popperProps) => (
+    <Popper
+      {...popperProps}
+      style={{ ...popperProps.style, width: 400 }} // Override width here (removes dependency on input width)
+      disablePortal
+    />
+  );
+
+  return (
+    <FormControl className={s.select} sx={{ width: '100%' }}>
+      {searchable ? (
         <Autocomplete
-          className={className}
           options={listData}
-          value={selectedOption || null}
+          value={selectedOption}
           onChange={(event, newValue) => {
-            if (newValue) {
-              // Create a synthetic event similar to Select's onChange
-              const syntheticEvent = {
-                target: {
-                  value: newValue.id,
-                },
-              };
-              onValueChange(syntheticEvent);
-            }
+            const syntheticEvent = {
+              target: { value: newValue ? newValue.id : '' },
+            };
+            onValueChange(syntheticEvent);
           }}
-          getOptionLabel={option => option.name || ''}
+          getOptionLabel={option => option.name || (typeof option.option === 'string' ? option.option : '') || ''}
           filterOptions={filterOptions}
+          popupIcon={
+            <NewIcon style={{ width: 24, height: 24, fill: 'gray' }} />
+          }
+          className={className}
+          sx={{
+            width: '100%',
+            '& .MuiAutocomplete-root': {
+              width: '100%',
+            },
+            '& .MuiOutlinedInput-root': {
+              width: '100% !important',
+              padding: '0 !important',
+              backgroundColor: 'var(--lightBackground)',
+              color: 'var(--font)',
+              minHeight: '40px',
+              '& fieldset': { border: 0 },
+              '&:hover fieldset': { border: 0 },
+              '&.Mui-focused fieldset': { border: 0 },
+              display: 'flex',
+              alignItems: 'center',
+            },
+            '& .MuiAutocomplete-inputRoot': {
+              width: '100% !important',
+            },
+            '& .MuiAutocomplete-input': {
+              padding: '8px 10px !important',
+              width: '100% !important',
+              minWidth: '100%',
+              boxSizing: 'border-box',
+              color: 'var(--font)',
+            },
+            '& .MuiAutocomplete-popupIndicator': {
+              transform: 'rotate(90deg)',
+              paddingRight: '8px',
+            },
+          }}
+          PopperComponent={CustomPopper}
           renderOption={(props, option) => (
-            <li {...props} key={option.id}>
+            <li {...props}>
               {option.option}
             </li>
           )}
-          renderInput={params => (
-            <TextField
-              {...params}
-              placeholder={placeholder}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  padding: '4px 9px',
-                  backgroundColor: 'var(--lightBackground)',
-                  color: 'var(--font)',
-                  '& fieldset': {
-                    border: 0,
-                  },
-                  '&:hover fieldset': {
-                    border: 0,
-                  },
-                  '&.Mui-focused fieldset': {
-                    border: 0,
-                  },
-                },
-                '& .MuiInputBase-input': {
-                  color: 'var(--font)',
-                },
-                '& .MuiAutocomplete-endAdornment': {
-                  '& .MuiSvgIcon-root': {
-                    fill: 'gray',
-                  },
-                },
-              }}
-            />
-          )}
-          sx={{
-            width: '100%',
-            '& .MuiAutocomplete-popupIndicator': {
-              transform: 'rotate(90deg)',
-            },
-          }}
-          popupIcon={<NewIcon style={{width: 24, height: 24, fill: 'gray'}} />}
           ListboxProps={{
             sx: {
+              width: '100%',
               backgroundColor: 'var(--lightBackground)',
               color: 'var(--font)',
+              borderRadius: 0,
               '& .MuiAutocomplete-option': {
                 '&[aria-selected="true"]': {
                   backgroundColor: 'var(--backgroundColor)',
@@ -107,61 +111,84 @@ const Dropdown = ({
               },
             },
           }}
-        />
-      </FormControl>
-    );
-  }
-
-  // Original Select implementation for non-searchable dropdowns
-  return (
-    <FormControl className={s.select}>
-      <BaseSelect
-        className={className}
-        sx={{
-          boxShadow: 'none',
-          '.MuiOutlinedInput-notchedOutline': {border: 0},
-          '&.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
-            {
-              border: 0,
-            },
-          '& .MuiSelect-icon': {
-            fill: 'gray',
-            width: 24,
-            transform: 'rotate(90deg)',
-          },
-        }}
-        {...(renderValue ? {renderValue} : {})}
-        value={defaultValue || placeholder}
-        defaultValue={defaultValue || placeholder}
-        IconComponent={NewIcon}
-        onChange={onValueChange}>
-        {!defaultValue && (
-          <MenuItem
-            disabled
-            value={placeholder}
+            renderInput={params => (
+              <TextField
+                {...params}
+                placeholder={placeholder}
+                sx={{
+                  width: '100%',
+                }}
+                InputProps={{
+                  ...params.InputProps,
+                  style: {
+                    padding: 0,
+                    width: '100%',
+                    minHeight: '40px',
+                  },
+                }}
+              />
+            )}
+          />
+        ) : (
+          <BaseSelect
+            className={className}
             sx={{
-              backgroundColor: 'var(--lightBackground)',
-              color: 'var(--font)',
-            }}>
-            <p>{placeholder}</p>
-          </MenuItem>
-        )}
-        {listData.map((item, i) => (
-          <MenuItem
-            key={i}
-            value={item.id}
-            sx={{
-              backgroundColor: 'var(--lightBackground)',
-              color: 'var(--font)',
-
-              '&.Mui-selected': {
-                backgroundColor: 'var(--backgroundColor)',
+              width: '100%',
+              minHeight: '40px',
+              boxShadow: 'none',
+              '.MuiOutlinedInput-notchedOutline': { border: 0 },
+              '&.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
+                {
+                  border: 0,
+                },
+              '& .MuiSelect-icon': {
+                fill: 'gray',
+                width: 24,
+                transform: 'rotate(90deg)',
               },
-            }}>
-            {item.option}
-          </MenuItem>
-        ))}
-      </BaseSelect>
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  minWidth: '400px !important',
+                },
+              },
+            }}
+            {...(renderValue ? { renderValue } : {})}
+            value={defaultValue || placeholder}
+            defaultValue={defaultValue || placeholder}
+            IconComponent={NewIcon}
+            onChange={onValueChange}
+          >
+            {!defaultValue && (
+              <MenuItem
+                disabled
+                value={placeholder}
+                sx={{
+                  backgroundColor: 'var(--lightBackground)',
+                  color: 'var(--font)',
+                }}
+              >
+                <p>{placeholder}</p>
+              </MenuItem>
+            )}
+            {listData.map((item, i) => (
+              <MenuItem
+                key={i}
+                value={item.id}
+                sx={{
+                  backgroundColor: 'var(--lightBackground)',
+                  color: 'var(--font)',
+                  '&.Mui-selected': {
+                    backgroundColor: 'var(--backgroundColor)',
+                  },
+                }}
+              >
+                {item.option}
+              </MenuItem>
+            ))}
+          </BaseSelect>
+        )}
     </FormControl>
   );
 };
