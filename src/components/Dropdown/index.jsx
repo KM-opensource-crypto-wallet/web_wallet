@@ -181,7 +181,7 @@ const Dropdown = ({
             )}
             {listData.map((item, i) => (
               <MenuItem
-                key={i}
+                key={item.id}
                 value={item.id}
                 sx={{
                   backgroundColor: 'var(--lightBackground)',
