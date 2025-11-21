@@ -34,7 +34,14 @@ const Dropdown = ({
   const CustomPopper = (popperProps) => (
     <Popper
       {...popperProps}
-      style={{ ...popperProps.style, width: 400 }} // Override width here (removes dependency on input width)
+      sx={{
+        width: '100%',
+        maxWidth: 400,
+        minWidth: "max-content",
+        '@media (max-width: 600px)': {
+          minWidth: 300,
+        }
+      }}
       disablePortal
     />
   );
