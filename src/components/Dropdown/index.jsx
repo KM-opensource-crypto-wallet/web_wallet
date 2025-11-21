@@ -29,40 +29,43 @@ const Dropdown = ({
   searchable = false,
   filterOptions,
 }) => {
-  const selectedOption = listData.find(item => item.id === defaultValue) || null;
+  const selectedOption =
+    listData.find(item => item.id === defaultValue) || null;
 
-  const CustomPopper = (popperProps) => (
+  const CustomPopper = popperProps => (
     <Popper
       {...popperProps}
       sx={{
         width: '100%',
         maxWidth: 400,
-        minWidth: "max-content",
+        minWidth: 'max-content',
         '@media (max-width: 600px)': {
           minWidth: 300,
-        }
+        },
       }}
       disablePortal
     />
   );
 
   return (
-    <FormControl className={s.select} sx={{ width: '100%' }}>
+    <FormControl className={s.select} sx={{width: '100%'}}>
       {searchable ? (
         <Autocomplete
           options={listData}
           value={selectedOption}
-          onChange={(event, newValue) => {
+          onChange={(_, newValue) => {
             const syntheticEvent = {
-              target: { value: newValue ? newValue.id : '' },
+              target: {value: newValue ? newValue.id : ''},
             };
             onValueChange(syntheticEvent);
           }}
-          getOptionLabel={option => option.name || (typeof option.option === 'string' ? option.option : '') || ''}
-          filterOptions={filterOptions}
-          popupIcon={
-            <NewIcon style={{ width: 24, height: 24, fill: 'gray' }} />
+          getOptionLabel={option =>
+            option.name ||
+            (typeof option.option === 'string' ? option.option : '') ||
+            ''
           }
+          filterOptions={filterOptions}
+          popupIcon={<NewIcon style={{width: 24, height: 24, fill: 'gray'}} />}
           className={className}
           sx={{
             width: '100%',
@@ -75,9 +78,9 @@ const Dropdown = ({
               backgroundColor: 'var(--lightBackground)',
               color: 'var(--font)',
               minHeight: '40px',
-              '& fieldset': { border: 0 },
-              '&:hover fieldset': { border: 0 },
-              '&.Mui-focused fieldset': { border: 0 },
+              '& fieldset': {border: 0},
+              '&:hover fieldset': {border: 0},
+              '&.Mui-focused fieldset': {border: 0},
               display: 'flex',
               alignItems: 'center',
             },
@@ -97,11 +100,7 @@ const Dropdown = ({
             },
           }}
           PopperComponent={CustomPopper}
-          renderOption={(props, option) => (
-            <li {...props}>
-              {option.option}
-            </li>
-          )}
+          renderOption={(props, option) => <li {...props}>{option.option}</li>}
           ListboxProps={{
             sx: {
               width: '100%',
@@ -118,84 +117,82 @@ const Dropdown = ({
               },
             },
           }}
-            renderInput={params => (
-              <TextField
-                {...params}
-                placeholder={placeholder}
-                sx={{
+          renderInput={params => (
+            <TextField
+              {...params}
+              placeholder={placeholder}
+              sx={{
+                width: '100%',
+              }}
+              InputProps={{
+                ...params.InputProps,
+                style: {
+                  padding: 0,
                   width: '100%',
-                }}
-                InputProps={{
-                  ...params.InputProps,
-                  style: {
-                    padding: 0,
-                    width: '100%',
-                    minHeight: '40px',
-                  },
-                }}
-              />
-            )}
-          />
-        ) : (
-          <BaseSelect
-            className={className}
-            sx={{
-              width: '100%',
-              minHeight: '40px',
-              boxShadow: 'none',
-              '.MuiOutlinedInput-notchedOutline': { border: 0 },
-              '&.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
-                {
-                  border: 0,
+                  minHeight: '40px',
                 },
-              '& .MuiSelect-icon': {
-                fill: 'gray',
-                width: 24,
-                transform: 'rotate(90deg)',
+              }}
+            />
+          )}
+        />
+      ) : (
+        <BaseSelect
+          className={className}
+          sx={{
+            width: '100%',
+            minHeight: '40px',
+            boxShadow: 'none',
+            '.MuiOutlinedInput-notchedOutline': {border: 0},
+            '&.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
+              {
+                border: 0,
               },
-            }}
-            MenuProps={{
-              PaperProps: {
-                sx: {
-                  minWidth: '400px !important',
+            '& .MuiSelect-icon': {
+              fill: 'gray',
+              width: 24,
+              transform: 'rotate(90deg)',
+            },
+          }}
+          MenuProps={{
+            PaperProps: {
+              sx: {
+                minWidth: '400px !important',
+              },
+            },
+          }}
+          {...(renderValue ? {renderValue} : {})}
+          value={defaultValue || placeholder}
+          defaultValue={defaultValue || placeholder}
+          IconComponent={NewIcon}
+          onChange={onValueChange}>
+          {!defaultValue && (
+            <MenuItem
+              disabled
+              value={placeholder}
+              sx={{
+                backgroundColor: 'var(--lightBackground)',
+                color: 'var(--font)',
+              }}>
+              <p>{placeholder}</p>
+            </MenuItem>
+          )}
+
+          {listData.map(item => (
+            <MenuItem
+              key={item.id}
+              value={item.id}
+              sx={{
+                backgroundColor: 'var(--lightBackground)',
+                color: 'var(--font)',
+                '&.Mui-selected': {
+                  backgroundColor: 'var(--backgroundColor)',
                 },
-              },
-            }}
-            {...(renderValue ? { renderValue } : {})}
-            value={defaultValue || placeholder}
-            defaultValue={defaultValue || placeholder}
-            IconComponent={NewIcon}
-            onChange={onValueChange}
-          >
-            {!defaultValue && (
-              <MenuItem
-                disabled
-                value={placeholder}
-                sx={{
-                  backgroundColor: 'var(--lightBackground)',
-                  color: 'var(--font)',
-                }}
-              >
-                <p>{placeholder}</p>
-              </MenuItem>
-            )}
-            {listData.map((item, i) => (
-              <MenuItem
-                key={item.id}
-                value={item.id}
-                sx={{
-                  backgroundColor: 'var(--lightBackground)',
-                  color: 'var(--font)',
-                  '&.Mui-selected': {
-                    backgroundColor: 'var(--backgroundColor)',
-                  },
-                }}
-              >
-                {item.option}
-              </MenuItem>
-            ))}
-          </BaseSelect>
-        )}
+              }}>
+              {item.option}
+            </MenuItem>
+          ))}
+        </BaseSelect>
+      )}
     </FormControl>
   );
 };
