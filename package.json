@@ -128,6 +128,8 @@
   "resolutions": {
     "elliptic": "^6.6.1",
     "got": "^11.8.6",
+    "node-forge": "^1.3.2",
+    "validator": "^13.15.23",
     "cipher-base": "^1.0.6",
     "sha.js": "^2.4.12",
     "@expo/cli/form-data": "^3.0.4",
