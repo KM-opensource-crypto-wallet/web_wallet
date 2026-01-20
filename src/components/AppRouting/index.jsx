@@ -126,7 +126,7 @@ function AppRouting({children, wlData}) {
           compareRpcUrls();
         }, 1000);
       });
-      dispatch(fetchCurrencies({}));
+      dispatch(fetchCurrencies({checkNewCoins: true, ignoreLimit: true}));
       setInterval(
         () => {
           compareRpcUrls();

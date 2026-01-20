@@ -5,13 +5,11 @@ import {
   getLocalCurrency,
   getLockTimeDisplay,
   isChatOptions,
-  isFeesOptions,
   isWalletReset,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {
   setResetWallet,
   updateChatOptions,
-  updateFeesOptions,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import s from './Settings.module.css';
 
@@ -30,7 +28,6 @@ const Settings = ({navigation}) => {
   // const [isFingerprintEnabled, setIsFingerprintEnabled] = useState(false);
   const localCurrency = useSelector(getLocalCurrency);
   const lockTimeDisplay = useSelector(getLockTimeDisplay);
-  const feesOptions = useSelector(isFeesOptions);
   const chatOptions = useSelector(isChatOptions);
   const rateLimitCheck = useSelector(isWalletReset);
   const currentLocale = useLocale();
@@ -49,10 +46,6 @@ const Settings = ({navigation}) => {
 
   const onChangeLocale = e => {
     setUserLocale(e.target.value);
-  };
-
-  const onChangeFeesOptions = e => {
-    dispatch(updateFeesOptions(e.target.checked));
   };
 
   const onChangeChatOptions = e => {
@@ -157,23 +150,6 @@ const Settings = ({navigation}) => {
             </p>
           </div>
         </Link>
-        <div className={s.btn}>
-          {icons.setCurrency}
-          <div className={s.box}>
-            <div className={s.subBox}>
-              <p className={s.btnTitle}>{'EVM Fees Options'}</p>
-              <p className={s.btnText}>
-                {'It will show the fees options for supported EVM chains'}
-              </p>
-            </div>
-            <Switch
-              checked={feesOptions}
-              defaultChecked={feesOptions}
-              onChange={onChangeFeesOptions}
-              color='warning'
-            />
-          </div>
-        </div>
         <div className={s.btn}>
           {AllIcons.chatIcon}
           <div className={s.box}>

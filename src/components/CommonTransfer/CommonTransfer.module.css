@@ -139,5 +139,115 @@
   text-align: left;
   text-transform: capitalize;
   align-self: center;
+}
 
+.advancedOptionsContainer {
+  width: 100%;
+  margin-top: 20px;
+  border: 1px solid var(--gray);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.advancedOptionsHeader {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: var(--whiteOutline);
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease;
+}
+
+.advancedOptionsHeader:hover {
+  background-color: var(--whiteOutline);
+  opacity: 0.85;
+}
+
+.advancedOptionsTitleContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.advancedOptionsSettingsIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--background);
+}
+
+.advancedOptionsSettingsIcon svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--background);
+}
+
+.advancedOptionsTitle {
+  font-family: var(--font-roboto);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--font);
+}
+
+.advancedOptionsChevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  color: var(--gray);
+}
+
+.advancedOptionsChevron svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--gray);
+}
+
+.advancedOptionsChevronOpen {
+  transform: rotate(180deg);
+}
+
+.advancedOptionsContent {
+  padding: 20px;
+  background-color: var(--backgroundColor);
+  border-top: 1px solid var(--gray);
+}
+
+.inputFieldContainer {
+  margin-top: 16px;
+}
+
+.inputFieldContainer:first-child {
+  margin-top: 0;
+}
+
+.inputLabelWithIcon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.inputIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--background);
+}
+
+.inputIcon svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--background);
+}
+
+.inputLabelText {
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--font);
 }
