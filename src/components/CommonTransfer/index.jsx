@@ -9,10 +9,7 @@ import React, {
   useMemo,
 } from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import {
-  getLocalCurrency,
-  isFeesOptions,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {sendFunds} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {
   getTransferData,
@@ -55,7 +52,6 @@ import {
 import icons from 'assets/images/icons';
 import ValidatorItem from 'components/ValidatorItem';
 import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import {getSellCryptoRequestDetails} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
 import BatchTransactionItem from 'components/BatchTransactionItem';
@@ -76,6 +72,8 @@ const CommonTransfer = () => {
   const [isFetchingFeesAgain, setIsFetchingFeesAgain] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [selectedFeesType, setSelectedFeesType] = useState('recommended');
+  const [isAdvancedOptionsOpen, setIsAdvancedOptionsOpen] = useState(false);
+  const [customNonce, setCustomNonce] = useState('');
   const sellCryptoRequestDetails = useSelector(getSellCryptoRequestDetails);
   const [customFees, setCustomFees] = useState('');
   const selectedFeesTypeRef = useRef('recommended');
@@ -122,7 +120,6 @@ const CommonTransfer = () => {
 
   const convertedChainName = isEVMChain(chainName) ? 'ethereum' : chainName;
 
-  const isFeesOptionsEnabled = useSelector(isFeesOptions);
   const feesOptions = useSelector(getTransferDataFeesOptions);
 
   const nativeBalanceForBatchTransactions = useMemo(() => {
@@ -143,6 +140,12 @@ const CommonTransfer = () => {
       setCustomFees(feesOptions?.[0]?.gasPrice);
     }
   }, [feesOptions]);
+
+  useEffect(() => {
+    if (transferData?.nonce !== undefined && transferData?.nonce !== null) {
+      setCustomNonce(String(transferData.nonce));
+    }
+  }, [transferData?.nonce]);
 
   useLayoutEffect(() => {
     titleRef.current = isSendFundScreen
@@ -273,10 +276,12 @@ const CommonTransfer = () => {
   }, [feeSuccess, isExchangeSuccess]);
 
   const submitTransferData = useCallback(async () => {
+    console.log('custom nonce', customNonce);
     await dispatch(
       sendFunds({
         to: transferData.toAddress,
         memo: transferData.memo,
+        nonce: Number(customNonce),
         amount:
           isSendFundScreen || isSellCryptoScreen || isStakingScreen
             ? transferData?.amount
@@ -329,6 +334,7 @@ const CommonTransfer = () => {
       }),
     );
   }, [
+    customNonce,
     dispatch,
     transferData.toAddress,
     transferData.memo,
@@ -433,6 +439,16 @@ const CommonTransfer = () => {
     );
     setCustomFees(tempValues || '0');
     dispatch(updateFees({gasPrice: tempValues || '0', convertedChainName}));
+  };
+
+  const onChangeNonce = e => {
+    const text = e?.target?.value;
+    const numericValue = text.replace(/[^0-9]/g, '');
+    setCustomNonce(numericValue);
+  };
+
+  const toggleAdvancedOptions = () => {
+    setIsAdvancedOptionsOpen(prev => !prev);
   };
 
   const isDisabled = isBalanceNotAvailable(
@@ -879,125 +895,183 @@ const CommonTransfer = () => {
                   : isBatchTransaction
                     ? renderBatchTransactionUI()
                     : renderVotingUI()}
-          {isFeesOptionsEnabled &&
-            isFeesOptionChain(convertedChainName) &&
+          {isFeesOptionChain(convertedChainName) &&
             !!feesOptions?.length &&
             !isExchangeScreen && (
-              <div className={s.feesMainContainer}>
-                <div className={s.feesOptionContainer}>
-                  <button
-                    onClick={() => {
-                      isPauseCalculateFees.current = false;
-                      setSelectedFeesType('recommended');
-                      selectedFeesTypeRef.current = 'recommended';
-                      dispatch(
-                        updateFees({
-                          gasPrice: feesOptions?.[0].gasPrice,
-                          convertedChainName,
-                        }),
-                      );
-                    }}
-                    style={
-                      selectedFeesType?.toLowerCase() ===
-                      feesOptions?.[0]?.title?.toLowerCase()
-                        ? {
-                            borderColor: 'var(--background)',
-                            borderWidth: '3px',
+              <div className={s.advancedOptionsContainer}>
+                <button
+                  className={s.advancedOptionsHeader}
+                  onClick={toggleAdvancedOptions}>
+                  <div className={s.advancedOptionsTitleContainer}>
+                    <span className={s.advancedOptionsSettingsIcon}>
+                      {icons.settingsSlider}
+                    </span>
+                    <span className={s.advancedOptionsTitle}>
+                      Advanced Options
+                    </span>
+                  </div>
+                  <span
+                    className={`${s.advancedOptionsChevron} ${isAdvancedOptionsOpen ? s.advancedOptionsChevronOpen : ''}`}>
+                    {icons.chevronDown}
+                  </span>
+                </button>
+                {isAdvancedOptionsOpen && (
+                  <div className={s.advancedOptionsContent}>
+                    <div className={s.feesMainContainer}>
+                      <div className={s.feesOptionContainer}>
+                        <button
+                          onClick={() => {
+                            isPauseCalculateFees.current = false;
+                            setSelectedFeesType('recommended');
+                            selectedFeesTypeRef.current = 'recommended';
+                            dispatch(
+                              updateFees({
+                                gasPrice: feesOptions?.[0].gasPrice,
+                                convertedChainName,
+                              }),
+                            );
+                          }}
+                          style={
+                            selectedFeesType?.toLowerCase() ===
+                            feesOptions?.[0]?.title?.toLowerCase()
+                              ? {
+                                  borderColor: 'var(--background)',
+                                  borderWidth: '3px',
+                                }
+                              : {}
                           }
-                        : {}
-                    }
-                    className={s.feesOptionsItem}>
-                    <p
-                      className={
-                        s.feesOptionTitle
-                      }>{`${feesOptions?.[0].title}`}</p>
-                    <p className={s.feesOptionDescription}>
-                      {`${feesOptions?.[0].gasPrice} ${GAS_CURRENCY[convertedChainName]}`}
-                    </p>
-                  </button>
-                  <button
-                    className={s.feesOptionsItem}
-                    style={
-                      selectedFeesType?.toLowerCase() ===
-                      feesOptions?.[1]?.title?.toLowerCase()
-                        ? {
-                            borderColor: 'var(--background)',
-                            borderWidth: '3px',
+                          className={s.feesOptionsItem}>
+                          <p
+                            className={
+                              s.feesOptionTitle
+                            }>{`${feesOptions?.[0].title}`}</p>
+                          <p className={s.feesOptionDescription}>
+                            {`${feesOptions?.[0].gasPrice} ${GAS_CURRENCY[convertedChainName]}`}
+                          </p>
+                        </button>
+                        <button
+                          className={s.feesOptionsItem}
+                          style={
+                            selectedFeesType?.toLowerCase() ===
+                            feesOptions?.[1]?.title?.toLowerCase()
+                              ? {
+                                  borderColor: 'var(--background)',
+                                  borderWidth: '3px',
+                                }
+                              : {}
                           }
-                        : {}
-                    }
-                    onClick={() => {
-                      isPauseCalculateFees.current = false;
-                      setSelectedFeesType('normal');
-                      selectedFeesTypeRef.current = 'normal';
-                      dispatch(
-                        updateFees({
-                          gasPrice: feesOptions?.[1].gasPrice,
-                          convertedChainName,
-                        }),
-                      );
-                    }}>
-                    <p
-                      className={
-                        s.feesOptionTitle
-                      }>{`${feesOptions?.[1].title}`}</p>
-                    <p className={s.feesOptionDescription}>
-                      {`${feesOptions?.[1].gasPrice} ${GAS_CURRENCY[convertedChainName]}`}
-                    </p>
-                  </button>
-                  <button
-                    className={s.feesOptionsItem}
-                    style={
-                      selectedFeesType?.toLowerCase() === 'custom'
-                        ? {
-                            borderColor: 'var(--background)',
-                            borderWidth: '3px',
+                          onClick={() => {
+                            isPauseCalculateFees.current = false;
+                            setSelectedFeesType('normal');
+                            selectedFeesTypeRef.current = 'normal';
+                            dispatch(
+                              updateFees({
+                                gasPrice: feesOptions?.[1].gasPrice,
+                                convertedChainName,
+                              }),
+                            );
+                          }}>
+                          <p
+                            className={
+                              s.feesOptionTitle
+                            }>{`${feesOptions?.[1].title}`}</p>
+                          <p className={s.feesOptionDescription}>
+                            {`${feesOptions?.[1].gasPrice} ${GAS_CURRENCY[convertedChainName]}`}
+                          </p>
+                        </button>
+                        <button
+                          className={s.feesOptionsItem}
+                          style={
+                            selectedFeesType?.toLowerCase() === 'custom'
+                              ? {
+                                  borderColor: 'var(--background)',
+                                  borderWidth: '3px',
+                                }
+                              : {}
                           }
-                        : {}
-                    }
-                    onClick={() => {
-                      isPauseCalculateFees.current = true;
-                      setSelectedFeesType('custom');
-                      selectedFeesTypeRef.current = 'custom';
-                    }}>
-                    <p className={s.feesOptionTitle}>{`Custom`}</p>
-                  </button>
-                </div>
-                {selectedFeesType === 'custom' && (
-                  <FormControl variant='outlined'>
-                    <InputLabel
-                      sx={{
-                        color: 'var(--borderActiveColor)',
-                      }}
-                      focused={false}>
-                      Gas Fees
-                    </InputLabel>
-                    <OutlinedInput
-                      fullWidth
-                      autoFocus={true}
-                      id='customText'
-                      type={'text'}
-                      name='Gas Price'
-                      onChange={onChangeCustomFees}
-                      value={customFees}
-                      placeholder='Enter Gas fee in Gwei'
-                      label='Full Name'
-                      sx={{
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: 'var(--sidebarIcon)',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: 'var(--borderActiveColor)',
-                        },
-                        '& .MuiInputLabel-outlined': {
-                          color: 'var(--sidebarIcon)',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: 'var(--sidebarIcon) !important',
-                        },
-                      }}
-                    />
-                  </FormControl>
+                          onClick={() => {
+                            isPauseCalculateFees.current = true;
+                            setSelectedFeesType('custom');
+                            selectedFeesTypeRef.current = 'custom';
+                          }}>
+                          <p className={s.feesOptionTitle}>{`Custom`}</p>
+                        </button>
+                      </div>
+                      {selectedFeesType === 'custom' && (
+                        <div className={s.inputFieldContainer}>
+                          <div className={s.inputLabelWithIcon}>
+                            <span className={s.inputIcon}>{icons.gasPump}</span>
+                            <span className={s.inputLabelText}>
+                              Gas Fee (Gwei)
+                            </span>
+                          </div>
+                          <FormControl variant='outlined' fullWidth>
+                            <OutlinedInput
+                              fullWidth
+                              autoFocus={true}
+                              id='customText'
+                              type={'text'}
+                              name='Gas Price'
+                              onChange={onChangeCustomFees}
+                              value={customFees}
+                              placeholder='Enter Gas fee in Gwei'
+                              sx={{
+                                '& .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: 'var(--sidebarIcon)',
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline':
+                                  {
+                                    borderColor: 'var(--borderActiveColor)',
+                                  },
+                                '& .MuiInputLabel-outlined': {
+                                  color: 'var(--sidebarIcon)',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: 'var(--sidebarIcon) !important',
+                                },
+                              }}
+                            />
+                          </FormControl>
+                        </div>
+                      )}
+                    </div>
+                    {isEVMChain(convertedChainName) && (
+                      <div className={s.inputFieldContainer}>
+                        <div className={s.inputLabelWithIcon}>
+                          <span className={s.inputIcon}>
+                            {icons.hashNumber}
+                          </span>
+                          <span className={s.inputLabelText}>Nonce</span>
+                        </div>
+                        <FormControl variant='outlined' fullWidth>
+                          <OutlinedInput
+                            fullWidth
+                            id='nonceInput'
+                            type={'text'}
+                            name='Nonce'
+                            onChange={onChangeNonce}
+                            value={customNonce}
+                            placeholder='Enter custom nonce'
+                            sx={{
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'var(--sidebarIcon)',
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline':
+                                {
+                                  borderColor: 'var(--borderActiveColor)',
+                                },
+                              '& .MuiInputLabel-outlined': {
+                                color: 'var(--sidebarIcon)',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: 'var(--sidebarIcon) !important',
+                              },
+                            }}
+                          />
+                        </FormControl>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
