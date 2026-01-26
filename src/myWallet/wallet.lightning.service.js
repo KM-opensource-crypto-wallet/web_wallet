@@ -48,7 +48,7 @@ const commonConnectSdk = async mnemonic => {
         await init();
         // "mainnet" | "regtest";
         const network = IS_SANDBOX ? "regtest" : "mainnet";
-        console.log("network:", network)
+
         // Connect using the config
         let config = defaultConfig(network);
         config.apiKey = process.env.BREEZ_API_KEY;
@@ -76,7 +76,6 @@ const commonConnectSdk = async mnemonic => {
 
 async function connectToSdk(phrase) {
     let mnemonic = phrase;
-    console.log("sdkMap:", sdkMap)
     if (sdkInstance) {
         if (sdkMap.has(mnemonic)) {
             console.log('♻️ Reusing SDK');
@@ -102,14 +101,13 @@ async function prepareAndSendPayment(phrase, paymentRequest, amount) {
     try {
         const sdk = await connectToSdk(phrase);
         if (!sdk || !paymentRequest) {
-            Alert.alert('Error', 'SDK not connected or no payment request');
+           console.log('Error', 'SDK not connected or no payment request');
             return;
         }
         const prepareResponse = await sdk.prepareSendPayment({
             paymentRequest,
             amount: decimalStringToBigInt(amount, 8),
         });
-        console.log("prepareResponse:", prepareResponse)
         prepareSendResponse = prepareResponse;
         if (prepareResponse.paymentMethod.type ===  "bitcoinAddress") {
             const lightningFee =
@@ -132,7 +130,7 @@ async function prepareAndSendPayment(phrase, paymentRequest, amount) {
         return {};
     } catch (err) {
         console.error('Error preparing payment:', err);
-        Alert.alert('Prepare Error', err.message);
+       console.log('Prepare Error', err.message);
     }
 }
 
@@ -146,10 +144,8 @@ function satoshiToBtc(sats) {
 }
 
 export const getLightningBalance = async (phrase) => {
-    const sdk = await connectToSdk(phrase)
     try {
         const sdk = await connectToSdk(phrase);
-        const obj1 = Object.fromEntries(sdkMap);
         const info = await sdk.getInfo({});
         return info.balanceSats;
     } catch (error) {
@@ -161,7 +157,7 @@ export const isLightningAddressValid = async (address, phrase) => {
     try {
         const sdk = await connectToSdk(phrase);
         if (!sdk) {
-            Alert.alert('Error', 'SDK not connected or no payment request');
+           console.log('Error', 'SDK not connected or no payment request');
             return;
         }
         const input = await sdk.parse(address);
@@ -183,7 +179,7 @@ export const generateLightningInvoiceViaBolt11 = async (phrase) => {
     try {
         const sdk = await connectToSdk(phrase);
         if (!sdk) {
-            Alert.alert('Error', 'SDK not connected');
+           console.log('Error', 'SDK not connected');
             return;
         }
         const response = await sdk.receivePayment({
@@ -196,7 +192,7 @@ export const generateLightningInvoiceViaBolt11 = async (phrase) => {
         };
     } catch (error) {
         console.error('Error generating invoice:', error);
-        Alert.alert('Invoice Error', error.message);
+       console.log('Invoice Error', error.message);
     }
 }
 
@@ -225,7 +221,7 @@ export const generateLightningInvoiceViaBitcoinAddress = async (phrase) => {
     try {
         const sdk = await connectToSdk(phrase);
         if (!sdk) {
-            Alert.alert('Error', 'SDK not connected');
+           console.log('Error', 'SDK not connected');
             return;
         }
         const response = await sdk.receivePayment({
@@ -238,7 +234,7 @@ export const generateLightningInvoiceViaBitcoinAddress = async (phrase) => {
         };
     } catch (err) {
         console.error('Error generating invoice:', err);
-        Alert.alert('Invoice Error', err.message);
+       console.log('Invoice Error', err.message);
     }
 }
 // sparkrt1pgss833snj2n4plhav04s58zxhc2ury29dhcpe4tehcx80rgc5kypfr9xzrhgn
