@@ -42,6 +42,7 @@ const nextConfig = {
     BLOCKDAEMON_API_KEY: process.env.BLOCKDAEMON_API_KEY,
     WALLET_CONNECT_ID: process.env.WALLET_CONNECT_ID,
     BLOCKFROST_API_KEY: process.env.BLOCKFROST_API_KEY,
+    BREEZ_API_KEY: process.env.BREEZ_API_KEY,
   },
   trailingSlash: true,
   reactStrictMode: false,
