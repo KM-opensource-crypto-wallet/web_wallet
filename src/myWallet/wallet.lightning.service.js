@@ -363,7 +363,7 @@ export const getLightningTransactions = async (phrase) => {
                     amount: item.amount,
                     link: txHash?.substring(0, 13) + '...',
                     url: `${config.BITCOIN_LIGHTNING_URL}/tx/${txHash}`,
-                    status: item?.status !== "completed" ? 'Pending' : 'SUCCESS',
+                    status: item?.status.toLowerCase() !== "completed" ? 'Pending' : 'SUCCESS',
                     date: Number(item?.timestamp) * 1000,
                     from: item?.details.inner?.preimage,
                     to: item?.details.inner?.destinationPubKey,
