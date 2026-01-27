@@ -4,14 +4,6 @@ import init, {
 } from "@breeztech/breez-sdk-spark/web";
 import { config, IS_SANDBOX } from 'dok-wallet-blockchain-networks/config/config';
 
-class JsLogger {
-    log = (logEntry) => {
-        console.log(
-            `[${new Date().toISOString()} ${logEntry.level}]: ${logEntry.line}`
-        );
-    };
-}
-
 class JsEventListener {
     constructor(callback) {
         this.callback = callback;
@@ -109,19 +101,24 @@ async function prepareAndSendPayment(phrase, paymentRequest, amount) {
             amount: decimalStringToBigInt(amount, 8),
         });
         prepareSendResponse = prepareResponse;
-        if (prepareResponse.paymentMethod.type ===  "bitcoinAddress") {
+        if (prepareResponse.paymentMethod?.type ===  "bitcoinAddress") {
             const lightningFee =
-                prepareResponse.paymentMethod.lightningFeeSats;
-            const sparkFee =
-                prepareResponse.paymentMethod.sparkTransferFeeSats;
+              prepareResponse.paymentMethod.feeQuote.speedFast.userFeeSat;
 
             return {
                 lightningFee: lightningFee,
-                sparkFee: sparkFee,
+                sparkFee: '',
             };
         }
         if (prepareResponse.paymentMethod?.type === "sparkAddress") {
             const feeSats = prepareResponse.paymentMethod.fee;
+            return {
+                lightningFee: feeSats,
+                sparkFee: '',
+            };
+        }
+        if (prepareResponse.paymentMethod?.type === "bolt11Invoice") {
+            const feeSats = prepareResponse.paymentMethod.lightningFeeSats;
             return {
                 lightningFee: feeSats,
                 sparkFee: '',
@@ -162,7 +159,7 @@ export const isLightningAddressValid = async (address, phrase) => {
         }
         const input = await sdk.parse(address);
         if (input.type ===  "bitcoinAddress") {
-            return false;
+            return true;
         } else if (input.type === "bolt11Invoice") {
             return true;
         } else if (input.type === "sparkAddress") {

@@ -1,7 +1,7 @@
 'use client';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
-import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {selectCurrentCoin, getCurrentWalletPhrase} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {Grid2 as Grid, Typography, TextField} from '@mui/material';
 import CopyIcon from '@mui/icons-material/FileCopyOutlined';
 import s from './RecieveFunds.module.css';
@@ -13,6 +13,7 @@ import { getChain } from 'dok-wallet-blockchain-networks/cryptoChain';
 
 const ReceiveFunds = () => {
   const currentCoin = useSelector(selectCurrentCoin);
+  const currentPhhrase = useSelector(getCurrentWalletPhrase);
   const [productQRref, setProductQRref] = useState(
     `${currentCoin?.symbol}:${currentCoin.address}`,
   );
@@ -40,14 +41,14 @@ const ReceiveFunds = () => {
         let newAddress = '';
 
         if (currentValue === 'Receive via BTC mainnet') {
-          const { address } = await chain.generateInvoiceViaBitcoinAddress();
+          const { address } = await chain.generateInvoiceViaBitcoinAddress(currentPhhrase);
           newAddress = address;
         } else if (currentValue === 'Receive via Invoice') {
-          const { address } = await chain.generateInvoiceViaBolt11();
+          const { address } = await chain.generateInvoiceViaBolt11(currentPhhrase);
           newAddress = address;
         } else if (currentValue === 'Receive via Lightning Address') {
           // generateSparkAddress
-          const { address } = await chain.generateSparkAddress();
+          const { address } = await chain.generateSparkAddress(currentPhhrase);
           newAddress = address;
         }
 
