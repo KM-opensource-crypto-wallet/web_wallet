@@ -1,12 +1,12 @@
-import React, { useCallback } from 'react';
+import React, {useCallback} from 'react';
 
-import { useDispatch, useSelector } from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import styles from './ModalCustomDerivation.module.css';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
-import { Checkbox } from '@mui/material';
-import { updateCustomDerivedChecked } from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
-import { isCustomDerivedChecked } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {Checkbox} from '@mui/material';
+import {updateCustomDerivedChecked} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
+import {isCustomDerivedChecked} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 
 const style = {
   position: 'absolute',
@@ -25,23 +25,22 @@ const style = {
   },
 };
 
-const ModalCustomDerivation = ({ visible, hideModal }) => {
+const ModalCustomDerivation = ({visible, hideModal}) => {
   const isCheckedStored = useSelector(isCustomDerivedChecked);
   const dispatch = useDispatch();
   const handlerNo = useCallback(() => {
     dispatch(updateCustomDerivedChecked(false));
     hideModal();
- }, [dispatch, hideModal]);
+  }, [dispatch, hideModal]);
 
   const handlerYes = useCallback(() => {
     dispatch(updateCustomDerivedChecked(!isCheckedStored));
     hideModal(true);
-  }, [hideModal]);
+  }, [dispatch, hideModal, isCheckedStored]);
 
   const handleCheckBox = useCallback(() => {
     dispatch(updateCustomDerivedChecked(!isCheckedStored));
   }, [dispatch, isCheckedStored]);
-
 
   return (
     <Modal
@@ -58,16 +57,9 @@ const ModalCustomDerivation = ({ visible, hideModal }) => {
               }
             </p>
           </div>
-          <div style={{ display:"flex",flexDirection: "row", alignItems: "center", justifyContent: 'center' }}>
-            <Checkbox
-              checked={isCheckedStored}
-              onChange={handleCheckBox}
-            />
-            <p className={styles.info}>
-              {
-                `Don't show this popup again`
-              }
-            </p>
+          <div style={style.checkbox}>
+            <Checkbox checked={isCheckedStored} onChange={handleCheckBox} />
+            <p className={styles.info}>{`Don't show this popup again`}</p>
           </div>
           <div className={styles.btnList}>
             <button className={styles.learnBox} onClick={() => handlerNo()}>
