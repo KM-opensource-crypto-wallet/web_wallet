@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
-import {useDispatch} from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import styles from './ModalCustomDerivation.module.css';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
-import {useRouter} from 'next/navigation';
+import { Checkbox } from '@mui/material';
+import { updateCustomDerivedChecked } from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
+import { isCustomDerivedChecked } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 
 const style = {
   position: 'absolute',
@@ -23,14 +25,23 @@ const style = {
   },
 };
 
-const ModalCustomDerivation = ({visible, hideModal}) => {
-  const handlerNo = () => {
+const ModalCustomDerivation = ({ visible, hideModal }) => {
+  const isCheckedStored = useSelector(isCustomDerivedChecked);
+  const dispatch = useDispatch();
+  const handlerNo = useCallback(() => {
+    dispatch(updateCustomDerivedChecked(false));
     hideModal();
-  };
+ }, [dispatch, hideModal]);
 
-  const handlerYes = () => {
+  const handlerYes = useCallback(() => {
+    dispatch(updateCustomDerivedChecked(!isCheckedStored));
     hideModal(true);
-  };
+  }, [hideModal]);
+
+  const handleCheckBox = useCallback(() => {
+    dispatch(updateCustomDerivedChecked(!isCheckedStored));
+  }, [dispatch, isCheckedStored]);
+
 
   return (
     <Modal
@@ -44,6 +55,17 @@ const ModalCustomDerivation = ({visible, hideModal}) => {
             <p className={styles.info}>
               {
                 'The “Custom Derivation” feature is an advanced option. It’s important to ensure you have a solid understanding of derivations before proceeding.\n Would you like to continue?'
+              }
+            </p>
+          </div>
+          <div style={{ display:"flex",flexDirection: "row", alignItems: "center", justifyContent: 'center' }}>
+            <Checkbox
+              checked={isCheckedStored}
+              onChange={handleCheckBox}
+            />
+            <p className={styles.info}>
+              {
+                `Don't show this popup again`
               }
             </p>
           </div>
