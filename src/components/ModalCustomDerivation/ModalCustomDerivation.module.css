@@ -48,4 +48,9 @@
   border-right: 1px solid var(--gray);
 }
 
-.checkbox { display: "flex"; flex-direction: "row"; align-items: "center"; justify-content: 'center' }
+.checkbox { 
+  display: flex; 
+  flex-direction: row; 
+  align-items: center; 
+  justify-content: center;
+ }

@@ -1,4 +1,4 @@
-import React, {useCallback} from 'react';
+import React, {useCallback, useState} from 'react';
 
 import {useDispatch, useSelector} from 'react-redux';
 import styles from './ModalCustomDerivation.module.css';
@@ -27,20 +27,20 @@ const style = {
 
 const ModalCustomDerivation = ({visible, hideModal}) => {
   const isCheckedStored = useSelector(isCustomDerivedChecked);
+  const [checked, setChecked] = useState(false);
   const dispatch = useDispatch();
   const handlerNo = useCallback(() => {
-    dispatch(updateCustomDerivedChecked(false));
     hideModal();
-  }, [dispatch, hideModal]);
+  }, [hideModal]);
 
   const handlerYes = useCallback(() => {
-    dispatch(updateCustomDerivedChecked(!isCheckedStored));
+    dispatch(updateCustomDerivedChecked(true));
     hideModal(true);
-  }, [dispatch, hideModal, isCheckedStored]);
+  }, [dispatch, hideModal]);
 
   const handleCheckBox = useCallback(() => {
-    dispatch(updateCustomDerivedChecked(!isCheckedStored));
-  }, [dispatch, isCheckedStored]);
+    setChecked(prev => !prev);
+  }, [setChecked]);
 
   return (
     <Modal
@@ -57,8 +57,8 @@ const ModalCustomDerivation = ({visible, hideModal}) => {
               }
             </p>
           </div>
-          <div style={style.checkbox}>
-            <Checkbox checked={isCheckedStored} onChange={handleCheckBox} />
+          <div className={styles.checkbox}>
+            <Checkbox checked={checked} onChange={handleCheckBox} />
             <p className={styles.info}>{`Don't show this popup again`}</p>
           </div>
           <div className={styles.btnList}>
