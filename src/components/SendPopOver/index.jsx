@@ -28,7 +28,7 @@ const SendPopOver = () => {
     } else {
       setShowConfirmModal(true);
     }
-  }, [])
+ }, [isCheckedStored]);
   const handleHideModal = useCallback(isPressYes => {
     setShowCustomDerivationModal(false);
     if (isPressYes) {
