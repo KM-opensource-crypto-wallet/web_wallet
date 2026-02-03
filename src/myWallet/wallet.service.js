@@ -538,21 +538,42 @@ const addCustomTronDeriveAddress = async (mnemonic, customDerivePath) => {
   }
 };
 
-const addCustomBitcoinDeriveAddress = async (mnemonic, customDerivePath) => {
+const addCustomBitcoinDeriveAddress = async (
+  mnemonic,
+  customDerivePath,
+  addressType = 'segwit',
+) => {
   try {
     const isSandbox = IS_SANDBOX ? true : false;
-    const customNetwork = getNetworkByChainName('bitcoin', isSandbox);
+    const customNetwork = getNetworkByChainName(addressType, isSandbox);
     const seed = bip39.mnemonicToSeedSync(mnemonic);
     const bip32 = BIP32Factory(ecc);
     const root = bip32.fromSeed(seed, customNetwork);
     const child1 = root.derivePath(customDerivePath);
-    const {address} = bitcoin.payments.p2wpkh({
-      pubkey: child1.publicKey,
-      network: customNetwork,
-    });
+
+    let data = {};
+    if (addressType === 'bitcoin_legacy') {
+      data = bitcoin.payments.p2pkh({
+        pubkey: child1.publicKey,
+        network: customNetwork,
+      });
+    } else if (addressType === 'bitcoin_segwit') {
+      const p2wpkh = bitcoin.payments.p2wpkh({
+        pubkey: child1.publicKey,
+        network: customNetwork,
+      });
+      data = bitcoin.payments.p2sh({
+        redeem: p2wpkh,
+      });
+    } else if (addressType === 'bitcoin') {
+      data = bitcoin.payments.p2wpkh({
+        pubkey: child1.publicKey,
+        network: customNetwork,
+      });
+    }
     return {
       privateKey: child1.toWIF(),
-      address,
+      address: data.address,
       derivePath: customDerivePath,
     };
   } catch (e) {
@@ -564,7 +585,13 @@ const addCustomDerivePath = {
   ethereum: addCustomEVMDeriveAddress,
   solana: addCustomSolanaDeriveAddress,
   tron: addCustomTronDeriveAddress,
-  bitcoin: addCustomBitcoinDeriveAddress,
+  bitcoin: (m, p) => addCustomBitcoinDeriveAddress(m, p, 'bitcoin'),
+
+  bitcoin_segwit: (m, p) =>
+    addCustomBitcoinDeriveAddress(m, p, 'bitcoin_segwit'),
+
+  bitcoin_legacy: (m, p) =>
+    addCustomBitcoinDeriveAddress(m, p, 'bitcoin_legacy'),
 };
 export const addCustomDeriveAddressToWallet = async (
   chain_name,
