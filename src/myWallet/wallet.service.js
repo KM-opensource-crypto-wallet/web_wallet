@@ -538,13 +538,9 @@ const addCustomTronDeriveAddress = async (mnemonic, customDerivePath) => {
   }
 };
 
-const addCustomBitcoinDeriveAddress = async (
-  mnemonic,
-  isSandbox,
-  customDerivePath,
-) => {
+const addCustomBitcoinDeriveAddress = async (mnemonic, customDerivePath) => {
   try {
-    debugger;
+    const isSandbox = IS_SANDBOX ? true : false;
     const customNetwork = getNetworkByChainName('bitcoin', isSandbox);
     const seed = bip39.mnemonicToSeedSync(mnemonic);
     const bip32 = BIP32Factory(ecc);
@@ -576,11 +572,8 @@ export const addCustomDeriveAddressToWallet = async (
   customDerivePath,
 ) => {
   try {
-    debugger;
-    const isSandbox = IS_SANDBOX ? true : false;
     const resp = await addCustomDerivePath[chain_name]?.(
       mnemonics,
-      isSandbox,
       customDerivePath,
     );
     return {account: resp};
