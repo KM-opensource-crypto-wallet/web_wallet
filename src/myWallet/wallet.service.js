@@ -10,7 +10,7 @@ import bs58 from 'bs58';
 import {TronWeb} from 'tronweb';
 import {Wallet} from 'xrpl';
 import {InMemorySigner} from '@taquito/signer';
-import {config} from 'dok-wallet-blockchain-networks/config/config';
+import {config, IS_SANDBOX} from 'dok-wallet-blockchain-networks/config/config';
 import {DirectSecp256k1HdWallet} from '@cosmjs/proto-signing';
 import {Client} from '@xchainjs/xchain-thorchain';
 import {Keyring} from '@polkadot/keyring';
@@ -538,10 +538,37 @@ const addCustomTronDeriveAddress = async (mnemonic, customDerivePath) => {
   }
 };
 
+const addCustomBitcoinDeriveAddress = async (
+  mnemonic,
+  isSandbox,
+  customDerivePath,
+) => {
+  try {
+    debugger;
+    const customNetwork = getNetworkByChainName('bitcoin', isSandbox);
+    const seed = bip39.mnemonicToSeedSync(mnemonic);
+    const bip32 = BIP32Factory(ecc);
+    const root = bip32.fromSeed(seed, customNetwork);
+    const child1 = root.derivePath(customDerivePath);
+    const {address} = bitcoin.payments.p2wpkh({
+      pubkey: child1.publicKey,
+      network: customNetwork,
+    });
+    return {
+      privateKey: child1.toWIF(),
+      address,
+      derivePath: customDerivePath,
+    };
+  } catch (e) {
+    console.error('Error in addCustomTronDeriveAddress', e);
+    throw e;
+  }
+};
 const addCustomDerivePath = {
   ethereum: addCustomEVMDeriveAddress,
   solana: addCustomSolanaDeriveAddress,
   tron: addCustomTronDeriveAddress,
+  bitcoin: addCustomBitcoinDeriveAddress,
 };
 export const addCustomDeriveAddressToWallet = async (
   chain_name,
@@ -549,8 +576,11 @@ export const addCustomDeriveAddressToWallet = async (
   customDerivePath,
 ) => {
   try {
+    debugger;
+    const isSandbox = IS_SANDBOX ? true : false;
     const resp = await addCustomDerivePath[chain_name]?.(
       mnemonics,
+      isSandbox,
       customDerivePath,
     );
     return {account: resp};
