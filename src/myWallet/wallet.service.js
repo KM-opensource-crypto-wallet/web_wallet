@@ -10,7 +10,7 @@ import bs58 from 'bs58';
 import {TronWeb} from 'tronweb';
 import {Wallet} from 'xrpl';
 import {InMemorySigner} from '@taquito/signer';
-import {config} from 'dok-wallet-blockchain-networks/config/config';
+import {config, IS_SANDBOX} from 'dok-wallet-blockchain-networks/config/config';
 import {DirectSecp256k1HdWallet} from '@cosmjs/proto-signing';
 import {Client} from '@xchainjs/xchain-thorchain';
 import {Keyring} from '@polkadot/keyring';
@@ -538,10 +538,60 @@ const addCustomTronDeriveAddress = async (mnemonic, customDerivePath) => {
   }
 };
 
+const addCustomBitcoinDeriveAddress = async (
+  mnemonic,
+  customDerivePath,
+  addressType = 'segwit',
+) => {
+  try {
+    const isSandbox = IS_SANDBOX ? true : false;
+    const customNetwork = getNetworkByChainName(addressType, isSandbox);
+    const seed = bip39.mnemonicToSeedSync(mnemonic);
+    const bip32 = BIP32Factory(ecc);
+    const root = bip32.fromSeed(seed, customNetwork);
+    const child1 = root.derivePath(customDerivePath);
+
+    let data = {};
+    if (addressType === 'bitcoin_legacy') {
+      data = bitcoin.payments.p2pkh({
+        pubkey: child1.publicKey,
+        network: customNetwork,
+      });
+    } else if (addressType === 'bitcoin_segwit') {
+      const p2wpkh = bitcoin.payments.p2wpkh({
+        pubkey: child1.publicKey,
+        network: customNetwork,
+      });
+      data = bitcoin.payments.p2sh({
+        redeem: p2wpkh,
+      });
+    } else if (addressType === 'bitcoin') {
+      data = bitcoin.payments.p2wpkh({
+        pubkey: child1.publicKey,
+        network: customNetwork,
+      });
+    }
+    return {
+      privateKey: child1.toWIF(),
+      address: data.address,
+      derivePath: customDerivePath,
+    };
+  } catch (e) {
+    console.error('Error in addCustomTronDeriveAddress', e);
+    throw e;
+  }
+};
 const addCustomDerivePath = {
   ethereum: addCustomEVMDeriveAddress,
   solana: addCustomSolanaDeriveAddress,
   tron: addCustomTronDeriveAddress,
+  bitcoin: (m, p) => addCustomBitcoinDeriveAddress(m, p, 'bitcoin'),
+
+  bitcoin_segwit: (m, p) =>
+    addCustomBitcoinDeriveAddress(m, p, 'bitcoin_segwit'),
+
+  bitcoin_legacy: (m, p) =>
+    addCustomBitcoinDeriveAddress(m, p, 'bitcoin_legacy'),
 };
 export const addCustomDeriveAddressToWallet = async (
   chain_name,
