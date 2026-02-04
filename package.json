@@ -64,7 +64,7 @@
     "bignumber.js": "^9.1.2",
     "bip32": "^4.0.0",
     "bip39": "^3.1.0",
-    "bitcoinjs-lib": "git+https://github.com/dokwallet/bitcoinjs-lib.git#cashv6",
+    "bitcoinjs-lib": "6.1.7",
     "buffer": "^6.0.3",
     "bufferutil": "^4.0.8",
     "crypto-js": "^4.2.0",
