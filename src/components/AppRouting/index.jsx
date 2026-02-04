@@ -12,7 +12,6 @@ import {
   checkNewsAvailable,
   fetchCurrencies,
 } from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
-import {ToastContainer} from 'react-toastify';
 import {ThemeContext} from 'theme/ThemeContext';
 import {isReduxStoreLoaded} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
 import {selectWalletConnectSessions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -158,14 +157,22 @@ function AppRouting({children, wlData}) {
       ) {
         setRoutingDone(true);
       } else {
+        const shouldSkipLock =
+          typeof window !== 'undefined' &&
+          sessionStorage.getItem('skip_lock_screen') === 'true';
+
         if (!password) {
           if (pathname !== '/auth/registration') {
             routing.replace(searchString ? `/?${searchString}` : '/');
           }
-        } else {
+        } else if (!shouldSkipLock) {
           routing.replace(
             searchString ? `/auth/login?${searchString}` : `/auth/login`,
           );
+        } else {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('skip_lock_screen');
+          }
         }
         setTimeout(() => {
           setRoutingDone(true);
@@ -213,12 +220,6 @@ function AppRouting({children, wlData}) {
           </div>
         )}
       </div>
-      <ToastContainer
-        position='bottom-right'
-        draggable
-        pauseOnHover
-        theme={themeType === 'light' ? 'light' : 'dark'}
-      />
     </ThemeProvider>
   );
 }

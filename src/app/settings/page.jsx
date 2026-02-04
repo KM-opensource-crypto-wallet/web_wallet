@@ -141,6 +141,20 @@ const Settings = ({navigation}) => {
           </div>
         </Link>
         <p className={s.title}>Wallet Settings</p>
+        <Link href='/settings/backup' className={s.btn}>
+          {icons.showPhrase}
+          <div className={s.box}>
+            <p className={s.btnTitle}>Backup Wallets</p>
+            <p className={s.btnText}>Backup wallets to Google Drive</p>
+          </div>
+        </Link>
+        <Link href='/settings/restore' className={s.btn}>
+          {icons.showPhrase}
+          <div className={s.box}>
+            <p className={s.btnTitle}>Restore Wallets</p>
+            <p className={s.btnText}>Restore wallets from Google Drive</p>
+          </div>
+        </Link>
         <Link href='/settings/derive-address' className={s.btn}>
           {icons.setCurrency}
           <div className={s.box}>
