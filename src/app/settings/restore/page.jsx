@@ -12,6 +12,7 @@ import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 import GoBackButton from 'components/GoBackButton';
 import UserMenu from 'components/UserMenu';
 import {useSession, signIn, signOut} from 'next-auth/react';
+import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
 
 const RestorePage = () => {
   const dispatch = useDispatch();
@@ -30,7 +31,10 @@ const RestorePage = () => {
   // Mark as mounted to prevent hydration mismatch
   useEffect(() => {
     setHasMounted(true);
-  }, []);
+    if (!isBackupRestoreEnabled()) {
+      router.replace('/settings');
+    }
+  }, [router]);
 
   useEffect(() => {
     if (status === 'authenticated' && session) {

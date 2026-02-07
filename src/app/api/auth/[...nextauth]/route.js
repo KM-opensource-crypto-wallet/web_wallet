@@ -17,6 +17,9 @@ const authOptions = {
       },
     }),
   ],
+  session: {
+    strategy: 'jwt',
+  },
   callbacks: {
     async jwt({token, account, profile}) {
       // Persist the OAuth access_token and or the refresh_token to the token right after signin
@@ -24,17 +27,13 @@ const authOptions = {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.expiry = account.expires_at;
-        console.log('NextAuth: Account data saved to token');
       }
 
       // Ensure picture is persisted
       if (profile) {
-        console.log(
-          'NextAuth: Profile received',
-          profile.email,
-          !!profile.picture,
-        );
         token.picture = profile.picture;
+        token.name = profile.name;
+        token.email = profile.email;
       }
 
       return token;
@@ -45,14 +44,11 @@ const authOptions = {
       session.error = token.error;
 
       // Ensure user image is set from token if available
-      if (session.user && token.picture) {
-        session.user.image = token.picture;
-        console.log('NextAuth: Session user image set from token');
-      } else if (session.user) {
-        console.log(
-          'NextAuth: Session user image not found in token',
-          !!token.picture,
-        );
+      if (session.user) {
+        // Always override with token data to ensure consistency
+        session.user.image = token.picture || session.user.image;
+        session.user.name = token.name || session.user.name;
+        session.user.email = token.email || session.user.email;
       }
 
       return session;

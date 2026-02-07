@@ -21,6 +21,7 @@ import GoBackButton from 'components/GoBackButton';
 import UserMenu from 'components/UserMenu';
 import {useSession, signIn, signOut} from 'next-auth/react';
 import {useRouter} from 'next/navigation';
+import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
 
 const BackupPage = () => {
   const router = useRouter();
@@ -38,15 +39,42 @@ const BackupPage = () => {
   // Mark as mounted to prevent hydration mismatch
   useEffect(() => {
     setHasMounted(true);
-  }, []);
+    if (!isBackupRestoreEnabled()) {
+      router.replace('/settings');
+    }
+  }, [router]);
 
   // Initialize selection ONCE when wallets load
   useEffect(() => {
     if (hasMounted && allWallets.length > 0 && selectedWalletIds.length === 0) {
-      setSelectedWalletIds(allWallets.map(w => w.clientId));
+      // Check if we have saved selection from before redirect
+      const savedSelection = sessionStorage.getItem(
+        'backup_selected_wallet_ids',
+      );
+      if (savedSelection) {
+        setSelectedWalletIds(JSON.parse(savedSelection));
+      } else {
+        setSelectedWalletIds(allWallets.map(w => w.clientId));
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMounted, allWallets.length]);
+
+  // Handle automatic backup trigger after redirect
+  useEffect(() => {
+    if (
+      hasMounted &&
+      status === 'authenticated' &&
+      sessionStorage.getItem('backup_pending') === 'true' &&
+      allWallets.length > 0 &&
+      selectedWalletIds.length > 0
+    ) {
+      sessionStorage.removeItem('backup_pending');
+      sessionStorage.removeItem('backup_selected_wallet_ids');
+      startBackupProcess();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMounted, status, allWallets.length, selectedWalletIds.length]);
 
   const isAllSelected =
     hasMounted &&
@@ -89,6 +117,11 @@ const BackupPage = () => {
   const handleLogin = async () => {
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('skip_lock_screen', 'true');
+      sessionStorage.setItem('backup_pending', 'true');
+      sessionStorage.setItem(
+        'backup_selected_wallet_ids',
+        JSON.stringify(selectedWalletIds),
+      );
     }
     const result = await signIn('google', {
       redirect: false,
