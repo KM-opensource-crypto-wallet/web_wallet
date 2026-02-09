@@ -185,6 +185,10 @@ const getStyles = theme => ({
     display: 'flex',
     flexDirection: 'column',
     gap: '14px',
+
+    height: '420px', // fixed height
+    overflowY: 'auto', // scroll when more cards
+    paddingRight: '6px',
   },
 
   card: {
