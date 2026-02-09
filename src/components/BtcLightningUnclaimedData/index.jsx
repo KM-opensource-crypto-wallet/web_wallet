@@ -13,8 +13,8 @@ import {ThemeContext} from 'src/theme/ThemeContext';
 export const BtcLightningUnclaimedData = ({unClaimedData}) => {
   const [activeRejectIndex, setActiveRejectIndex] = useState(null);
   const [destinationAddress, setDestinationAddress] = useState('');
-  const [addressValidationError, setAddressValidationError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [addressValidationError, setAddressValidationError] = useState(false);
+  const [loadingIndex, setLoadingIndex] = useState(null);
   const {theme} = useContext(ThemeContext);
   const styles = getStyles(theme);
 
@@ -22,17 +22,17 @@ export const BtcLightningUnclaimedData = ({unClaimedData}) => {
   const currentPhrase = useSelector(getCurrentWalletPhrase);
 
   const handleApprove = useCallback(
-    async item => {
+    async (item, index) => {
       try {
-        setLoading(true);
+        setLoadingIndex(index);
         const lightningChain = await BitcoinLightningChain(
           currentCoin?.chain_name,
           currentPhrase,
         );
         await lightningChain.approveClaimedBtc(item.txid, item.vout);
-        setLoading(false);
+        setLoadingIndex(null);
       } catch (error) {
-        setLoading(false);
+        setLoadingIndex(null);
       }
     },
     [currentCoin?.chain_name, currentPhrase],
@@ -58,15 +58,15 @@ export const BtcLightningUnclaimedData = ({unClaimedData}) => {
   };
 
   const handleRefund = useCallback(
-    async item => {
+    async (item, index) => {
       try {
-        setLoading(true);
+        setLoadingIndex(index);
         const {txid, amount, vout} = item;
         if (
           !isValidBTCAddress(destinationAddress, config.BITCOIN_NETWORK_STRING)
         ) {
           setAddressValidationError(true);
-          setLoading(false);
+          setLoadingIndex(null);
           return;
         }
         setAddressValidationError(false);
@@ -82,10 +82,10 @@ export const BtcLightningUnclaimedData = ({unClaimedData}) => {
         if (response) {
           // Refresh page
         }
-        setLoading(false);
+        setLoadingIndex(null);
       } catch (error) {
         console.log('error:', error);
-        setLoading(false);
+        setLoadingIndex(null);
       }
     },
     [currentCoin?.chain_name, currentPhrase, destinationAddress],
@@ -103,7 +103,7 @@ export const BtcLightningUnclaimedData = ({unClaimedData}) => {
 
             return (
               <div key={index}>
-                {loading ? (
+                {loadingIndex === index ? (
                   <span style={styles.loaderBtnContainer}>
                     <Loading height='auto' size={26} color='var(--title)' />
                     <span style={styles.loaderBtnText}>Loading...</span>
@@ -145,7 +145,7 @@ export const BtcLightningUnclaimedData = ({unClaimedData}) => {
 
                           <div
                             style={{...styles.btn, ...styles.shadow}}
-                            onClick={() => handleRefund(item)}>
+                            onClick={() => handleRefund(item, index)}>
                             <p style={styles.btnText}>Refund</p>
                           </div>
                         </div>
@@ -162,7 +162,7 @@ export const BtcLightningUnclaimedData = ({unClaimedData}) => {
 
                         <div
                           style={{...styles.btn, ...styles.shadow}}
-                          onClick={() => handleApprove(item)}>
+                          onClick={() => handleApprove(item, index)}>
                           <p style={styles.btnText}>Approve</p>
                         </div>
                       </div>

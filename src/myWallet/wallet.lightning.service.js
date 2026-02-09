@@ -376,7 +376,7 @@ export const getLightningTransactions = async phrase => {
   }
 };
 
-export const claimOnchainDposit = async phrase => {
+export const claimOnchainDeposit = async phrase => {
   try {
     const sdk = await connectToSdk(phrase);
     if (!sdk) return;
@@ -418,7 +418,6 @@ export const approveClaimDepositRequest = async (phrase, txid, vout) => {
         deposit.txid === txid &&
         deposit.vout === vout
       ) {
-        debugger;
         const requiredFeeRate = deposit.claimError.requiredFeeSats || 0;
         const requiredFeeRateSatPerVbyte =
           deposit.claimError.requiredFeeRateSatPerVbyte || 0;
