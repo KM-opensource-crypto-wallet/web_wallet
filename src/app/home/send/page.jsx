@@ -50,6 +50,12 @@ import SelectInput from 'components/SelectInput';
 import SendPopOver from 'components/SendPopOver';
 import SelectedUTXOsPopOver from 'src/components/SelectedUTXOsPopOver';
 import {clearSelectedUTXOs} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
+import ModalAddCoins from 'components/ModalAddCoins';
+import {unClaimedDeposits} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {
+  getCurrentWalletPhrase,
+  selectBtcLightningUnClaimed,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 
 const SendScreen = () => {
   const router = useRouter();
@@ -61,6 +67,11 @@ const SendScreen = () => {
 
   //   const { theme } = useContext(ThemeContext);
   //   const styles = myStyles(theme);
+  const btcLightningUnClaimedData = useSelector(selectBtcLightningUnClaimed);
+  const isLightning =
+    currentCoin?.chain_name === 'bitcoin_lightning' ? true : false;
+  const currentPhrase = useSelector(getCurrentWalletPhrase);
+  const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(true);
 
   const isBitcoin = isBitcoinChain(currentCoin?.chain_name);
   const isStaking =
@@ -98,6 +109,14 @@ const SendScreen = () => {
   }, [currentCoin]);
 
   useEffect(() => {
+    if (isLightning) {
+      dispatch(
+        unClaimedDeposits({
+          chain_name: currentCoin?.chain_name,
+          phrase: currentPhrase,
+        }),
+      );
+    }
     if (currentCoin?.address) {
       dispatch(refreshCurrentCoin())
         .unwrap()
@@ -176,143 +195,155 @@ const SendScreen = () => {
       {isLoading ? (
         <Loading />
       ) : (
-        <div className={s.container}>
-          {isDeriveAddressChain &&
-            !isImportWithPrivateKey &&
-            !isAddMoreAddressPopupHide && (
-              <div className={classNames.syncView}>
-                <div
-                  className={
-                    classNames.syncTitle
-                  }>{`Do you want to allow more addresses under this wallet?`}</div>
-                <button
-                  className={classNames.syncButton}
-                  onClick={onPressAddAddresses}>
-                  <div className={classNames.syncButtonTitle}>Add</div>
-                </button>
-                <IconButton
-                  aria-label='closeSyncDiv'
-                  onClick={onPressAddressClose}
-                  edge='end'
-                  sx={{
-                    '&  .MuiSvgIcon-root': {
-                      color: 'var(--font)',
-                    },
-                  }}>
-                  <Close />
-                </IconButton>
-              </div>
-            )}
-          <div className={s.box}>
-            <div className={s.coinList}>
-              <div className={s.coinIcon}>
-                <Image
-                  src={currentCoin?.icon}
-                  height={80}
-                  width={80}
-                  alt={'currency_icon'}
-                />
-              </div>
-
-              <div className={s.coinBox}>
-                <div className={s.cryptoOverlay}>
-                  <p className={s.coinNumber} style={{marginRight: 5}}>
-                    {currentCoin?.totalAmount}
-                  </p>
-                  <p className={s.coinNumber}>
-                    {currentCoin?.symbol?.toUpperCase()}
-                  </p>
-                  {isBitcoin && (
-                    <p
-                      className={
-                        s.coinNumber
-                      }>{` (${currentCoin?.chain_display_name})`}</p>
-                  )}
-                </div>
-                <p className={s.coinNumber}>{currentCoin?.name}</p>
-              </div>
-              <p className={s.coinSum}>
-                {currencySymbol[localCurrency] || ''}
-                {currentCoin?.totalCourse}
-              </p>
-            </div>
-            <div className={s.btnList}>
-              <Link
-                href={`/home/send/send-funds`}
-                className={`${s.btn} ${s.shadow}`}
-                style={{marginRight: 20}}
-                onClick={() => dispatch(clearSelectedUTXOs())}>
-                <div className={s.icon}>{icons.send}</div>
-                <p className={s.btnText}>Send</p>
-              </Link>
-              <Link
-                className={`${s.btn} ${s.shadow}`}
-                href={'/home/send/receive-funds'}>
-                <div className={s.icon}>{icons.rec}</div>
-                <p className={s.btnText}>Receive</p>
-              </Link>
-            </div>
-            {(isBitcoinChain || isDeriveAddressChain) &&
-              Array.isArray(deriveAddresses) && (
-                <div>
-                  <p className={s.addresTitle}>Select Address:</p>
-                  <div className={s.addressViev}>
-                    <SelectInput
-                      listData={deriveAddresses}
-                      onValueChange={onChangeSelectedAddress}
-                      value={currentCoin?.address}
-                      placeholder={'Select Network'}
-                    />
-                  </div>
+        <>
+          {isLightning && btcLightningUnClaimedData?.length > 0 ? (
+            <ModalAddCoins
+              isLightning={isLightning}
+              visible={modalAddCoinsVisible}
+              unClaimedData={btcLightningUnClaimedData}
+              hideModal={() => setModalAddCoinsVisible(false)}
+            />
+          ) : (
+            <></>
+          )}
+          <div className={s.container}>
+            {isDeriveAddressChain &&
+              !isImportWithPrivateKey &&
+              !isAddMoreAddressPopupHide && (
+                <div className={classNames.syncView}>
+                  <div
+                    className={
+                      classNames.syncTitle
+                    }>{`Do you want to allow more addresses under this wallet?`}</div>
+                  <button
+                    className={classNames.syncButton}
+                    onClick={onPressAddAddresses}>
+                    <div className={classNames.syncButtonTitle}>Add</div>
+                  </button>
+                  <IconButton
+                    aria-label='closeSyncDiv'
+                    onClick={onPressAddressClose}
+                    edge='end'
+                    sx={{
+                      '&  .MuiSvgIcon-root': {
+                        color: 'var(--font)',
+                      },
+                    }}>
+                    <Close />
+                  </IconButton>
                 </div>
               )}
-            <div className={s.boxAdress}>
-              <p className={s.addresTitle}>Your Address:</p>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(currentCoin?.address || '');
-                  toast.success('address copied');
-                }}>
-                <div style={{fill: 'var(--background)'}}>{copyIcon.copy}</div>
-              </button>
-            </div>
-            <p className={s.address}>{currentCoin?.address || ''}</p>
-            {!isPrivateKeyNotSupportedChain(currentCoin?.chain_name) && (
-              <>
-                <div className={s.boxAdress}>
-                  <p className={s.privateKeyTitle}>Private Key:</p>
-                  <button
-                    onClick={() => {
-                      setShowConfirmModal(true);
-                    }}>
-                    <div style={{fill: 'var(--background)'}}>
-                      {copyIcon.copy}
-                    </div>
-                  </button>
+            <div className={s.box}>
+              <div className={s.coinList}>
+                <div className={s.coinIcon}>
+                  <Image
+                    src={currentCoin?.icon}
+                    height={80}
+                    width={80}
+                    alt={'currency_icon'}
+                  />
                 </div>
-                <p className={s.privateKey}>
-                  {
-                    'Click here to copy the private key. Ensure that you keep your private key secure.'
-                  }
+
+                <div className={s.coinBox}>
+                  <div className={s.cryptoOverlay}>
+                    <p className={s.coinNumber} style={{marginRight: 5}}>
+                      {currentCoin?.totalAmount}
+                    </p>
+                    <p className={s.coinNumber}>
+                      {currentCoin?.symbol?.toUpperCase()}
+                    </p>
+                    {isBitcoin && (
+                      <p
+                        className={
+                          s.coinNumber
+                        }>{` (${currentCoin?.chain_display_name})`}</p>
+                    )}
+                  </div>
+                  <p className={s.coinNumber}>{currentCoin?.name}</p>
+                </div>
+                <p className={s.coinSum}>
+                  {currencySymbol[localCurrency] || ''}
+                  {currentCoin?.totalCourse}
                 </p>
-              </>
-            )}
-            <div className={s.actionBtnList}>
-              <button
-                className={s.button}
-                onClick={() => router.push(`/home/transactions`)}>
-                TRANSACTION HISTORY
-              </button>
-              {isStaking && (
+              </div>
+              <div className={s.btnList}>
+                <Link
+                  href={`/home/send/send-funds`}
+                  className={`${s.btn} ${s.shadow}`}
+                  style={{marginRight: 20}}
+                  onClick={() => dispatch(clearSelectedUTXOs())}>
+                  <div className={s.icon}>{icons.send}</div>
+                  <p className={s.btnText}>Send</p>
+                </Link>
+                <Link
+                  className={`${s.btn} ${s.shadow}`}
+                  href={'/home/send/receive-funds'}>
+                  <div className={s.icon}>{icons.rec}</div>
+                  <p className={s.btnText}>Receive</p>
+                </Link>
+              </div>
+              {(isBitcoinChain || isDeriveAddressChain) &&
+                Array.isArray(deriveAddresses) && (
+                  <div>
+                    <p className={s.addresTitle}>Select Address:</p>
+                    <div className={s.addressViev}>
+                      <SelectInput
+                        listData={deriveAddresses}
+                        onValueChange={onChangeSelectedAddress}
+                        value={currentCoin?.address}
+                        placeholder={'Select Network'}
+                      />
+                    </div>
+                  </div>
+                )}
+              <div className={s.boxAdress}>
+                <p className={s.addresTitle}>Your Address:</p>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(currentCoin?.address || '');
+                    toast.success('address copied');
+                  }}>
+                  <div style={{fill: 'var(--background)'}}>{copyIcon.copy}</div>
+                </button>
+              </div>
+              <p className={s.address}>{currentCoin?.address || ''}</p>
+              {!isPrivateKeyNotSupportedChain(currentCoin?.chain_name) && (
+                <>
+                  <div className={s.boxAdress}>
+                    <p className={s.privateKeyTitle}>Private Key:</p>
+                    <button
+                      onClick={() => {
+                        setShowConfirmModal(true);
+                      }}>
+                      <div style={{fill: 'var(--background)'}}>
+                        {copyIcon.copy}
+                      </div>
+                    </button>
+                  </div>
+                  <p className={s.privateKey}>
+                    {
+                      'Click here to copy the private key. Ensure that you keep your private key secure.'
+                    }
+                  </p>
+                </>
+              )}
+              <div className={s.actionBtnList}>
                 <button
                   className={s.button}
-                  onClick={() => router.push(`/home/staking-list`)}>
-                  STAKING
+                  onClick={() => router.push(`/home/transactions`)}>
+                  TRANSACTION HISTORY
                 </button>
-              )}
+                {isStaking && (
+                  <button
+                    className={s.button}
+                    onClick={() => router.push(`/home/staking-list`)}>
+                    STAKING
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
       <ModalConfirmTransaction
         hideModal={() => {
