@@ -200,7 +200,6 @@ const SendScreen = () => {
             <ModalAddCoins
               isLightning={isLightning}
               visible={modalAddCoinsVisible}
-              unClaimedData={btcLightningUnClaimedData}
               hideModal={() => setModalAddCoinsVisible(false)}
             />
           ) : (

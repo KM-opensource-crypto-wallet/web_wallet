@@ -7,7 +7,7 @@ import {BtcLightningUnclaimedData} from '../BtcLightningUnclaimedData';
 const TabAddCoins = lazy(() => import('src/components/TabAddCoins'));
 const TabAddCoinsGroup = lazy(() => import('src/components/TabAddCoinsGroup'));
 
-const ModalAddCoins = ({isLightning, visible, unClaimedData, hideModal}) => {
+const ModalAddCoins = ({isLightning, visible, hideModal}) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loadedTabs, setLoadedTabs] = useState([0]);
   const handleClose = useCallback(() => {
@@ -41,8 +41,8 @@ const ModalAddCoins = ({isLightning, visible, unClaimedData, hideModal}) => {
       <div className={styles.modalContent}>
         <div className={styles.modalDiv}>
           {isLightning ? (
-            <div className={styles.modalHeader}>
-              <BtcLightningUnclaimedData unClaimedData={unClaimedData} />
+            <div className={styles.btcLightningClaims}>
+              <BtcLightningUnclaimedData hideModal={hideModal} />
             </div>
           ) : (
             <>
