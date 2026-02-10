@@ -36,6 +36,32 @@ const authOptions = {
         token.email = profile.email;
       }
 
+      // Refresh access token if expired
+      if (token.expiry && Date.now() / 1000 > token.expiry) {
+        try {
+          const response = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({
+              client_id: process.env.DOK_WALLET_GOOGLE_WEB_CLIENT_ID,
+              client_secret: process.env.DOK_WALLET_GOOGLE_WEB_CLIENT_SECRET,
+              grant_type: 'refresh_token',
+              refresh_token: token.refreshToken,
+            }),
+          });
+          const refreshed = await response.json();
+          if (!response.ok) throw refreshed;
+          token.accessToken = refreshed.access_token;
+          token.expiry = Math.floor(Date.now() / 1000) + refreshed.expires_in;
+          if (refreshed.refresh_token) {
+            token.refreshToken = refreshed.refresh_token;
+          }
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          token.error = 'RefreshAccessTokenError';
+        }
+      }
+
       return token;
     },
     async session({session, token}) {

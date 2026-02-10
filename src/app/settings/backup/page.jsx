@@ -52,7 +52,17 @@ const BackupPage = () => {
         'backup_selected_wallet_ids',
       );
       if (savedSelection) {
-        setSelectedWalletIds(JSON.parse(savedSelection));
+        try {
+          const parsed = JSON.parse(savedSelection);
+          if (Array.isArray(parsed)) {
+            setSelectedWalletIds(parsed);
+          } else {
+            setSelectedWalletIds(allWallets.map(w => w.clientId));
+          }
+        } catch {
+          sessionStorage.removeItem('backup_selected_wallet_ids');
+          setSelectedWalletIds(allWallets.map(w => w.clientId));
+        }
       } else {
         setSelectedWalletIds(allWallets.map(w => w.clientId));
       }

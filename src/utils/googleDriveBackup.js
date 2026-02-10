@@ -6,6 +6,26 @@
  */
 
 const VERSION_V1_GCM = 'v1-gcm:';
+
+/**
+ * Fetch the per-user encryption key from the server.
+ * The server derives HMAC-SHA256(WALLET_BACKUP_SECRET, user-email).
+ */
+const fetchEncryptionKey = async () => {
+  const response = await fetch('/api/drive/backup/key');
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.error || 'Failed to fetch encryption key. Please sign in.',
+    );
+  }
+  const {key} = await response.json();
+  if (!key) {
+    throw new Error('Server returned an empty encryption key');
+  }
+  return key;
+};
+
 /**
  * Derive key from password using PBKDF2
  */
@@ -37,7 +57,7 @@ const deriveKey = async (password, salt) => {
  * Encrypt data with AES-256-GCM
  * Format: "v1-gcm:" + base64([16-byte salt][12-byte iv][ciphertext])
  */
-const encryptData = async data => {
+const encryptData = async (data, password) => {
   try {
     const encoder = new TextEncoder();
     const jsonString = JSON.stringify(data);
@@ -45,9 +65,8 @@ const encryptData = async data => {
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const iv = crypto.getRandomValues(new Uint8Array(12));
 
-    const password = process.env.NEXT_PUBLIC_WALLET_BACKUP_SECRET;
     if (!password) {
-      throw new Error('Backup secret not configured');
+      throw new Error('Encryption key not available');
     }
 
     const key = await deriveKey(password, salt);
@@ -77,12 +96,10 @@ const encryptData = async data => {
 /**
  * Decrypt data with AES-256-GCM
  */
-const decryptData = async ciphertext => {
+const decryptData = async (ciphertext, password) => {
   try {
-    const password = process.env.NEXT_PUBLIC_WALLET_BACKUP_SECRET;
-    console.log(password, 'password', process.env);
     if (!password) {
-      throw new Error('Restore secret not configured');
+      throw new Error('Decryption key not available');
     }
 
     // Check if format is valid before attempting decryption
@@ -130,12 +147,15 @@ const decryptData = async ciphertext => {
  */
 export const backupWalletsToDrive = async payload => {
   try {
+    // Fetch the per-user encryption key from the server
+    const encryptionKey = await fetchEncryptionKey();
+
     let finalWallets = [];
     let masterClientId = payload.masterClientId;
 
     // Try to fetch existing backup to merge
     try {
-      const existingData = await restoreWalletsFromDrive();
+      const existingData = await restoreWalletsFromDrive(encryptionKey);
       // If restore returns successful data:
       if (existingData && Array.isArray(existingData.wallets)) {
         finalWallets = existingData.wallets;
@@ -177,8 +197,8 @@ export const backupWalletsToDrive = async payload => {
       version: 1,
     };
 
-    // Encrypt Data
-    const encryptedData = await encryptData(mergedData);
+    // Encrypt Data with the per-user key
+    const encryptedData = await encryptData(mergedData, encryptionKey);
     const fileContent = JSON.stringify({
       data: encryptedData,
       timestamp: new Date().toISOString(),
@@ -208,9 +228,13 @@ export const backupWalletsToDrive = async payload => {
 
 /**
  * Restore wallets from Google Drive via API
+ * @param {string} [existingKey] - Optional pre-fetched encryption key (used during backup merge)
  */
-export const restoreWalletsFromDrive = async () => {
+export const restoreWalletsFromDrive = async existingKey => {
   try {
+    // Use provided key or fetch a fresh one
+    const encryptionKey = existingKey || (await fetchEncryptionKey());
+
     const response = await fetch('/api/drive/restore');
 
     if (response.status === 404) {
@@ -234,7 +258,7 @@ export const restoreWalletsFromDrive = async () => {
       return {wallets: []};
     }
 
-    const decrypted = await decryptData(parsedContent.data);
+    const decrypted = await decryptData(parsedContent.data, encryptionKey);
     if (!decrypted) {
       return {wallets: []};
     }
