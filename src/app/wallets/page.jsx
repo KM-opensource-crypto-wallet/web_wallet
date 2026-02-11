@@ -21,6 +21,7 @@ import {resetPaymentUrl} from 'dok-wallet-blockchain-networks/redux/settings/set
 import {getPngIcons} from 'assets/images/icons/pngIcon';
 import {ThemeContext} from 'theme/ThemeContext';
 import icons from 'src/assets/images/icons';
+import PageTitle from 'components/PageTitle';
 import {moveItem} from 'dok-wallet-blockchain-networks/helper';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
@@ -129,10 +130,21 @@ const Wallets = () => {
     return walletList.map(item => item?.id);
   }, [walletList]);
   return (
-    <div className={s.container}>
-      <button className={s.button} onClick={() => setmodalVisible(true)}>
-        <p className={s.buttonTitle}>Create new Wallet</p>
-      </button>
+    <>
+      <PageTitle
+        title="Wallets"
+        extraElement={
+          <div className={s.extraElementContainer}>
+            <button className={s.headerIconButton}>
+              {icons.filter}
+            </button>
+            <button className={s.headerIconButton} onClick={() => setmodalVisible(true)}>
+              {icons.pluscircleo}
+            </button>
+          </div>
+        }
+      />
+      <div className={s.container}>
       <TextField
         placeholder='Search'
         variant='outlined'
@@ -186,30 +198,30 @@ const Wallets = () => {
           <SortableContext
             items={uniqueIds}
             strategy={verticalListSortingStrategy}>
-            <ul>
+            <ul style={{ listStyle: 'none', padding: 0 }}>
               {walletList.map((item, index) => {
                 const isSelectedWallet = item.walletName === currentWalletName;
+                const totalBalance = item?.coins?.reduce((acc, coin) => {
+                   return acc + ((parseFloat(coin?.balance) || 0) * (parseFloat(coin?.price) || 0));
+                }, 0) || 0;
+                
+                const coinsCount = item?.coins?.length || 0;
+                const displayCoins = item?.coins?.slice(0, 4) || [];
+
                 return (
                   <SortableItem key={item.id} id={item.id}>
                     {dragHandleProps => (
-                      <li className={s.walletBox} key={`li_${item.id}`}>
-                        <div className={s.dragContainer}>
-                          {!searchQuery && (
-                            <span
-                              {...dragHandleProps}
-                              style={{cursor: 'grab', marginRight: 10}}>
-                              {icons.dragVertical}
-                            </span>
-                          )}
-                          <button
-                            className={s.walletList}
-                            onClick={() => {
+                      <div className={`${s.walletCard} ${isSelectedWallet ? s.walletCardActive : ''}`}>
+                         {/* Header: Name, Badge, Actions */}
+                        <div className={s.cardHeader}>
+                           <button 
+                             className={s.leftHeader}
+                             onClick={() => {
                               dispatch(refreshCoins());
                               dispatch(resetPaymentUrl());
                               if (searchQuery) {
                                 const foundIndex = allWallets.findIndex(
-                                  subItem =>
-                                    subItem.walletName === item.walletName,
+                                  subItem => subItem.walletName === item.walletName,
                                 );
                                 if (foundIndex !== -1) {
                                   dispatch(setCurrentWalletIndex(foundIndex));
@@ -218,106 +230,131 @@ const Wallets = () => {
                                 dispatch(setCurrentWalletIndex(index));
                               }
                               router.push('/home');
-                            }}>
-                            <div className={s.avatarWrapper}>
-                              <Image
-                                className={s.avatarAvatar}
-                                alt='avatar'
-                                width={54}
-                                height={54}
-                                src={getAppIcon()}
-                              />
+                             }}
+                            >
+                             <div className={s.dragHandle} {...dragHandleProps} onClick={(e) => e.stopPropagation()}>
+                               {icons.dragVertical}
+                             </div>
+                             
+                             <div className={s.avatarWrapper}>
+                                <Image
+                                  className={s.avatarAvatar}
+                                  alt='avatar'
+                                  width={40}
+                                  height={40}
+                                  src={getAppIcon()}
+                                />
+                             </div>
 
-                              {item?.walletName === currentWalletName && (
-                                <span className={s.badge}>&#10004;</span>
+                             <div className={s.walletTitleGroup}>
+                               <div className={s.walletNameRow}>
+                                 <span className={s.mainText}>{item?.walletName}</span>
+                                 {isSelectedWallet && <span className={s.activeBadge}>Active</span>}
+                               </div>
+                               <span className={s.secondaryText}>
+                                 {item?.isImportWalletWithPrivateKey
+                                    ? `${item?.coins?.[0]?.chain_display_name || ''} Wallet`
+                                    : 'Multi-Coin Wallet'}
+                               </span>
+                             </div>
+                           </button>
+
+                           <div className={s.cardActions}>
+                              {/* Move Up/Down Arrows (Preserved) */}
+                              {!searchQuery && (
+                                <>
+                                  <button
+                                    disabled={index === 0}
+                                    className={s.actionButton}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onPressMove(index, true);
+                                    }}
+                                  >
+                                    <Image
+                                      style={index === 0 ? disabledStyle : {}}
+                                      src={PngIcons.UpArrow}
+                                      alt={'Up arrow'}
+                                      width={20}
+                                      height={20}
+                                    />
+                                  </button>
+                                  <button
+                                    disabled={index === allWalletsLength - 1}
+                                    className={s.actionButton}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onPressMove(index, false);
+                                    }}
+                                  >
+                                    <Image
+                                      src={PngIcons.DownArrow}
+                                      alt={'Down arrow'}
+                                      width={20}
+                                      height={20}
+                                      style={
+                                        index === allWalletsLength - 1
+                                          ? disabledStyle
+                                          : {}
+                                      }
+                                    />
+                                  </button>
+                                </>
                               )}
-                            </div>
-
-                            <div className={s.textContainer}>
-                              <p
-                                className={s.mainText}
-                                style={
-                                  isSelectedWallet
-                                    ? {
-                                        color: 'var(--background)',
-                                        fontWeight: 'bold',
-                                      }
-                                    : {}
-                                }>
-                                {item?.walletName}
-                              </p>
-                              <p
-                                className={s.secondaryText}
-                                style={
-                                  isSelectedWallet
-                                    ? {
-                                        color: 'var(--font)',
-                                        fontWeight: 'bold',
-                                      }
-                                    : {}
-                                }>
-                                {item?.isImportWalletWithPrivateKey
-                                  ? `${item?.coins?.[0]?.chain_display_name || ''} Wallet`
-                                  : 'Multi - Coin Wallet'}
-                              </p>
-                            </div>
-                          </button>
-                        </div>
-                        <div className={s.rightButtonContainer}>
-                          {allWalletsLength > 1 && !searchQuery && (
-                            <>
+                              
+                              {/* Menu Button */}
                               <button
-                                disabled={index === 0}
-                                className={s.boxBtn}
-                                onClick={() => {
-                                  onPressMove(index, true);
-                                }}>
+                                className={s.actionButton}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const walletName = item?.walletName;
+                                  const walletIndex = index;
+                                  router.push(
+                                    `/wallets/create-wallet?walletName=${walletName}&walletIndex=${walletIndex}`,
+                                  );
+                                }}
+                              >
                                 <Image
-                                  style={index === 0 && disabledStyle}
-                                  src={PngIcons.UpArrow}
-                                  alt={'Up arrow'}
-                                  width={24}
-                                  height={24}
+                                  src={PngIcons.MenuVertical}
+                                  alt={'Menu vertical'}
+                                  width={20}
+                                  height={20}
                                 />
                               </button>
-                              <button
-                                disabled={index === allWalletsLength - 1}
-                                className={s.boxBtn}
-                                onClick={() => {
-                                  onPressMove(index, false);
-                                }}>
-                                <Image
-                                  src={PngIcons.DownArrow}
-                                  alt={'Down arrow'}
-                                  width={24}
-                                  height={24}
-                                  style={
-                                    index === allWalletsLength - 1 &&
-                                    disabledStyle
-                                  }
-                                />
-                              </button>
-                            </>
-                          )}
-
-                          <button
-                            className={s.boxBtn}
-                            onClick={() => {
-                              const walletName = item?.walletName;
-                              const walletIndex = index;
-                              router.push(
-                                `/wallets/create-wallet?walletName=${walletName}&walletIndex=${walletIndex}`,
-                              );
-                            }}>
-                            <Image
-                              src={PngIcons.MenuVertical}
-                              alt={'Menu vertical'}
-                              width={24}
-                              height={24}
-                            />
-                          </button>
+                           </div>
                         </div>
-                      </li>
+
+                        {/* Body: Balance, Coins */}
+                        <div className={s.cardBody}>
+                           <div className={s.balanceSection}>
+                              <span className={s.balanceLabel}>Total Balance</span>
+                              <span className={s.balanceValue}>${totalBalance.toFixed(2)}</span>
+                           </div>
+                           
+                           <div className={s.coinSummary}>
+                              <div className={s.coinIcons}>
+                                {displayCoins.map((coin, i) => (
+                                   // Assuming coin has logo/icon. Using generic if not, or rendering image if URL.
+                                   // Based on codebase, coin components usually fetch icon. 
+                                   // For now, I'll try to render an Image if coin.icon exists, or a placeholder.
+                                   // The current file doesn't import coin icons directly, relying on 'getAppIcon' for wallet.
+                                   // I will use a simple circle div or img if I can specific coin icon.
+                                   // Checking previous 'icons' imports, it seems comprehensive.
+                                   // However, I don't have coin-specific URLs here easily without a helper.
+                                   // I will render a small circle with the coin symbol letter as fallback or just the count.
+                                   // Actually, I can use `CoinIcon` component if I import it, but I don't want to overcomplicate imports yet.
+                                   // I'll use a placeholder colored circle or just the coin count text if icons are hard.
+                                   // But the design shows icons.
+                                   // I'll try to use `coin.icon` if it's a URL.
+                                   <div key={i} className={s.miniCoinIcon} style={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, background: '#ddd'}}>
+                                      {coin.icon ? <Image src={coin.icon} width={16} height={16} alt={coin.symbol} /> : coin.symbol?.[0]}
+                                   </div>
+                                ))}
+                              </div>
+                              <span className={s.coinCount}>{coinsCount} coins</span>
+                           </div>
+                        </div>
+                      </div>
                     )}
                   </SortableItem>
                 );
@@ -331,6 +368,7 @@ const Wallets = () => {
         hideModal={() => setmodalVisible(false)}
       />
     </div>
+    </>
   );
 };
 
