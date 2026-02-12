@@ -133,7 +133,7 @@ function satoshiToBtc(sats) {
   // Handle BigInt or number or string safely
   const satsNumber = typeof sats === 'bigint' ? Number(sats) : Number(sats);
 
-  return satsNumber / 100_000_000;
+  return satsNumber / 1e8;
 }
 
 export const getLightningBalance = async phrase => {
@@ -391,11 +391,14 @@ export const claimOnchainDeposit = async phrase => {
       console.log('deposit:', deposit);
       console.log(`Unclaimed deposit: ${deposit.txid}:${deposit.vout}`);
       console.log(`Amount: ${deposit.amountSats} sats`);
-
+      const requiredFeeRate = deposit.claimError.requiredFeeSats || BigInt(0);
+      const amountReceive = deposit.amountSats - requiredFeeRate;
       result.push({
         txid: deposit.txid,
         vout: deposit.vout,
         amount: satoshiToBtc(deposit.amountSats),
+        fees: satoshiToBtc(requiredFeeRate),
+        receivedAmount: satoshiToBtc(amountReceive),
       });
     }
 
@@ -412,38 +415,33 @@ export const approveClaimDepositRequest = async (phrase, txid, vout) => {
     const sdk = await connectToSdk(phrase);
     if (!sdk) return;
     const response = await sdk.listUnclaimedDeposits({});
+    const recommendedFees = await sdk.recommendedFees();
     for (const deposit of response.deposits) {
       if (
         deposit.claimError?.type === 'maxDepositClaimFeeExceeded' &&
         deposit.txid === txid &&
         deposit.vout === vout
       ) {
-        const requiredFeeRate = deposit.claimError.requiredFeeSats || 0;
-        const requiredFeeRateSatPerVbyte =
-          deposit.claimError.requiredFeeRateSatPerVbyte || 0;
-        //   deposit.claimError.inner.requiredFeeRateSatPerVbyte;
+        const requiredFeeRate = deposit.claimError.requiredFeeSats || BigInt(0);
 
-        const recommendedFees = await sdk.recommendedFees();
-        console.log('requiredFeeRate:', requiredFeeRate);
-        console.log('recommendedFees.fastestFee:', recommendedFees.fastestFee);
-        // if (requiredFeeRate <= recommendedFees.fastestFee) {
-        console.log(
-          '============= APPROVING =============',
-          deposit.txid,
-          deposit.vout,
-        );
-        const claimRequest = {
-          txid: deposit.txid,
-          vout: deposit.vout,
-          maxFee: {type: 'fixed', amount: requiredFeeRate},
-          //   maxFee: {type: 'rate', satPerVbyte: requiredFeeRateSatPerVbyte},
-          // maxFee: new MaxFee.Rate({satPerVbyte: requiredFeeRate}),
-          // maxFee: { type: 'fixed', amount: requiredFeeSats },
-        };
-        await sdk.claimDeposit(claimRequest);
-        console.log('============= APPROVED =============');
-        return true;
-        // }
+        if (requiredFeeRate <= recommendedFees.fastestFee) {
+          console.log(
+            '============= APPROVING =============',
+            deposit.txid,
+            deposit.vout,
+          );
+          const claimRequest = {
+            txid: deposit.txid,
+            vout: deposit.vout,
+            maxFee: {type: 'fixed', amount: requiredFeeRate},
+            //   maxFee: {type: 'rate', satPerVbyte: requiredFeeRateSatPerVbyte},
+            // maxFee: new MaxFee.Rate({satPerVbyte: requiredFeeRate}),
+            // maxFee: { type: 'fixed', amount: requiredFeeSats },
+          };
+          await sdk.claimDeposit(claimRequest);
+          console.log('============= APPROVED =============');
+          return true;
+        }
       }
     }
     return false;

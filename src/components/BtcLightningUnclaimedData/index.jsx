@@ -191,6 +191,18 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
                         />
                       </div>
 
+                      {/* Amount Row */}
+                      <div style={styles.amountRow}>
+                        <div style={styles.infoLabel}>
+                          <Bolt sx={{fontSize: 18}} htmlColor='var(--gray)' />
+                          <span style={styles.labelText}>Amount</span>
+                        </div>
+                        <div style={styles.amountValue}>
+                          <span style={styles.amountText}>{item.amount}</span>
+                          <span style={styles.currencyText}>BTC</span>
+                        </div>
+                      </div>
+
                       {/* Transaction ID Row */}
                       <div style={styles.infoRow}>
                         <div style={styles.infoLabel}>
@@ -210,16 +222,32 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
                           </button>
                         </div>
                       </div>
-
-                      {/* Amount Row */}
-                      <div style={styles.amountRow}>
+                      {/* Fees Row */}
+                      <div style={styles.infoRow}>
                         <div style={styles.infoLabel}>
-                          <Bolt sx={{fontSize: 18}} htmlColor='var(--gray)' />
-                          <span style={styles.labelText}>Amount</span>
+                          <Receipt
+                            sx={{fontSize: 18}}
+                            htmlColor='var(--gray)'
+                          />
+                          <span style={styles.labelText}>Fees</span>
                         </div>
-                        <div style={styles.amountValue}>
-                          <span style={styles.amountText}>{item.amount}</span>
-                          <span style={styles.currencyText}>BTC</span>
+                        <div style={styles.infoValue}>
+                          <span style={styles.txidText}>{item.fees} BTC</span>
+                        </div>
+                      </div>
+                      {/* Received Row */}
+                      <div style={styles.infoRow}>
+                        <div style={styles.infoLabel}>
+                          <Receipt
+                            sx={{fontSize: 18}}
+                            htmlColor='var(--gray)'
+                          />
+                          <span style={styles.labelText}>Receive</span>
+                        </div>
+                        <div style={styles.infoValue}>
+                          <span style={styles.txidText}>
+                            {item.receivedAmount} BTC
+                          </span>
                         </div>
                       </div>
 
