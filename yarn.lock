@@ -1036,10 +1036,10 @@
   dependencies:
     "@noble/curves" "^1.7.0"
 
-"@breeztech/breez-sdk-spark@0.7.14":
-  version "0.7.14"
-  resolved "https://registry.yarnpkg.com/@breeztech/breez-sdk-spark/-/breez-sdk-spark-0.7.14.tgz#bff696bcddcfb224da8de225a49b1e74c8687720"
-  integrity sha512-5yGh77GLaZGk4sN2VXmCn4H0usH440dCq4EO/gFXnLH5pDOZQ6VcKNT585yzBQtcIqlJQVjUoof8nNXwU1NWpA==
+"@breeztech/breez-sdk-spark@0.7.18":
+  version "0.7.18"
+  resolved "https://registry.yarnpkg.com/@breeztech/breez-sdk-spark/-/breez-sdk-spark-0.7.18.tgz#b25882355ef205a08e35887731b77b7e953dac92"
+  integrity sha512-ukQ9hx/y4vA06OwFo6XWow0pMOFhHOwszZAjq+d9nLbupi84cEupuws/bMN+JwikkYnveuKKPmMNY+9klTXiew==
   optionalDependencies:
     better-sqlite3 "^12.2.0"
 

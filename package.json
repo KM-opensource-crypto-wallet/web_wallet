@@ -14,7 +14,7 @@
     "@anza-xyz/solana-rpc-get-stake-activation": "^1.0.1",
     "@aptos-labs/ts-sdk": "^1.16.0",
     "@bitcoinerlab/secp256k1": "^1.0.5",
-    "@breeztech/breez-sdk-spark": "0.7.14",
+    "@breeztech/breez-sdk-spark": "0.7.18",
     "@cosmjs/encoding": "^0.32.2",
     "@cosmjs/launchpad": "^0.27.1",
     "@cosmjs/proto-signing": "0.32.3",

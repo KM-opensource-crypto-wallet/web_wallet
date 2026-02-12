@@ -115,7 +115,14 @@ const SendScreen = () => {
           chain_name: currentCoin?.chain_name,
           phrase: currentPhrase,
         }),
-      );
+      )
+        .unwrap()
+        .then(() => {
+          setIsLoading(false);
+        })
+        .catch(e => {
+          setIsLoading(false);
+        });
     }
     if (currentCoin?.address) {
       dispatch(refreshCurrentCoin())

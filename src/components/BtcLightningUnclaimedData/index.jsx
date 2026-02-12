@@ -21,11 +21,13 @@ import {
   HourglassEmpty,
 } from '@mui/icons-material';
 import {showToast} from 'utils/toast';
+import ModalConfirmTransaction from '../ModalConfirmTransaction';
 
 export const BtcLightningUnclaimedData = ({hideModal}) => {
   const [activeRejectIndex, setActiveRejectIndex] = useState(null);
   const [destinationAddress, setDestinationAddress] = useState('');
   const [addressValidationError, setAddressValidationError] = useState(false);
+  const [takeConfirmation, setTakeConfirmation] = useState(false);
   const [loadingIndex, setLoadingIndex] = useState(null);
   const unClaimedData = useSelector(selectBtcLightningUnClaimed);
   const {theme} = useContext(ThemeContext);
@@ -36,6 +38,7 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
   const handleApprove = useCallback(
     async (item, index) => {
       try {
+        setTakeConfirmation(false);
         setLoadingIndex(index);
         const lightningChain = await BitcoinLightningChain(
           currentCoin?.chain_name,
@@ -171,108 +174,125 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
                     </div>
                   </div>
                 ) : (
-                  <div style={styles.card}>
-                    {/* Header with Status Badge */}
-                    <div style={styles.cardHeader}>
-                      <div style={styles.statusBadge}>
-                        <HourglassEmpty
-                          sx={{fontSize: 16}}
-                          htmlColor='#ffcc00'
-                        />
-                        <span style={styles.statusText}>Pending Claim</span>
-                      </div>
-                      <Bolt sx={{fontSize: 20}} htmlColor='var(--background)' />
-                    </div>
-
-                    {/* Transaction ID Row */}
-                    <div style={styles.infoRow}>
-                      <div style={styles.infoLabel}>
-                        <Receipt sx={{fontSize: 18}} htmlColor='var(--gray)' />
-                        <span style={styles.labelText}>Transaction ID</span>
-                      </div>
-                      <div style={styles.infoValue}>
-                        <span style={styles.txidText}>{shortTx}</span>
-                        <button
-                          style={styles.copyBtn}
-                          onClick={() => handleCopyTxid(item.txid)}
-                          aria-label='Copy transaction ID'>
-                          <ContentCopy sx={{fontSize: 16}} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Amount Row */}
-                    <div style={styles.amountRow}>
-                      <div style={styles.infoLabel}>
-                        <Bolt sx={{fontSize: 18}} htmlColor='var(--gray)' />
-                        <span style={styles.labelText}>Amount</span>
-                      </div>
-                      <div style={styles.amountValue}>
-                        <span style={styles.amountText}>{item.amount}</span>
-                        <span style={styles.currencyText}>BTC</span>
-                      </div>
-                    </div>
-
-                    {/* Reject Input Section */}
-                    {showInput && (
-                      <div style={styles.rejectSection}>
-                        <div style={styles.inputContainer}>
-                          <label style={styles.inputLabel}>
-                            Refund Destination Address
-                          </label>
-                          <input
-                            style={styles.input}
-                            placeholder='Enter BTC address...'
-                            value={destinationAddress}
-                            onChange={e =>
-                              setDestinationAddress(e.target.value)
-                            }
+                  <>
+                    <div style={styles.card}>
+                      {/* Header with Status Badge */}
+                      <div style={styles.cardHeader}>
+                        <div style={styles.statusBadge}>
+                          <HourglassEmpty
+                            sx={{fontSize: 16}}
+                            htmlColor='#ffcc00'
                           />
-                          {addressValidationError && (
-                            <div style={styles.errorMessage}>
-                              <ErrorOutline sx={{fontSize: 16}} />
-                              <span>Invalid Bitcoin address</span>
-                            </div>
-                          )}
+                          <span style={styles.statusText}>Pending Claim</span>
                         </div>
+                        <Bolt
+                          sx={{fontSize: 20}}
+                          htmlColor='var(--background)'
+                        />
+                      </div>
 
+                      {/* Transaction ID Row */}
+                      <div style={styles.infoRow}>
+                        <div style={styles.infoLabel}>
+                          <Receipt
+                            sx={{fontSize: 18}}
+                            htmlColor='var(--gray)'
+                          />
+                          <span style={styles.labelText}>Transaction ID</span>
+                        </div>
+                        <div style={styles.infoValue}>
+                          <span style={styles.txidText}>{shortTx}</span>
+                          <button
+                            style={styles.copyBtn}
+                            onClick={() => handleCopyTxid(item.txid)}
+                            aria-label='Copy transaction ID'>
+                            <ContentCopy sx={{fontSize: 16}} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Amount Row */}
+                      <div style={styles.amountRow}>
+                        <div style={styles.infoLabel}>
+                          <Bolt sx={{fontSize: 18}} htmlColor='var(--gray)' />
+                          <span style={styles.labelText}>Amount</span>
+                        </div>
+                        <div style={styles.amountValue}>
+                          <span style={styles.amountText}>{item.amount}</span>
+                          <span style={styles.currencyText}>BTC</span>
+                        </div>
+                      </div>
+
+                      {/* Reject Input Section */}
+                      {showInput && (
+                        <div style={styles.rejectSection}>
+                          <div style={styles.inputContainer}>
+                            <label style={styles.inputLabel}>
+                              Refund Destination Address
+                            </label>
+                            <input
+                              style={styles.input}
+                              placeholder='Enter BTC address...'
+                              value={destinationAddress}
+                              onChange={e =>
+                                setDestinationAddress(e.target.value)
+                              }
+                            />
+                            {addressValidationError && (
+                              <div style={styles.errorMessage}>
+                                <ErrorOutline sx={{fontSize: 16}} />
+                                <span>Invalid Bitcoin address</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={styles.btnRow}>
+                            <button
+                              style={{...styles.btn, ...styles.btnSecondary}}
+                              onClick={handleCancel}>
+                              <Cancel sx={{fontSize: 18}} />
+                              <span>Cancel</span>
+                            </button>
+
+                            <button
+                              style={{...styles.btn, ...styles.btnWarning}}
+                              onClick={() => handleRefund(item, index)}>
+                              <Undo sx={{fontSize: 18}} />
+                              <span>Refund</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      {!showInput && (
                         <div style={styles.btnRow}>
                           <button
-                            style={{...styles.btn, ...styles.btnSecondary}}
-                            onClick={handleCancel}>
+                            style={{...styles.btn, ...styles.btnDanger}}
+                            onClick={() => handleReject(index)}>
                             <Cancel sx={{fontSize: 18}} />
-                            <span>Cancel</span>
+                            <span>Reject</span>
                           </button>
 
                           <button
-                            style={{...styles.btn, ...styles.btnWarning}}
-                            onClick={() => handleRefund(item, index)}>
-                            <Undo sx={{fontSize: 18}} />
-                            <span>Refund</span>
+                            style={{...styles.btn, ...styles.btnSuccess}}
+                            onClick={() => setTakeConfirmation(true)}
+                            // handleApprove(item, index)
+                          >
+                            <CheckCircle sx={{fontSize: 18}} />
+                            <span>Approve</span>
                           </button>
                         </div>
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    {!showInput && (
-                      <div style={styles.btnRow}>
-                        <button
-                          style={{...styles.btn, ...styles.btnDanger}}
-                          onClick={() => handleReject(index)}>
-                          <Cancel sx={{fontSize: 18}} />
-                          <span>Reject</span>
-                        </button>
-
-                        <button
-                          style={{...styles.btn, ...styles.btnSuccess}}
-                          onClick={() => handleApprove(item, index)}>
-                          <CheckCircle sx={{fontSize: 18}} />
-                          <span>Approve</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                    <ModalConfirmTransaction
+                      hideModal={() => {
+                        setTakeConfirmation(false);
+                      }}
+                      visible={takeConfirmation}
+                      onSuccess={() => handleApprove(item, index)}
+                    />
+                  </>
                 )}
               </div>
             );
