@@ -36,11 +36,11 @@ const ModalCustomDerivation = ({visible, hideModal}) => {
   const handlerYes = useCallback(() => {
     dispatch(updateCustomDerivedChecked(!isCheckedStored));
     hideModal(true);
-  }, [hideModal]);
+  }, [dispatch, hideModal, isCheckedStored]);
 
   const handleCheckBox = useCallback(() => {
     dispatch(updateCustomDerivedChecked(!isCheckedStored));
-  }, [dispatch]);
+  }, [dispatch, isCheckedStored]);
 
   return (
     <Modal
