@@ -9,6 +9,7 @@ import {getLocale, getMessages} from 'next-intl/server';
 import {getWhiteLabelInfo} from 'dok-wallet-blockchain-networks/service/dokApi';
 import {headers} from 'next/headers';
 import {isLocaleSet} from 'utils/updateLocale';
+import AuthProvider from 'components/AuthProvider';
 
 const roboto = Roboto({
   weight: ['400', '500', '700'],
@@ -68,7 +69,9 @@ export default async function RootLayout({children}) {
           <body className={roboto.variable}>
             <NextIntlClientProvider locale={locale} messages={messages}>
               <StateProvider>
-                <AppRouting wlData={wlData}>{children}</AppRouting>
+                <AuthProvider>
+                  <AppRouting wlData={wlData}>{children}</AppRouting>
+                </AuthProvider>
               </StateProvider>
             </NextIntlClientProvider>
           </body>
