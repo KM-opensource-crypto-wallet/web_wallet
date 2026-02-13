@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
-import {useSelector, useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {
   getCurrentWalletIndex,
   selectAllWallets,
@@ -14,14 +14,19 @@ import {
   setWalletPosition,
   sortWallets,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {getWalletsSortOption} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {setWalletsSortOption} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
+import {
+  getLocalCurrency,
+  getWalletsSortOption,
+} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {
+  resetPaymentUrl,
+  setWalletsSortOption,
+} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import SortMenu from 'components/SortMenu';
 import Image from 'next/image';
 import s from './Wallets.module.css';
 import {useRouter} from 'next/navigation';
 import ModalCreateWallet from 'components/ModalCreateWallet';
-import {resetPaymentUrl} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import {getPngIcons} from 'assets/images/icons/pngIcon';
 import {ThemeContext} from 'theme/ThemeContext';
 import icons from 'src/assets/images/icons';
@@ -36,6 +41,7 @@ import {restrictToParentElement} from '@dnd-kit/modifiers';
 import {SortableContext, verticalListSortingStrategy} from '@dnd-kit/sortable';
 import SortableItem from 'components/Sortable/sortable';
 import {getAppIcon} from 'whitelabel/whiteLabelInfo';
+import {currencySymbol} from 'data/currency';
 
 function getStyle(style) {
   if (style.transform) {
@@ -83,6 +89,7 @@ const Wallets = () => {
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const filterButtonRef = useRef(null);
   const walletsSortOption = useSelector(getWalletsSortOption);
+  const localCurrency = useSelector(getLocalCurrency);
 
   const handleSortSelect = useCallback(
     option => {
@@ -360,9 +367,8 @@ const Wallets = () => {
                                 onClick={e => {
                                   e.stopPropagation();
                                   const walletName = item?.walletName;
-                                  const walletIndex = index;
                                   router.push(
-                                    `/wallets/create-wallet?walletName=${walletName}&walletIndex=${walletIndex}`,
+                                    `/wallets/create-wallet?walletName=${encodeURIComponent(walletName)}&walletIndex=${index}`,
                                   );
                                 }}>
                                 <Image
@@ -382,25 +388,14 @@ const Wallets = () => {
                                 Total Balance
                               </span>
                               <span className={s.balanceValue}>
-                                ${totalBalance.toFixed(2)}
+                                {currencySymbol[localCurrency]}
+                                {totalBalance.toFixed(2)}
                               </span>
                             </div>
 
                             <div className={s.coinSummary}>
                               <div className={s.coinIcons}>
                                 {displayCoins.map((coin, i) => (
-                                  // Assuming coin has logo/icon. Using generic if not, or rendering image if URL.
-                                  // Based on codebase, coin components usually fetch icon.
-                                  // For now, I'll try to render an Image if coin.icon exists, or a placeholder.
-                                  // The current file doesn't import coin icons directly, relying on 'getAppIcon' for wallet.
-                                  // I will use a simple circle div or img if I can specific coin icon.
-                                  // Checking previous 'icons' imports, it seems comprehensive.
-                                  // However, I don't have coin-specific URLs here easily without a helper.
-                                  // I will render a small circle with the coin symbol letter as fallback or just the count.
-                                  // Actually, I can use `CoinIcon` component if I import it, but I don't want to overcomplicate imports yet.
-                                  // I'll use a placeholder colored circle or just the coin count text if icons are hard.
-                                  // But the design shows icons.
-                                  // I'll try to use `coin.icon` if it's a URL.
                                   <div
                                     key={i}
                                     className={s.miniCoinIcon}
