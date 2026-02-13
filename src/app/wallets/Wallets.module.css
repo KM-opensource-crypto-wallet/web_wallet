@@ -217,3 +217,10 @@
 .headerIconButton:hover {
   background-color: var(--lightBackground);
 }
+
+.sortMenuWrapper {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  margin-right: 15px;
+}

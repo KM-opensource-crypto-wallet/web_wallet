@@ -1,5 +1,5 @@
 'use client';
-import React, {useState, useEffect, useCallback, useMemo} from 'react';
+import React, {useState, useEffect, useCallback, useMemo, useRef} from 'react';
 import {currencySymbol} from 'data/currency';
 import CryptoList from 'components/CryptoList';
 import classNames from './Home.module.css';
@@ -11,6 +11,9 @@ import WalletConnectStatus from 'components/WalletConnectStatus';
 import WalletConnectRequestModal from 'components/WalletConnectRequestModal';
 import WalletConnectTransactionModal from 'components/WalletConnectTransactionModal';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
+import SortMenu from 'components/SortMenu';
+import {selectCurrentWalletSortOption} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {sortCurrentWalletCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 
 // import myclassNames from './HomeScreenclassNames';
 // import {ModalQR} from 'components/ModalQR';
@@ -79,12 +82,26 @@ import BatchTransactionBanner from 'components/BatchTransactionBanner';
 // import {triggerHapticFeedbackHeavy} from 'helper/hapticFeedback';
 // import {MainNavigation} from 'helper/navigation';
 
+const COIN_SORT_OPTIONS = [
+  {label: 'Default', value: 'default', showDivider: true},
+  {label: 'Value: High to Low', value: 'value_desc'},
+  {label: 'Value: Low to High', value: 'value_asc'},
+  {label: 'Balance: High to Low', value: 'balance_desc'},
+  {label: 'Balance: Low to High', value: 'balance_asc', showDivider: true},
+  {label: 'Name: A to Z', value: 'name_asc'},
+  {label: 'Name: Z to A', value: 'name_desc'},
+  {label: 'Symbol: A to Z', value: 'symbol_asc'},
+  {label: 'Symbol: Z to A', value: 'symbol_desc'},
+];
+
 export default function Home() {
   const searchParams = useSearchParams();
   const walletConnect = searchParams.get('connect');
   const [number, setNumber] = useState(1);
   const [list, setList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortMenuVisible, setSortMenuVisible] = useState(false);
+  const filterButtonRef = useRef(null);
 
   // const { theme } = useConp(ThemeConp);
   // const classNames = myclassNames(theme);
@@ -104,6 +121,14 @@ export default function Home() {
   const isAskedBackup = useSelector(isAskedBackedUpModal);
   const isImportWithPrivateKey = useSelector(isImportWalletWithPrivateKey);
   const newsMessage = useSelector(getNewsMessage);
+  const coinsSortOption = useSelector(selectCurrentWalletSortOption);
+
+  const handleSortApply = useCallback(
+    newSortOption => {
+      dispatch(sortCurrentWalletCoins({sortOption: newSortOption}));
+    },
+    [dispatch],
+  );
 
   // const showModal = route.params?.showModal;
   // const qrAddress = route.params?.qrAddress;
@@ -303,9 +328,28 @@ export default function Home() {
           />
           <div className={classNames.header}>
             <p className={classNames.headerTitle}>Total Assets</p>
-            <p className={classNames.headerNumber}>
-              {currencySymbol[localCurrency] + totalAssets}
-            </p>
+            <div className={classNames.headerRight}>
+              <p className={classNames.headerNumber}>
+                {currencySymbol[localCurrency] + totalAssets}
+              </p>
+              <button
+                ref={filterButtonRef}
+                className={classNames.filterButton}
+                onClick={() => setSortMenuVisible(prev => !prev)}>
+                {icons.filter}
+              </button>
+            </div>
+          </div>
+          <div className={classNames.sortMenuWrapper}>
+            <SortMenu
+              visible={sortMenuVisible}
+              onClose={() => setSortMenuVisible(false)}
+              onSelect={handleSortApply}
+              currentSort={coinsSortOption}
+              anchorRef={filterButtonRef}
+              sortOptions={COIN_SORT_OPTIONS}
+              title='Sort Coins'
+            />
           </div>
           <CryptoList number={number} list={list} />
         </div>
