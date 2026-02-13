@@ -256,8 +256,10 @@ const Wallets = () => {
                       return acc + (parseFloat(coin?.totalCourse) || 0);
                     }, 0) || 0;
 
-                  const coinsCount = item?.coins?.length || 0;
-                  const displayCoins = item?.coins?.slice(0, 4) || [];
+                  const walletCoins =
+                    item?.coins?.filter(c => c?.isInWallet) || [];
+                  const coinsCount = walletCoins.length;
+                  const displayCoins = walletCoins.slice(0, 4);
 
                   return (
                     <SortableItem key={item.id} id={item.id}>
