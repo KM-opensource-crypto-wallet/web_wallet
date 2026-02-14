@@ -1,0 +1,4 @@
+.dropdownContainer {
+  border: solid 1px var(--whiteOutline);
+  border-radius: 6px;
+}

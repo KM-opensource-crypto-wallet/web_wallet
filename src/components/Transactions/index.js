@@ -24,6 +24,8 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
   const router = useRouter();
   const [showCancelModal, setShowCancelModal] = useState(false);
 
+  const isLightning =
+    currentCoin?.chain_name === 'bitcoin_lightning' ? true : false;
   const isTransactionNotSupported = useMemo(
     () =>
       isTransactionListNotSupported(currentCoin?.chain_name, currentCoin?.type),
@@ -95,8 +97,12 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
         ) : (
           <>
             {renderList?.map((item, index) => {
-              const isReceived =
-                item?.to?.toUpperCase() === currentCoin?.address?.toUpperCase();
+              const isReceived = isLightning
+                ? item.paymentType === 'receive'
+                  ? true
+                  : false
+                : item?.to?.toUpperCase() ===
+                  currentCoin?.address?.toUpperCase();
               return (
                 <button
                   className={s.section}
