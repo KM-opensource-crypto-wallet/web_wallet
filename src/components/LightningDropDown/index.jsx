@@ -2,11 +2,11 @@ import * as React from 'react';
 import DokDropdown from '../DokDropdown';
 import styles from './LightningDropDown.module.css';
 const data = [
-  { label: 'Receive via Lightning Address', value: 'lightning_address' },
-  { label: 'Receive via BTC mainnet', value: 'btc_mainnet' },
-  { label: 'Receive via Invoice', value: 'invoice' },
+  {label: 'Receive via Lightning Address', value: 'lightning_address'},
+  {label: 'Receive via BTC mainnet', value: 'btc_mainnet'},
+  {label: 'Receive via Invoice', value: 'invoice'},
 ];
-const LightningDropDown = ({ isLightning, handleLightningDropDownChange }) => {
+const LightningDropDown = ({isLightning, handleLightningDropDownChange}) => {
   const [selectedValue, setSelectedValue] = React.useState(data[0].value);
 
   const handleOnChangeValue = React.useCallback(
@@ -29,7 +29,7 @@ const LightningDropDown = ({ isLightning, handleLightningDropDownChange }) => {
         listData={data}
         value={selectedValue}
         onValueChange={handleOnChangeValue}
-        placeholder="Select Invoice Type"
+        placeholder='Select Invoice Type'
       />
     </div>
   );

@@ -1,34 +1,41 @@
 'use client';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
-import {selectCurrentCoin, getCurrentWalletPhrase} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  selectCurrentCoin,
+  getCurrentWalletPhrase,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {Grid2 as Grid, Typography, TextField} from '@mui/material';
 import CopyIcon from '@mui/icons-material/FileCopyOutlined';
 import s from './RecieveFunds.module.css';
 import GoBackButton from 'components/GoBackButton';
 import QRCode from 'react-qr-code';
-import { showToast } from 'utils/toast';
+import {showToast} from 'utils/toast';
 import LightningDropDown from 'src/components/LightningDropDown';
-import { getChain } from 'dok-wallet-blockchain-networks/cryptoChain';
+import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 
 const ReceiveFunds = () => {
   const currentCoin = useSelector(selectCurrentCoin);
-  const currentPhhrase = useSelector(getCurrentWalletPhrase);
+  const currentPhrase = useSelector(getCurrentWalletPhrase);
   const [productQRref, setProductQRref] = useState(
     `${currentCoin?.symbol}:${currentCoin.address}`,
   );
-  const isLightning = currentCoin?.chain_name === 'bitcoin_lightning' ? true : false;
+  const isLightning =
+    currentCoin?.chain_name === 'bitcoin_lightning' ? true : false;
   const address = useRef('');
   address.current = currentCoin?.address ?? '';
   const chain = getChain(currentCoin?.chain_name);
   const [addressState, setAddressState] = useState('');
 
   useEffect(() => {
-    setProductQRref(`${currentCoin?.symbol}:${currentCoin.address}`);
+    setAddressState('');
+    setProductQRref(`${currentCoin?.symbol}:${currentCoin?.address ?? ''}`);
   }, [currentCoin.address, currentCoin?.symbol]);
 
   const onPressCopyAddress = useCallback(() => {
-    navigator.clipboard.writeText(addressState ? addressState : address.current);
+    navigator.clipboard.writeText(
+      addressState ? addressState : address.current,
+    );
     showToast({
       type: 'successToast',
       title: 'Address copied',
@@ -41,14 +48,15 @@ const ReceiveFunds = () => {
         let newAddress = '';
 
         if (currentValue === 'Receive via BTC mainnet') {
-          const { address } = await chain.generateInvoiceViaBitcoinAddress(currentPhhrase);
+          const {address} =
+            await chain.generateInvoiceViaBitcoinAddress(currentPhrase);
           newAddress = address;
         } else if (currentValue === 'Receive via Invoice') {
-          const { address } = await chain.generateInvoiceViaBolt11(currentPhhrase);
+          const {address} = await chain.generateInvoiceViaBolt11(currentPhrase);
           newAddress = address;
         } else if (currentValue === 'Receive via Lightning Address') {
           // generateSparkAddress
-          const { address } = await chain.generateSparkAddress(currentPhhrase);
+          const {address} = await chain.generateSparkAddress(currentPhrase);
           newAddress = address;
         }
 
@@ -58,7 +66,7 @@ const ReceiveFunds = () => {
         console.log(error);
       }
     },
-    [chain, currentCoin?.symbol],
+    [chain, currentCoin?.symbol, currentPhrase],
   );
   return (
     <div className={s.container}>
@@ -80,7 +88,7 @@ const ReceiveFunds = () => {
             bgColor='var(--backgroundColor)'
             fgColor='var(--font)'
 
-          // ref={qrCodeRef}
+            // ref={qrCodeRef}
           />
         </div>
         <Typography variant='h6' className={s.addressTitle}>

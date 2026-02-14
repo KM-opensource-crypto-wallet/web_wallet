@@ -410,7 +410,7 @@ const getStyles = theme => ({
       theme === 'dark'
         ? 'linear-gradient(135deg, #1a4d2e 0%, #0f3a1f 100%)'
         : 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-    border: `2px solid ${theme === 'dark' ? '#10b981' : '#10b981'}`,
+    border: `2px solid ${'#10b981'}`,
   },
 
   claimCountNumber: {

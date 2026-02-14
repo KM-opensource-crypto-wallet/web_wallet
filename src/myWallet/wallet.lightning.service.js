@@ -131,7 +131,7 @@ function satoshiToBtc(sats) {
   if (sats === null || sats === undefined) return 0;
 
   // Handle BigInt or number or string safely
-  const satsNumber = typeof sats === 'bigint' ? Number(sats) : Number(sats);
+  const satsNumber = Number(sats);
 
   return satsNumber / 1e8;
 }
@@ -180,6 +180,7 @@ export const generateLightningInvoiceViaBolt11 = async phrase => {
     });
     return {
       address: response.paymentRequest,
+
       receiveFeeSats: response.fee,
     };
   } catch (error) {
@@ -199,9 +200,10 @@ export const generateLightningSparkAddress = async phrase => {
     const response = await sdk.receivePayment({
       paymentMethod: {type: 'sparkAddress'},
     });
-    console.log('response:', response);
     return {
       address: response.paymentRequest,
+      privateKey: null,
+      publicKey: null,
       receiveFeeSats: response.fee,
     };
   } catch (error) {
@@ -229,7 +231,7 @@ export const generateLightningInvoiceViaBitcoinAddress = async phrase => {
     console.log('Invoice Error', err.message);
   }
 };
-// sparkrt1pgss833snj2n4plhav04s58zxhc2ury29dhcpe4tehcx80rgc5kypfr9xzrhgn
+
 export const prepareLightning = async (phrase, toAddress, amount) => {
   try {
     const {lightningFee} = await prepareAndSendPayment(
@@ -238,7 +240,6 @@ export const prepareLightning = async (phrase, toAddress, amount) => {
       amount,
     );
     const fee = satoshiToBtc(lightningFee);
-    console.log('fee:', fee);
     return {
       fee: fee,
       estimateGas: 0,
@@ -264,7 +265,6 @@ export const sendLightning = async phrase => {
       options: undefined,
       idempotencyKey: undefined,
     });
-    console.log('sendResponse:', sendResponse);
     const payment = sendResponse.payment;
     return payment.id;
   } catch (error) {
@@ -281,15 +281,13 @@ export const waitForLightningConfirmation = async phrase => {
     return;
   }
 
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let listenerId = null;
     let timeoutId = null;
     let resolved = false;
 
     try {
       const eventListener = new JsEventListener(async event => {
-        console.log('event:', event);
-
         if (resolved) return;
 
         if (event.type === 'PaymentSucceeded' || event.type === 'synced') {
@@ -307,8 +305,7 @@ export const waitForLightningConfirmation = async phrase => {
         }
       });
 
-      listenerId = await sdk.addEventListener(eventListener);
-      console.log('Event listener registered:', listenerId);
+      listenerId = sdk.addEventListener(eventListener);
 
       // ⏱️ 90 seconds timeout
       timeoutId = setTimeout(() => {
@@ -351,7 +348,6 @@ export const getLightningTransactions = async phrase => {
       limit: 20,
     });
     const transactions = response.payments;
-    console.log('transactions:', transactions);
     if (Array.isArray(transactions)) {
       return transactions.map(item => {
         const txHash = item?.details.inner?.paymentHash || item?.id || 'N/A';
@@ -385,12 +381,8 @@ export const claimOnchainDeposit = async phrase => {
     const result = [];
 
     const response = await sdk.listUnclaimedDeposits(request);
-    console.log('listUnclaimedDeposits response:', response);
 
     for (const deposit of response.deposits) {
-      console.log('deposit:', deposit);
-      console.log(`Unclaimed deposit: ${deposit.txid}:${deposit.vout}`);
-      console.log(`Amount: ${deposit.amountSats} sats`);
       const requiredFeeRate = deposit.claimError.requiredFeeSats || BigInt(0);
       const amountReceive = deposit.amountSats - requiredFeeRate;
       result.push({
@@ -402,7 +394,6 @@ export const claimOnchainDeposit = async phrase => {
       });
     }
 
-    console.log('result:', result);
     return result;
   } catch (error) {
     console.error(`error getting transactions for bitcoin lightning ${error}`);
@@ -425,21 +416,12 @@ export const approveClaimDepositRequest = async (phrase, txid, vout) => {
         const requiredFeeRate = deposit.claimError.requiredFeeSats || BigInt(0);
 
         if (requiredFeeRate <= recommendedFees.fastestFee) {
-          console.log(
-            '============= APPROVING =============',
-            deposit.txid,
-            deposit.vout,
-          );
           const claimRequest = {
             txid: deposit.txid,
             vout: deposit.vout,
             maxFee: {type: 'fixed', amount: requiredFeeRate},
-            //   maxFee: {type: 'rate', satPerVbyte: requiredFeeRateSatPerVbyte},
-            // maxFee: new MaxFee.Rate({satPerVbyte: requiredFeeRate}),
-            // maxFee: { type: 'fixed', amount: requiredFeeSats },
           };
           await sdk.claimDeposit(claimRequest);
-          console.log('============= APPROVED =============');
           return true;
         }
       }
@@ -467,7 +449,6 @@ export const refundClaimRequest = async (
     };
 
     const recommendedFees = await sdk.recommendedFees();
-    // const fee = new Fee.Rate({satPerVbyte: recommendedFees.halfHourFee});
     const fee = {type: 'fixed', amount: feeEstimates['fast']};
     const request = {
       txid,
@@ -475,11 +456,7 @@ export const refundClaimRequest = async (
       destinationAddress,
       fee,
     };
-    console.log('refundClaimRequest request:', request);
     const response = await sdk.refundDeposit(request);
-    console.log('Refund transaction created:');
-    console.log('Transaction ID:', response.txId);
-    console.log('Transaction hex:', response.txHex);
     return true;
   } catch (error) {
     console.log(JSON.stringify(error));
