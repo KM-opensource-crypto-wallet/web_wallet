@@ -1,5 +1,6 @@
 import init, {defaultConfig, SdkBuilder} from '@breeztech/breez-sdk-spark/web';
-import {config, IS_SANDBOX} from 'dok-wallet-blockchain-networks/config/config';
+import {IS_SANDBOX} from 'dok-wallet-blockchain-networks/config/config';
+import {convertToSmallAmount} from 'dok-wallet-blockchain-networks/helper';
 
 class JsEventListener {
   constructor(callback) {
@@ -52,7 +53,6 @@ const commonConnectSdk = async mnemonic => {
 
     // await sdkInstance.addEventListener(eventListener);
     sdkMap.set(mnemonic, sdkInstance);
-    console.log('✅ Breez SDK connected');
     return sdkInstance;
   } catch (err) {
     console.error('❌ Connection error:', err);
@@ -66,8 +66,7 @@ async function connectToSdk(phrase) {
   let mnemonic = phrase;
   if (sdkInstance) {
     if (sdkMap.has(mnemonic)) {
-      console.log('♻️ Reusing SDK');
-      return sdkMap.get(mnemonic);
+      // return sdkMap.get(mnemonic);
     } else {
       // Initialize sdkInstance for the new mnemonic
       if (!mnemonic) return sdkInstance;
@@ -89,7 +88,7 @@ async function prepareAndSendPayment(phrase, paymentRequest, amount) {
   try {
     const sdk = await connectToSdk(phrase);
     if (!sdk || !paymentRequest) {
-      console.log('Error', 'SDK not connected or no payment request');
+      console.error('Error', 'SDK not connected or no payment request');
       return;
     }
     const prepareResponse = await sdk.prepareSendPayment({
@@ -123,7 +122,6 @@ async function prepareAndSendPayment(phrase, paymentRequest, amount) {
     return {};
   } catch (err) {
     console.error('Error preparing payment:', err);
-    console.log('Prepare Error', err.message);
   }
 }
 
@@ -142,7 +140,7 @@ export const getLightningBalance = async phrase => {
     const info = await sdk.getInfo({});
     return info.balanceSats;
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 };
 
@@ -150,7 +148,7 @@ export const isLightningAddressValid = async (address, phrase) => {
   try {
     const sdk = await connectToSdk(phrase);
     if (!sdk) {
-      console.log('Error', 'SDK not connected or no payment request');
+      console.error('Error', 'SDK not connected or no payment request');
       return;
     }
     const input = await sdk.parse(address);
@@ -163,7 +161,7 @@ export const isLightningAddressValid = async (address, phrase) => {
     }
     return false;
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return false;
   }
 };
@@ -172,7 +170,7 @@ export const generateLightningInvoiceViaBolt11 = async phrase => {
   try {
     const sdk = await connectToSdk(phrase);
     if (!sdk) {
-      console.log('Error', 'SDK not connected');
+      console.error('Error', 'SDK not connected');
       return;
     }
     const response = await sdk.receivePayment({
@@ -185,14 +183,12 @@ export const generateLightningInvoiceViaBolt11 = async phrase => {
     };
   } catch (error) {
     console.error('Error generating invoice:', error);
-    console.log('Invoice Error', error.message);
   }
 };
 
 export const generateLightningSparkAddress = async phrase => {
   try {
     const sdk = await connectToSdk(phrase);
-    console.log('sdk:', sdk);
     if (!sdk) {
       console.error('Error', 'SDK not connected');
       return;
@@ -215,7 +211,7 @@ export const generateLightningInvoiceViaBitcoinAddress = async phrase => {
   try {
     const sdk = await connectToSdk(phrase);
     if (!sdk) {
-      console.log('Error', 'SDK not connected');
+      console.error('Error', 'SDK not connected');
       return;
     }
     const response = await sdk.receivePayment({
@@ -228,7 +224,6 @@ export const generateLightningInvoiceViaBitcoinAddress = async phrase => {
     };
   } catch (err) {
     console.error('Error generating invoice:', err);
-    console.log('Invoice Error', err.message);
   }
 };
 
@@ -255,7 +250,7 @@ export const sendLightning = async phrase => {
   try {
     const sdk = await connectToSdk(phrase);
     if (!sdk || !prepareSendResponse) {
-      console.log('Error', 'SDK not connected or no payment request');
+      console.error('Error', 'SDK not connected or no payment request');
       return;
     }
 
@@ -277,7 +272,7 @@ export const waitForLightningConfirmation = async phrase => {
   const sdk = await connectToSdk(phrase);
 
   if (!sdk) {
-    console.log('Error', 'SDK not connected');
+    console.error('Error', 'SDK not connected');
     return;
   }
 
@@ -347,19 +342,30 @@ export const getLightningTransactions = async phrase => {
       offset: undefined,
       limit: 20,
     });
+    let address;
+    if (response.payments.length) {
+      const response2 = await sdk.receivePayment({
+        paymentMethod: {type: 'sparkAddress'},
+      });
+      address = response2.paymentRequest;
+    }
     const transactions = response.payments;
+
     if (Array.isArray(transactions)) {
       return transactions.map(item => {
-        const txHash = item?.details.inner?.paymentHash || item?.id || 'N/A';
+        const txHash =
+          item?.details.inner?.txId ||
+          item?.details.inner?.paymentHash ||
+          item?.id ||
+          'N/A';
         return {
           amount: item.amount,
           link: txHash?.substring(0, 13) + '...',
-          url: `${config.BITCOIN_LIGHTNING_URL}/tx/${txHash}`,
           status:
             item?.status.toLowerCase() !== 'completed' ? 'Pending' : 'SUCCESS',
           date: Number(item?.timestamp) * 1000,
-          from: item?.details.inner?.preimage,
-          to: item?.details.inner?.destinationPubKey,
+          from: item.paymentType === 1 ? null : address,
+          to: item.paymentType === 1 ? address : null,
           totalCourse: '0$',
           paymentType: item.paymentType,
         };
@@ -401,45 +407,28 @@ export const claimOnchainDeposit = async phrase => {
   }
 };
 
-export const approveClaimDepositRequest = async (phrase, txid, vout) => {
+export const approveClaimDepositRequest = async (phrase, txData) => {
   try {
+    const {txid, vout, fees} = txData || {};
     const sdk = await connectToSdk(phrase);
     if (!sdk) return;
-    const response = await sdk.listUnclaimedDeposits({});
-    const recommendedFees = await sdk.recommendedFees();
-    for (const deposit of response.deposits) {
-      if (
-        deposit.claimError?.type === 'maxDepositClaimFeeExceeded' &&
-        deposit.txid === txid &&
-        deposit.vout === vout
-      ) {
-        const requiredFeeRate = deposit.claimError.requiredFeeSats || BigInt(0);
 
-        if (requiredFeeRate <= recommendedFees.fastestFee) {
-          const claimRequest = {
-            txid: deposit.txid,
-            vout: deposit.vout,
-            maxFee: {type: 'fixed', amount: requiredFeeRate},
-          };
-          await sdk.claimDeposit(claimRequest);
-          return true;
-        }
-      }
-    }
-    return false;
+    const claimRequest = {
+      txid: txid,
+      vout: vout,
+      maxFee: {type: 'fixed', amount: BigInt(convertToSmallAmount(fees, 8))},
+    };
+    await sdk.claimDeposit(claimRequest);
+    return true;
   } catch (error) {
     console.error(`error getting transactions for bitcoin lightning ${error}`);
     return false;
   }
 };
 
-export const refundClaimRequest = async (
-  phrase,
-  txid,
-  vout,
-  destinationAddress,
-) => {
+export const refundClaimRequest = async (phrase, txData) => {
   try {
+    const {txid, vout, destinationAddress} = txData || {};
     const sdk = await connectToSdk(phrase);
     if (!sdk) return;
     const feeEstimates = {
@@ -448,7 +437,6 @@ export const refundClaimRequest = async (
       fast: 2000,
     };
 
-    const recommendedFees = await sdk.recommendedFees();
     const fee = {type: 'fixed', amount: feeEstimates['fast']};
     const request = {
       txid,
@@ -456,11 +444,10 @@ export const refundClaimRequest = async (
       destinationAddress,
       fee,
     };
-    const response = await sdk.refundDeposit(request);
+    await sdk.refundDeposit(request);
     return true;
   } catch (error) {
-    console.log(JSON.stringify(error));
-    console.error(`error getting transactions for bitcoin lightning ${error}`);
+    console.error(`error refund transactions for bitcoin lightning ${error}`);
     return false;
   }
 };

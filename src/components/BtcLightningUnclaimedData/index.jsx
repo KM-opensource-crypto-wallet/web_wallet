@@ -1,10 +1,9 @@
-import {useCallback, useContext, useState} from 'react';
+import {useCallback, useContext, useMemo, useState} from 'react';
 import {
   getCurrentWalletPhrase,
-  selectBtcLightningUnClaimed,
   selectCurrentCoin,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {BitcoinLightningChain} from 'dok-wallet-blockchain-networks/cryptoChain/chains/BitcoinLightningChain';
 import * as bitcoin from 'bitcoinjs-lib';
 import {config} from 'dok-wallet-blockchain-networks/config/config';
@@ -22,6 +21,7 @@ import {
 } from '@mui/icons-material';
 import {showToast} from 'utils/toast';
 import ModalConfirmTransaction from '../ModalConfirmTransaction';
+import {handleUnclaimedData} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 
 export const BtcLightningUnclaimedData = ({hideModal}) => {
   const [activeRejectIndex, setActiveRejectIndex] = useState(null);
@@ -29,34 +29,41 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
   const [addressValidationError, setAddressValidationError] = useState(false);
   const [takeConfirmation, setTakeConfirmation] = useState(false);
   const [loadingIndex, setLoadingIndex] = useState(null);
-  const unClaimedData = useSelector(selectBtcLightningUnClaimed);
+  const currentCoin = useSelector(selectCurrentCoin);
+  const unClaimedData = useMemo(() => {
+    return currentCoin?.listOfUnClaimedDeposits || [];
+  }, [currentCoin]);
   const {theme} = useContext(ThemeContext);
   const styles = getStyles(theme);
-  const currentCoin = useSelector(selectCurrentCoin);
   const currentPhrase = useSelector(getCurrentWalletPhrase);
+  const dispatch = useDispatch();
 
   const handleApprove = useCallback(
     async (item, index) => {
       try {
         setTakeConfirmation(false);
         setLoadingIndex(index);
-        const lightningChain = await BitcoinLightningChain(
-          currentCoin?.chain_name,
-          currentPhrase,
-        );
-        const response = await lightningChain.approveClaimedBtc(
-          item.txid,
-          item.vout,
-        );
-        if (response) {
-          hideModal(false);
-        }
+        const unClaimedDataLength = unClaimedData?.length;
+        await dispatch(
+          handleUnclaimedData({
+            action: 'approve',
+            currentCoin,
+            txData: {
+              txid: item.txid,
+              vout: item.vout,
+              fees: item.fees,
+            },
+          }),
+        ).unwrap();
         setLoadingIndex(null);
+        if (unClaimedDataLength === 1) {
+          hideModal();
+        }
       } catch (error) {
         setLoadingIndex(null);
       }
     },
-    [currentCoin?.chain_name, currentPhrase, hideModal],
+    [currentCoin, dispatch, hideModal, unClaimedData?.length],
   );
 
   const handleReject = useCallback(index => {
@@ -82,7 +89,7 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
     async (item, index) => {
       try {
         setLoadingIndex(index);
-        const {txid, amount, vout} = item;
+        const {txid, amount, vout, fee} = item;
         if (
           !isValidBTCAddress(destinationAddress, config.BITCOIN_NETWORK_STRING)
         ) {
@@ -91,17 +98,21 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
           return;
         }
         setAddressValidationError(false);
-        const lightningChain = await BitcoinLightningChain(
-          currentCoin?.chain_name,
-          currentPhrase,
-        );
-        const response = await lightningChain.rejectClaimRequest(
-          txid,
-          vout,
-          destinationAddress,
-        );
-        if (response) {
-          hideModal(false);
+        const unClaimedDataLength = unClaimedData?.length;
+        await dispatch(
+          handleUnclaimedData({
+            action: 'approve',
+            currentCoin,
+            txData: {
+              txid: txid,
+              vout: vout,
+              fees: fees,
+            },
+          }),
+        ).unwrap();
+        setLoadingIndex(null);
+        if (unClaimedDataLength === 1) {
+          hideModal();
         }
         setLoadingIndex(null);
       } catch (error) {
