@@ -60,78 +60,6 @@
     opacity: 0.8;
 }
 
-.tabBar {
-    display: flex;
-    background-color: var(--secondaryBackgroundColor);
-}
-
-.tab {
-    flex: 1;
-    padding: 12px 24px;
-    background: none;
-    border: none;
-    color: var(--font);
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.tab:first-child {
-    border-right: 1px solid var(--gray);
-}
-
-
-.activeTab {
-    background-color: var(--background);
-    color: white;
-}
-
-.contentBox {
-    flex: 1;
-    overflow: hidden;
-    padding: 0 20px;
-}
-
-.scrollModalDiv {
-    overflow-y: auto;
-    height: 55vh;
-    padding-right: 10px;
-}
-
-.scrollModalDiv::-webkit-scrollbar {
-    width: 6px;
-}
-
-.scrollModalDiv::-webkit-scrollbar-track {
-    background: var(--secondaryBackgroundColor);
-}
-
-.scrollModalDiv::-webkit-scrollbar-thumb {
-    background: var(--gray);
-    border-radius: 3px;
-}
-
-.loader {
-    height: 52px;
-    width: 100%;
-    display: flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-}
-
-.modalBody {
-    width: 100%;
-    margin: 0 auto;
-}
-
-.search {
-    background-color: var(--secondaryBackgroundColor);
-    font-size: 18px;
-    padding: 0 10px !important;
-}
-
 @media (min-width: 768px) {
     .modalContent {
         width: 50%;
@@ -141,15 +69,6 @@
 :global(.dark) .modalContent {
     background-color: var(--secondaryBackgroundColor);
     color: var(--font);
-}
-
-:global(.dark) .tab {
-    color: var(--font);
-}
-
-:global(.dark) .activeTab {
-    color: white;
-    background-color: var(--background);
 }
 
 .btcLightningClaims {
