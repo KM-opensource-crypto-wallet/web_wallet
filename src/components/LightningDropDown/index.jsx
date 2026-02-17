@@ -12,11 +12,10 @@ const LightningDropDown = ({isLightning, handleLightningDropDownChange}) => {
   const handleOnChangeValue = React.useCallback(
     event => {
       const value = event.target.value;
-
       setSelectedValue(value);
 
       const selectedItem = data.find(d => d.value === value);
-      handleLightningDropDownChange(selectedItem?.label);
+      handleLightningDropDownChange(selectedItem?.value);
     },
     [handleLightningDropDownChange],
   );

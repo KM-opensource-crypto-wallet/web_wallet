@@ -20,12 +20,12 @@ const ReceiveFunds = () => {
   const [productQRref, setProductQRref] = useState(
     `${currentCoin?.symbol}:${currentCoin.address}`,
   );
-  const isLightning =
-    currentCoin?.chain_name === 'bitcoin_lightning' ? true : false;
+  const isLightning = currentCoin?.chain_name === 'bitcoin_lightning';
   const address = useRef('');
   address.current = currentCoin?.address ?? '';
   const chain = getChain(currentCoin?.chain_name);
   const [addressState, setAddressState] = useState('');
+  const [showBtcMainnetBanner, setShowBtcMainnetBanner] = useState(false);
 
   useEffect(() => {
     setAddressState('');
@@ -47,14 +47,15 @@ const ReceiveFunds = () => {
       try {
         let newAddress = '';
 
-        if (currentValue === 'Receive via BTC mainnet') {
+        if (currentValue === 'btc_mainnet') {
           const {address} =
             await chain.generateInvoiceViaBitcoinAddress(currentPhrase);
           newAddress = address;
-        } else if (currentValue === 'Receive via Invoice') {
+          setShowBtcMainnetBanner(true);
+        } else if (currentValue === 'invoice') {
           const {address} = await chain.generateInvoiceViaBolt11(currentPhrase);
           newAddress = address;
-        } else if (currentValue === 'Receive via Lightning Address') {
+        } else if (currentValue === 'lightning_address') {
           // generateSparkAddress
           const {address} = await chain.generateSparkAddress(currentPhrase);
           newAddress = address;
@@ -74,9 +75,19 @@ const ReceiveFunds = () => {
         <GoBackButton />
       </div>
       <div style={{padding: 20}}>
+        {showBtcMainnetBanner && (
+          <div className={s.bannerContainer}>
+            <p className={s.bannerText}>
+              Note: On-chain BTC deposits require 4 confirmations before the
+              balance is available. You will need to manually claim the deposit
+              once confirmed.
+            </p>
+          </div>
+        )}
         <Typography variant='h5' className={s.title}>
           Receive funds by providing your address or QR code
         </Typography>
+
         <LightningDropDown
           isLightning={isLightning}
           handleLightningDropDownChange={handleLightningDropDownChange}

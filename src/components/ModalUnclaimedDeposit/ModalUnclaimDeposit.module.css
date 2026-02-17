@@ -17,12 +17,14 @@
     width: 95%;
     max-width: 800px;
     position: relative;
+    overflow: hidden;
 }
 
 .modalDiv {
     max-height: 80vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .modalHeader {
@@ -151,5 +153,8 @@
 }
 
 .btcLightningClaims {
-    padding: 20px;
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }

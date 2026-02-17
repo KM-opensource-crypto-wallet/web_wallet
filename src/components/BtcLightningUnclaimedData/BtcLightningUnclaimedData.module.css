@@ -1,0 +1,327 @@
+/* Container */
+.container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Header */
+.headerContainer {
+  padding: 20px;
+  padding-top: 20px;
+  padding-bottom: 16px;
+  background-color: var(--backgroundColor);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.headerIconWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  background-color: var(--walletItemColor);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.headerTitle {
+  color: var(--font);
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  margin-top: 0;
+  text-align: center;
+}
+
+.headerSubtitle {
+  color: var(--gray);
+  font-size: 14px;
+  text-align: center;
+  line-height: 20px;
+  padding: 0 20px;
+  margin-bottom: 16px;
+  margin-top: 0;
+}
+
+.claimsCountBadge {
+  background-color: var(--background);
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin-top: 4px;
+}
+
+.claimsCountText {
+  color: var(--title);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* List */
+.listContent {
+  flex-grow: 1;
+  padding-bottom: 20px;
+}
+
+/* Card */
+.card {
+  background-color: var(--backgroundColor);
+  border-radius: 16px;
+  padding: 20px;
+  margin: 10px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading */
+.loadingContainer {
+  padding: 40px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadingText {
+  margin-top: 16px;
+  color: var(--font);
+  font-size: 14px;
+}
+
+/* Amount Section */
+.amountSection {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 24px;
+  background-color: var(--walletItemColor);
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.amountIconContainer {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background-color: var(--backgroundColor);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.amountDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.amountLabel {
+  color: var(--gray);
+  font-size: 12px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.amountValue {
+  color: var(--font);
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Info Section */
+.infoSection {
+  margin-bottom: 16px;
+}
+
+.infoItem {
+  margin-bottom: 16px;
+}
+
+.infoItem:last-child {
+  margin-bottom: 0;
+}
+
+.infoLabelRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.infoLabel {
+  color: var(--gray);
+  font-size: 12px;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.infoValue {
+  color: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background-color: var(--whiteOutline);
+  margin: 20px 0;
+}
+
+/* Refund Section */
+.refundSection {
+  margin-bottom: 16px;
+}
+
+.refundHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.refundTitle {
+  color: var(--font);
+  font-size: 16px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.refundDescription {
+  color: var(--gray);
+  font-size: 13px;
+  margin-bottom: 16px;
+  line-height: 18px;
+  margin-top: 0;
+}
+
+.textInput {
+  background-color: var(--backgroundColor);
+  margin-bottom: 12px;
+  font-size: 14px;
+  padding: 12px 16px;
+  border: 2px solid var(--whiteOutline);
+  border-radius: 8px;
+  color: var(--font);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.textInput:focus {
+  border-color: var(--background);
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.errorText {
+  color: #e60000;
+  font-size: 13px;
+  margin-left: 6px;
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.buttonPrimary {
+  flex: 1;
+  background-color: var(--background);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 20px;
+  border-radius: 12px;
+  min-height: 50px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.2s ease;
+}
+
+.buttonPrimary:hover {
+  opacity: 0.9;
+}
+
+.buttonPrimaryText {
+  color: var(--title);
+  font-size: 15px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.buttonSecondary {
+  flex: 1;
+  background-color: var(--walletItemColor);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--whiteOutline);
+  min-height: 50px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.2s ease;
+}
+
+.buttonSecondary:hover {
+  opacity: 0.9;
+}
+
+.buttonSecondaryText {
+  color: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+/* Empty State */
+.emptyContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+}
+
+.emptyIconContainer {
+  margin-bottom: 24px;
+  opacity: 0.6;
+}
+
+.emptyTitle {
+  color: var(--font);
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  margin-top: 0;
+  text-align: center;
+}
+
+.emptyDescription {
+  color: var(--gray);
+  font-size: 14px;
+  text-align: center;
+  line-height: 20px;
+  margin: 0;
+}

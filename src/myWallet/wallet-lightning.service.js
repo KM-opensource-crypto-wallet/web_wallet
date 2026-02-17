@@ -1,29 +1,9 @@
 import init, {defaultConfig, SdkBuilder} from '@breeztech/breez-sdk-spark/web';
 import {IS_SANDBOX} from 'dok-wallet-blockchain-networks/config/config';
-import {convertToSmallAmount} from 'dok-wallet-blockchain-networks/helper';
-
-class JsEventListener {
-  constructor(callback) {
-    this.callback = callback;
-  }
-
-  onEvent = event => {
-    if (this.callback) {
-      this.callback(event);
-    }
-  };
-}
-
-function decimalStringToBigInt(value, decimals) {
-  if (!/^\d+(\.\d+)?$/.test(value)) {
-    throw new Error('Invalid decimal string');
-  }
-
-  const [intPart, fracPart = ''] = value.split('.');
-  const paddedFrac = (fracPart + '0'.repeat(decimals)).slice(0, decimals);
-
-  return BigInt(intPart + paddedFrac);
-}
+import {
+  convertToSmallAmount,
+  parseBalance,
+} from 'dok-wallet-blockchain-networks/helper';
 
 let sdkInstance = null;
 let connectingPromise = null;
@@ -66,7 +46,7 @@ async function connectToSdk(phrase) {
   let mnemonic = phrase;
   if (sdkInstance) {
     if (sdkMap.has(mnemonic)) {
-      // return sdkMap.get(mnemonic);
+      return sdkMap.get(mnemonic);
     } else {
       // Initialize sdkInstance for the new mnemonic
       if (!mnemonic) return sdkInstance;
@@ -93,7 +73,7 @@ async function prepareAndSendPayment(phrase, paymentRequest, amount) {
     }
     const prepareResponse = await sdk.prepareSendPayment({
       paymentRequest,
-      amount: decimalStringToBigInt(amount, 8),
+      amount: BigInt(convertToSmallAmount(amount, 8)),
     });
     prepareSendResponse = prepareResponse;
     if (prepareResponse.paymentMethod?.type === 'bitcoinAddress') {
@@ -123,15 +103,6 @@ async function prepareAndSendPayment(phrase, paymentRequest, amount) {
   } catch (err) {
     console.error('Error preparing payment:', err);
   }
-}
-
-function satoshiToBtc(sats) {
-  if (sats === null || sats === undefined) return 0;
-
-  // Handle BigInt or number or string safely
-  const satsNumber = Number(sats);
-
-  return satsNumber / 1e8;
 }
 
 export const getLightningBalance = async phrase => {
@@ -234,7 +205,7 @@ export const prepareLightning = async (phrase, toAddress, amount) => {
       toAddress,
       amount,
     );
-    const fee = satoshiToBtc(lightningFee);
+    const fee = parseBalance(lightningFee, 8);
     return {
       fee: fee,
       estimateGas: 0,
@@ -268,68 +239,44 @@ export const sendLightning = async phrase => {
   }
 };
 
-export const waitForLightningConfirmation = async phrase => {
+export const waitForLightningConfirmation = async (phrase, txData) => {
   const sdk = await connectToSdk(phrase);
 
   if (!sdk) {
     console.error('Error', 'SDK not connected');
     return;
   }
+  const {transaction, interval, retries} = txData || {};
 
+  if (!transaction) {
+    console.error('No transaction id found for tron');
+    return null;
+  }
   return new Promise((resolve, reject) => {
-    let listenerId = null;
-    let timeoutId = null;
-    let resolved = false;
-
-    try {
-      const eventListener = new JsEventListener(async event => {
-        if (resolved) return;
-
-        if (event.type === 'PaymentSucceeded' || event.type === 'synced') {
-          resolved = true;
-
-          // 🧹 cleanup
-          if (listenerId !== null) {
-            sdk.removeEventListener(listenerId);
-          }
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-          }
-
-          resolve(true);
+    let numberOfRetries = 0;
+    let timer = setInterval(async () => {
+      try {
+        numberOfRetries += 1;
+        const response = await sdk.getPayment({
+          paymentId: transaction,
+        });
+        const status = response.payment.status;
+        if (status === 'completed') {
+          clearInterval(timer);
+          resolve(response);
+        } else if (status === 'failed') {
+          clearInterval(timer);
+          reject('failed');
+        } else if (numberOfRetries === retries) {
+          clearInterval(timer);
+          resolve('pending');
         }
-      });
-
-      listenerId = sdk.addEventListener(eventListener);
-
-      // ⏱️ 90 seconds timeout
-      timeoutId = setTimeout(() => {
-        if (resolved) return;
-
-        resolved = true;
-
-        console.log('⏱️ Payment confirmation timeout (90s)');
-
-        // 🧹 cleanup
-        if (listenerId !== null) {
-          sdk.removeEventListener(listenerId);
-        }
-
-        resolve('pending');
-      }, 90_000); // 90 seconds
-    } catch (error) {
-      console.error('Error in waitForConfirmation:', error);
-
-      // 🧹 cleanup
-      if (listenerId !== null) {
-        sdk.removeEventListener(listenerId);
+      } catch (e) {
+        clearInterval(timer);
+        console.error('Error in get transaction for lightning chain', e);
+        reject(e);
       }
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-
-      reject(error);
-    }
+    }, interval);
   });
 };
 
@@ -364,8 +311,8 @@ export const getLightningTransactions = async phrase => {
           status:
             item?.status.toLowerCase() !== 'completed' ? 'Pending' : 'SUCCESS',
           date: Number(item?.timestamp) * 1000,
-          from: item.paymentType === 1 ? null : address,
-          to: item.paymentType === 1 ? address : null,
+          from: item.paymentType === 'send' ? address : null,
+          to: item.paymentType === 'send' ? null : address,
           totalCourse: '0$',
           paymentType: item.paymentType,
         };
@@ -394,9 +341,9 @@ export const claimOnchainDeposit = async phrase => {
       result.push({
         txid: deposit.txid,
         vout: deposit.vout,
-        amount: satoshiToBtc(deposit.amountSats),
-        fees: satoshiToBtc(requiredFeeRate),
-        receivedAmount: satoshiToBtc(amountReceive),
+        amount: parseBalance(deposit.amountSats, 8),
+        fees: parseBalance(requiredFeeRate, 8),
+        receivedAmount: parseBalance(amountReceive, 8),
       });
     }
 
