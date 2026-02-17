@@ -1,8 +1,5 @@
 import {useCallback, useMemo, useState} from 'react';
-import {
-  getCurrentWalletPhrase,
-  selectCurrentCoin,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {useDispatch, useSelector} from 'react-redux';
 import * as bitcoin from 'bitcoinjs-lib';
 import {config} from 'dok-wallet-blockchain-networks/config/config';
@@ -10,8 +7,6 @@ import Loading from '../Loading';
 import {
   Receipt,
   CheckCircle,
-  Cancel,
-  Undo,
   ErrorOutline,
   Bolt,
   CurrencyBitcoin,
@@ -35,7 +30,6 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
   const unClaimedData = useMemo(() => {
     return currentCoin?.listOfUnClaimedDeposits || [];
   }, [currentCoin]);
-  const currentPhrase = useSelector(getCurrentWalletPhrase);
   const dispatch = useDispatch();
 
   const handleApprove = useCallback(
@@ -138,7 +132,6 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
     if (!txid) return '';
     return `${txid.slice(0, 6)}........${txid.slice(-6)}`;
   };
-  console.log('unclaimedData', unClaimedData);
 
   return (
     <div className={styles.container}>

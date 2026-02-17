@@ -55,10 +55,12 @@ const ReceiveFunds = () => {
         } else if (currentValue === 'invoice') {
           const {address} = await chain.generateInvoiceViaBolt11(currentPhrase);
           newAddress = address;
+          setShowBtcMainnetBanner(false);
         } else if (currentValue === 'lightning_address') {
           // generateSparkAddress
           const {address} = await chain.generateSparkAddress(currentPhrase);
           newAddress = address;
+          setShowBtcMainnetBanner(false);
         }
 
         setAddressState(newAddress);
