@@ -1,0 +1,79 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background-color: var(--secondaryBackgroundColor);
+    border-radius: 10px;
+    width: 95%;
+    max-width: 800px;
+    position: relative;
+    overflow: hidden;
+}
+
+.modalDiv {
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modalHeader {
+    padding: 15px;
+    padding-inline: 20px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--gray);
+}
+
+.headerText {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+}
+
+.btnClose {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--font);
+    font-size: 24px;
+}
+
+.btnClose:hover {
+    opacity: 0.8;
+}
+
+@media (min-width: 768px) {
+    .modalContent {
+        width: 50%;
+    }
+}
+
+:global(.dark) .modalContent {
+    background-color: var(--secondaryBackgroundColor);
+    color: var(--font);
+}
+
+.btcLightningClaims {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}

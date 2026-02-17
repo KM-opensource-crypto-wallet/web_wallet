@@ -1036,6 +1036,13 @@
   dependencies:
     "@noble/curves" "^1.7.0"
 
+"@breeztech/breez-sdk-spark@0.7.18":
+  version "0.7.18"
+  resolved "https://registry.yarnpkg.com/@breeztech/breez-sdk-spark/-/breez-sdk-spark-0.7.18.tgz#b25882355ef205a08e35887731b77b7e953dac92"
+  integrity sha512-ukQ9hx/y4vA06OwFo6XWow0pMOFhHOwszZAjq+d9nLbupi84cEupuws/bMN+JwikkYnveuKKPmMNY+9klTXiew==
+  optionalDependencies:
+    better-sqlite3 "^12.2.0"
+
 "@bufbuild/protobuf@^1.10.0":
   version "1.10.1"
   resolved "https://registry.yarnpkg.com/@bufbuild/protobuf/-/protobuf-1.10.1.tgz#1d76d15290c0212076c15ede94d15157ba0c6344"
@@ -6415,6 +6422,14 @@ bep53-range@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/bep53-range/-/bep53-range-2.0.0.tgz#a1770475661b4b814c4359e4b66f7cbd88de2b10"
   integrity sha512-sMm2sV5PRs0YOVk0LTKtjuIprVzxgTQUsrGX/7Yph2Rm4FO2Fqqtq7hNjsOB5xezM4v4+5rljCgK++UeQJZguA==
+
+better-sqlite3@^12.2.0:
+  version "12.6.2"
+  resolved "https://registry.yarnpkg.com/better-sqlite3/-/better-sqlite3-12.6.2.tgz#770649f28a62e543a360f3dfa1afe4cc944b1937"
+  integrity sha512-8VYKM3MjCa9WcaSAI3hzwhmyHVlH8tiGFwf0RlTsZPWJ1I5MkzjiudCo4KC4DxOaL/53A5B1sI/IbldNFDbsKA==
+  dependencies:
+    bindings "^1.5.0"
+    prebuild-install "^7.1.1"
 
 big-integer@1.6.36:
   version "1.6.36"
