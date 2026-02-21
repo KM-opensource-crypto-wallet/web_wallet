@@ -13985,11 +13985,6 @@ svgo@^3.0.2:
     csso "^5.0.5"
     picocolors "^1.0.0"
 
-swiper@^11.0.3:
-  version "11.2.7"
-  resolved "https://registry.yarnpkg.com/swiper/-/swiper-11.2.7.tgz#9657e467047cf098b6c9a79d1864bc6810d2e4fb"
-  integrity sha512-oPJCwdcjFMw3SoBM7AdB1RJzjT7JaE4Mg7TWceTmJ/i2OtF8L01Ct+5eOf48nG3trgR0wXFekWdfnTdl0eg6Pg==
-
 symbol-observable@^2.0.3:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/symbol-observable/-/symbol-observable-2.0.3.tgz#5b521d3d07a43c351055fa43b8355b62d33fd16a"
