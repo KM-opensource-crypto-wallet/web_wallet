@@ -1,10 +1,8 @@
 'use client';
 import styles from './ResetWallet.module.css';
-import React, {useContext, useLayoutEffect, useState} from 'react';
-
+import React, {useContext, useState} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
 import Link from 'next/link';
-import ModalReset from 'components/ModalReset';
 import Image from 'next/image';
 import {getAppAssets} from 'whitelabel/whiteLabelInfo';
 import {ThemeContext} from 'theme/ThemeContext';
@@ -67,20 +65,6 @@ const ResetWallet = () => {
 
           <div className={styles.btnList}>
             <button
-              // activeOpacity={1}
-              // onPress={() => {
-              //   navigation.navigate("CreateWallet");
-              //   // if (isFromOnBoarding) {
-              //   //   navigation.navigate('VerifyInfoModal');
-              //   // } else {
-              //   //   setTimeout(() => {
-              //   //     dispatch(loadingOn());
-              //   //     navigation.push('VerifyInfoModal', {
-              //   //       reset: 'CreateWallet',
-              //   //     });
-              //   //   }, 200);
-              //   // }
-              // }}
               onClick={() => {
                 router.push(
                   `/auth/create-wallet${
