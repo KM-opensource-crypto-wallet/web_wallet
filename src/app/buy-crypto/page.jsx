@@ -1,5 +1,5 @@
 'use client';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Formik} from 'formik';
 import styles from './CryptoProviders.module.css';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
@@ -38,7 +38,10 @@ import {
 import Loading from 'components/Loading';
 import ModalAddCoins from 'components/ModalAddCoins';
 import {popupCenter} from 'utils/common';
-import {getIsBuyCryptoInNewTab} from 'src/whitelabel/whiteLabelInfo';
+import {
+  getIsBuyCryptoInNewTab,
+  is51Pegasi,
+} from 'src/whitelabel/whiteLabelInfo';
 import ModalRedirect from 'components/ModalRedirect';
 
 const currencyPicker = [
@@ -64,6 +67,14 @@ const CryptoProviders = () => {
   const [buyCryptoUrl, setBuyCryptoUrl] = useState(null);
   const selectedProviderRef = useRef(null);
   const popupCleanupRef = useRef(null);
+  const finalCoinOptions = useMemo(() => {
+    if (is51Pegasi()) {
+      return coinOptions.filter(
+        item => item.options?.symbol?.toUpperCase() !== 'USDT',
+      );
+    }
+    return coinOptions;
+  }, [coinOptions]);
 
   useEffect(() => {
     return () => {
@@ -250,14 +261,14 @@ const CryptoProviders = () => {
             setFieldValue,
           }) => (
             <div>
-              <p className={styles.textStyle}>{'Select Crypto'}</p>
+              <p className={styles.textStyle}>{' Select Crypto'}</p>
               <div className={styles.dropdownContainer}>
                 <SelectInputExchange
-                  listData={coinOptions}
+                  listData={finalCoinOptions}
                   onValueChange={event => {
                     const value = event.target.value;
 
-                    const foundItem = coinOptions.find(
+                    const foundItem = finalCoinOptions.find(
                       item => item.value === value,
                     );
                     if (foundItem) {

@@ -103,3 +103,7 @@ export const getDefaultLocale = () => {
 export const getIsBuyCryptoInNewTab = () => {
   return whiteLabelInfo?.isBuyCryptoInNewTab ?? false;
 };
+
+export const is51Pegasi = () => {
+  return getWhiteLabelId() === '656ef5754f6f203ba7fccf45';
+};
