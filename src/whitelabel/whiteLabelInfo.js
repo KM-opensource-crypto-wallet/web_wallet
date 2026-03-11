@@ -14,13 +14,21 @@ const dokwalletWalletConnectDetails = {
     url: 'https://dokwallet.com',
   },
 };
+export const DOK_WALLET_ID = '656d95510a58ec43999a0f77';
+export const KIML_WALLET_ID = '65efefca5f95b9f06cc8f9eb';
+
 export const setWhiteLabelInfo = info => {
   whiteLabelInfo = info;
   setWhiteLabelIdToDokApi(getWhiteLabelId());
-  const isKimlWallet = whiteLabelInfo?._id === '65efefca5f95b9f06cc8f9eb';
+  const isKimlWallet = whiteLabelInfo?._id === KIML_WALLET_ID;
   if (isKimlWallet) {
     document.documentElement.style.setProperty('--background', '#4F8DD8');
   }
+};
+
+export const isBackupRestoreEnabled = () => {
+  const whiteLabelId = getWhiteLabelId();
+  return whiteLabelId === DOK_WALLET_ID || whiteLabelId === KIML_WALLET_ID;
 };
 
 export const getHostName = () => {
