@@ -40,7 +40,7 @@ import ModalAddCoins from 'components/ModalAddCoins';
 import {popupCenter} from 'utils/common';
 import {
   getIsBuyCryptoInNewTab,
-  is51Pegasi,
+  isUsdtNotSupportedWL,
 } from 'src/whitelabel/whiteLabelInfo';
 import ModalRedirect from 'components/ModalRedirect';
 
@@ -68,9 +68,14 @@ const CryptoProviders = () => {
   const selectedProviderRef = useRef(null);
   const popupCleanupRef = useRef(null);
   const finalCoinOptions = useMemo(() => {
-    if (is51Pegasi()) {
+    if (isUsdtNotSupportedWL()) {
       return coinOptions.filter(
-        item => item.options?.symbol?.toUpperCase() !== 'USDT',
+        item =>
+          !(
+            item.options?.symbol?.toUpperCase() === 'USDT' ||
+            (item.options?.symbol?.toUpperCase() === 'USDC' &&
+              item.options?.chain_name === 'tron')
+          ),
       );
     }
     return coinOptions;
