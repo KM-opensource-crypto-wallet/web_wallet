@@ -40,6 +40,8 @@ import ModalAddCoins from 'components/ModalAddCoins';
 import {popupCenter} from 'utils/common';
 import {
   getIsBuyCryptoInNewTab,
+  is51Pegasi,
+  isCastor24,
   isUsdtNotSupportedWL,
 } from 'src/whitelabel/whiteLabelInfo';
 import ModalRedirect from 'components/ModalRedirect';
@@ -167,7 +169,12 @@ const CryptoProviders = () => {
         }
         const url = item?.extraData?.url;
         selectedProviderRef.current = item;
-        if (url) {
+        if (isCastor24()) {
+          window.open('https://www.castor24.com/login', '_blank');
+        }
+        if (is51Pegasi()) {
+          window.open('https://www.51pegasi.com/login', '_blank');
+        } else if (url) {
           launchUrl(url);
         } else {
           const resp = await getBuyCryptoUrl({
