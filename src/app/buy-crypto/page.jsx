@@ -259,7 +259,7 @@ const CryptoProviders = () => {
           initialValues={{
             amount: '100',
             selectedCoin: null,
-            fiatCurrency: localCurrency,
+            fiatCurrency: isUsdtNotSupportedWL() ? 'EUR' : localCurrency,
           }}
           validationSchema={amountValidation}
           onSubmit={onSubmit}>
@@ -307,18 +307,22 @@ const CryptoProviders = () => {
               </div>
               <div className={styles.rowView}>
                 <div className={styles.fiatCurrencyPicker}>
-                  <SelectInput
-                    listData={currencyPicker}
-                    onValueChange={value => {
-                      setFieldValue('fiatCurrency', value);
-                      submitQuote({...values, fiatCurrency: value});
-                    }}
-                    value={values.fiatCurrency}
-                    placeholder={'Select Network'}
-                    renderValue={p => {
-                      return p === 'USD' ? '$' : '€';
-                    }}
-                  />
+                  {isUsdtNotSupportedWL() ? (
+                    <p className={styles.textStyle}>{'€'}</p>
+                  ) : (
+                    <SelectInput
+                      listData={currencyPicker}
+                      onValueChange={value => {
+                        setFieldValue('fiatCurrency', value);
+                        submitQuote({...values, fiatCurrency: value});
+                      }}
+                      value={values.fiatCurrency}
+                      placeholder={'Select Network'}
+                      renderValue={p => {
+                        return p === 'USD' ? '$' : '€';
+                      }}
+                    />
+                  )}
                 </div>
                 <FormControl variant='outlined' fullWidth={true}>
                   <InputLabel
