@@ -107,3 +107,11 @@ export const getIsBuyCryptoInNewTab = () => {
 export const is51Pegasi = () => {
   return getWhiteLabelId() === '656ef5754f6f203ba7fccf45';
 };
+
+export const isCastor24 = () => {
+  return getWhiteLabelId() === '68ea4a7e792250aa1195603b';
+};
+
+export const isUsdtNotSupportedWL = () => {
+  return is51Pegasi() || isCastor24();
+};
