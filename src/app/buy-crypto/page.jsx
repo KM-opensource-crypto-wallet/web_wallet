@@ -306,10 +306,10 @@ const CryptoProviders = () => {
                 </p>
               </div>
               <div className={styles.rowView}>
-                <div className={styles.fiatCurrencyPicker}>
-                  {isUsdtNotSupportedWL() ? (
-                    <p className={styles.textStyle}>{'€'}</p>
-                  ) : (
+                {isUsdtNotSupportedWL() ? (
+                  <p className={styles.textStyle}>{'€'}</p>
+                ) : (
+                  <div className={styles.fiatCurrencyPicker}>
                     <SelectInput
                       listData={currencyPicker}
                       onValueChange={value => {
@@ -322,8 +322,8 @@ const CryptoProviders = () => {
                         return p === 'USD' ? '$' : '€';
                       }}
                     />
-                  )}
-                </div>
+                  </div>
+                )}
                 <FormControl variant='outlined' fullWidth={true}>
                   <InputLabel
                     sx={{
