@@ -13,6 +13,13 @@
 
 .textStyle {
   color: var(--primary);
+  font-size: 15px;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.eurTextStyle {
+  color: var(--primary);
   font-size: 32px;
   font-weight: bold;
   margin-right: 16px;

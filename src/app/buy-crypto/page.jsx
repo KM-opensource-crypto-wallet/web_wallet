@@ -307,7 +307,7 @@ const CryptoProviders = () => {
               </div>
               <div className={styles.rowView}>
                 {isUsdtNotSupportedWL() ? (
-                  <p className={styles.textStyle}>{'€'}</p>
+                  <p className={styles.eurTextStyle}>{'€'}</p>
                 ) : (
                   <div className={styles.fiatCurrencyPicker}>
                     <SelectInput
