@@ -151,30 +151,30 @@ const AddCustomRpc = () => {
     }
     setError('');
 
-    // if (isEVMChain(selectedChain)) {
-    //   setValidating(true);
-    //   let validationResult;
-    //   try {
-    //     validationResult = await validateRpcUrl(rpcUrl.trim(), selectedChain);
-    //   } catch (err) {
-    //     setValidating(false);
-    //     showToast({
-    //       type: 'errorToast',
-    //       title: 'Validation Error',
-    //       message: 'Failed to validate RPC URL. Please try again.',
-    //     });
-    //     return;
-    //   }
-    //   setValidating(false);
-    //   if (!validationResult.isValid) {
-    //     showToast({
-    //       type: 'errorToast',
-    //       title: 'Invalid RPC URL',
-    //       message: validationResult.error,
-    //     });
-    //     return;
-    //   }
-    // }
+    if (isEVMChain(selectedChain)) {
+      setValidating(true);
+      let validationResult;
+      try {
+        validationResult = await validateRpcUrl(rpcUrl.trim(), selectedChain);
+      } catch (err) {
+        setValidating(false);
+        showToast({
+          type: 'errorToast',
+          title: 'Validation Error',
+          message: 'Failed to validate RPC URL. Please try again.',
+        });
+        return;
+      }
+      setValidating(false);
+      if (!validationResult.isValid) {
+        showToast({
+          type: 'errorToast',
+          title: 'Invalid RPC URL',
+          message: validationResult.error,
+        });
+        return;
+      }
+    }
 
     if (!chainData) {
       setError('Invalid chain selected.');
