@@ -182,8 +182,11 @@ const AddCustomRpc = () => {
 
       {/* Chain selector */}
       <div className={s.field}>
-        <label className={s.label}>Select Chain</label>
+        <label className={s.label} htmlFor='chain-select'>
+          Select Chain
+        </label>
         <Select
+          id='chain-select'
           value={selectedChain}
           onChange={e => setSelectedChain(e.target.value)}
           displayEmpty
@@ -224,8 +227,11 @@ const AddCustomRpc = () => {
 
       {/* RPC URL input */}
       <div className={s.field}>
-        <label className={s.label}>RPC URL</label>
+        <label className={s.label} htmlFor='rpc-url'>
+          RPC URL
+        </label>
         <TextField
+          id='rpc-url'
           value={rpcUrl}
           onChange={e => setRpcUrl(e.target.value)}
           placeholder='https://your-rpc-url.com'
@@ -248,23 +254,30 @@ const AddCustomRpc = () => {
 
       {/* Wallet selection */}
       <div className={s.field}>
-        <label className={s.label}>Apply to Wallets</label>
-        <div className={s.walletList}>
-          {allWallets?.map(wallet => (
-            <FormControlLabel
-              key={wallet.clientId}
-              control={
-                <Checkbox
-                  checked={selectedWallets.includes(wallet.clientId)}
-                  onChange={() => toggleWallet(wallet.clientId)}
-                  color='warning'
-                />
-              }
-              label={<span className={s.walletName}>{wallet.walletName}</span>}
-              className={s.walletItem}
-            />
-          ))}
-        </div>
+        {/* <label className={s.label}>Apply to Wallets</label> */}
+        <fieldset className={s.walletFieldset}>
+          <legend className={s.label}>Apply to Wallets</legend>
+          <div className={s.walletList}>
+            {allWallets?.map(wallet => (
+              <FormControlLabel
+                key={wallet.clientId}
+                htmlFor={`wallet-${wallet.clientId}`}
+                control={
+                  <Checkbox
+                    id={`wallet-${wallet.clientId}`}
+                    checked={selectedWallets.includes(wallet.clientId)}
+                    onChange={() => toggleWallet(wallet.clientId)}
+                    color='warning'
+                  />
+                }
+                label={
+                  <span className={s.walletName}>{wallet.walletName}</span>
+                }
+                className={s.walletItem}
+              />
+            ))}
+          </div>
+        </fieldset>
       </div>
 
       {error ? <p className={s.error}>{error}</p> : null}
