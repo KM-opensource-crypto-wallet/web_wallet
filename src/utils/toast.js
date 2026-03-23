@@ -29,8 +29,9 @@ const RpcErrorMsg = ({chain_name, toastId}) => {
     : 'Unknown';
 
   const onPress = () => {
+    if (!chain_name) return;
     dispatch(deleteCustomRpc({chain_name}));
-    toast.dismiss(toastId);
+    if (toastId) toast.dismiss(toastId);
   };
 
   return (
@@ -65,8 +66,10 @@ export const showToast = ({type, title, message, props, ...options}) => {
   if (type === 'rpcError') {
     if (!props?.chain_name) {
       return toast.error(
-        <RpcErrorMsg chain_name={undefined} toastId={undefined} />,
-        {autoClose: false},
+        customView('Custom RPC Error', 'RPC is not responding.'),
+        {
+          autoClose: false,
+        },
       );
     }
     const toastId = `rpcError_${props?.chain_name}`;
