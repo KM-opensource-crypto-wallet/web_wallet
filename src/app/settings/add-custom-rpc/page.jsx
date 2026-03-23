@@ -15,18 +15,16 @@ import {
   updateCustomRpc,
 } from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSlice';
 import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {isEVMChain} from 'dok-wallet-blockchain-networks/helper';
+import {isEVMChain, CustomRPCList} from 'dok-wallet-blockchain-networks/helper';
 import {validateRpcUrl} from 'dok-wallet-blockchain-networks/service/rpcService';
 import {showToast} from 'src/utils/toast';
 import GoBackButton from 'components/GoBackButton';
 import s from './AddCustomRpc.module.css';
 
-import aptosLogo from 'assets/chain_logo/aptos.png';
 import arbitrumLogo from 'assets/chain_logo/arbitrum.png';
 import avalancheLogo from 'assets/chain_logo/avalanche.png';
 import baseLogo from 'assets/chain_logo/base.png';
 import binanceSmartChainLogo from 'assets/chain_logo/binance_smart_chain.png';
-import cosmosLogo from 'assets/chain_logo/cosmos.png';
 import ethereumLogo from 'assets/chain_logo/ethereum.png';
 import ethereumClassicLogo from 'assets/chain_logo/ethereum_classic.png';
 import ethereumPowLogo from 'assets/chain_logo/ethereum_pow.png';
@@ -38,64 +36,36 @@ import lineaLogo from 'assets/chain_logo/linea.png';
 import optimismLogo from 'assets/chain_logo/optimism.png';
 import optimismBinanceSmartChainLogo from 'assets/chain_logo/optimism_binance_smart_chain.png';
 import polygonLogo from 'assets/chain_logo/polygon.png';
-import rippleLogo from 'assets/chain_logo/ripple.png';
-import solanaLogo from 'assets/chain_logo/solana.png';
-import stellarLogo from 'assets/chain_logo/stellar.png';
-import tezosLogo from 'assets/chain_logo/tezos.png';
-import tonLogo from 'assets/chain_logo/ton.png';
-import tronLogo from 'assets/chain_logo/tron.png';
 import victionLogo from 'assets/chain_logo/viction.png';
 import zksyncLogo from 'assets/chain_logo/zksync.png';
 import seiLogo from 'assets/chain_logo/sei.png';
 
-const CHAIN_LIST = [
-  {chain_name: 'aptos', chain_display_name: 'Aptos', logo: aptosLogo},
-  {chain_name: 'arbitrum', chain_display_name: 'Arbitrum', logo: arbitrumLogo},
-  {
-    chain_name: 'avalanche',
-    chain_display_name: 'Avalanche',
-    logo: avalancheLogo,
-  },
-  {chain_name: 'base', chain_display_name: 'Base', logo: baseLogo},
-  {
-    chain_name: 'binance_smart_chain',
-    chain_display_name: 'BNB Smart Chain',
-    logo: binanceSmartChainLogo,
-  },
-  {chain_name: 'cosmos', chain_display_name: 'Cosmos', logo: cosmosLogo},
-  {chain_name: 'ethereum', chain_display_name: 'Ethereum', logo: ethereumLogo},
-  {
-    chain_name: 'ethereum_classic',
-    chain_display_name: 'Ethereum Classic',
-    logo: ethereumClassicLogo,
-  },
-  {
-    chain_name: 'ethereum_pow',
-    chain_display_name: 'Ethereum PoW',
-    logo: ethereumPowLogo,
-  },
-  {chain_name: 'fantom', chain_display_name: 'Fantom', logo: fantomLogo},
-  {chain_name: 'gnosis', chain_display_name: 'Gnosis', logo: gnosisLogo},
-  {chain_name: 'ink', chain_display_name: 'Ink', logo: inkLogo},
-  {chain_name: 'kava', chain_display_name: 'Kava', logo: kavaLogo},
-  {chain_name: 'linea', chain_display_name: 'Linea', logo: lineaLogo},
-  {chain_name: 'optimism', chain_display_name: 'Optimism', logo: optimismLogo},
-  {
-    chain_name: 'optimism_binance_smart_chain',
-    chain_display_name: 'Optimism BSC',
-    logo: optimismBinanceSmartChainLogo,
-  },
-  {chain_name: 'polygon', chain_display_name: 'Polygon', logo: polygonLogo},
-  {chain_name: 'ripple', chain_display_name: 'Ripple', logo: rippleLogo},
-  {chain_name: 'solana', chain_display_name: 'Solana', logo: solanaLogo},
-  {chain_name: 'stellar', chain_display_name: 'Stellar', logo: stellarLogo},
-  {chain_name: 'tezos', chain_display_name: 'Tezos', logo: tezosLogo},
-  {chain_name: 'ton', chain_display_name: 'TON', logo: tonLogo},
-  {chain_name: 'tron', chain_display_name: 'Tron', logo: tronLogo},
-  {chain_name: 'viction', chain_display_name: 'Viction', logo: victionLogo},
-  {chain_name: 'zksync', chain_display_name: 'zkSync', logo: zksyncLogo},
-  {chain_name: 'sei', chain_display_name: 'Sei', logo: seiLogo},
-];
+const CHAIN_LOGO_MAP = {
+  arbitrum: arbitrumLogo,
+  avalanche: avalancheLogo,
+  base: baseLogo,
+  binance_smart_chain: binanceSmartChainLogo,
+  ethereum: ethereumLogo,
+  ethereum_classic: ethereumClassicLogo,
+  ethereum_pow: ethereumPowLogo,
+  fantom: fantomLogo,
+  gnosis: gnosisLogo,
+  ink: inkLogo,
+  kava: kavaLogo,
+  linea: lineaLogo,
+  optimism: optimismLogo,
+  optimism_binance_smart_chain: optimismBinanceSmartChainLogo,
+  polygon: polygonLogo,
+  viction: victionLogo,
+  zksync: zksyncLogo,
+  sei: seiLogo,
+};
+
+const CHAIN_LIST = CustomRPCList.map(({value, label}) => ({
+  chain_name: value,
+  chain_display_name: label,
+  logo: CHAIN_LOGO_MAP[value],
+}));
 
 const AddCustomRpc = () => {
   const router = useRouter();
