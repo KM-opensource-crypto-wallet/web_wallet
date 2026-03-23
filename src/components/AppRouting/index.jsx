@@ -35,7 +35,6 @@ import {
 import DisabledView from 'components/DisabledView';
 import {MainNavigation} from 'utils/navigation';
 import {getFeesInfo} from 'dok-wallet-blockchain-networks/feesInfo/feesInfo';
-
 import {
   createIfNotExistsMasterClientId,
   resetCoinsToDefaultAddressForPrivacyMode,
