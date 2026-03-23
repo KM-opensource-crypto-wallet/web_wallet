@@ -119,22 +119,17 @@ const ModalAddToken = ({visible, hideModal, data}) => {
         setNetworkInput(foundChain);
         const customRPC = getCustomRPCWithData(
           allCustomRPC,
-          networkInput?.value,
+          foundChain.value,
           currentWallet?.clientId,
         );
         chainRef.current = getChain(
-          networkInput?.value,
+          foundChain.value,
           currentWallet?.phrase,
           customRPC,
         );
       }
     },
-    [
-      allCustomRPC,
-      currentWallet?.clientId,
-      currentWallet?.phrase,
-      networkInput?.value,
-    ],
+    [allCustomRPC, currentWallet?.clientId, currentWallet?.phrase],
   );
 
   return (
