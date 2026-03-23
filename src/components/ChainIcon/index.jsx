@@ -31,7 +31,7 @@ import victionLogo from 'assets/chain_logo/viction.png';
 import zksyncLogo from 'assets/chain_logo/zksync.png';
 import seiLogo from 'assets/chain_logo/sei.png';
 
-const chainLogoMap = {
+export const chainLogoMap = {
   aptos: aptosLogo,
   arbitrum: arbitrumLogo,
   avalanche: avalancheLogo,
