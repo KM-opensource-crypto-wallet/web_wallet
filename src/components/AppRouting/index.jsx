@@ -38,6 +38,10 @@ import {
 import DisabledView from 'components/DisabledView';
 import {MainNavigation} from 'utils/navigation';
 import {getFeesInfo} from 'dok-wallet-blockchain-networks/feesInfo/feesInfo';
+import {registerShowToast} from 'dok-wallet-blockchain-networks/helper/toast';
+import {showToast} from 'utils/toast';
+
+registerShowToast(showToast);
 import {
   createIfNotExistsMasterClientId,
   resetCoinsToDefaultAddressForPrivacyMode,
