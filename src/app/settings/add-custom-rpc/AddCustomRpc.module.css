@@ -10,7 +10,14 @@
   font-size: 20px;
   font-weight: 700;
   color: var(--font);
-  margin: 8px 0 20px;
+  margin: 8px 0 8px;
+}
+
+.description {
+  font-size: 13px;
+  color: var(--gray);
+  margin: 0 0 20px;
+  line-height: 1.5;
 }
 
 /* ---- Fields ---- */
@@ -64,13 +71,17 @@
 }
 
 /* ---- Wallet list ---- */
+.walletFieldset {
+  border: 1px solid var(--whiteOutline);
+  border-radius: 10px;
+  padding: 4px 8px;
+  margin: 0;
+}
+
 .walletList {
   display: flex;
   flex-direction: column;
   background-color: var(--secondaryBackgroundColor);
-  border: 1px solid var(--whiteOutline);
-  border-radius: 10px;
-  padding: 4px 8px;
 }
 
 .walletItem {

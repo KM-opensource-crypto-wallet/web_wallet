@@ -2,70 +2,19 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useRouter, useSearchParams} from 'next/navigation';
-import Image from 'next/image';
-import {
-  Checkbox,
-  FormControlLabel,
-  MenuItem,
-  Select,
-  TextField,
-} from '@mui/material';
+import {Checkbox, FormControlLabel, TextField} from '@mui/material';
+import SelectInput from 'components/SelectInput';
 import {
   addCustomRpc,
   updateCustomRpc,
 } from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSlice';
 import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {isEVMChain, CustomRPCList} from 'dok-wallet-blockchain-networks/helper';
+import {getRPCUrl} from 'dok-wallet-blockchain-networks/rpcUrls/rpcUrls';
 import {validateRpcUrl} from 'dok-wallet-blockchain-networks/service/rpcService';
 import {showToast} from 'src/utils/toast';
 import GoBackButton from 'components/GoBackButton';
 import s from './AddCustomRpc.module.css';
-
-import arbitrumLogo from 'assets/chain_logo/arbitrum.png';
-import avalancheLogo from 'assets/chain_logo/avalanche.png';
-import baseLogo from 'assets/chain_logo/base.png';
-import binanceSmartChainLogo from 'assets/chain_logo/binance_smart_chain.png';
-import ethereumLogo from 'assets/chain_logo/ethereum.png';
-import ethereumClassicLogo from 'assets/chain_logo/ethereum_classic.png';
-import ethereumPowLogo from 'assets/chain_logo/ethereum_pow.png';
-import fantomLogo from 'assets/chain_logo/fantom.png';
-import gnosisLogo from 'assets/chain_logo/gnosis.png';
-import inkLogo from 'assets/chain_logo/ink.png';
-import kavaLogo from 'assets/chain_logo/kava.png';
-import lineaLogo from 'assets/chain_logo/linea.png';
-import optimismLogo from 'assets/chain_logo/optimism.png';
-import optimismBinanceSmartChainLogo from 'assets/chain_logo/optimism_binance_smart_chain.png';
-import polygonLogo from 'assets/chain_logo/polygon.png';
-import victionLogo from 'assets/chain_logo/viction.png';
-import zksyncLogo from 'assets/chain_logo/zksync.png';
-import seiLogo from 'assets/chain_logo/sei.png';
-
-const CHAIN_LOGO_MAP = {
-  arbitrum: arbitrumLogo,
-  avalanche: avalancheLogo,
-  base: baseLogo,
-  binance_smart_chain: binanceSmartChainLogo,
-  ethereum: ethereumLogo,
-  ethereum_classic: ethereumClassicLogo,
-  ethereum_pow: ethereumPowLogo,
-  fantom: fantomLogo,
-  gnosis: gnosisLogo,
-  ink: inkLogo,
-  kava: kavaLogo,
-  linea: lineaLogo,
-  optimism: optimismLogo,
-  optimism_binance_smart_chain: optimismBinanceSmartChainLogo,
-  polygon: polygonLogo,
-  viction: victionLogo,
-  zksync: zksyncLogo,
-  sei: seiLogo,
-};
-
-const CHAIN_LIST = CustomRPCList.map(({value, label}) => ({
-  chain_name: value,
-  chain_display_name: label,
-  logo: CHAIN_LOGO_MAP[value],
-}));
 
 const AddCustomRpc = () => {
   const router = useRouter();
@@ -73,7 +22,6 @@ const AddCustomRpc = () => {
   const dispatch = useDispatch();
   const allWallets = useSelector(selectAllWallets);
 
-  // Determine if we're in edit mode
   const editChainName = searchParams.get('chain_name');
   const isEdit = Boolean(editChainName);
 
@@ -83,7 +31,6 @@ const AddCustomRpc = () => {
   const [error, setError] = useState('');
   const [validating, setValidating] = useState(false);
 
-  // Pre-select wallets: all wallets by default, or the saved list when editing
   useEffect(() => {
     const walletsParam = searchParams.get('wallets');
     if (walletsParam) {
@@ -93,9 +40,15 @@ const AddCustomRpc = () => {
     }
   }, [searchParams, allWallets]);
 
-  const chainData = useMemo(
-    () => CHAIN_LIST.find(c => c.chain_name === selectedChain),
-    [selectedChain],
+  const defaultRpcUrl = useMemo(() => {
+    return selectedChain ? getRPCUrl(selectedChain) : '';
+  }, [selectedChain]);
+
+  const allSelected = useMemo(
+    () =>
+      allWallets?.length > 0 &&
+      allWallets.every(w => selectedWallets.includes(w.clientId)),
+    [allWallets, selectedWallets],
   );
 
   const toggleWallet = useCallback(clientId => {
@@ -105,6 +58,14 @@ const AddCustomRpc = () => {
         : [...prev, clientId],
     );
   }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    if (allSelected) {
+      setSelectedWallets([]);
+    } else {
+      setSelectedWallets(allWallets.map(w => w.clientId));
+    }
+  }, [allSelected, allWallets]);
 
   const onSave = useCallback(async () => {
     if (!selectedChain) {
@@ -146,14 +107,10 @@ const AddCustomRpc = () => {
       }
     }
 
-    if (!chainData) {
-      setError('Invalid chain selected.');
-      return;
-    }
-
+    const chainEntry = CustomRPCList.find(c => c.value === selectedChain);
     const payload = {
-      chain_name: chainData.chain_name,
-      chain_display_name: chainData.chain_display_name,
+      chain_name: selectedChain,
+      chain_display_name: chainEntry?.label || selectedChain,
       customRpcUrl: rpcUrl.trim(),
       wallets: selectedWallets,
     };
@@ -165,81 +122,67 @@ const AddCustomRpc = () => {
     }
 
     router.back();
-  }, [
-    selectedChain,
-    rpcUrl,
-    selectedWallets,
-    chainData,
-    isEdit,
-    dispatch,
-    router,
-  ]);
+  }, [selectedChain, rpcUrl, selectedWallets, isEdit, dispatch, router]);
 
   return (
     <div className={s.container}>
       <GoBackButton />
       <p className={s.title}>{isEdit ? 'Edit Custom RPC' : 'Add Custom RPC'}</p>
 
+      <p className={s.description}>
+        Select a wallet and network, then enter a custom RPC URL to override the
+        default endpoint for that chain.
+      </p>
+
       {/* Chain selector */}
       <div className={s.field}>
-        <label className={s.label} htmlFor='chain-select'>
-          Select Chain
-        </label>
-        <Select
-          id='chain-select'
+        <label className={s.label}>Select Chain</label>
+        <SelectInput
+          listData={CustomRPCList}
+          onValueChange={val => setSelectedChain(val)}
           value={selectedChain}
-          onChange={e => setSelectedChain(e.target.value)}
-          displayEmpty
-          className={s.select}
-          renderValue={val => {
-            const chain = CHAIN_LIST.find(c => c.chain_name === val);
-            if (!chain)
-              return <span className={s.placeholder}>Select a chain</span>;
-            return (
-              <div className={s.chainOption}>
-                <Image
-                  src={chain.logo}
-                  alt={chain.chain_name}
-                  width={20}
-                  height={20}
-                  className={s.chainOptionIcon}
-                />
-                <span>{chain.chain_display_name}</span>
-              </div>
-            );
-          }}>
-          {CHAIN_LIST.map(chain => (
-            <MenuItem key={chain.chain_name} value={chain.chain_name}>
-              <div className={s.chainOption}>
-                <Image
-                  src={chain.logo}
-                  alt={chain.chain_name}
-                  width={20}
-                  height={20}
-                  className={s.chainOptionIcon}
-                />
-                <span>{chain.chain_display_name}</span>
-              </div>
-            </MenuItem>
-          ))}
-        </Select>
+          placeholder='Select a chain'
+        />
       </div>
 
-      {/* RPC URL input */}
+      {/* Default RPC URL (read-only, shown after chain selected) */}
+      {!!defaultRpcUrl && (
+        <div className={s.field}>
+          <label className={s.label}>Default RPC URL</label>
+          <TextField
+            value={defaultRpcUrl}
+            fullWidth
+            variant='outlined'
+            size='small'
+            disabled
+            className={s.textField}
+            slotProps={{input: {style: {color: 'var(--gray)'}}}}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {borderColor: 'var(--whiteOutline)'},
+                backgroundColor: 'var(--secondaryBackgroundColor)',
+                borderRadius: '8px',
+              },
+            }}
+          />
+        </div>
+      )}
+
+      {/* Custom RPC URL input */}
       <div className={s.field}>
         <label className={s.label} htmlFor='rpc-url'>
-          RPC URL
+          Custom RPC URL
         </label>
         <TextField
           id='rpc-url'
           value={rpcUrl}
           onChange={e => setRpcUrl(e.target.value)}
-          placeholder='https://your-rpc-url.com'
+          placeholder='Enter Custom RPC URL'
           fullWidth
           variant='outlined'
           size='small'
           className={s.textField}
-          inputProps={{style: {color: 'var(--font)'}}}
+          slotProps={{input: {style: {color: 'var(--font)'}}}}
           sx={{
             '& .MuiOutlinedInput-root': {
               '& fieldset': {borderColor: 'var(--whiteOutline)'},
@@ -254,14 +197,23 @@ const AddCustomRpc = () => {
 
       {/* Wallet selection */}
       <div className={s.field}>
-        {/* <label className={s.label}>Apply to Wallets</label> */}
         <fieldset className={s.walletFieldset}>
           <legend className={s.label}>Apply to Wallets</legend>
           <div className={s.walletList}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  color='warning'
+                />
+              }
+              label={<span className={s.walletName}>Select All</span>}
+              className={s.walletItem}
+            />
             {allWallets?.map(wallet => (
               <FormControlLabel
                 key={wallet.clientId}
-                htmlFor={`wallet-${wallet.clientId}`}
                 control={
                   <Checkbox
                     id={`wallet-${wallet.clientId}`}
