@@ -10,7 +10,7 @@ import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/wal
 import GoBackButton from 'components/GoBackButton';
 import s from './CustomRpc.module.css';
 
-import {chainLogoMap} from 'components/ChainIcon';
+import {chainLogoMap} from 'assets/chain_logo';
 
 const CustomRpc = () => {
   const router = useRouter();
