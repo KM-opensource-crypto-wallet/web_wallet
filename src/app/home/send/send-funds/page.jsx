@@ -11,7 +11,10 @@ import {
   setCurrentTransferData,
 } from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import {currencySymbol} from 'data/currency';
-import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  selectCurrentCoin,
+  selectCurrentWallet,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {useSearchParams} from 'next/navigation';
 import {useRouter} from 'next/navigation';
 import ModalSend from 'components/ModalSend';
@@ -34,6 +37,10 @@ import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/
 import {getTransferData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSelector';
 import {v4} from 'uuid';
 import {addBatchTransaction} from 'dok-wallet-blockchain-networks/redux/batchTransaction/batchTransactionSlice';
+import {
+  getCustomRPCWithData,
+  selectAllCustomRpc,
+} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
 
 const SendFunds = () => {
   const currentCoin = useSelector(selectCurrentCoin);
@@ -43,7 +50,8 @@ const SendFunds = () => {
   const localCurrency = useSelector(getLocalCurrency);
   const transferData = useSelector(getTransferData);
   const isBitcoin = isBitcoinChain(currentCoin?.chain_name);
-
+  const allCustomRPC = useSelector(selectAllCustomRpc);
+  const currentWallet = useSelector(selectCurrentWallet);
   const [modal, setModal] = useState(false);
   const [maxAmount, setMaxAmount] = useState('0.00000');
   const [sendInput, setSendInput] = useState(qrAddress || '');
@@ -148,7 +156,18 @@ const SendFunds = () => {
       setModal(true);
       return;
     }
-    const currentChain = getChain(currentCoin?.chain_name);
+
+    const customRPC = getCustomRPCWithData(
+      allCustomRPC,
+      currentCoin?.chain_name,
+      currentWallet?.clientId,
+    );
+
+    const currentChain = getChain(
+      currentCoin?.chain_name,
+      currentWallet?.phrase,
+      customRPC,
+    );
     const isValid = await currentChain.isValidAddress({address: values?.send});
     let validAddress = null;
     if (!isValid && isNameSupportChain(currentCoin?.chain_name)) {
@@ -198,7 +217,16 @@ const SendFunds = () => {
 
   const addToBatch = useCallback(async () => {
     const values = formikRef.current.values;
-    const currentChain = getChain(currentCoin?.chain_name);
+    const customRPC = getCustomRPCWithData(
+      allCustomRPC,
+      currentCoin?.chain_name,
+      currentWallet?.clientId,
+    );
+    const currentChain = getChain(
+      currentCoin?.chain_name,
+      currentWallet?.phrase,
+      customRPC,
+    );
     const isValid = await currentChain.isValidAddress({address: values?.send});
     let validAddress = null;
     if (!isValid && isNameSupportChain(currentCoin?.chain_name)) {
@@ -224,7 +252,15 @@ const SendFunds = () => {
     } else {
       formikRef?.current?.setFieldError('send', 'address is not valid');
     }
-  }, [currentCoin, dispatch, router, uuid]);
+  }, [
+    allCustomRPC,
+    currentCoin,
+    currentWallet?.clientId,
+    currentWallet?.phrase,
+    dispatch,
+    router,
+    uuid,
+  ]);
 
   return (
     <>

@@ -4,6 +4,7 @@ import {useSelector} from 'react-redux';
 import {
   selectCurrentCoin,
   getCurrentWalletPhrase,
+  selectCurrentWallet,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {Grid2 as Grid, Typography, TextField} from '@mui/material';
 import CopyIcon from '@mui/icons-material/FileCopyOutlined';
@@ -13,6 +14,10 @@ import QRCode from 'react-qr-code';
 import {showToast} from 'utils/toast';
 import LightningDropDown from 'src/components/LightningDropDown';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
+import {
+  getCustomRPCWithData,
+  selectAllCustomRpc,
+} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
 
 const ReceiveFunds = () => {
   const currentCoin = useSelector(selectCurrentCoin);
@@ -23,10 +28,10 @@ const ReceiveFunds = () => {
   const isLightning = currentCoin?.chain_name === 'bitcoin_lightning';
   const address = useRef('');
   address.current = currentCoin?.address ?? '';
-  const chain = getChain(currentCoin?.chain_name);
   const [addressState, setAddressState] = useState('');
   const [showBtcMainnetBanner, setShowBtcMainnetBanner] = useState(false);
-
+  const currentWallet = useSelector(selectCurrentWallet);
+  const allCustomRPC = useSelector(selectAllCustomRpc);
   useEffect(() => {
     setAddressState('');
     setProductQRref(`${currentCoin?.symbol}:${currentCoin?.address ?? ''}`);
@@ -45,6 +50,16 @@ const ReceiveFunds = () => {
   const handleLightningDropDownChange = useCallback(
     async currentValue => {
       try {
+        const customRPC = getCustomRPCWithData(
+          allCustomRPC,
+          currentCoin?.chain_name,
+          currentWallet?.clientId,
+        );
+        const chain = getChain(
+          currentCoin?.chain_name,
+          currentWallet?.phrase,
+          customRPC,
+        );
         let newAddress = '';
 
         if (currentValue === 'btc_mainnet') {
@@ -69,7 +84,14 @@ const ReceiveFunds = () => {
         console.log(error);
       }
     },
-    [chain, currentCoin?.symbol, currentPhrase],
+    [
+      allCustomRPC,
+      currentCoin?.chain_name,
+      currentCoin?.symbol,
+      currentPhrase,
+      currentWallet?.clientId,
+      currentWallet?.phrase,
+    ],
   );
   return (
     <div className={s.container}>

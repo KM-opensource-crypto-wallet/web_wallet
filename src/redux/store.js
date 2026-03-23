@@ -18,6 +18,7 @@ import {stakingSlice} from 'dok-wallet-blockchain-networks/redux/staking/staking
 import {messageSlice} from 'dok-wallet-blockchain-networks/redux/messages/messageSlice';
 import {sellCryptoSlice} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSlice';
 import {batchTransactionSlice} from 'dok-wallet-blockchain-networks/redux/batchTransaction/batchTransactionSlice';
+import {customRpcSlice} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSlice';
 
 const encryptor = encryptTransform({
   secretKey: process.env.REDUX_WEB_KEY, // Replace with your secret key
@@ -55,6 +56,7 @@ const rootReducer = persistCombineReducers(persistConfig, {
   [messageSlice.name]: messageSlice.reducer,
   [sellCryptoSlice.name]: sellCryptoSlice.reducer,
   [batchTransactionSlice.name]: batchTransactionSlice.reducer,
+  [customRpcSlice.name]: customRpcSlice.reducer,
 });
 
 const store = configureStore({

@@ -15,8 +15,15 @@ const icons = require(`assets/images/icons`).default;
 import {Box} from '@mui/material';
 import SelectInput from 'components/SelectInput';
 import {useSelector} from 'react-redux';
-import {selectWalletChainName} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  selectCurrentWallet,
+  selectWalletChainName,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {isEVMChain} from 'dok-wallet-blockchain-networks/helper';
+import {
+  getCustomRPCWithData,
+  selectAllCustomRpc,
+} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
 
 const ModalAddToken = ({visible, hideModal, data}) => {
   const [networkInput, setNetworkInput] = useState({});
@@ -27,7 +34,8 @@ const ModalAddToken = ({visible, hideModal, data}) => {
   const chainRef = useRef(TronChain());
   const previousTimerRef = useRef(null);
   const formikRef = useRef(null);
-
+  const currentWallet = useSelector(selectCurrentWallet);
+  const allCustomRPC = useSelector(selectAllCustomRpc);
   useEffect(() => {
     if (!visible) {
       setNetworkInput({});
@@ -98,19 +106,31 @@ const ModalAddToken = ({visible, hideModal, data}) => {
     },
   };
 
-  const onChangeNetwork = useCallback(value => {
-    const foundChain = ModalAddTokenList.find(item => item.value === value);
-    if (foundChain) {
-      formikRef?.current?.setValues({
-        contract_address: '',
-        name: '',
-        decimal: '',
-        symbol: '',
-      });
-      setNetworkInput(foundChain);
-      chainRef.current = getChain(foundChain.value);
-    }
-  }, []);
+  const onChangeNetwork = useCallback(
+    value => {
+      const foundChain = ModalAddTokenList.find(item => item.value === value);
+      if (foundChain) {
+        formikRef?.current?.setValues({
+          contract_address: '',
+          name: '',
+          decimal: '',
+          symbol: '',
+        });
+        setNetworkInput(foundChain);
+        const customRPC = getCustomRPCWithData(
+          allCustomRPC,
+          foundChain.value,
+          currentWallet?.clientId,
+        );
+        chainRef.current = getChain(
+          foundChain.value,
+          currentWallet?.phrase,
+          customRPC,
+        );
+      }
+    },
+    [allCustomRPC, currentWallet?.clientId, currentWallet?.phrase],
+  );
 
   return (
     <Modal
