@@ -27,10 +27,7 @@ import {
   setWhiteLabelInfo,
 } from 'whitelabel/whiteLabelInfo';
 import {fetchSupportedBuyCryptoCurrency} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
-import {
-  compareRpcUrls,
-  fetchRPCUrl,
-} from 'dok-wallet-blockchain-networks/rpcUrls/rpcUrls';
+import {fetchRPCUrl} from 'dok-wallet-blockchain-networks/rpcUrls/rpcUrls';
 import {
   getDisableMessage,
   getGoogleAnalyticsKey,
@@ -38,10 +35,7 @@ import {
 import DisabledView from 'components/DisabledView';
 import {MainNavigation} from 'utils/navigation';
 import {getFeesInfo} from 'dok-wallet-blockchain-networks/feesInfo/feesInfo';
-import {registerShowToast} from 'dok-wallet-blockchain-networks/helper/toast';
-import {showToast} from 'utils/toast';
 
-registerShowToast(showToast);
 import {
   createIfNotExistsMasterClientId,
   resetCoinsToDefaultAddressForPrivacyMode,
@@ -125,15 +119,11 @@ function AppRouting({children, wlData}) {
       dispatch(resetCoinsToDefaultAddressForPrivacyMode());
       dispatch(fetchSupportedBuyCryptoCurrency({fromDevice: 'web'}));
       dispatch(checkNewsAvailable({key: 'web'}));
-      fetchRPCUrl().then(resp => {
-        setTimeout(() => {
-          compareRpcUrls();
-        }, 1000);
-      });
+      fetchRPCUrl();
       dispatch(fetchCurrencies({checkNewCoins: true, ignoreLimit: true}));
       setInterval(
         () => {
-          compareRpcUrls();
+          fetchRPCUrl();
         },
         1000 * 60 * 10,
       );
