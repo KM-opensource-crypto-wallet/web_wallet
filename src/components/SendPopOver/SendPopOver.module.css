@@ -9,6 +9,11 @@
   width: 24px;
 }
 
+.popoverContainer {
+  display: flex;
+  flex-direction: column;
+}
+
 .popoverItemView {
   padding: 16px 24px;
   background-color: var(--backgroundColor);

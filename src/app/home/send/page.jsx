@@ -40,7 +40,6 @@ import IconButton from '@mui/material/IconButton';
 import Close from '@mui/icons-material/Close';
 import SelectInput from 'components/SelectInput';
 import SendPopOver from 'components/SendPopOver';
-import SelectedUTXOsPopOver from 'src/components/SelectedUTXOsPopOver';
 import {clearSelectedUTXOs} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import ModalUnclaimedDeposit from 'components/ModalUnclaimedDeposit';
 
@@ -168,10 +167,13 @@ const SendScreen = () => {
     <>
       <div className={s.goBack}>
         <GoBackButton />
-        {isDeriveAddressChain && !isImportWithPrivateKey ? (
-          <SendPopOver />
-        ) : (
-          isBitcoin && <SelectedUTXOsPopOver />
+        {(isBitcoin || (isDeriveAddressChain && !isImportWithPrivateKey)) && (
+          <SendPopOver
+            isBitcoin={isBitcoin}
+            isDeriveAddressChain={
+              isDeriveAddressChain && !isImportWithPrivateKey
+            }
+          />
         )}
       </div>
       {isLoading ? (
@@ -179,6 +181,7 @@ const SendScreen = () => {
       ) : (
         <div className={s.container}>
           {isDeriveAddressChain &&
+            !isBitcoin &&
             !isImportWithPrivateKey &&
             !isAddMoreAddressPopupHide && (
               <div className={classNames.syncView}>
