@@ -44,18 +44,20 @@ const SendPopOver = ({isBitcoin, isDeriveAddressChain}) => {
   return (
     <>
       <DokPopover ref={popoverRef}>
-        {isBitcoin && (
-          <button className={s.popoverItemView} onClick={handleSelectUTXOs}>
-            <p className={s.popoverItemText}>{'Select UTXOs'}</p>
-          </button>
-        )}
-        {isDeriveAddressChain && (
-          <button
-            className={s.popoverItemView}
-            onClick={handleCustomDerivation}>
-            <p className={s.popoverItemText}>{'Custom Derivation'}</p>
-          </button>
-        )}
+        <div className={s.popoverContainer}>
+          {isBitcoin && (
+            <button className={s.popoverItemView} onClick={handleSelectUTXOs}>
+              <p className={s.popoverItemText}>{'Select UTXOs'}</p>
+            </button>
+          )}
+          {isDeriveAddressChain && (
+            <button
+              className={s.popoverItemView}
+              onClick={handleCustomDerivation}>
+              <p className={s.popoverItemText}>{'Custom Derivation'}</p>
+            </button>
+          )}
+        </div>
       </DokPopover>
 
       <ModalCustomDerivation

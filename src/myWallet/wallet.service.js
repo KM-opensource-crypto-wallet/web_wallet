@@ -133,7 +133,7 @@ const createBitcoinWallet = async (mnemonic, isSandbox) => {
       deriveAddresses,
     };
   } catch (e) {
-    console.error('Error in createBitcoinSegwitWallet', e);
+    console.error('Error in createBitcoinWallet', e);
     throw e;
   }
 };
@@ -202,7 +202,7 @@ const createBitcoinLegacySegwitWallet = async (mnemonic, isSandbox) => {
     );
     const xPubKey = extendedKey.neutered().toBase58();
     const xPrvKey = extendedKey.toBase58();
-    const {address} = bitcoin.payments.p2wpkh({
+    const {address} = bitcoin.payments.p2pkh({
       pubkey: child1.publicKey,
       network: customNetwork,
     });
@@ -211,7 +211,7 @@ const createBitcoinLegacySegwitWallet = async (mnemonic, isSandbox) => {
     for (let i = 0; i < 20; i++) {
       const derivePath = `m/44'/${coinType}'/0'/${i}/0`;
       const child = root.derivePath(derivePath);
-      const {address: deriveAddress} = bitcoin.payments.p2wpkh({
+      const {address: deriveAddress} = bitcoin.payments.p2pkh({
         pubkey: child.publicKey,
         network: customNetwork,
       });
