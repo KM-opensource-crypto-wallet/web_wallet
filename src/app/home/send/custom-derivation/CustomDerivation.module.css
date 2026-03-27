@@ -7,7 +7,7 @@
 }
 
 .goBack {
-  padding:20px;
+  padding: 20px;
   display: flex;
   justify-content: space-between;
 }
@@ -24,8 +24,9 @@
   border: 1px solid #989898;
   border-radius: 4px;
 }
+
 .inputContainer {
-  padding:0px 20px 20px 20px;
+  padding: 0px 20px 20px 20px;
   width: 100%;
 }
 
@@ -37,7 +38,7 @@
   padding-bottom: 0;
   font-weight: bold;
   color: var(--font);
-  flex:1;
+  flex: 1;
   margin-bottom: 24px;
 }
 
@@ -47,7 +48,8 @@
   width: 89%;
   margin-top: 4px;
 }
-.hideModule{
+
+.hideModule {
   display: none;
 }
 
@@ -68,7 +70,7 @@
   width: fit-content;
   background-color: var(--background);
   min-height: 40px;
-  padding:  0 16px;
+  padding: 0 16px;
   border-radius: 10px;
   font-size: 14px;
   display: flex;
@@ -89,6 +91,7 @@
   justify-content: center;
   color: var(--font);
 }
+
 .exportButton:hover {
   border: 2px solid var(--background);
   color: var(--background)
@@ -114,6 +117,7 @@
   font-family: var(--font-roboto);
   font-weight: bold;
 }
+
 .mainItem {
   align-items: center;
   flex-direction: row;
@@ -183,13 +187,13 @@
   margin-right: 10px;
 }
 
-.iconBox > svg {
+.iconBox>svg {
   width: 30px;
   height: 30px;
   fill: var(--backgroundColor);
 }
 
-.arrow > svg {
+.arrow>svg {
   width: 30px;
   height: 30px;
   fill: var(--gray);
@@ -210,19 +214,23 @@
   text-align: center;
   padding: 0 10px;
 }
+
 .popoverItemView {
   padding: 16px 24px;
   background-color: var(--backgroundColor);
 }
+
 .popoverItemText {
   color: var(--font);
   font-size: 14px;
   font-family: var(--font-roboto);
   font-weight: 600;
 }
+
 .itemContainer {
-  padding-top:20px
+  padding-top: 20px
 }
+
 .sticky {
   position: fixed;
   top: 70px;
@@ -230,6 +238,14 @@
   width: 900px;
 }
 
-.sticky + .itemContainer {
+.sticky+.itemContainer {
   padding-top: 70px;
+}
+
+.textConfirm {
+  margin-top: 4;
+  color: 'red';
+  margin-left: 10;
+  font-size: 12;
+  font-family: var(--font-roboto);
 }
