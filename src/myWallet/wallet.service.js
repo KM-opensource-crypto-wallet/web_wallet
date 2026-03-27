@@ -688,8 +688,11 @@ const addCustomBitcoinSegwitDeriveAddress = async (
     const bip32 = BIP32Factory(ecc);
     const root = bip32.fromSeed(seed, customNetwork);
     const child1 = root.derivePath(customDerivePath);
-    const {address} = bitcoin.payments.p2wpkh({
-      pubkey: child1.publicKey,
+    const {address} = bitcoin.payments.p2sh({
+      redeem: bitcoin.payments.p2wpkh({
+        pubkey: child1.publicKey,
+        network: customNetwork,
+      }),
       network: customNetwork,
     });
     return {
@@ -713,7 +716,7 @@ const addCustomBitcoinLegacyDeriveAddress = async (
     const bip32 = BIP32Factory(ecc);
     const root = bip32.fromSeed(seed, customNetwork);
     const child1 = root.derivePath(customDerivePath);
-    const {address} = bitcoin.payments.p2wpkh({
+    const {address} = bitcoin.payments.p2pkh({
       pubkey: child1.publicKey,
       network: customNetwork,
     });
