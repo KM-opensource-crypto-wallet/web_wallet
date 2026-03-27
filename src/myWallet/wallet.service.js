@@ -112,7 +112,7 @@ const createBitcoinWallet = async (mnemonic, isSandbox) => {
     const coinType = isSandbox ? 1 : 0;
     const deriveAddresses = [];
     for (let i = 0; i < 20; i++) {
-      const derivePath = `m/84'/${coinType}'/0'/0/${i}`;
+      const derivePath = `m/84'/${coinType}'/0'/${i}/0`;
       const child = root.derivePath(derivePath);
       const {address: deriveAddress} = bitcoin.payments.p2wpkh({
         pubkey: child.publicKey,
@@ -151,17 +151,23 @@ const createBitcoinSegwitWallet = async (mnemonic, isSandbox) => {
     );
     const xPubKey = extendedKey.neutered().toBase58();
     const xPrvKey = extendedKey.toBase58();
-    const {address} = bitcoin.payments.p2wpkh({
-      pubkey: child1.publicKey,
+    const {address} = bitcoin.payments.p2sh({
+      redeem: bitcoin.payments.p2wpkh({
+        pubkey: child1.publicKey,
+        network: customNetwork,
+      }),
       network: customNetwork,
     });
     const coinType = isSandbox ? 1 : 0;
     const deriveAddresses = [];
     for (let i = 0; i < 20; i++) {
-      const derivePath = `m/49'/${coinType}'/0'/0/${i}`;
+      const derivePath = `m/49'/${coinType}'/0'/${i}/0`;
       const child = root.derivePath(derivePath);
-      const {address: deriveAddress} = bitcoin.payments.p2wpkh({
-        pubkey: child.publicKey,
+      const {address: deriveAddress} = bitcoin.payments.p2sh({
+        redeem: bitcoin.payments.p2wpkh({
+          pubkey: child.publicKey,
+          network: customNetwork,
+        }),
         network: customNetwork,
       });
       deriveAddresses.push({
@@ -203,7 +209,7 @@ const createBitcoinLegacySegwitWallet = async (mnemonic, isSandbox) => {
     const coinType = isSandbox ? 1 : 0;
     const deriveAddresses = [];
     for (let i = 0; i < 20; i++) {
-      const derivePath = `m/44'/${coinType}'/0'/0/${i}`;
+      const derivePath = `m/44'/${coinType}'/0'/${i}/0`;
       const child = root.derivePath(derivePath);
       const {address: deriveAddress} = bitcoin.payments.p2wpkh({
         pubkey: child.publicKey,
