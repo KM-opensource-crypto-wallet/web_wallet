@@ -673,7 +673,7 @@ const addCustomBitcoinDeriveAddress = async (
       derivePath: customDerivePath,
     };
   } catch (e) {
-    console.error('Error in addCustomTronDeriveAddress', e);
+    console.error('Error in addCustomBitcoinDeriveAddress', e);
     throw e;
   }
 };
@@ -701,7 +701,7 @@ const addCustomBitcoinSegwitDeriveAddress = async (
       derivePath: customDerivePath,
     };
   } catch (e) {
-    console.error('Error in addCustomTronDeriveAddress', e);
+    console.error('Error in addCustomBitcoinSegwitDeriveAddress', e);
     throw e;
   }
 };
@@ -726,7 +726,7 @@ const addCustomBitcoinLegacyDeriveAddress = async (
       derivePath: customDerivePath,
     };
   } catch (e) {
-    console.error('Error in addCustomTronDeriveAddress', e);
+    console.error('Error in addCustomBitcoinLegacyDeriveAddress', e);
     throw e;
   }
 };
