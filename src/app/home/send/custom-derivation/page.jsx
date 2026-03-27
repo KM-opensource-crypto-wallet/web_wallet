@@ -237,21 +237,23 @@ const CustomDerivation = () => {
       }}>
       <div className={s.goBack}>
         <GoBackButton />
-        <button
-          className={s.buttonAdd50}
-          onClick={onAdd50MoreAddresses}
-          style={
-            isAdding50more
-              ? {
-                  backgroundColor: 'var(--gray)',
-                  cursor: 'not-allowed',
-                  pointerEvents: 'all !important',
-                }
-              : {}
-          }
-          disabled={isAdding50more}>
-          Add 50 more addresses
-        </button>
+        {!isBitcoinChain(currentCoin?.chain_name) && (
+          <button
+            className={s.buttonAdd50}
+            onClick={onAdd50MoreAddresses}
+            style={
+              isAdding50more
+                ? {
+                    backgroundColor: 'var(--gray)',
+                    cursor: 'not-allowed',
+                    pointerEvents: 'all !important',
+                  }
+                : {}
+            }
+            disabled={isAdding50more}>
+            Add 50 more addresses
+          </button>
+        )}
       </div>
       <form className={s.inputContainer} onSubmit={handleSubmit}>
         <div className={s.dropdownContainer}>
