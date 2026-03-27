@@ -37,7 +37,6 @@ import {MainNavigation} from 'utils/navigation';
 import {getFeesInfo} from 'dok-wallet-blockchain-networks/feesInfo/feesInfo';
 
 import {
-  backfillBitcoinDerivePrivateKeys,
   createIfNotExistsMasterClientId,
   resetCoinsToDefaultAddressForPrivacyMode,
   resetIsAdding50MoreAddresses,
@@ -101,7 +100,6 @@ function AppRouting({children, wlData}) {
     if (isReduxStoreLoad) {
       dispatch(resetIsAdding50MoreAddresses());
       dispatch(createIfNotExistsMasterClientId());
-      dispatch(backfillBitcoinDerivePrivateKeys());
       let searchString = searchParams?.toString();
       if (
         !pathname?.includes('/auth') &&
