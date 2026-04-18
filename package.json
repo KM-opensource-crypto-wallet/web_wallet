@@ -165,5 +165,9 @@
     "**/@npmcli/map-workspaces/glob": "10.5.0",
     "**/@npmcli/package-json/glob": "10.5.0",
     "**/node-gyp/cacache/glob": "8.1.0"
+  },
+  "packageManager": "yarn@1.22.22",
+  "engines": {
+    "node": ">=22"
   }
 }
