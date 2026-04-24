@@ -23,9 +23,11 @@ import {
 } from 'utils/localStorageData';
 import Loading from '../Loading';
 import {
+  getAppName,
   getWalletConnectDetails,
   setWhiteLabelInfo,
 } from 'whitelabel/whiteLabelInfo';
+import {setupCaptchaInterceptor} from 'dok-wallet-blockchain-networks/config/dokApi';
 import {fetchSupportedBuyCryptoCurrency} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
 import {fetchRPCUrl} from 'dok-wallet-blockchain-networks/rpcUrls/rpcUrls';
 import {
@@ -168,6 +170,12 @@ function AppRouting({children, wlData}) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReduxStoreLoad]);
+
+  useEffect(() => {
+    if (wlData?.name) {
+      setupCaptchaInterceptor(getAppName());
+    }
+  }, [wlData]);
 
   useEffect(() => {
     setWhiteLabelInfo(wlData);
