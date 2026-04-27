@@ -4,7 +4,6 @@ import StateProvider from '../redux/StateProvider';
 import AppRouting from 'components/AppRouting';
 import ThemeProvider from 'theme/ThemeContext';
 import React from 'react';
-import Script from 'next/script';
 import {NextIntlClientProvider} from 'next-intl';
 import {getLocale, getMessages} from 'next-intl/server';
 import {getWhiteLabelInfo} from 'dok-wallet-blockchain-networks/service/dokApi';
@@ -79,10 +78,6 @@ export default async function RootLayout({children}) {
           <h3 style={{textAlign: 'center', flex: 1}}>Something went wrong</h3>
         </body>
       )}
-      <Script
-        src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`}
-        strategy='afterInteractive'
-      />
     </html>
   );
 }
