@@ -1,0 +1,23 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-roboto);
+  color: var(--font);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 13px;
+  font-family: var(--font-roboto);
+  color: var(--gray);
+}

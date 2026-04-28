@@ -1,0 +1,85 @@
+.container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.12);
+  gap: 10px;
+  transition: background-color 0.15s ease;
+}
+
+.selectable {
+  cursor: pointer;
+}
+
+.selectable:hover {
+  background-color: var(--walletItemColor);
+}
+
+.checkboxContainer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.list {
+  flex: 1;
+  min-width: 0;
+}
+
+.box {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.item {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowStyle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-roboto);
+  color: var(--font);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.text {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-family: var(--font-roboto);
+  color: var(--gray);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chainTag {
+  font-size: 10px;
+  font-family: var(--font-roboto);
+  color: var(--gray);
+  background-color: var(--walletItemColor);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+.itemNumber {
+  text-align: right;
+  flex-shrink: 0;
+}
