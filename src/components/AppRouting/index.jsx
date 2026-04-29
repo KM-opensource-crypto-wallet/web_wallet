@@ -46,6 +46,7 @@ import {masterClickHost, publicRoutes, allPublicRoutes} from 'utils/common';
 import {setWLAppName} from 'utils/wlData';
 import {ThemeProvider} from '@mui/system';
 import {createDynamicTheme} from 'src/theme';
+import CoinSyncWidget from 'components/CoinSyncWidget';
 
 function AppRouting({children, wlData}) {
   const password = useSelector(getUserPassword);
@@ -207,6 +208,7 @@ function AppRouting({children, wlData}) {
           </div>
         )}
       </div>
+      <CoinSyncWidget />
       <ToastContainer
         position='bottom-right'
         draggable

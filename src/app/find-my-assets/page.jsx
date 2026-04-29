@@ -28,6 +28,8 @@ import CoinSyncActionButton from 'components/CoinSyncActionButton';
 import CoinSyncEmptyState from 'components/CoinSyncEmptyState';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import IconButton from '@mui/material/IconButton';
+import Modal from '@mui/material/Modal';
+import CircularProgress from '@mui/material/CircularProgress';
 import styles from './FindMyAssets.module.css';
 
 const FindMyAssets = () => {
@@ -161,7 +163,17 @@ const FindMyAssets = () => {
         />
       </div>
 
-      {isCreatingWallets && <div className={styles.interactionBlocker} />}
+      <Modal open={true} disableEscapeKeyDown>
+        <div className={styles.blockerOverlay}>
+          <div className={styles.blockerDialog}>
+            <CircularProgress size={40} sx={{color: 'var(--background)'}} />
+            <p className={styles.blockerTitle}>Creating wallets...</p>
+            <p className={styles.blockerSubtitle}>
+              Please wait, do not close the website.
+            </p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
