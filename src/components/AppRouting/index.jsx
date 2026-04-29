@@ -47,6 +47,7 @@ import {setWLAppName} from 'utils/wlData';
 import {ThemeProvider} from '@mui/system';
 import {createDynamicTheme} from 'src/theme';
 import CoinSyncWidget from 'components/CoinSyncWidget';
+import {initRPCProxyInterceptor} from 'src/utils/rpcProxyInterceptor';
 
 function AppRouting({children, wlData}) {
   const password = useSelector(getUserPassword);
@@ -64,6 +65,10 @@ function AppRouting({children, wlData}) {
 
   const disableMessage = useSelector(getDisableMessage);
   const googleAnalyticsKey = useSelector(getGoogleAnalyticsKey);
+
+  useEffect(() => {
+    initRPCProxyInterceptor();
+  }, []);
 
   useEffect(() => {
     if (googleAnalyticsKey) {
