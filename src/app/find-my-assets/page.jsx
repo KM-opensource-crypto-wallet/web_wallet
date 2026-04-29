@@ -163,7 +163,7 @@ const FindMyAssets = () => {
         />
       </div>
 
-      <Modal open={true} disableEscapeKeyDown>
+      <Modal open={isCreatingWallets} disableEscapeKeyDown>
         <div className={styles.blockerOverlay}>
           <div className={styles.blockerDialog}>
             <CircularProgress size={40} sx={{color: 'var(--background)'}} />
