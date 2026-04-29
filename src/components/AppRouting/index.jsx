@@ -26,7 +26,7 @@ import {
   getWalletConnectDetails,
   setWhiteLabelInfo,
 } from 'whitelabel/whiteLabelInfo';
-import {captchaRef} from 'dok-wallet-blockchain-networks/config/dokApi';
+import {captchaRef} from 'utils/apiCaptcha';
 import {
   GoogleReCaptchaProvider,
   useGoogleReCaptcha,
