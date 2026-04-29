@@ -1,7 +1,7 @@
 .safeArea {
   display: flex;
   flex-direction: column;
-  height: calc(var(--app-height) - 60px);
+  height: calc(var(--app-height, 100vh) - 60px);
   background-color: var(--secondaryBackgroundColor);
   position: relative;
 }

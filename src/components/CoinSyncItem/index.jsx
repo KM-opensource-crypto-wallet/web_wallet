@@ -25,9 +25,17 @@ const CoinSyncItem = ({coin, isSelectable, isSelected, onToggle}) => {
       onClick={handleClick}
       role={isSelectable ? 'checkbox' : undefined}
       aria-checked={isSelectable ? isSelected : undefined}
+      aria-label={isSelectable ? `Select ${coin?.name || symbol}` : undefined}
       tabIndex={isSelectable ? 0 : undefined}
       onKeyDown={
-        isSelectable ? e => e.key === 'Enter' && handleClick() : undefined
+        isSelectable
+          ? e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleClick();
+              }
+            }
+          : undefined
       }>
       {isSelectable && (
         <div className={styles.checkboxContainer}>

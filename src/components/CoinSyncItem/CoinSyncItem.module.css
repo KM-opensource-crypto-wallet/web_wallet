@@ -16,6 +16,12 @@
   background-color: var(--walletItemColor);
 }
 
+.selectable:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: -2px;
+  background-color: var(--walletItemColor);
+}
+
 .checkboxContainer {
   flex-shrink: 0;
   display: flex;

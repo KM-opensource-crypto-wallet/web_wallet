@@ -57,7 +57,7 @@ export async function POST(request) {
     return Response.json({error: 'Invalid request body'}, {status: 400});
   }
 
-  const {targetUrl, payload} = body;
+  const {targetUrl, payload, forwardedHeaders} = body;
 
   if (!targetUrl || typeof targetUrl !== 'string') {
     return Response.json({error: 'Missing targetUrl'}, {status: 400});
@@ -70,6 +70,10 @@ export async function POST(request) {
     return Response.json({error: 'Invalid URL'}, {status: 400});
   }
 
+  if (parsedUrl.protocol !== 'https:') {
+    return Response.json({error: 'Only HTTPS URLs are allowed'}, {status: 400});
+  }
+
   if (!isAllowedHost(parsedUrl.hostname)) {
     return Response.json({error: 'Domain not allowed'}, {status: 403});
   }
@@ -77,7 +81,12 @@ export async function POST(request) {
   try {
     const resp = await fetch(targetUrl, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        ...(forwardedHeaders && typeof forwardedHeaders === 'object'
+          ? forwardedHeaders
+          : {}),
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(8000),
     });

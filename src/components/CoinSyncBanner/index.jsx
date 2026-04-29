@@ -96,13 +96,21 @@ const CoinSyncBanner = () => {
 
   if (shouldHide) return null;
 
+  const handleBannerKeyDown = e => {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleBannerClick();
+    }
+  };
+
   return (
     <div
       className={styles.banner}
       onClick={handleBannerClick}
       role='button'
       tabIndex={0}
-      onKeyDown={e => e.key === 'Enter' && handleBannerClick()}>
+      onKeyDown={handleBannerKeyDown}>
       <div className={styles.iconContainer}>
         {isFetching || isCreatingWallets ? (
           <div className={styles.spinnerWrapper}>
