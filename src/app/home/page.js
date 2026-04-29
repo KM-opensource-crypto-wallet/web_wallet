@@ -72,6 +72,7 @@ import TextField from '@mui/material/TextField';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import BatchTransactionBanner from 'components/BatchTransactionBanner';
+import CoinSyncBanner from 'components/CoinSyncBanner';
 // import {
 //   setWalletConnectRequestModal,
 //   setWalletConnectTransactionModal,
@@ -232,6 +233,7 @@ export default function Home() {
       <main className={classNames.container}>
         <div>
           <BatchTransactionBanner />
+          <CoinSyncBanner />
           {!!newsMessage && (
             <div className={classNames.syncView}>
               <div className={classNames.syncTitle}>{`Important News!`}</div>
