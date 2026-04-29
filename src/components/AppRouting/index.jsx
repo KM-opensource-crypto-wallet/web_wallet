@@ -26,6 +26,23 @@ import {
   getWalletConnectDetails,
   setWhiteLabelInfo,
 } from 'whitelabel/whiteLabelInfo';
+import {captchaRef} from 'utils/apiCaptcha';
+import {
+  GoogleReCaptchaProvider,
+  useGoogleReCaptcha,
+} from 'react-google-recaptcha-v3';
+
+const CaptchaSetup = () => {
+  const {executeRecaptcha} = useGoogleReCaptcha();
+  useEffect(() => {
+    if (!executeRecaptcha) return;
+    captchaRef.execute = executeRecaptcha;
+    return () => {
+      captchaRef.execute = null;
+    };
+  }, [executeRecaptcha]);
+  return null;
+};
 import {fetchSupportedBuyCryptoCurrency} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
 import {fetchRPCUrl} from 'dok-wallet-blockchain-networks/rpcUrls/rpcUrls';
 import {
@@ -186,34 +203,38 @@ function AppRouting({children, wlData}) {
 
   const isKimlWallet = wlData?._id === '65efefca5f95b9f06cc8f9eb';
   return (
-    <ThemeProvider
-      theme={createDynamicTheme(isKimlWallet ? '#4F8DD8' : '#F44D03')}>
-      <div>
-        {rountingDone && !disableMessage ? (
-          <div className={s.container}>
-            <div className={s.navbarWrapper}>{<Header />}</div>
-            <div className={s.mainWrapper}>
-              <div className={s.side}>
-                <aside className={s.sidebarWrapper}>{<Sidebar />}</aside>
+    <GoogleReCaptchaProvider
+      reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}>
+      <CaptchaSetup />
+      <ThemeProvider
+        theme={createDynamicTheme(isKimlWallet ? '#4F8DD8' : '#F44D03')}>
+        <div>
+          {rountingDone && !disableMessage ? (
+            <div className={s.container}>
+              <div className={s.navbarWrapper}>{<Header />}</div>
+              <div className={s.mainWrapper}>
+                <div className={s.side}>
+                  <aside className={s.sidebarWrapper}>{<Sidebar />}</aside>
+                </div>
+                <div className={s.main}>{children}</div>
               </div>
-              <div className={s.main}>{children}</div>
             </div>
-          </div>
-        ) : disableMessage ? (
-          <DisabledView />
-        ) : (
-          <div className={s.mainContainer}>
-            <Loading />
-          </div>
-        )}
-      </div>
-      <ToastContainer
-        position='bottom-right'
-        draggable
-        pauseOnHover
-        theme={themeType === 'light' ? 'light' : 'dark'}
-      />
-    </ThemeProvider>
+          ) : disableMessage ? (
+            <DisabledView />
+          ) : (
+            <div className={s.mainContainer}>
+              <Loading />
+            </div>
+          )}
+        </div>
+        <ToastContainer
+          position='bottom-right'
+          draggable
+          pauseOnHover
+          theme={themeType === 'light' ? 'light' : 'dark'}
+        />
+      </ThemeProvider>
+    </GoogleReCaptchaProvider>
   );
 }
 
