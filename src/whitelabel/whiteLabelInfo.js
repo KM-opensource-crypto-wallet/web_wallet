@@ -1,4 +1,5 @@
 import {setWhiteLabelIdToDokApi} from 'dok-wallet-blockchain-networks/config/dokApi';
+import {setupWebCaptchaInterceptor} from 'utils/apiCaptcha';
 
 let whiteLabelInfo = {};
 
@@ -17,6 +18,7 @@ const dokwalletWalletConnectDetails = {
 export const setWhiteLabelInfo = info => {
   whiteLabelInfo = info;
   setWhiteLabelIdToDokApi(getWhiteLabelId());
+  setupWebCaptchaInterceptor(getAppName());
   const isKimlWallet = whiteLabelInfo?._id === '65efefca5f95b9f06cc8f9eb';
   if (isKimlWallet) {
     document.documentElement.style.setProperty('--background', '#4F8DD8');
