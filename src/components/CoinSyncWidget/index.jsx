@@ -19,10 +19,10 @@ const CoinSyncWidget = () => {
   const widgetData = useSelector(selectWidgetData);
 
   const handlePress = useCallback(() => {
-    router.push('/find-my-assets');
+    router.push('/home/coin-sync');
   }, [router]);
 
-  if (!shouldShowWidget || pathname === '/find-my-assets') {
+  if (!shouldShowWidget || pathname === '/home/coin-sync') {
     return null;
   }
 

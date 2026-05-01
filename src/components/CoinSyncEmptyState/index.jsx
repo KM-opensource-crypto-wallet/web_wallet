@@ -25,17 +25,16 @@ const EMPTY_STATE_CONFIG = {
   },
 };
 
-const CoinSyncEmptyState = ({status, hasCoinsWithBalance}) => {
+const CoinSyncEmptyState = ({status}) => {
   const config = useMemo(() => {
     if (status === 'fetching') return EMPTY_STATE_CONFIG.fetching;
     if (status === 'creating_wallets')
       return EMPTY_STATE_CONFIG.creating_wallets;
     if (status === 'syncing') return EMPTY_STATE_CONFIG.syncing;
     if (status === 'idle') return EMPTY_STATE_CONFIG.idle;
-    if (status === 'completed' && !hasCoinsWithBalance)
-      return EMPTY_STATE_CONFIG.completed;
+    if (status === 'completed') return EMPTY_STATE_CONFIG.completed;
     return null;
-  }, [status, hasCoinsWithBalance]);
+  }, [status]);
 
   if (!config) return null;
 

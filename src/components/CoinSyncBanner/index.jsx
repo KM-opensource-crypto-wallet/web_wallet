@@ -73,7 +73,7 @@ const CoinSyncBanner = () => {
   };
 
   const handleBannerClick = useCallback(() => {
-    router.push('/find-my-assets');
+    router.push('/home/coin-sync');
   }, [router]);
 
   const handleClose = useCallback(

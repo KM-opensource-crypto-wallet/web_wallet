@@ -30,9 +30,9 @@ import ArrowBack from '@mui/icons-material/ArrowBack';
 import IconButton from '@mui/material/IconButton';
 import Modal from '@mui/material/Modal';
 import CircularProgress from '@mui/material/CircularProgress';
-import styles from './FindMyAssets.module.css';
+import styles from './CoinSync.module.css';
 
-const FindMyAssets = () => {
+const CoinSync = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
@@ -145,10 +145,7 @@ const FindMyAssets = () => {
               />
             ))
           ) : (
-            <CoinSyncEmptyState
-              status={status}
-              hasCoinsWithBalance={coinsWithBalanceCount > 0}
-            />
+            <CoinSyncEmptyState status={status} />
           )}
         </div>
 
@@ -178,4 +175,4 @@ const FindMyAssets = () => {
   );
 };
 
-export default FindMyAssets;
+export default CoinSync;
