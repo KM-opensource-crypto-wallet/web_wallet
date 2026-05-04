@@ -12,7 +12,6 @@ import {
   checkNewsAvailable,
   fetchCurrencies,
 } from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
-import {ToastContainer} from 'react-toastify';
 import {ThemeContext} from 'theme/ThemeContext';
 import {isReduxStoreLoaded} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
 import {selectWalletConnectSessions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -64,6 +63,7 @@ import {setWLAppName} from 'utils/wlData';
 import {ThemeProvider} from '@mui/system';
 import {createDynamicTheme} from 'src/theme';
 import CoinSyncWidget from 'components/CoinSyncWidget';
+import {ToastContainer} from 'react-toastify';
 
 function AppRouting({children, wlData}) {
   const password = useSelector(getUserPassword);
@@ -170,14 +170,25 @@ function AppRouting({children, wlData}) {
       ) {
         setRoutingDone(true);
       } else {
+        const shouldSkipLock =
+          typeof window !== 'undefined' &&
+          sessionStorage.getItem('skip_lock_screen') === 'true';
+
         if (!password) {
           if (pathname !== '/auth/registration') {
             routing.replace(searchString ? `/?${searchString}` : '/');
           }
-        } else {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('skip_lock_screen');
+          }
+        } else if (!shouldSkipLock) {
           routing.replace(
             searchString ? `/auth/login?${searchString}` : `/auth/login`,
           );
+        } else {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('skip_lock_screen');
+          }
         }
         setTimeout(() => {
           setRoutingDone(true);

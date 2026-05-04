@@ -79,13 +79,13 @@ export const showToast = ({type, title, message, props, ...options}) => {
     );
   } else if (type === 'progressToast') {
     return toast.loading(customView(title, message), {autoClose: false});
-  } else if (type === 'successToast') {
+  } else if (type === 'successToast' || type === 'success') {
     return toast.success(customView(title, message));
-  } else if (type === 'warningToast') {
+  } else if (type === 'warningToast' || type === 'warning') {
     return toast.warning(customView(title, message));
-  } else if (type === 'errorToast') {
+  } else if (type === 'errorToast' || type === 'error') {
     return toast.error(customView(title, message));
-  } else if (type === 'messageToast') {
+  } else if (type === 'messageToast' || type === 'message') {
     return toast(<Msg {...{title, message, onClick: options?.onClick}} />, {
       icon: (
         <svg
