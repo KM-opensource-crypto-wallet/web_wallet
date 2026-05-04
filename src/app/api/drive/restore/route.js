@@ -23,6 +23,7 @@ export async function GET(req) {
       q: `name = '${BACKUP_FILE_NAME}' and 'appDataFolder' in parents and trashed = false`,
       spaces: 'appDataFolder',
       fields: 'files(id, name, modifiedTime)',
+      orderBy: 'modifiedTime desc',
     });
 
     const files = listRes.data.files || [];

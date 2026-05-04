@@ -10,19 +10,27 @@ function SignInContent() {
   const error = searchParams.get('error');
   const callbackUrl = searchParams.get('callbackUrl');
 
-  // Handle callbackUrl safely
   const getRedirectPath = () => {
     if (!callbackUrl) return '/auth/login';
-    try {
-      // If it's a full URL, extract the path
-      if (callbackUrl.startsWith('http')) {
-        const url = new URL(callbackUrl);
-        return url.pathname + url.search;
-      }
+    // Allow local paths only — reject protocol-relative ('//') and other schemes
+    if (callbackUrl.startsWith('/') && !callbackUrl.startsWith('//')) {
       return callbackUrl;
-    } catch (e) {
-      return '/auth/login';
     }
+    if (callbackUrl.startsWith('http')) {
+      try {
+        const url = new URL(callbackUrl);
+        const appOrigin =
+          typeof window !== 'undefined'
+            ? window.location.origin
+            : process.env.NEXT_PUBLIC_APP_URL || '';
+        if (url.origin === appOrigin) {
+          return url.pathname + url.search;
+        }
+      } catch {
+        return '/auth/login';
+      }
+    }
+    return '/auth/login';
   };
 
   const redirectPath = getRedirectPath();

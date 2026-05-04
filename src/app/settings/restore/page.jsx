@@ -311,7 +311,10 @@ const RestorePage = () => {
               const isRestored = isWalletRestored(wallet);
               return (
                 <div
-                  key={wallet.clientId || wallet.walletName}
+                  key={
+                    wallet.clientId ||
+                    `${wallet.walletName}-${wallet.chain_name}`
+                  }
                   className={s.walletBox}>
                   <label
                     className={s.walletList}

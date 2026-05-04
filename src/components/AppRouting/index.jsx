@@ -63,7 +63,7 @@ import {setWLAppName} from 'utils/wlData';
 import {ThemeProvider} from '@mui/system';
 import {createDynamicTheme} from 'src/theme';
 import CoinSyncWidget from 'components/CoinSyncWidget';
-import { ToastContainer } from 'react-toastify';
+import {ToastContainer} from 'react-toastify';
 
 function AppRouting({children, wlData}) {
   const password = useSelector(getUserPassword);
@@ -177,6 +177,9 @@ function AppRouting({children, wlData}) {
         if (!password) {
           if (pathname !== '/auth/registration') {
             routing.replace(searchString ? `/?${searchString}` : '/');
+          }
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('skip_lock_screen');
           }
         } else if (!shouldSkipLock) {
           routing.replace(

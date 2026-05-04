@@ -80,7 +80,7 @@ const authOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || 'changeme', // Fallback for dev, but user should set this
+  secret: process.env.NEXTAUTH_SECRET, // Fallback for dev, but user should set this
   pages: {
     error: '/auth/error', // Error code passed in query string as ?error=
     signIn: '/auth/error',
