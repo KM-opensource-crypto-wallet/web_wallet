@@ -12,8 +12,10 @@ import {
   allDerivePath,
   customObj,
   getCustomizePublicAddress,
+  isBitcoinChain,
   isEVMChain,
   isValidDerivePath,
+  validateSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
 import SelectInputExchange from 'components/SelectInputExchange';
 import {useFormik} from 'formik';
@@ -29,6 +31,44 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {downloadCsv} from 'utils/common';
 
+const DERIVATION_CONFIG = {
+  ethereum: {
+    Ledger: j => `m/44'/60'/${j}'/0/0`,
+    Metamask: j => `m/44'/60'/0'/0/${j}`,
+  },
+  solana: {
+    Ledger: j => `m/44'/501'/${j}'`,
+  },
+  tron: {
+    Ledger: j => `m/44'/195'/${j}'/0/0`,
+  },
+  bitcoin: {
+    Ledger: j => `m/84'/0'/${j}'/0/0`,
+  },
+  bitcoin_segwit: {
+    Ledger: j => `m/49'/0'/${j}'/0/0`,
+  },
+  bitcoin_legacy: {
+    Ledger: j => `m/44'/0'/${j}'/0/0`,
+  },
+};
+
+const generatePaths = (chain, label) => {
+  const config = DERIVATION_CONFIG[chain];
+  if (!config) return [];
+
+  const type = Object.keys(config).find(key => label?.includes(key));
+  if (!type) return [];
+
+  return Array.from({length: 50}, (_, j) => {
+    const path = config[type](j + 1);
+    return {
+      label: `${type} (${path})`,
+      value: path,
+    };
+  });
+};
+
 const CustomDerivation = () => {
   const currentCoin = useSelector(selectCurrentCoin);
   const isAdding50more = useSelector(isAdding50MoreAddresses);
@@ -39,46 +79,14 @@ const CustomDerivation = () => {
 
   const derivationData = useMemo(() => {
     const chainName = currentCoin?.chain_name;
+    if (!validateSupportedChain(chainName)) {
+      return [customObj];
+    }
     const convertedChainName = isEVMChain(chainName) ? 'ethereum' : chainName;
     const availableDerivePath = allDerivePath[convertedChainName] || [];
-    const make50DerivePath = [];
-    for (let i = 0; i < availableDerivePath.length; i++) {
-      for (let j = 1; j <= 50; j++) {
-        if (
-          convertedChainName === 'ethereum' &&
-          availableDerivePath[i]?.label?.includes('Ledger')
-        ) {
-          make50DerivePath.push({
-            label: `Ledger (m/44'/60'/${j}'/0/0)`,
-            value: `m/44'/60'/${j}'/0/0`,
-          });
-        } else if (
-          convertedChainName === 'ethereum' &&
-          availableDerivePath[i]?.label?.includes('Metamask')
-        ) {
-          make50DerivePath.push({
-            label: `Metamask (m/44'/60'/0'/0/${j})`,
-            value: `m/44'/60'/0'/0/${j}`,
-          });
-        } else if (
-          convertedChainName === 'solana' &&
-          availableDerivePath[i]?.label?.includes('Ledger')
-        ) {
-          make50DerivePath.push({
-            label: `Ledger (m/44'/501'/${j}')`,
-            value: `m/44'/501'/${j}'`,
-          });
-        } else if (
-          convertedChainName === 'tron' &&
-          availableDerivePath[i]?.label?.includes('Ledger')
-        ) {
-          make50DerivePath.push({
-            label: `Ledger (m/44'/195'/${j}'/0/0)`,
-            value: `m/44'/195'/${j}'/0/0`,
-          });
-        }
-      }
-    }
+    const make50DerivePath = availableDerivePath.flatMap(item =>
+      generatePaths(convertedChainName, item?.label),
+    );
     return [customObj, ...make50DerivePath];
   }, [currentCoin?.chain_name]);
 
@@ -154,6 +162,9 @@ const CustomDerivation = () => {
     }),
     onSubmit: async submittedValue => {
       try {
+        if (!validateSupportedChain(currentCoin?.chain_name)) {
+          return;
+        }
         setIsSubmitting(true);
         const {selectedDerivationOptions, customDerivePath} = submittedValue;
         const chainName = isEVMChain(currentCoin?.chain_name)
@@ -180,6 +191,10 @@ const CustomDerivation = () => {
     },
   });
 
+  const isAtLimit =
+    isBitcoinChain(currentCoin?.chain_name) &&
+    (currentCoin?.deriveAddresses?.length ?? 0) >= 100;
+
   const onAdd50MoreAddresses = useCallback(async () => {
     try {
       dispatch(add50AddressesOnCurrentCoin());
@@ -204,7 +219,8 @@ const CustomDerivation = () => {
     [setFieldValue],
   );
   const isCustom = values.selectedDerivationOptions === 'custom';
-  const isButtonDisabled = !values.selectedDerivationOptions || isSubmitting;
+  const isButtonDisabled =
+    !values.selectedDerivationOptions || isSubmitting || isAtLimit;
 
   return (
     <div
@@ -221,21 +237,23 @@ const CustomDerivation = () => {
       }}>
       <div className={s.goBack}>
         <GoBackButton />
-        <button
-          className={s.buttonAdd50}
-          onClick={onAdd50MoreAddresses}
-          style={
-            isAdding50more
-              ? {
-                  backgroundColor: 'var(--gray)',
-                  cursor: 'not-allowed',
-                  pointerEvents: 'all !important',
-                }
-              : {}
-          }
-          disabled={isAdding50more}>
-          Add 50 more addresses
-        </button>
+        {!isBitcoinChain(currentCoin?.chain_name) && (
+          <button
+            className={s.buttonAdd50}
+            onClick={onAdd50MoreAddresses}
+            style={
+              isAdding50more
+                ? {
+                    backgroundColor: 'var(--gray)',
+                    cursor: 'not-allowed',
+                    pointerEvents: 'all !important',
+                  }
+                : {}
+            }
+            disabled={isAdding50more}>
+            Add 50 more addresses
+          </button>
+        )}
       </div>
       <form className={s.inputContainer} onSubmit={handleSubmit}>
         <div className={s.dropdownContainer}>
@@ -295,6 +313,11 @@ const CustomDerivation = () => {
             />
           </FormControl>
         </div>
+        {isAtLimit && (
+          <div className={s.textConfirm}>
+            {'Maximum limit of 100 accounts reached'}
+          </div>
+        )}
         {errors.customDerivePath && touched.customDerivePath && (
           <p className={s.textConfirm}>{errors.customDerivePath}</p>
         )}

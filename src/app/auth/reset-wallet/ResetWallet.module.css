@@ -28,30 +28,42 @@
 }
 
 .btnList {
-  margin-top: 20px;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.btnList svg {
+  fill: none;
+}
+
+.card {
   display: flex;
   flex-direction: row;
-  justify-content: space-around;
-  align-items: center;
-  padding: 10px;
+  border-radius: 18px;
+  overflow: hidden;
+  background-color: var(--card-background, var(--backgroundColor));
+  border: 1px solid #E0E0E0;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  text-align: left;
   width: 100%;
 }
 
-.btn {
-  margin-bottom: 10px;
-  border-radius: 10px;
+.card:hover {
+  opacity: 0.85;
+}
+
+.imageBox {
   position: relative;
   width: 150px;
   height: 150px;
-  filter: drop-shadow(0px 16px 16px rgba(50, 50, 71, 0.08))
-    drop-shadow(0px 16px 16px rgba(50, 50, 71, 0.08));
-}
-
-@media (max-width: 768px) {
-  .btn {
-    width: calc(44vw - 20px);
-    height: calc(44vw - 20px);
-  }
+  flex-shrink: 0;
 }
 
 .textBox {
@@ -66,4 +78,25 @@
   left: 5%;
   bottom: 3%;
   font-size: 17px;
+}
+
+.cardContent {
+  flex: 1;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--font-color);
+  margin-bottom: 6px;
+}
+
+.cardSubtitle {
+  font-size: 17px;
+  color: var(--gray-color);
+  line-height: 17px;
 }

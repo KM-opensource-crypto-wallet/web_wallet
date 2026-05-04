@@ -1,5 +1,5 @@
 'use client';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Formik} from 'formik';
 import styles from './CryptoProviders.module.css';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
@@ -38,7 +38,12 @@ import {
 import Loading from 'components/Loading';
 import ModalAddCoins from 'components/ModalAddCoins';
 import {popupCenter} from 'utils/common';
-import {getIsBuyCryptoInNewTab} from 'src/whitelabel/whiteLabelInfo';
+import {
+  getIsBuyCryptoInNewTab,
+  is51Pegasi,
+  isCastor24,
+  isUsdtNotSupportedWL,
+} from 'src/whitelabel/whiteLabelInfo';
 import ModalRedirect from 'components/ModalRedirect';
 
 const currencyPicker = [
@@ -64,6 +69,19 @@ const CryptoProviders = () => {
   const [buyCryptoUrl, setBuyCryptoUrl] = useState(null);
   const selectedProviderRef = useRef(null);
   const popupCleanupRef = useRef(null);
+  const finalCoinOptions = useMemo(() => {
+    if (isUsdtNotSupportedWL()) {
+      return coinOptions.filter(
+        item =>
+          !(
+            item.options?.symbol?.toUpperCase() === 'USDT' ||
+            (item.options?.symbol?.toUpperCase() === 'USDC' &&
+              item.options?.chain_name === 'tron')
+          ),
+      );
+    }
+    return coinOptions;
+  }, [coinOptions]);
 
   useEffect(() => {
     return () => {
@@ -151,7 +169,12 @@ const CryptoProviders = () => {
         }
         const url = item?.extraData?.url;
         selectedProviderRef.current = item;
-        if (url) {
+        if (isCastor24()) {
+          window.open('https://www.castor24.com/login', '_blank');
+        }
+        if (is51Pegasi()) {
+          window.open('https://www.51pegasi.com/login', '_blank');
+        } else if (url) {
           launchUrl(url);
         } else {
           const resp = await getBuyCryptoUrl({
@@ -236,7 +259,7 @@ const CryptoProviders = () => {
           initialValues={{
             amount: '100',
             selectedCoin: null,
-            fiatCurrency: localCurrency,
+            fiatCurrency: isUsdtNotSupportedWL() ? 'EUR' : localCurrency,
           }}
           validationSchema={amountValidation}
           onSubmit={onSubmit}>
@@ -250,14 +273,14 @@ const CryptoProviders = () => {
             setFieldValue,
           }) => (
             <div>
-              <p className={styles.textStyle}>{'Select Crypto'}</p>
+              <p className={styles.textStyle}>{' Select Crypto'}</p>
               <div className={styles.dropdownContainer}>
                 <SelectInputExchange
-                  listData={coinOptions}
+                  listData={finalCoinOptions}
                   onValueChange={event => {
                     const value = event.target.value;
 
-                    const foundItem = coinOptions.find(
+                    const foundItem = finalCoinOptions.find(
                       item => item.value === value,
                     );
                     if (foundItem) {
@@ -283,20 +306,24 @@ const CryptoProviders = () => {
                 </p>
               </div>
               <div className={styles.rowView}>
-                <div className={styles.fiatCurrencyPicker}>
-                  <SelectInput
-                    listData={currencyPicker}
-                    onValueChange={value => {
-                      setFieldValue('fiatCurrency', value);
-                      submitQuote({...values, fiatCurrency: value});
-                    }}
-                    value={values.fiatCurrency}
-                    placeholder={'Select Network'}
-                    renderValue={p => {
-                      return p === 'USD' ? '$' : '€';
-                    }}
-                  />
-                </div>
+                {isUsdtNotSupportedWL() ? (
+                  <p className={styles.eurTextStyle}>{'€'}</p>
+                ) : (
+                  <div className={styles.fiatCurrencyPicker}>
+                    <SelectInput
+                      listData={currencyPicker}
+                      onValueChange={value => {
+                        setFieldValue('fiatCurrency', value);
+                        submitQuote({...values, fiatCurrency: value});
+                      }}
+                      value={values.fiatCurrency}
+                      placeholder={'Select Network'}
+                      renderValue={p => {
+                        return p === 'USD' ? '$' : '€';
+                      }}
+                    />
+                  </div>
+                )}
                 <FormControl variant='outlined' fullWidth={true}>
                   <InputLabel
                     sx={{

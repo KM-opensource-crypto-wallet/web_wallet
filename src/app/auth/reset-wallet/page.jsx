@@ -1,10 +1,8 @@
 'use client';
 import styles from './ResetWallet.module.css';
-import React, {useContext, useLayoutEffect, useState} from 'react';
-
+import React, {useContext, useState} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
 import Link from 'next/link';
-import ModalReset from 'components/ModalReset';
 import Image from 'next/image';
 import {getAppAssets} from 'whitelabel/whiteLabelInfo';
 import {ThemeContext} from 'theme/ThemeContext';
@@ -66,21 +64,8 @@ const ResetWallet = () => {
           </span>
 
           <div className={styles.btnList}>
+            {/* Create Wallet */}
             <button
-              // activeOpacity={1}
-              // onPress={() => {
-              //   navigation.navigate("CreateWallet");
-              //   // if (isFromOnBoarding) {
-              //   //   navigation.navigate('VerifyInfoModal');
-              //   // } else {
-              //   //   setTimeout(() => {
-              //   //     dispatch(loadingOn());
-              //   //     navigation.push('VerifyInfoModal', {
-              //   //       reset: 'CreateWallet',
-              //   //     });
-              //   //   }, 200);
-              //   // }
-              // }}
               onClick={() => {
                 router.push(
                   `/auth/create-wallet${
@@ -88,8 +73,8 @@ const ResetWallet = () => {
                   }`,
                 );
               }}
-              className={styles.btn}>
-              <div>
+              className={styles.card}>
+              <div className={styles.imageBox}>
                 {getAppAssets()?.[`wallet_create`]?.[themeType] ? (
                   <Image
                     src={getAppAssets()?.[`wallet_create`]?.[themeType]}
@@ -98,15 +83,22 @@ const ResetWallet = () => {
                     alt={'create-wallet'}
                   />
                 ) : (
-                  <CreateWalletSVG />
+                  <CreateWalletSVG width={150} height={150} />
                 )}
+                <div className={styles.textBox}>
+                  <p style={{color: 'var(--font)'}}>Create</p>
+                  <p style={{color: 'var(--backgroundColor)'}}>Wallet</p>
+                </div>
               </div>
-              <div className={styles.textBox}>
-                <p style={{color: 'var(--font)'}}>Create</p>
-                <p style={{color: 'var(--backgroundColor)'}}>Wallet</p>
+              <div className={styles.cardContent}>
+                <p className={styles.cardTitle}>Create Wallet</p>
+                <p className={styles.cardSubtitle}>
+                  Generate a brand-new wallet with a fresh 12-word seed phrase.
+                </p>
               </div>
             </button>
 
+            {/* Import Wallet */}
             <button
               onClick={() =>
                 router.push(
@@ -115,31 +107,28 @@ const ResetWallet = () => {
                   }`,
                 )
               }
-              className={styles.btn}>
-              <div className={styles.icon_create}>
+              className={styles.card}>
+              <div className={styles.imageBox}>
                 {getAppAssets()?.[`wallet_import`]?.[themeType] ? (
                   <Image
                     src={getAppAssets()?.[`wallet_import`]?.[themeType]}
                     width={150}
                     height={150}
-                    alt={'create-wallet'}
+                    alt={'import-wallet'}
                   />
                 ) : (
-                  <ImportWalletSVG />
+                  <ImportWalletSVG width={150} height={150} />
                 )}
+                <div className={styles.textBox2}>
+                  <p style={{color: 'var(--background)'}}>Import</p>
+                  <p style={{color: 'white'}}>Wallet</p>
+                </div>
               </div>
-              <div className={styles.textBox2}>
-                <p
-                  style={{
-                    color: 'var(--background)',
-                  }}>
-                  Import
-                </p>
-                <p
-                  style={{
-                    color: 'var(--backgroundColor)',
-                  }}>
-                  Wallet
+              <div className={styles.cardContent}>
+                <p className={styles.cardTitle}>Import Wallet</p>
+                <p className={styles.cardSubtitle}>
+                  Restore an existing wallet using your seed phrase or private
+                  key.
                 </p>
               </div>
             </button>

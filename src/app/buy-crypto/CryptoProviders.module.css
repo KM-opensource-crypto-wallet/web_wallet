@@ -17,6 +17,13 @@
   margin-bottom: 8px;
   font-weight: bold;
 }
+
+.eurTextStyle {
+  color: var(--primary);
+  font-size: 32px;
+  font-weight: bold;
+  margin-right: 16px;
+}
 .address {
   color: var(--font);
   font-size: 14px;

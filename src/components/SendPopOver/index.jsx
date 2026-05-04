@@ -1,14 +1,14 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import s from './SendPopOver.module.css';
 import ModalCustomDerivation from 'components/ModalCustomDerivation';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
-import { useRouter } from 'next/navigation';
+import {useRouter} from 'next/navigation';
 import DokPopover from 'components/DokPopover';
-import { isCustomDerivedChecked } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import { useSelector } from 'react-redux';
+import {isCustomDerivedChecked} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {useSelector} from 'react-redux';
 
 // eslint-disable-next-line react/display-name
-const SendPopOver = () => {
+const SendPopOver = ({isBitcoin, isDeriveAddressChain}) => {
   const [showCustomDerivationModal, setShowCustomDerivationModal] =
     useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -28,21 +28,36 @@ const SendPopOver = () => {
     } else {
       setShowConfirmModal(true);
     }
- }, [isCheckedStored]);
+  }, [isCheckedStored]);
+
+  const handleSelectUTXOs = useCallback(() => {
+    popoverRef.current?.close();
+    router.push('/home/send/select-UTXOs');
+  }, [router]);
+
   const handleHideModal = useCallback(isPressYes => {
     setShowCustomDerivationModal(false);
     if (isPressYes) {
       setShowConfirmModal(true);
     }
-  }, [])
+  }, []);
   return (
     <>
       <DokPopover ref={popoverRef}>
-        <button
-          className={s.popoverItemView}
-          onClick={handleCustomDerivation}>
-          <p className={s.popoverItemText}>{'Custom Derivation'}</p>
-        </button>
+        <div className={s.popoverContainer}>
+          {isBitcoin && (
+            <button className={s.popoverItemView} onClick={handleSelectUTXOs}>
+              <p className={s.popoverItemText}>{'Select UTXOs'}</p>
+            </button>
+          )}
+          {isDeriveAddressChain && (
+            <button
+              className={s.popoverItemView}
+              onClick={handleCustomDerivation}>
+              <p className={s.popoverItemText}>{'Custom Derivation'}</p>
+            </button>
+          )}
+        </div>
       </DokPopover>
 
       <ModalCustomDerivation

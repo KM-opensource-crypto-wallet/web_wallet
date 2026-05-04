@@ -3,14 +3,7 @@
 import React, {useState, useEffect, useCallback, useMemo, useRef} from 'react';
 
 import {useSelector, useDispatch} from 'react-redux';
-// import Transactions from "components/Transactions";
-// import SortTransactions from "components/SortTransactions";
-// import { Provider, Portal } from "react-native-paper";
-// import Clipboard from "@react-native-clipboard/clipboard";
-
-// import { ThemeContext } from "../../../../../ThemeContext";
 import {currencySymbol} from 'data/currency';
-// import ThemedIcon from "components/ThemedIcon";
 import {
   getCurrentWalletIsAddMoreAddressPopupHidden,
   isImportWalletWithPrivateKey,
@@ -21,7 +14,6 @@ import {
   refreshCurrentCoin,
   setIsAddMoreAddressPopupHidden,
   setSelectedDeriveAddress,
-  updateCurrentCoin,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 
 import s from './Send.module.css';
@@ -48,8 +40,8 @@ import IconButton from '@mui/material/IconButton';
 import Close from '@mui/icons-material/Close';
 import SelectInput from 'components/SelectInput';
 import SendPopOver from 'components/SendPopOver';
-import SelectedUTXOsPopOver from 'src/components/SelectedUTXOsPopOver';
 import {clearSelectedUTXOs} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
+import ModalUnclaimedDeposit from 'components/ModalUnclaimedDeposit';
 
 const SendScreen = () => {
   const router = useRouter();
@@ -58,6 +50,8 @@ const SendScreen = () => {
   const isAddMoreAddressPopupHide = useSelector(
     getCurrentWalletIsAddMoreAddressPopupHidden,
   );
+  const [modalUnclaimDepositVisible, setModalUnclaimDepositVisible] =
+    useState(false);
 
   //   const { theme } = useContext(ThemeContext);
   //   const styles = myStyles(theme);
@@ -97,9 +91,17 @@ const SendScreen = () => {
     return currentCoin?._id + currentCoin?.name + currentCoin?.chain_name;
   }, [currentCoin]);
 
+  const listOfUnClaimedDeposits = useMemo(() => {
+    return currentCoin?.listOfUnClaimedDeposits || [];
+  }, [currentCoin]);
+
   useEffect(() => {
     if (currentCoin?.address) {
-      dispatch(refreshCurrentCoin())
+      dispatch(
+        refreshCurrentCoin({
+          isFetchUnclaimDeposit: true,
+        }),
+      )
         .unwrap()
         .then(() => {
           setIsLoading(false);
@@ -111,18 +113,11 @@ const SendScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coinId, dispatch]);
 
-  //   const onRefresh = useCallback(() => {
-  //     setRefreshing(true);
-  //     dispatch(refreshCurrentCoin());
-
-  //     setTimeout(() => {
-  //       // update data request here
-  //       setRefreshing(false);
-  //     }, 1000);
-  //   }, []);
-  //   if (!currentCoin) {
-  //     return null;
-  //   }
+  useEffect(() => {
+    if (listOfUnClaimedDeposits?.length && !isLoading) {
+      setModalUnclaimDepositVisible(true);
+    }
+  }, [isLoading, listOfUnClaimedDeposits?.length]);
 
   const onPressAddAddresses = useCallback(() => {
     dispatch(addEVMAndTronDeriveAddresses());
@@ -131,6 +126,10 @@ const SendScreen = () => {
   const onPressAddressClose = useCallback(() => {
     dispatch(setIsAddMoreAddressPopupHidden(true));
   }, [dispatch]);
+
+  const hideModal = useCallback(() => {
+    setModalUnclaimDepositVisible(false);
+  }, []);
 
   const onChangeSelectedAddress = useCallback(
     async value => {
@@ -144,6 +143,7 @@ const SendScreen = () => {
 
       await dispatch(
         refreshCurrentCoin({
+          isFetchUnclaimDeposit: true,
           currentCoin: {
             ...currentCoin,
             address: subItem.options?.address,
@@ -167,10 +167,13 @@ const SendScreen = () => {
     <>
       <div className={s.goBack}>
         <GoBackButton />
-        {isDeriveAddressChain && !isImportWithPrivateKey ? (
-          <SendPopOver />
-        ) : (
-          isBitcoin && <SelectedUTXOsPopOver />
+        {(isBitcoin || (isDeriveAddressChain && !isImportWithPrivateKey)) && (
+          <SendPopOver
+            isBitcoin={isBitcoin}
+            isDeriveAddressChain={
+              isDeriveAddressChain && !isImportWithPrivateKey
+            }
+          />
         )}
       </div>
       {isLoading ? (
@@ -178,6 +181,7 @@ const SendScreen = () => {
       ) : (
         <div className={s.container}>
           {isDeriveAddressChain &&
+            !isBitcoin &&
             !isImportWithPrivateKey &&
             !isAddMoreAddressPopupHide && (
               <div className={classNames.syncView}>
@@ -321,6 +325,12 @@ const SendScreen = () => {
         visible={showConfirmModal}
         onSuccess={onSuccessOfPrivateKey}
       />
+      {!isLoading && (
+        <ModalUnclaimedDeposit
+          visible={modalUnclaimDepositVisible}
+          hideModal={hideModal}
+        />
+      )}
     </>
   );
 };

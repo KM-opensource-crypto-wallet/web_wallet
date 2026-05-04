@@ -1,4 +1,5 @@
 import {setWhiteLabelIdToDokApi} from 'dok-wallet-blockchain-networks/config/dokApi';
+import {setupWebCaptchaInterceptor} from 'utils/apiCaptcha';
 
 let whiteLabelInfo = {};
 
@@ -21,6 +22,8 @@ export const setWhiteLabelInfo = info => {
   whiteLabelInfo = info;
   setWhiteLabelIdToDokApi(getWhiteLabelId());
   const isKimlWallet = whiteLabelInfo?._id === KIML_WALLET_ID;
+  setupWebCaptchaInterceptor(getAppName());
+  
   if (isKimlWallet) {
     document.documentElement.style.setProperty('--background', '#4F8DD8');
   }
@@ -110,4 +113,16 @@ export const getDefaultLocale = () => {
 
 export const getIsBuyCryptoInNewTab = () => {
   return whiteLabelInfo?.isBuyCryptoInNewTab ?? false;
+};
+
+export const is51Pegasi = () => {
+  return getWhiteLabelId() === '656ef5754f6f203ba7fccf45';
+};
+
+export const isCastor24 = () => {
+  return getWhiteLabelId() === '68ea4a7e792250aa1195603b';
+};
+
+export const isUsdtNotSupportedWL = () => {
+  return is51Pegasi() || isCastor24();
 };

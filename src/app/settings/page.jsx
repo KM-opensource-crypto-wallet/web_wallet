@@ -160,6 +160,13 @@ const Settings = ({navigation}) => {
             </Link>
           </>
         )}
+        <Link href='/settings/custom-rpc' className={s.btn}>
+          {icons.link}
+          <div className={s.box}>
+            <p className={s.btnTitle}>{'Custom RPC'}</p>
+            <p className={s.btnText}>{'Add your custom RPC URLs.'}</p>
+          </div>
+        </Link>
         <Link href='/settings/derive-address' className={s.btn}>
           {icons.setCurrency}
           <div className={s.box}>

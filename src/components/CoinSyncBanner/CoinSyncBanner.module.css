@@ -1,0 +1,129 @@
+.banner {
+  border-radius: 12px;
+  margin: 8px 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--walletItemColor);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.2s ease;
+}
+
+.bannerClickable {
+  cursor: pointer;
+}
+
+.bannerClickable:hover {
+  opacity: 0.9;
+}
+
+.iconContainer {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background-color: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.spinnerWrapper {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--background);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.progressCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid var(--background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progressPercent {
+  font-size: 9px;
+  font-family: var(--font-roboto);
+  font-weight: 700;
+  color: var(--font);
+}
+
+.iconDefault {
+  color: var(--background) !important;
+  font-size: 24px !important;
+}
+
+.iconCompleted {
+  color: #4caf50 !important;
+  font-size: 24px !important;
+}
+
+.iconFailed {
+  color: #ff4757 !important;
+  font-size: 24px !important;
+}
+
+.textContainer {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0 0 2px 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-roboto);
+  color: var(--font);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subtitle {
+  margin: 0 0 4px 0;
+  font-size: 11px;
+  font-family: var(--font-roboto);
+  color: var(--gray);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progressBar {
+  border-radius: 4px;
+  height: 4px !important;
+}
+
+.actionContainer {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.chevron {
+  color: var(--gray) !important;
+  font-size: 20px !important;
+}

@@ -25,11 +25,25 @@ import {
   getWalletConnectDetails,
   setWhiteLabelInfo,
 } from 'whitelabel/whiteLabelInfo';
-import {fetchSupportedBuyCryptoCurrency} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
+import {captchaRef} from 'utils/apiCaptcha';
 import {
-  compareRpcUrls,
-  fetchRPCUrl,
-} from 'dok-wallet-blockchain-networks/rpcUrls/rpcUrls';
+  GoogleReCaptchaProvider,
+  useGoogleReCaptcha,
+} from 'react-google-recaptcha-v3';
+
+const CaptchaSetup = () => {
+  const {executeRecaptcha} = useGoogleReCaptcha();
+  useEffect(() => {
+    if (!executeRecaptcha) return;
+    captchaRef.execute = executeRecaptcha;
+    return () => {
+      captchaRef.execute = null;
+    };
+  }, [executeRecaptcha]);
+  return null;
+};
+import {fetchSupportedBuyCryptoCurrency} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
+import {fetchRPCUrl} from 'dok-wallet-blockchain-networks/rpcUrls/rpcUrls';
 import {
   getDisableMessage,
   getGoogleAnalyticsKey,
@@ -37,6 +51,7 @@ import {
 import DisabledView from 'components/DisabledView';
 import {MainNavigation} from 'utils/navigation';
 import {getFeesInfo} from 'dok-wallet-blockchain-networks/feesInfo/feesInfo';
+
 import {
   createIfNotExistsMasterClientId,
   resetCoinsToDefaultAddressForPrivacyMode,
@@ -47,6 +62,8 @@ import {masterClickHost, publicRoutes, allPublicRoutes} from 'utils/common';
 import {setWLAppName} from 'utils/wlData';
 import {ThemeProvider} from '@mui/system';
 import {createDynamicTheme} from 'src/theme';
+import CoinSyncWidget from 'components/CoinSyncWidget';
+import { ToastContainer } from 'react-toastify';
 
 function AppRouting({children, wlData}) {
   const password = useSelector(getUserPassword);
@@ -120,15 +137,11 @@ function AppRouting({children, wlData}) {
       dispatch(resetCoinsToDefaultAddressForPrivacyMode());
       dispatch(fetchSupportedBuyCryptoCurrency({fromDevice: 'web'}));
       dispatch(checkNewsAvailable({key: 'web'}));
-      fetchRPCUrl().then(resp => {
-        setTimeout(() => {
-          compareRpcUrls();
-        }, 1000);
-      });
+      fetchRPCUrl();
       dispatch(fetchCurrencies({checkNewCoins: true, ignoreLimit: true}));
       setInterval(
         () => {
-          compareRpcUrls();
+          fetchRPCUrl();
         },
         1000 * 60 * 10,
       );
@@ -199,28 +212,39 @@ function AppRouting({children, wlData}) {
 
   const isKimlWallet = wlData?._id === '65efefca5f95b9f06cc8f9eb';
   return (
-    <ThemeProvider
-      theme={createDynamicTheme(isKimlWallet ? '#4F8DD8' : '#F44D03')}>
-      <div>
-        {rountingDone && !disableMessage ? (
-          <div className={s.container}>
-            <div className={s.navbarWrapper}>{<Header />}</div>
-            <div className={s.mainWrapper}>
-              <div className={s.side}>
-                <aside className={s.sidebarWrapper}>{<Sidebar />}</aside>
+    <GoogleReCaptchaProvider
+      reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}>
+      <CaptchaSetup />
+      <ThemeProvider
+        theme={createDynamicTheme(isKimlWallet ? '#4F8DD8' : '#F44D03')}>
+        <div>
+          {rountingDone && !disableMessage ? (
+            <div className={s.container}>
+              <div className={s.navbarWrapper}>{<Header />}</div>
+              <div className={s.mainWrapper}>
+                <div className={s.side}>
+                  <aside className={s.sidebarWrapper}>{<Sidebar />}</aside>
+                </div>
+                <div className={s.main}>{children}</div>
               </div>
-              <div className={s.main}>{children}</div>
             </div>
-          </div>
-        ) : disableMessage ? (
-          <DisabledView />
-        ) : (
-          <div className={s.mainContainer}>
-            <Loading />
-          </div>
-        )}
-      </div>
-    </ThemeProvider>
+          ) : disableMessage ? (
+            <DisabledView />
+          ) : (
+            <div className={s.mainContainer}>
+              <Loading />
+            </div>
+          )}
+        </div>
+        <CoinSyncWidget />
+        <ToastContainer
+          position='bottom-right'
+          draggable
+          pauseOnHover
+          theme={themeType === 'light' ? 'light' : 'dark'}
+        />
+      </ThemeProvider>
+    </GoogleReCaptchaProvider>
   );
 }
 

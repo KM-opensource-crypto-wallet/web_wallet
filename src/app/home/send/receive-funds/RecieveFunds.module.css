@@ -92,3 +92,17 @@
 .copyButton > svg {
   fill: var(--backgroundColor);
 }
+
+.bannerContainer {
+  background-color: #FFF3CD;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.bannerText {
+  font-size: 13px;
+  color: #856404;
+  text-align: center;
+  margin: 0;
+}
