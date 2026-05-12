@@ -32,6 +32,40 @@
   font-weight: bold;
 }
 
+.typeFilterRow {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 0;
+  scrollbar-width: none;
+}
+
+.typeFilterRow::-webkit-scrollbar {
+  display: none;
+}
+
+.typeFilterTab {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--gray);
+  color: var(--font);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.typeFilterTabActive {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--blue);
+  background-color: var(--blue);
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .borderBox {
   border-top: 1px solid var(--gray);
   padding: 20px;

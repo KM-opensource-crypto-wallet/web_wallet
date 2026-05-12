@@ -1,10 +1,83 @@
-import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
+import React, {useState, useRef, useCallback, useMemo} from 'react';
 import {currencySymbol} from 'data/currency';
 import s from './Transactions.module.css';
 
 const icons = require(`assets/images/icons`).default;
-import {popupCenter} from 'utils/common';
 import dayjs from 'dayjs';
+
+const getTxTypeConfig = (item, walletAddress) => {
+  if (item?.isNFT) {
+    return {icon: icons.nft, bg: '#e8eaf6', color: '#5c6bc0', label: 'NFT'};
+  }
+  if (item?.isBatchTransaction || item?.transactionType === 'batch') {
+    return {
+      icon: icons.batch,
+      bg: '#e8eaf6',
+      color: '#5c6bc0',
+      label: 'Batch',
+    };
+  }
+  if (item?.isCreateStaking || item?.transactionType === 'stake') {
+    return {
+      icon: icons.contract,
+      bg: '#e8f7e0',
+      color: '#71C441',
+      label: 'Stake',
+    };
+  }
+  if (item?.isWithdrawStaking || item?.transactionType === 'withdraw') {
+    return {
+      icon: icons.contract,
+      bg: '#fff3e0',
+      color: '#FF9800',
+      label: 'Withdraw',
+    };
+  }
+  if (item?.isDeactivateStaking || item?.transactionType === 'unstake') {
+    return {
+      icon: icons.contract,
+      bg: '#fff3e0',
+      color: '#FF9800',
+      label: 'Unstake',
+    };
+  }
+  if (item?.isStakingRewards) {
+    return {
+      icon: icons.rewards,
+      bg: '#e8f7e0',
+      color: '#71C441',
+      label: 'Rewards',
+    };
+  }
+  if (item?.isCreateVote) {
+    return {
+      icon: icons.vote,
+      bg: '#e3f2fd',
+      color: '#1976D2',
+      label: 'Vote',
+    };
+  }
+  if (item?.transactionType === 'smartContract') {
+    return {
+      icon: icons.smartContract,
+      bg: '#f3e5f5',
+      color: '#9c27b0',
+      label: 'Contract',
+    };
+  }
+  const isReceived =
+    item?.paymentType != null
+      ? item.paymentType === 1
+      : item?.to?.toUpperCase() === walletAddress?.toUpperCase();
+  return isReceived
+    ? {
+        icon: icons.receive,
+        bg: '#e8f7e0',
+        color: '#71C441',
+        label: 'Received',
+      }
+    : {icon: icons.send, bg: '#fdecea', color: '#FF4444', label: 'Sent'};
+};
 import {useRouter} from 'next/navigation';
 import {useDispatch, useSelector} from 'react-redux';
 import {getPendingTransferData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSelector';
@@ -95,57 +168,61 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
         ) : (
           <>
             {renderList?.map((item, index) => {
-              const isReceived =
-                item?.to?.toUpperCase() === currentCoin?.address?.toUpperCase();
+              const txConfig = getTxTypeConfig(item, currentCoin?.address);
+              const title =
+                item.transactionType === 'stake'
+                  ? 'Stake'
+                  : item.transactionType === 'withdraw'
+                    ? 'Withdraw'
+                    : item.transactionType === 'unstake'
+                      ? 'Unstake'
+                      : item.transactionType === 'smartContract'
+                        ? 'Smart Contract Call'
+                        : item?.link
+                          ? item.link.length > 13
+                            ? `${item.link.substring(0, 13)}...`
+                            : item.link
+                          : '—';
               return (
                 <button
                   className={s.section}
-                  onClick={async () => {
-                    popupCenter({
-                      url: item?.url,
-                    });
+                  onClick={() => {
+                    if (item?.link) {
+                      router.push(
+                        `/home/transactions/${encodeURIComponent(item.link)}`,
+                      );
+                    }
                   }}
                   key={index}>
                   <div className={s.list}>
+                    <div
+                      className={s.txIconCircle}
+                      style={{
+                        backgroundColor: txConfig.bg,
+                        color: txConfig.color,
+                      }}>
+                      {txConfig.icon}
+                    </div>
                     <div className={s.box}>
                       <div className={s.item}>
-                        <p className={s.title}>{item.link}</p>
-                        <div className={s.field}>
-                          <p className={s.text}>
-                            {dayjs(item.date).format('DD.MM.YYYY')}
-                          </p>
-                          <p className={s.hyphen}>&#45;</p>
-                          <p className={s.text}>{item.status}</p>
-                        </div>
+                        <p className={s.title}>{title}</p>
+                        <p className={s.text}>
+                          {dayjs(item.date).format('DD.MM.YYYY')}
+                        </p>
+                        <p className={s.text}>{item.status}</p>
                       </div>
 
                       <div className={s.itemNumber}>
-                        <div className={s.field}>
-                          <>
-                            <p
-                              className={s.text}
-                              style={{
-                                marginRight: 5,
-                                color: isReceived ? 'green' : 'red',
-                              }}>
-                              {item.amount}
-                            </p>
-                            <p
-                              className={s.text}
-                              style={{
-                                color: isReceived ? 'green' : 'red',
-                              }}>
-                              {currentCoin?.symbol}
-                            </p>
-                          </>
-                        </div>
+                        <p className={s.text} style={{color: txConfig.color}}>
+                          {item.amount} {currentCoin?.symbol}
+                        </p>
                         <p className={s.text}>
                           {currencySymbol[localCurrency] + item.totalCourse}
                         </p>
                       </div>
                     </div>
 
-                    <div className={s.arrow}>{icons.arrRight} </div>
+                    <div className={s.arrow}>{icons.arrRight}</div>
                   </div>
                   {item.status === 'PENDING' &&
                     isPendingTransactionSupportedChain(

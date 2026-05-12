@@ -13,6 +13,22 @@
   display: flex;
   width: 100%;
   align-items: center;
+  gap: 12px;
+}
+
+.txIconCircle {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.txIconCircle > svg {
+  width: 18px;
+  height: 18px;
 }
 .field {
   display: flex;
@@ -29,12 +45,16 @@
 
 .item {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
+  gap: 2px;
 }
 
 .itemNumber {
   display: flex;
+  flex-direction: column;
   align-items: flex-end;
+  gap: 2px;
 }
 
 .title {

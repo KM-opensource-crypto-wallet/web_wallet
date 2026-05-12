@@ -13,15 +13,21 @@ import {
   setPendingTransactions,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {createPendingTransactionKey} from 'dok-wallet-blockchain-networks/helper';
-const ModalSortTransactions = ({visible, hideModal, onPressAppy}) => {
+const ModalSortTransactions = ({
+  visible,
+  hideModal,
+  onPressAppy,
+  initialHideSmallTx,
+}) => {
   const [value, setValue] = useState('Date Descending');
   const [status, setStatus] = useState('None');
+  const [hideSmallTx, setHideSmallTx] = useState(initialHideSmallTx ?? false);
   const currentCoin = useSelector(selectCurrentCoin);
   const dispatch = useDispatch();
 
   const handleSumbit = () => {
     hideModal(false);
-    onPressAppy(value, status);
+    onPressAppy(value, status, hideSmallTx);
   };
 
   const sortList = [
@@ -131,6 +137,21 @@ const ModalSortTransactions = ({visible, hideModal, onPressAppy}) => {
               <p className={s.item}>{el.label}</p>
             </div>
           ))}
+
+          {/* //////////////////hide small transactions/////////////////////////////////////////// */}
+          <p className={s.titleItem} style={{marginVertical: 10}}>
+            Options
+          </p>
+          <div className={s.itembox}>
+            <Checkbox
+              checked={hideSmallTx}
+              onChange={() => setHideSmallTx(prev => !prev)}
+              inputProps={{'aria-label': 'controlled'}}
+              icon={<RadioButtonUncheckedIcon />}
+              checkedIcon={<RadioButtonCheckedIcon />}
+            />
+            <p className={s.item}>Hide transactions less than $1</p>
+          </div>
 
           <button className={s.btnSubmit} onClick={handleSumbit}>
             <p className={s.btnSubmitTitle}>Apply</p>
