@@ -8,22 +8,26 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {fetchTransactionByHash} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {getRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
+import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {currencySymbol} from 'data/currency';
 import dayjs from 'dayjs';
 import PageTitle from 'components/PageTitle';
 import {showToast} from 'utils/toast';
 import s from './TransactionDetails.module.css';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import {
   ContractCall,
   CopyIcon,
+  DelegationIcon,
   ExternalLinkIcon,
   LayersIcon,
   PowerIcon,
   ReceiveIcon,
   SendIcon,
   StarIcon,
-  TrendDownIcon,
-  TrendUpIcon,
   VoteIcon,
 } from 'assets/images/icons';
 
@@ -45,7 +49,7 @@ const CopyRow = ({value}) => {
   const handleCopy = () => {
     if (stringValue) {
       navigator.clipboard?.writeText(stringValue).then(() => {
-        showToast({type: 'success', title: 'Copied to clipboard'});
+        showToast({type: 'successToast', title: 'Copied to clipboard'});
       });
     }
   };
@@ -70,10 +74,19 @@ const TransactionDetails = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [nftImageError, setNftImageError] = useState(false);
   const statusRef = useRef(null);
+  const routeStateData = useSelector(getRouteStateData);
+  const routeStateTransaction = routeStateData?.TransactionDetails?.transaction;
 
-  const initialTransaction = currentCoin?.transactions?.find(
-    t => t.link === txHash,
-  );
+  useEffect(() => {
+    if (routeStateTransaction) {
+      dispatch(setRouteStateData({TransactionDetails: null}));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const initialTransaction =
+    currentCoin?.transactions?.find(t => t.link === txHash) ??
+    (routeStateTransaction?.link === txHash ? routeStateTransaction : null);
 
   const recentTx =
     reduxRecentTransaction?.data?.link === txHash
@@ -97,6 +110,10 @@ const TransactionDetails = () => {
         ...(recentTx.paymentType != null && {
           paymentType: recentTx.paymentType,
         }),
+        ...(recentTx.transactionType != null &&
+          initialTransaction?.transactionType != null && {
+            transactionType: recentTx.transactionType,
+          }),
       }
     : initialTransaction;
 
@@ -149,6 +166,8 @@ const TransactionDetails = () => {
   // ── Transaction type detection ──────────────────────────────────────────────
 
   const isNFT = !!transaction?.isNFT;
+  const isNFTHistorical =
+    !isNFT && transaction?.transactionType === 'nftTransfer';
   const isBatchTx = !!(
     transaction?.isBatchTransaction || transaction?.transactionType === 'batch'
   );
@@ -162,7 +181,16 @@ const TransactionDetails = () => {
     transaction?.transactionType === 'withdraw'
   );
   const isVoteTx = !!transaction?.isCreateVote;
-  const isRegularTx = !isNFT && !isBatchTx && !isStakingTx && !isVoteTx;
+  const isSmartContractTx = transaction?.transactionType === 'smartContract';
+  const isDelegationTx = transaction?.transactionType === 'delegationChange';
+  const isRegularTx =
+    !isNFT &&
+    !isNFTHistorical &&
+    !isBatchTx &&
+    !isStakingTx &&
+    !isVoteTx &&
+    !isSmartContractTx &&
+    !isDelegationTx;
 
   const stakingLabel =
     transaction?.isCreateStaking || transaction?.transactionType === 'stake'
@@ -335,6 +363,64 @@ const TransactionDetails = () => {
     );
   }
 
+  // ── NFT Historical (no metadata) ─────────────────────────────────────────────
+
+  if (isNFTHistorical) {
+    return (
+      <>
+        <PageTitle title={pageTitle} />
+        {refreshing && <div className={s.refreshingBar} />}
+        <div className={s.container}>
+          <div className={s.hero}>
+            <div
+              className={s.iconCircle}
+              style={{backgroundColor: '#fdf4ff', color: '#9333ea'}}>
+              <ImageOutlinedIcon style={{fontSize: 32}} />
+            </div>
+            <span className={s.txType}>NFT Transfer</span>
+            <StatusBadge />
+          </div>
+
+          <div className={s.card}>
+            <p className={s.cardTitle}>Transaction Details</p>
+            {!!currentCoin?.chain_display_name && (
+              <>
+                <div className={s.divider} />
+                <div className={s.row}>
+                  <span className={s.rowLabel}>Chain</span>
+                  <span className={s.rowValue}>
+                    {currentCoin.chain_display_name}
+                  </span>
+                </div>
+              </>
+            )}
+            {!!transaction.from && (
+              <>
+                <div className={s.divider} />
+                <div className={s.row}>
+                  <span className={s.rowLabel}>From</span>
+                  <CopyRow value={transaction.from} />
+                </div>
+              </>
+            )}
+            {!!transaction.to && (
+              <>
+                <div className={s.divider} />
+                <div className={s.row}>
+                  <span className={s.rowLabel}>To</span>
+                  <CopyRow value={transaction.to} />
+                </div>
+              </>
+            )}
+            {renderCommonRows()}
+          </div>
+
+          <ExplorerButton />
+        </div>
+      </>
+    );
+  }
+
   // ── Batch Transaction ────────────────────────────────────────────────────────
 
   if (isBatchTx) {
@@ -412,12 +498,12 @@ const TransactionDetails = () => {
     const stakingIconBg = isPositive ? '#e8f7e0' : '#fff3e0';
     const stakingIconColor = isPositive ? '#71C441' : '#FF9800';
     const StakingIcon = transaction?.isCreateStaking
-      ? ContractCall
+      ? TrendingUpIcon
       : transaction?.isWithdrawStaking
-        ? ContractCall
+        ? TrendingDownIcon
         : transaction?.isDeactivateStaking
           ? PowerIcon
-          : ContractCall;
+          : StarIcon;
     const amountColor = isPositive ? '#71C441' : '#FF9800';
 
     return (
@@ -573,6 +659,118 @@ const TransactionDetails = () => {
                 <div className={s.divider} />
                 <div className={s.row}>
                   <span className={s.rowLabel}>From</span>
+                  <CopyRow value={transaction.from} />
+                </div>
+              </>
+            )}
+            {renderCommonRows()}
+          </div>
+
+          <ExplorerButton />
+        </div>
+      </>
+    );
+  }
+
+  // ── Smart Contract ───────────────────────────────────────────────────────────
+
+  if (isSmartContractTx) {
+    return (
+      <>
+        <PageTitle title={pageTitle} />
+        {refreshing && <div className={s.refreshingBar} />}
+        <div className={s.container}>
+          <div className={s.hero}>
+            <div
+              className={s.iconCircle}
+              style={{backgroundColor: '#f3e5f5', color: '#9c27b0'}}>
+              <ContractCall />
+            </div>
+            <span className={s.txType}>Contract Call</span>
+            <StatusBadge />
+          </div>
+
+          <div className={s.card}>
+            <p className={s.cardTitle}>Transaction Details</p>
+            {!!currentCoin?.chain_display_name && (
+              <>
+                <div className={s.divider} />
+                <div className={s.row}>
+                  <span className={s.rowLabel}>Chain</span>
+                  <span className={s.rowValue}>
+                    {currentCoin.chain_display_name}
+                  </span>
+                </div>
+              </>
+            )}
+            {!!transaction.from && (
+              <>
+                <div className={s.divider} />
+                <div className={s.row}>
+                  <span className={s.rowLabel}>From</span>
+                  <CopyRow value={transaction.from} />
+                </div>
+              </>
+            )}
+            {!!transaction.to && (
+              <>
+                <div className={s.divider} />
+                <div className={s.row}>
+                  <span className={s.rowLabel}>Contract</span>
+                  <CopyRow value={transaction.to} />
+                </div>
+              </>
+            )}
+            {renderCommonRows()}
+          </div>
+
+          <ExplorerButton />
+        </div>
+      </>
+    );
+  }
+
+  // ── Delegation Change ────────────────────────────────────────────────────────
+
+  if (isDelegationTx) {
+    const isRevoke =
+      transaction?.from?.toLowerCase() === transaction?.to?.toLowerCase();
+    return (
+      <>
+        <PageTitle title={pageTitle} />
+        {refreshing && <div className={s.refreshingBar} />}
+        <div className={s.container}>
+          <div className={s.hero}>
+            <div
+              className={s.iconCircle}
+              style={{backgroundColor: '#eff6ff', color: '#2563eb'}}>
+              <DelegationIcon />
+            </div>
+            <span className={s.txType}>
+              {isRevoke ? 'Delegation Revoked' : 'Delegation Change'}
+            </span>
+            <span className={s.heroSubLabel}>EIP-7702</span>
+            <StatusBadge />
+          </div>
+
+          <div className={s.card}>
+            <p className={s.cardTitle}>Transaction Details</p>
+            {!!currentCoin?.chain_display_name && (
+              <>
+                <div className={s.divider} />
+                <div className={s.row}>
+                  <span className={s.rowLabel}>Chain</span>
+                  <span className={s.rowValue}>
+                    {currentCoin.chain_display_name}
+                  </span>
+                </div>
+              </>
+            )}
+            {!!transaction.from && (
+              <>
+                <div className={s.divider} />
+                <div className={s.row}>
+                  <span className={s.rowLabel}>Wallet</span>
                   <CopyRow value={transaction.from} />
                 </div>
               </>

@@ -62,7 +62,15 @@ const getTxTypeConfig = (item, walletAddress) => {
       icon: icons.smartContract,
       bg: '#f3e5f5',
       color: '#9c27b0',
-      label: 'Contract',
+      label: 'Smart Contract Call',
+    };
+  }
+  if (item?.transactionType === 'delegationChange') {
+    return {
+      icon: icons.delegation,
+      bg: '#e8eaf6',
+      color: '#5c6bc0',
+      label: 'Delegation',
     };
   }
   const isReceived =
@@ -169,20 +177,7 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
           <>
             {renderList?.map((item, index) => {
               const txConfig = getTxTypeConfig(item, currentCoin?.address);
-              const title =
-                item.transactionType === 'stake'
-                  ? 'Stake'
-                  : item.transactionType === 'withdraw'
-                    ? 'Withdraw'
-                    : item.transactionType === 'unstake'
-                      ? 'Unstake'
-                      : item.transactionType === 'smartContract'
-                        ? 'Smart Contract Call'
-                        : item?.link
-                          ? item.link.length > 13
-                            ? `${item.link.substring(0, 13)}...`
-                            : item.link
-                          : '—';
+              const title = txConfig.label || '—';
               return (
                 <button
                   className={s.section}

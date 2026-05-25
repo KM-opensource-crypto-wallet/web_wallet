@@ -9,11 +9,29 @@ export const Msg = ({title, message, onClick}) => {
   );
 };
 
-const customView = (title, message) => {
+const customView = (title, message, onViewTransaction) => {
   return (
     <div style={{display: 'flex', flexDirection: 'column'}}>
       <div style={{fontSize: 14}}>{title}</div>
       {!!message && <div style={{fontSize: 12}}>{message}</div>}
+      {!!onViewTransaction && (
+        <button
+          onClick={onViewTransaction}
+          style={{
+            marginTop: 6,
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'var(--primary, #6c63ff)',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            textDecoration: 'underline',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}>
+          View Transaction Details →
+        </button>
+      )}
     </div>
   );
 };
@@ -78,9 +96,9 @@ export const showToast = ({type, title, message, props, ...options}) => {
       {autoClose: false, toastId},
     );
   } else if (type === 'progressToast') {
-    return toast.loading(customView(title, message), {autoClose: false});
+    return toast.loading(customView(title, message, props?.onViewTransaction), {autoClose: false});
   } else if (type === 'successToast') {
-    return toast.success(customView(title, message));
+    return toast.success(customView(title, message, props?.onViewTransaction));
   } else if (type === 'warningToast') {
     return toast.warning(customView(title, message));
   } else if (type === 'errorToast') {
