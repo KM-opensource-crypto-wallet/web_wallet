@@ -169,11 +169,11 @@ const CryptoProviders = () => {
         }
         const url = item?.extraData?.url;
         selectedProviderRef.current = item;
-        if (isCastor24()) {
-          window.open('https://www.castor24.com/login', '_blank');
+        if (item.title?.toLowerCase() === 'castor24') {
+          return window.open('https://www.castor24.com/login', '_blank');
         }
-        if (is51Pegasi()) {
-          window.open('https://www.51pegasi.com/login', '_blank');
+        if (item.title?.toLowerCase() === '51pegasi') {
+          return window.open('https://www.51pegasi.com/login', '_blank');
         } else if (url) {
           launchUrl(url);
         } else {

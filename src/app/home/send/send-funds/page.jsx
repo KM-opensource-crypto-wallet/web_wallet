@@ -18,7 +18,11 @@ import {
 import {useSearchParams} from 'next/navigation';
 import {useRouter} from 'next/navigation';
 import ModalSend from 'components/ModalSend';
-import {searchCoinFromCurrency} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import ModalDelegation from 'components/ModalDelegation';
+import {
+  searchCoinFromCurrency,
+  revokeDelegation,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 import {
   isNameSupportChain,
@@ -55,6 +59,9 @@ const SendFunds = () => {
   const [modal, setModal] = useState(false);
   const [maxAmount, setMaxAmount] = useState('0.00000');
   const [sendInput, setSendInput] = useState(qrAddress || '');
+  const [isDelegationModalVisible, setIsDelegationModalVisible] =
+    useState(false);
+  const [isDelegationLoading, setIsDelegationLoading] = useState(false);
   const dispatch = useDispatch();
   const formikRef = useRef(null);
 
@@ -472,6 +479,51 @@ const SendFunds = () => {
             </div>
           )}
         </Formik>
+
+        {currentCoin?.isDelegationAvailable &&
+          isEip7702SupportedChain(currentCoin?.chain_name) && (
+            <button
+              className={s.button}
+              disabled={isDelegationLoading}
+              style={{
+                backgroundColor: isDelegationLoading
+                  ? 'var(--gray)'
+                  : 'var(--background)',
+                marginTop: 12,
+              }}
+              onClick={() => setIsDelegationModalVisible(true)}>
+              <p className={s.buttonTitle}>
+                {isDelegationLoading
+                  ? 'Removing Delegation…'
+                  : 'Remove Delegation'}
+              </p>
+            </button>
+          )}
+
+        <ModalDelegation
+          visible={isDelegationModalVisible}
+          onClose={() => setIsDelegationModalVisible(false)}
+          onConfirm={async () => {
+            setIsDelegationLoading(true);
+            try {
+              await dispatch(revokeDelegation()).unwrap();
+              showToast({
+                type: 'successToast',
+                title: 'Delegation Removed',
+                message: 'EIP-7702 delegation has been successfully revoked.',
+              });
+            } catch (e) {
+              console.error('Error revoking delegation', e);
+              showToast({
+                type: 'errorToast',
+                title: 'Failed to Remove Delegation',
+                message: 'Something went wrong. Please try again.',
+              });
+            } finally {
+              setIsDelegationLoading(false);
+            }
+          }}
+        />
 
         <ModalSend
           visible={modal}

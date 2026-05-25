@@ -1,11 +1,18 @@
 'use client';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  selectCurrentCoin,
+  selectTransactionsByType,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import Transactions from 'components/Transactions';
 import ModalSortTransactions from 'components/ModalSortTransactions';
 const copyIcon = require(`assets/images/icons`).default;
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {
+  getLocalCurrency,
+  getHideSmallTransactions,
+} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {setHideSmallTransactions} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import s from './Transactions.module.css';
 import {refreshCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import Loading from 'components/Loading';
@@ -13,25 +20,76 @@ import PageTitle from 'components/PageTitle';
 import {popupCenter} from 'utils/common';
 import {
   getAddressDetailsUrl,
+  isBitcoinChain,
   isPendingTransactionSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
 import {useRouter} from 'next/navigation';
+
+const ALL_TRANSACTION_TYPES = [
+  {label: 'All', value: 'all'},
+  {label: 'Regular', value: 'regular'},
+  {label: 'Stake', value: 'stake'},
+  {label: 'Unstake', value: 'unstake'},
+  {label: 'Withdraw', value: 'withdraw'},
+  {label: 'Batch', value: 'batch'},
+];
+
+const ALL_ONLY_CHAINS = [
+  'ton',
+  'stellar',
+  'aptos',
+  'cardano',
+  'cosmos',
+  'filecoin',
+  'hedera',
+  'polkadot',
+  'ripple',
+  'tezos',
+  'thorchain',
+  'bitcoin_lightning',
+  'litecoin',
+  'dogecoin',
+  'bitcoin_cash',
+];
 
 const TransactionsList = () => {
   const dispatch = useDispatch();
   const localCurrency = useSelector(getLocalCurrency);
   const currentCoin = useSelector(selectCurrentCoin);
-  const allTransactions = currentCoin?.transactions;
+  const hideSmallTx = useSelector(getHideSmallTransactions);
 
   const [modalVisible, setmodalVisible] = useState(false);
   const [filter, setFilter] = useState('None');
   const [sort, setSort] = useState('Date Descending');
+  const [selectedType, setSelectedType] = useState('all');
   const [renderList, setRenderList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   const coinId =
     currentCoin?.address + currentCoin?.name + currentCoin?.chain_name;
+
+  const transactionsSelector = useMemo(
+    () => selectTransactionsByType(selectedType),
+    [selectedType],
+  );
+  const typedTransactions = useSelector(transactionsSelector);
+
+  const transactionTypes = useMemo(() => {
+    const chain = currentCoin?.chain_name;
+    if (chain === 'tron') {
+      return ALL_TRANSACTION_TYPES.filter(t => t.value !== 'batch');
+    }
+    if (chain === 'solana') {
+      return ALL_TRANSACTION_TYPES.filter(t =>
+        ['all', 'stake', 'unstake', 'withdraw'].includes(t.value),
+      );
+    }
+    if (ALL_ONLY_CHAINS.includes(chain) || isBitcoinChain(chain)) {
+      return ALL_TRANSACTION_TYPES.filter(t => t.value === 'all');
+    }
+    return ALL_TRANSACTION_TYPES;
+  }, [currentCoin?.chain_name]);
 
   const isSupportUpdateTransaction = useMemo(() => {
     return (
@@ -59,8 +117,8 @@ const TransactionsList = () => {
   }, [coinId, dispatch]);
 
   useEffect(() => {
-    setRenderList(allTransactions);
-  }, [currentCoin, allTransactions]);
+    setRenderList(typedTransactions);
+  }, [typedTransactions]);
 
   const onPressViewAll = useCallback(() => {
     const chain_name = currentCoin?.chain_name;
@@ -69,24 +127,43 @@ const TransactionsList = () => {
     if (chain_name && type && address) {
       const url = getAddressDetailsUrl(chain_name, type, address);
       if (url) {
-        popupCenter({
-          url,
-        });
+        popupCenter({url});
       }
     }
   }, [currentCoin?.address, currentCoin?.chain_name, currentCoin?.type]);
 
   const onPressApply = useCallback(
-    (sortValue, filterValue) => {
+    (sortValue, filterValue, hideSmallTxValue) => {
       const mineAddress = currentCoin?.address;
       setSort(sortValue);
       setFilter(filterValue);
-      const allTempTransactions = Array.isArray(allTransactions)
-        ? [...allTransactions]
+      dispatch(setHideSmallTransactions(hideSmallTxValue));
+      const allTempTransactions = Array.isArray(typedTransactions)
+        ? [...typedTransactions]
         : [];
       const parseTransaction = JSON.parse(JSON.stringify(allTempTransactions));
 
       const filterTempTransactions = parseTransaction.filter(mainTran => {
+        const isRegularTx =
+          !mainTran?.isNFT &&
+          !mainTran?.isBatchTransaction &&
+          mainTran?.transactionType !== 'batch' &&
+          !mainTran?.isCreateStaking &&
+          mainTran?.transactionType !== 'stake' &&
+          !mainTran?.isWithdrawStaking &&
+          mainTran?.transactionType !== 'withdraw' &&
+          !mainTran?.isDeactivateStaking &&
+          mainTran?.transactionType !== 'unstake' &&
+          !mainTran?.isStakingRewards &&
+          !mainTran?.isCreateVote &&
+          mainTran?.transactionType !== 'smartContract';
+        if (
+          hideSmallTxValue &&
+          isRegularTx &&
+          parseFloat(mainTran.totalCourse) < 1
+        ) {
+          return false;
+        }
         if (filterValue === 'None') {
           return true;
         } else if (filterValue === 'Received') {
@@ -110,8 +187,14 @@ const TransactionsList = () => {
       });
       setRenderList(sortedData);
     },
-    [currentCoin?.address, allTransactions],
+    [currentCoin?.address, dispatch, typedTransactions],
   );
+
+  const onPressTypeTab = useCallback(value => {
+    setSelectedType(value);
+    setSort('Date Descending');
+    setFilter('None');
+  }, []);
 
   return (
     <>
@@ -139,17 +222,34 @@ const TransactionsList = () => {
                 </button>
               </div>
             </div>
+
+            {transactionTypes.length > 1 && (
+              <div className={s.typeFilterRow}>
+                {transactionTypes.map(item => (
+                  <button
+                    key={item.value}
+                    className={
+                      selectedType === item.value
+                        ? s.typeFilterTabActive
+                        : s.typeFilterTab
+                    }
+                    onClick={() => onPressTypeTab(item.value)}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className={s.borderBox}>
               <div className={s.sortList}>
                 <div>
-                  <p className={s.sortTitle}>Sort by:</p>
-                  <p className={s.titleItem}>{sort}</p>
-
+                  <p className={s.sortTitle}>
+                    Sort by: <span className={s.titleItem}>{sort}</span>
+                  </p>
                   {filter !== 'None' && (
-                    <div>
-                      <p className={s.sortTitle}>Filter by:</p>
-                      <p className={s.titleItem}>{filter}</p>
-                    </div>
+                    <p className={s.sortTitle}>
+                      Filter by: <span className={s.titleItem}>{filter}</span>
+                    </p>
                   )}
                 </div>
                 <button onClick={() => setmodalVisible(true)}>
@@ -166,6 +266,7 @@ const TransactionsList = () => {
               visible={modalVisible}
               hideModal={() => setmodalVisible(false)}
               onPressAppy={onPressApply}
+              initialHideSmallTx={hideSmallTx}
             />
           </div>
         </>

@@ -89,8 +89,18 @@ function AppRouting({children, wlData}) {
   }, [googleAnalyticsKey]);
 
   useEffect(() => {
-    MainNavigation.setCurrentRouteName(pathname);
+    let routeName = pathname;
+    if (pathname === '/home/transactions') {
+      routeName = 'TransactionList';
+    } else if (pathname?.startsWith('/home/transactions/')) {
+      routeName = 'TransactionDetails';
+    }
+    MainNavigation.setCurrentRouteName(routeName);
   }, [pathname]);
+
+  useEffect(() => {
+    MainNavigation.setNavigator(routing.push.bind(routing));
+  }, [routing]);
 
   const fetchFeesInfo = useCallback(() => {
     getFeesInfo().then(_ => {});
