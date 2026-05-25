@@ -12,6 +12,7 @@ import {getRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {currencySymbol} from 'data/currency';
 import dayjs from 'dayjs';
+import Image from 'next/image';
 import PageTitle from 'components/PageTitle';
 import {showToast} from 'utils/toast';
 import s from './TransactionDetails.module.css';
@@ -305,12 +306,15 @@ const TransactionDetails = () => {
         <div className={s.container}>
           <div className={s.hero}>
             {transaction.nftImage && !nftImageError ? (
-              <img
-                src={transaction.nftImage}
-                className={s.nftHeroImage}
-                alt='NFT'
-                onError={() => setNftImageError(true)}
-              />
+              <div className={s.nftHeroImage}>
+                <Image
+                  src={transaction.nftImage}
+                  alt='NFT'
+                  fill
+                  style={{objectFit: 'cover', borderRadius: 12}}
+                  onError={() => setNftImageError(true)}
+                />
+              </div>
             ) : (
               <div className={s.nftHeroImage}>
                 <div className={s.nftPlaceholder}>

@@ -96,7 +96,9 @@ export const showToast = ({type, title, message, props, ...options}) => {
       {autoClose: false, toastId},
     );
   } else if (type === 'progressToast') {
-    return toast.loading(customView(title, message, props?.onViewTransaction), {autoClose: false});
+    return toast.loading(customView(title, message, props?.onViewTransaction), {
+      autoClose: false,
+    });
   } else if (type === 'successToast') {
     return toast.success(customView(title, message, props?.onViewTransaction));
   } else if (type === 'warningToast') {

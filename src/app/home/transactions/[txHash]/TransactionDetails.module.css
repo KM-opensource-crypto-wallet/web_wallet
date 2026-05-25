@@ -27,10 +27,10 @@
 }
 
 .nftHeroImage {
+  position: relative;
   width: 120px;
   height: 120px;
   border-radius: 12px;
-  object-fit: cover;
   overflow: hidden;
   display: flex;
   align-items: center;
