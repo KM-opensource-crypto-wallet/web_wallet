@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {Box, Modal, Switch} from '@mui/material';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -50,10 +50,21 @@ const ModalSortTransactions = ({
   hideModal,
   onPressAppy,
   initialHideSmallTx,
+  initialSort,
+  initialFilter,
 }) => {
-  const [value, setValue] = useState('Date Descending');
-  const [status, setStatus] = useState('None');
-  const [hideSmallTx, setHideSmallTx] = useState(initialHideSmallTx ?? false);
+  const [value, setValue] = useState(initialSort ?? 'Date Descending');
+  const [status, setStatus] = useState(initialFilter ?? 'None');
+  const [hideSmallTx, setHideSmallTx] = useState(initialHideSmallTx ?? true);
+
+  useEffect(() => {
+    if (visible) {
+      setValue(initialSort ?? 'Date Descending');
+      setStatus(initialFilter ?? 'None');
+      setHideSmallTx(initialHideSmallTx ?? true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
   const currentCoin = useSelector(selectCurrentCoin);
   const dispatch = useDispatch();
 
@@ -65,7 +76,7 @@ const ModalSortTransactions = ({
   const handleReset = () => {
     setValue('Date Descending');
     setStatus('None');
-    setHideSmallTx(false);
+    setHideSmallTx(true);
   };
 
   const onPressClearTransactionCache = useCallback(() => {

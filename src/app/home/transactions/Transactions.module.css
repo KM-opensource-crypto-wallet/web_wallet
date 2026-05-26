@@ -89,3 +89,58 @@
   color: var(--font);
   font-size: 14px;
 }
+
+.subtitleRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+.subtitleRow .address {
+  margin-bottom: 0;
+}
+
+.infoIcon {
+  color: var(--gray);
+  display: flex;
+  align-items: center;
+  margin-top: 1px;
+}
+
+.infoCard {
+  background-color: color-mix(in srgb, var(--secondaryBackgroundColor) 80%, transparent);
+  border: 1px solid var(--gray);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--font);
+  margin-bottom: 4px;
+}
+
+.infoCardLine {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray);
+}
+
+.infoCardBold {
+  font-weight: 600;
+  color: var(--font);
+}
+
+.infoCardLink {
+  color: var(--blue);
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 12px;
+}

@@ -1,5 +1,6 @@
 'use client';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   selectCurrentCoin,
@@ -17,7 +18,6 @@ import s from './Transactions.module.css';
 import {refreshCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import Loading from 'components/Loading';
 import PageTitle from 'components/PageTitle';
-import {popupCenter} from 'utils/common';
 import {
   getAddressDetailsUrl,
   isBitcoinChain,
@@ -33,6 +33,41 @@ const ALL_TRANSACTION_TYPES = [
   {label: 'Withdraw', value: 'withdraw'},
   {label: 'Batch', value: 'batch'},
 ];
+
+function computeRenderList(
+  transactions,
+  hideSmallTx,
+  currencyRate,
+  filter,
+  sort,
+  mineAddress,
+) {
+  const list = Array.isArray(transactions) ? [...transactions] : [];
+  const filtered = list.filter(tx => {
+    const isRegularTx = tx?.transactionType === 'regular';
+    if (hideSmallTx && isRegularTx) {
+      const usdValue =
+        tx.totalCourse != null
+          ? parseFloat(tx.totalCourse)
+          : parseFloat(tx.amount) * (currencyRate || 0);
+      if (usdValue < 1) return false;
+    }
+    if (!filter || filter === 'None') return true;
+    if (filter === 'Received')
+      return mineAddress?.toUpperCase() === tx?.to?.toUpperCase();
+    if (filter === 'Send')
+      return mineAddress?.toUpperCase() === tx?.from?.toUpperCase();
+    if (filter === 'Pending') return tx.status?.toUpperCase() !== 'SUCCESS';
+    return true;
+  });
+  return filtered.sort((a, b) => {
+    if (sort === 'Date Ascending') return new Date(a.date) - new Date(b.date);
+    if (sort === 'Amount Ascending') return Number(a.amount) - Number(b.amount);
+    if (sort === 'Amount Descending')
+      return Number(b.amount) - Number(a.amount);
+    return new Date(b.date) - new Date(a.date);
+  });
+}
 
 const ALL_ONLY_CHAINS = [
   'ton',
@@ -64,6 +99,7 @@ const TransactionsList = () => {
   const [selectedType, setSelectedType] = useState('all');
   const [renderList, setRenderList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showInfo, setShowInfo] = useState(false);
   const router = useRouter();
 
   const coinId =
@@ -117,8 +153,24 @@ const TransactionsList = () => {
   }, [coinId, dispatch]);
 
   useEffect(() => {
-    setRenderList(typedTransactions);
-  }, [typedTransactions]);
+    setRenderList(
+      computeRenderList(
+        typedTransactions,
+        hideSmallTx,
+        currentCoin?.currencyRate,
+        filter,
+        sort,
+        currentCoin?.address,
+      ),
+    );
+  }, [
+    typedTransactions,
+    hideSmallTx,
+    currentCoin?.currencyRate,
+    currentCoin?.address,
+    filter,
+    sort,
+  ]);
 
   const onPressViewAll = useCallback(() => {
     const chain_name = currentCoin?.chain_name;
@@ -127,67 +179,18 @@ const TransactionsList = () => {
     if (chain_name && type && address) {
       const url = getAddressDetailsUrl(chain_name, type, address);
       if (url) {
-        popupCenter({url});
+        window.open(url, '_blank', 'noopener,noreferrer');
       }
     }
   }, [currentCoin?.address, currentCoin?.chain_name, currentCoin?.type]);
 
   const onPressApply = useCallback(
     (sortValue, filterValue, hideSmallTxValue) => {
-      const mineAddress = currentCoin?.address;
       setSort(sortValue);
       setFilter(filterValue);
       dispatch(setHideSmallTransactions(hideSmallTxValue));
-      const allTempTransactions = Array.isArray(typedTransactions)
-        ? [...typedTransactions]
-        : [];
-      const parseTransaction = JSON.parse(JSON.stringify(allTempTransactions));
-
-      const filterTempTransactions = parseTransaction.filter(mainTran => {
-        const isRegularTx =
-          !mainTran?.isNFT &&
-          !mainTran?.isBatchTransaction &&
-          mainTran?.transactionType !== 'batch' &&
-          !mainTran?.isCreateStaking &&
-          mainTran?.transactionType !== 'stake' &&
-          !mainTran?.isWithdrawStaking &&
-          mainTran?.transactionType !== 'withdraw' &&
-          !mainTran?.isDeactivateStaking &&
-          mainTran?.transactionType !== 'unstake' &&
-          !mainTran?.isStakingRewards &&
-          !mainTran?.isCreateVote &&
-          mainTran?.transactionType !== 'smartContract';
-        if (
-          hideSmallTxValue &&
-          isRegularTx &&
-          parseFloat(mainTran.totalCourse) < 1
-        ) {
-          return false;
-        }
-        if (filterValue === 'None') {
-          return true;
-        } else if (filterValue === 'Received') {
-          return mineAddress?.toUpperCase() === mainTran?.to?.toUpperCase();
-        } else if (filterValue === 'Send') {
-          return mineAddress?.toUpperCase() === mainTran?.from?.toUpperCase();
-        } else if (filterValue === 'Pending') {
-          return mainTran.status?.toUpperCase() !== 'SUCCESS';
-        }
-      });
-      const sortedData = filterTempTransactions?.sort(function (a, b) {
-        if (sortValue === 'Date Descending') {
-          return new Date(b.date) - new Date(a.date);
-        } else if (sortValue === 'Date Ascending') {
-          return new Date(a.date) - new Date(b.date);
-        } else if (sortValue === 'Amount Ascending') {
-          return Number(a.amount) - Number(b.amount);
-        } else if (sortValue === 'Amount Descending') {
-          return Number(b.amount) - Number(a.amount);
-        }
-      });
-      setRenderList(sortedData);
     },
-    [currentCoin?.address, dispatch, typedTransactions],
+    [dispatch],
   );
 
   const onPressTypeTab = useCallback(value => {
@@ -216,11 +219,55 @@ const TransactionsList = () => {
                 )}
               </div>
               <div className={s.rowView}>
-                <p className={s.address}>Your last 20 transactions</p>
+                <button
+                  className={s.subtitleRow}
+                  onClick={() => setShowInfo(v => !v)}>
+                  <p className={s.address}>Your last 20 transactions</p>
+                  <span className={s.infoIcon}>
+                    <InfoOutlinedIcon style={{fontSize: 16}} />
+                  </span>
+                </button>
                 <button className={s.viewButton} onClick={onPressViewAll}>
                   <p className={s.viewButtonText}>{'View all'}</p>
                 </button>
               </div>
+              {showInfo && (
+                <div className={s.infoCard}>
+                  <p className={s.infoCardTitle}>
+                    Why am I missing transactions?
+                  </p>
+                  <p className={s.infoCardLine}>
+                    {'• '}
+                    <span className={s.infoCardBold}>Only the last 20</span>
+                    {' transactions are fetched from the network.'}
+                  </p>
+                  <p className={s.infoCardLine}>
+                    {'• '}
+                    <span className={s.infoCardBold}>
+                      Small transactions ({'<'}$1)
+                    </span>
+                    {' may be hidden. Toggle in '}
+                    <button
+                      className={s.infoCardLink}
+                      onClick={() => setmodalVisible(true)}>
+                      Sort &amp; Filter
+                    </button>
+                    {'.'}
+                  </p>
+                  <p className={s.infoCardLine}>
+                    {'• A '}
+                    <span className={s.infoCardBold}>status filter</span>
+                    {' may be active.'}
+                  </p>
+                  <p className={s.infoCardLine}>
+                    {'• '}
+                    <button className={s.infoCardLink} onClick={onPressViewAll}>
+                      View all
+                    </button>
+                    {' transactions on the explorer.'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {transactionTypes.length > 1 && (
@@ -267,6 +314,8 @@ const TransactionsList = () => {
               hideModal={() => setmodalVisible(false)}
               onPressAppy={onPressApply}
               initialHideSmallTx={hideSmallTx}
+              initialSort={sort}
+              initialFilter={filter}
             />
           </div>
         </>
