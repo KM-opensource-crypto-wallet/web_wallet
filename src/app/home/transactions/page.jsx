@@ -1,5 +1,6 @@
 'use client';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   selectCurrentCoin,
@@ -17,7 +18,6 @@ import s from './Transactions.module.css';
 import {refreshCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import Loading from 'components/Loading';
 import PageTitle from 'components/PageTitle';
-import {popupCenter} from 'utils/common';
 import {
   getAddressDetailsUrl,
   isBitcoinChain,
@@ -64,6 +64,7 @@ const TransactionsList = () => {
   const [selectedType, setSelectedType] = useState('all');
   const [renderList, setRenderList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showInfo, setShowInfo] = useState(false);
   const router = useRouter();
 
   const coinId =
@@ -117,8 +118,17 @@ const TransactionsList = () => {
   }, [coinId, dispatch]);
 
   useEffect(() => {
-    setRenderList(typedTransactions);
-  }, [typedTransactions]);
+    if (!hideSmallTx || !currentCoin?.currencyRate) {
+      setRenderList(typedTransactions);
+      return;
+    }
+    const filtered = (typedTransactions || []).filter(tx => {
+      if (tx.transactionType !== 'regular') return true;
+      const usdValue = parseFloat(tx.amount) * currentCoin.currencyRate;
+      return usdValue >= 1;
+    });
+    setRenderList(filtered);
+  }, [typedTransactions, hideSmallTx, currentCoin?.currencyRate]);
 
   const onPressViewAll = useCallback(() => {
     const chain_name = currentCoin?.chain_name;
@@ -127,7 +137,7 @@ const TransactionsList = () => {
     if (chain_name && type && address) {
       const url = getAddressDetailsUrl(chain_name, type, address);
       if (url) {
-        popupCenter({url});
+        window.open(url, '_blank', 'noopener,noreferrer');
       }
     }
   }, [currentCoin?.address, currentCoin?.chain_name, currentCoin?.type]);
@@ -144,19 +154,7 @@ const TransactionsList = () => {
       const parseTransaction = JSON.parse(JSON.stringify(allTempTransactions));
 
       const filterTempTransactions = parseTransaction.filter(mainTran => {
-        const isRegularTx =
-          !mainTran?.isNFT &&
-          !mainTran?.isBatchTransaction &&
-          mainTran?.transactionType !== 'batch' &&
-          !mainTran?.isCreateStaking &&
-          mainTran?.transactionType !== 'stake' &&
-          !mainTran?.isWithdrawStaking &&
-          mainTran?.transactionType !== 'withdraw' &&
-          !mainTran?.isDeactivateStaking &&
-          mainTran?.transactionType !== 'unstake' &&
-          !mainTran?.isStakingRewards &&
-          !mainTran?.isCreateVote &&
-          mainTran?.transactionType !== 'smartContract';
+        const isRegularTx = mainTran?.transactionType === 'regular';
         if (
           hideSmallTxValue &&
           isRegularTx &&
@@ -216,11 +214,55 @@ const TransactionsList = () => {
                 )}
               </div>
               <div className={s.rowView}>
-                <p className={s.address}>Your last 20 transactions</p>
+                <button
+                  className={s.subtitleRow}
+                  onClick={() => setShowInfo(v => !v)}>
+                  <p className={s.address}>Your last 20 transactions</p>
+                  <span className={s.infoIcon}>
+                    <InfoOutlinedIcon style={{fontSize: 16}} />
+                  </span>
+                </button>
                 <button className={s.viewButton} onClick={onPressViewAll}>
                   <p className={s.viewButtonText}>{'View all'}</p>
                 </button>
               </div>
+              {showInfo && (
+                <div className={s.infoCard}>
+                  <p className={s.infoCardTitle}>
+                    Why am I missing transactions?
+                  </p>
+                  <p className={s.infoCardLine}>
+                    {'• '}
+                    <span className={s.infoCardBold}>Only the last 20</span>
+                    {' transactions are fetched from the network.'}
+                  </p>
+                  <p className={s.infoCardLine}>
+                    {'• '}
+                    <span className={s.infoCardBold}>
+                      Small transactions ({'<'}$1)
+                    </span>
+                    {' may be hidden. Toggle in '}
+                    <button
+                      className={s.infoCardLink}
+                      onClick={() => setmodalVisible(true)}>
+                      Sort &amp; Filter
+                    </button>
+                    {'.'}
+                  </p>
+                  <p className={s.infoCardLine}>
+                    {'• A '}
+                    <span className={s.infoCardBold}>status filter</span>
+                    {' may be active.'}
+                  </p>
+                  <p className={s.infoCardLine}>
+                    {'• '}
+                    <button className={s.infoCardLink} onClick={onPressViewAll}>
+                      View all
+                    </button>
+                    {' transactions on the explorer.'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {transactionTypes.length > 1 && (
@@ -267,6 +309,8 @@ const TransactionsList = () => {
               hideModal={() => setmodalVisible(false)}
               onPressAppy={onPressApply}
               initialHideSmallTx={hideSmallTx}
+              initialSort={sort}
+              initialFilter={filter}
             />
           </div>
         </>

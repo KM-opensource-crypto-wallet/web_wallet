@@ -76,10 +76,12 @@ const TransactionDetails = () => {
   const [nftImageError, setNftImageError] = useState(false);
   const statusRef = useRef(null);
   const routeStateData = useSelector(getRouteStateData);
-  const routeStateTransaction = routeStateData?.TransactionDetails?.transaction;
+  const [savedRouteTransaction] = useState(
+    () => routeStateData?.TransactionDetails?.transaction ?? null,
+  );
 
   useEffect(() => {
-    if (routeStateTransaction) {
+    if (savedRouteTransaction) {
       dispatch(setRouteStateData({TransactionDetails: null}));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -87,7 +89,7 @@ const TransactionDetails = () => {
 
   const initialTransaction =
     currentCoin?.transactions?.find(t => t.link === txHash) ??
-    (routeStateTransaction?.link === txHash ? routeStateTransaction : null);
+    (savedRouteTransaction?.link === txHash ? savedRouteTransaction : null);
 
   const recentTx =
     reduxRecentTransaction?.data?.link === txHash
