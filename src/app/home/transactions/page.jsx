@@ -34,6 +34,41 @@ const ALL_TRANSACTION_TYPES = [
   {label: 'Batch', value: 'batch'},
 ];
 
+function computeRenderList(
+  transactions,
+  hideSmallTx,
+  currencyRate,
+  filter,
+  sort,
+  mineAddress,
+) {
+  const list = Array.isArray(transactions) ? [...transactions] : [];
+  const filtered = list.filter(tx => {
+    const isRegularTx = tx?.transactionType === 'regular';
+    if (hideSmallTx && isRegularTx) {
+      const usdValue =
+        tx.totalCourse != null
+          ? parseFloat(tx.totalCourse)
+          : parseFloat(tx.amount) * (currencyRate || 0);
+      if (usdValue < 1) return false;
+    }
+    if (!filter || filter === 'None') return true;
+    if (filter === 'Received')
+      return mineAddress?.toUpperCase() === tx?.to?.toUpperCase();
+    if (filter === 'Send')
+      return mineAddress?.toUpperCase() === tx?.from?.toUpperCase();
+    if (filter === 'Pending') return tx.status?.toUpperCase() !== 'SUCCESS';
+    return true;
+  });
+  return filtered.sort((a, b) => {
+    if (sort === 'Date Ascending') return new Date(a.date) - new Date(b.date);
+    if (sort === 'Amount Ascending') return Number(a.amount) - Number(b.amount);
+    if (sort === 'Amount Descending')
+      return Number(b.amount) - Number(a.amount);
+    return new Date(b.date) - new Date(a.date);
+  });
+}
+
 const ALL_ONLY_CHAINS = [
   'ton',
   'stellar',
@@ -118,17 +153,24 @@ const TransactionsList = () => {
   }, [coinId, dispatch]);
 
   useEffect(() => {
-    if (!hideSmallTx || !currentCoin?.currencyRate) {
-      setRenderList(typedTransactions);
-      return;
-    }
-    const filtered = (typedTransactions || []).filter(tx => {
-      if (tx.transactionType !== 'regular') return true;
-      const usdValue = parseFloat(tx.amount) * currentCoin.currencyRate;
-      return usdValue >= 1;
-    });
-    setRenderList(filtered);
-  }, [typedTransactions, hideSmallTx, currentCoin?.currencyRate]);
+    setRenderList(
+      computeRenderList(
+        typedTransactions,
+        hideSmallTx,
+        currentCoin?.currencyRate,
+        filter,
+        sort,
+        currentCoin?.address,
+      ),
+    );
+  }, [
+    typedTransactions,
+    hideSmallTx,
+    currentCoin?.currencyRate,
+    currentCoin?.address,
+    filter,
+    sort,
+  ]);
 
   const onPressViewAll = useCallback(() => {
     const chain_name = currentCoin?.chain_name;
@@ -144,48 +186,11 @@ const TransactionsList = () => {
 
   const onPressApply = useCallback(
     (sortValue, filterValue, hideSmallTxValue) => {
-      const mineAddress = currentCoin?.address;
       setSort(sortValue);
       setFilter(filterValue);
       dispatch(setHideSmallTransactions(hideSmallTxValue));
-      const allTempTransactions = Array.isArray(typedTransactions)
-        ? [...typedTransactions]
-        : [];
-      const parseTransaction = JSON.parse(JSON.stringify(allTempTransactions));
-
-      const filterTempTransactions = parseTransaction.filter(mainTran => {
-        const isRegularTx = mainTran?.transactionType === 'regular';
-        if (
-          hideSmallTxValue &&
-          isRegularTx &&
-          parseFloat(mainTran.totalCourse) < 1
-        ) {
-          return false;
-        }
-        if (filterValue === 'None') {
-          return true;
-        } else if (filterValue === 'Received') {
-          return mineAddress?.toUpperCase() === mainTran?.to?.toUpperCase();
-        } else if (filterValue === 'Send') {
-          return mineAddress?.toUpperCase() === mainTran?.from?.toUpperCase();
-        } else if (filterValue === 'Pending') {
-          return mainTran.status?.toUpperCase() !== 'SUCCESS';
-        }
-      });
-      const sortedData = filterTempTransactions?.sort(function (a, b) {
-        if (sortValue === 'Date Descending') {
-          return new Date(b.date) - new Date(a.date);
-        } else if (sortValue === 'Date Ascending') {
-          return new Date(a.date) - new Date(b.date);
-        } else if (sortValue === 'Amount Ascending') {
-          return Number(a.amount) - Number(b.amount);
-        } else if (sortValue === 'Amount Descending') {
-          return Number(b.amount) - Number(a.amount);
-        }
-      });
-      setRenderList(sortedData);
     },
-    [currentCoin?.address, dispatch, typedTransactions],
+    [dispatch],
   );
 
   const onPressTypeTab = useCallback(value => {
