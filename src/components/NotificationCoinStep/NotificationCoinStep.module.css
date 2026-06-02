@@ -1,0 +1,35 @@
+.coinRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--whiteOutline);
+  cursor: pointer;
+  color: var(--font);
+}
+
+.coinRow:hover {
+  color: var(--gray);
+}
+
+.coinInfo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.coinSymbol {
+  font-size: 15px;
+  font-weight: bold;
+  color: inherit;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--background);
+  flex-shrink: 0;
+}

@@ -1,0 +1,57 @@
+.addressSection {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--whiteOutline);
+}
+
+.bitcoinInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.bitcoinInfoIcon {
+  font-size: 16px;
+  color: #f59e0b;
+  flex-shrink: 0;
+  font-style: normal;
+}
+
+.bitcoinInfoText {
+  font-size: 13px;
+  color: var(--font);
+  line-height: 1.4;
+}
+
+.coinHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.coinSymbol {
+  font-size: 15px;
+  font-weight: bold;
+  color: var(--font);
+}
+
+.select {
+  width: 100%;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--whiteOutline);
+  background: var(--backgroundColor);
+  color: var(--font);
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+  height: 50px;
+}
+
+.select:focus {
+  border-color: var(--borderActiveColor);
+}

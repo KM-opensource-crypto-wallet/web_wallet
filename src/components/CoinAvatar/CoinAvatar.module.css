@@ -1,0 +1,43 @@
+/* Base styles shared by icon and fallback */
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Fallback (lettered circle) */
+.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lightBackground);
+  color: var(--background);
+  font-weight: bold;
+  border: 1px solid var(--whiteOutline);
+}
+
+/* Size variants */
+.sm {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+}
+
+.md {
+  width: 36px;
+  height: 36px;
+  font-size: 12px;
+}
+
+.list {
+  width: 40px;
+  height: 40px;
+  font-size: 13px;
+}
+
+.lg {
+  width: 46px;
+  height: 46px;
+  font-size: 15px;
+}

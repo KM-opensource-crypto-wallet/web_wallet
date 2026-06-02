@@ -211,6 +211,14 @@ const Settings = ({navigation}) => {
             </p>
           </div>
         </Link>
+        <p className={s.title}>Notifications</p>
+        <Link href='/settings/notification-alerts' className={s.btn}>
+          {icons.setCurrency}
+          <div className={s.box}>
+            <p className={s.btnTitle}>{'Notification Alerts'}</p>
+            <p className={s.btnText}>{'Manage alerts for transactions'}</p>
+          </div>
+        </Link>
       </div>
       <ModalConfirmEnableChatModal
         visible={isChatModalVisible}

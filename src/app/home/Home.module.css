@@ -55,6 +55,20 @@
   background-color: var(--lightBackground);
 }
 
+.bellBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+  color: var(--font);
+  transition: background-color 0.2s;
+}
+
+.bellBtn:hover {
+  background-color: var(--lightBackground);
+}
+
 .sortMenuWrapper {
   position: relative;
   display: flex;

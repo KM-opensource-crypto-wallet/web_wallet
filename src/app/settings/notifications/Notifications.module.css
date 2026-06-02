@@ -1,28 +1,204 @@
 .container {
-  background-color: var(--backgroundColor);
-  padding: 20px;
-}
-
-.title {
-  color: var(--gray);
-  font-size: 16px;
-  margin-bottom: 15px;
-  text-transform: uppercase;
-  font-weight: bold;
-}
-
-.btn {
-  width: 150px;
   display: flex;
-  height: 50px;
-  font-size: 20px;
-  align-items: center;
-  justify-content: space-between;
-  align-self: center;
+  flex-direction: column;
+  flex: 1;
+  padding: 0 16px 24px;
+  background-color: var(--backgroundColor);
 }
 
-.btnTitle {
+.walletFilter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(156, 163, 175, 0.2);
+  margin-bottom: 4px;
+}
+
+.chip {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--gray, #9ca3af);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
   color: var(--font);
-  font-size: 17px;
-  font-weight: bold;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.chipActive {
+  background: var(--primary, #f59e0b);
+  border-color: var(--primary, #f59e0b);
+  color: #fff;
+  font-weight: 600;
+}
+
+.dateSeparator {
+  font-size: 12px;
+  color: var(--gray, #6b7280);
+  font-weight: 600;
+  padding: 12px 0 4px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(156, 163, 175, 0.15);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.item:hover {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+}
+
+.directionIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.receiveIcon { background: rgba(22, 163, 74, 0.1); color: #16a34a; }
+.sendIcon { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+
+.itemInfo { flex: 1; min-width: 0; }
+
+.itemTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.coinSymbol { font-size: 15px; font-weight: 600; color: var(--font); }
+.amount { font-size: 15px; font-weight: 600; }
+.receiveAmount { color: #16a34a; }
+.sendAmount { color: #dc2626; }
+
+.itemBottom {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.chainText { font-size: 12px; color: var(--gray, #6b7280); }
+.timeText { font-size: 12px; color: var(--gray, #6b7280); }
+
+.loader { text-align: center; padding: 40px; color: var(--gray, #6b7280); }
+.emptyText { text-align: center; color: var(--gray, #6b7280); padding: 40px 0; font-size: 15px; }
+
+.loadMoreBtn {
+  margin: 16px auto 0;
+  display: block;
+  padding: 8px 24px;
+  border-radius: 20px;
+  border: 1px solid var(--primary, #f59e0b);
+  background: transparent;
+  color: var(--primary, #f59e0b);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Detail modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modalCard {
+  background: var(--backgroundColor, #fff);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.badge {
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.receiveBadge { background: rgba(22, 163, 74, 0.12); color: #16a34a; }
+.sendBadge { background: rgba(220, 38, 38, 0.12); color: #dc2626; }
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  color: var(--gray, #6b7280);
+  padding: 4px;
+  line-height: 1;
+}
+
+.detailAmount {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--font);
+  margin-bottom: 16px;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(156, 163, 175, 0.15);
+  gap: 12px;
+}
+
+.detailLabel { font-size: 13px; color: var(--gray, #6b7280); flex-shrink: 0; }
+
+.detailValueRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.detailValue {
+  font-size: 13px;
+  color: var(--font);
+  font-weight: 500;
+  text-align: right;
+  word-break: break-all;
+}
+
+.copyBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray, #9ca3af);
+  font-size: 14px;
+  padding: 0;
+  flex-shrink: 0;
 }

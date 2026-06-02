@@ -1,0 +1,73 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 16px;
+}
+
+.card {
+  background: var(--secondaryBackgroundColor);
+  border-radius: 16px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 360px;
+  border: 1px solid var(--whiteOutline);
+  text-align: center;
+}
+
+.iconWrap {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 17px;
+  font-weight: bold;
+  color: var(--font);
+  margin-bottom: 10px;
+}
+
+.desc {
+  font-size: 14px;
+  color: var(--gray);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.cancelBtn {
+  flex: 1;
+  height: 56px;
+  border-radius: 10px;
+  border: 1px solid var(--whiteOutline);
+  background: transparent;
+  color: var(--font);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.cancelBtn:hover {
+  background: var(--lightBackground);
+}
+
+.confirmBtn {
+  flex: 1;
+  height: 56px;
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--title);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.confirmBtn:hover {
+  opacity: 0.9;
+}

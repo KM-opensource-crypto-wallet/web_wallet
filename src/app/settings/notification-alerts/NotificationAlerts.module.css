@@ -1,0 +1,195 @@
+/* Page container */
+.container {
+  background-color: var(--backgroundColor);
+  padding-bottom: 30px;
+  padding: 20px;
+}
+
+/* ── Permission card ───────────────────────────────────────────────────────── */
+.permissionContainer {
+  padding: 20px;
+  margin-top: 10%;
+  display: flex;
+  justify-content: center;
+}
+
+.permissionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--secondaryBackgroundColor);
+  border-radius: 16px;
+  padding: 40px 24px;
+  width: 100%;
+  max-width: 480px;
+  border: 1px solid var(--whiteOutline);
+  text-align: center;
+}
+
+.permissionIconWrap {
+  margin-bottom: 24px;
+}
+
+.permissionTitle {
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--font);
+  margin-bottom: 12px;
+}
+
+.permissionDesc {
+  font-size: 15px;
+  color: var(--gray);
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+.settingsButton {
+  background-color: var(--background);
+  color: var(--title);
+  border-radius: 10px;
+  height: 60px;
+  font-size: 16px;
+  font-weight: bold;
+  min-width: 220px;
+  padding: 0 32px;
+}
+
+.settingsButton:hover {
+  opacity: 0.9;
+}
+
+.settingsButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Search bar ────────────────────────────────────────────────────────────── */
+.searchBarRow {
+  padding: 16px 20px 8px;
+}
+
+.searchInput {
+  width: 100%;
+  background: var(--backgroundColor);
+  border: 1px solid var(--whiteOutline);
+  border-radius: 10px;
+  padding: 0 14px;
+  height: 50px;
+  font-size: 16px;
+  color: var(--font);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  border-color: var(--borderActiveColor);
+}
+
+/* ── List header ───────────────────────────────────────────────────────────── */
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 20px 8px;
+}
+
+.counterText {
+  font-size: 14px;
+  color: var(--gray);
+}
+
+.addBtn {
+  padding: 6px 20px;
+  border-radius: 20px;
+  background: var(--background);
+  color: var(--title);
+  font-size: 14px;
+  font-weight: bold;
+  height: 36px;
+}
+
+.addBtn:hover {
+  opacity: 0.9;
+}
+
+.addBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── 15-min activation banner ──────────────────────────────────────────────── */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--secondaryBackgroundColor);
+  border: 1px solid var(--whiteOutline);
+  border-left: 3px solid var(--background);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 0 20px 8px;
+}
+
+.bannerIcon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.bannerText {
+  flex: 1;
+  font-size: 13px;
+  color: var(--font);
+  line-height: 1.4;
+}
+
+.bannerClose {
+  font-size: 20px;
+  color: var(--gray);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ── Loader ────────────────────────────────────────────────────────────────── */
+.loaderWrap {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--whiteOutline);
+  border-top-color: var(--background);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────────── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 52px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--font);
+  margin-bottom: 24px;
+}

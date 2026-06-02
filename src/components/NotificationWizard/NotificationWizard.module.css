@@ -1,0 +1,78 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.card {
+  background: var(--backgroundColor);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--whiteOutline);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--whiteOutline);
+  flex-shrink: 0;
+}
+
+.backBtn,
+.closeBtn {
+  font-size: 20px;
+  color: var(--font);
+  padding: 4px 8px;
+  border-radius: 8px;
+  width: 36px;
+  text-align: center;
+}
+
+.backBtn:hover,
+.closeBtn:hover {
+  background: var(--lightBackground);
+}
+
+.title {
+  font-size: 17px;
+  font-weight: bold;
+  color: var(--font);
+  flex: 1;
+  text-align: center;
+}
+
+.stepIndicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 8px;
+  flex-shrink: 0;
+}
+
+.stepDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.stepDotActive {
+  background: var(--background);
+}
+
+.stepDotInactive {
+  background: var(--whiteOutline);
+}

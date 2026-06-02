@@ -43,6 +43,8 @@ const nextConfig = {
     WALLET_CONNECT_ID: process.env.WALLET_CONNECT_ID,
     BLOCKFROST_API_KEY: process.env.BLOCKFROST_API_KEY,
     BREEZ_API_KEY: process.env.BREEZ_API_KEY,
+    DOKWALLET_ONESIGNAL_APP_ID: process.env.DOKWALLET_ONESIGNAL_APP_ID,
+    KIMLWALLET_ONESIGNAL_APP_ID: process.env.KIMLWALLET_ONESIGNAL_APP_ID,
   },
   trailingSlash: true,
   reactStrictMode: false,
@@ -56,6 +58,7 @@ const nextConfig = {
       http: path.resolve('./node_modules/http-browserify'),
       dns: path.resolve('./node_modules/@i2labs/dns'),
       fs: path.resolve('./node_modules/bare-fs'),
+      'bitcore-lib': path.resolve('./node_modules/bitcore-lib'),
     };
     if (isServer) {
       if (!dev) {

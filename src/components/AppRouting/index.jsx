@@ -14,6 +14,7 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
 import {ToastContainer} from 'react-toastify';
 import {ThemeContext} from 'theme/ThemeContext';
+import {setOneSignalAppId} from 'utils/onesignal';
 import {isReduxStoreLoaded} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
 import {selectWalletConnectSessions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {initWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
@@ -200,13 +201,19 @@ function AppRouting({children, wlData}) {
   useEffect(() => {
     setWhiteLabelInfo(wlData);
     setWLAppName(wlData?.name);
+    const isKiml = wlData?._id === '65efefca5f95b9f06cc8f9eb';
+    setOneSignalAppId(
+      isKiml
+        ? process.env.KIMLWALLET_ONESIGNAL_APP_ID
+        : process.env.DOKWALLET_ONESIGNAL_APP_ID,
+    );
     (async () => {
       try {
         const localeSetCheck = await isLocaleSet();
         if (!localeSetCheck) {
           setUserLocale(wlData.defaultLocale || 'en');
         }
-      } catch {
+      } catch (e) {
         console.error('error in set local', e);
       }
     })();

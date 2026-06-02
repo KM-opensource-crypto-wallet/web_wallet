@@ -1,0 +1,75 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 16px;
+}
+
+.card {
+  background: var(--secondaryBackgroundColor);
+  border-radius: 16px;
+  padding: 20px 16px;
+  width: 100%;
+  max-width: 340px;
+  border: 1px solid var(--whiteOutline);
+}
+
+.title {
+  font-size: 17px;
+  font-weight: bold;
+  color: var(--font);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 6px;
+  font-size: 15px;
+  color: var(--font);
+  border-bottom: 1px solid var(--whiteOutline);
+  border-radius: 6px;
+}
+
+.row:hover {
+  background: var(--lightBackground);
+}
+
+.rowActive {
+  color: var(--background);
+  font-weight: bold;
+}
+
+.rowLabel {
+  flex: 1;
+  text-align: left;
+}
+
+.checkmark {
+  color: var(--background);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.cancelBtn {
+  width: 100%;
+  margin-top: 12px;
+  height: 50px;
+  border-radius: 10px;
+  border: 1px solid var(--whiteOutline);
+  background: transparent;
+  color: var(--font);
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.cancelBtn:hover {
+  background: var(--lightBackground);
+}
