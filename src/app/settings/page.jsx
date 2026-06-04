@@ -7,6 +7,7 @@ import {
   isChatOptions,
   isWalletReset,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {getTutorialVideos} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 import {
   setResetWallet,
   updateChatOptions,
@@ -30,6 +31,7 @@ const Settings = ({navigation}) => {
   const lockTimeDisplay = useSelector(getLockTimeDisplay);
   const chatOptions = useSelector(isChatOptions);
   const rateLimitCheck = useSelector(isWalletReset);
+  const tutorialVideos = useSelector(getTutorialVideos);
   const currentLocale = useLocale();
   const t = useTranslations('settings');
 
@@ -127,6 +129,15 @@ const Settings = ({navigation}) => {
             </div>
           </div>
         </div>
+        {tutorialVideos?.length > 0 && (
+          <Link href='/settings/tutorial-videos' className={s.btn}>
+            {icons.tutorialVideos}
+            <div className={s.box}>
+              <p className={s.btnTitle}>Tutorial Videos</p>
+              <p className={s.btnText}>Learn how to use wallet features</p>
+            </div>
+          </Link>
+        )}
         <Link href='/about/terms-conditions' className={s.btn}>
           {icons.mail}
           <div className={s.box}>
