@@ -96,6 +96,7 @@ const CryptoProviders = () => {
   }, [buyCryptoUrl, handleNewTabClose]);
 
   const onPressItem = useCallback(async (item, index) => {
+    let pendingTab = null;
     try {
       const selectedCoin = formikRef.current?.values?.selectedCoin?.options;
       const amount = formikRef.current?.values?.amount;
@@ -127,6 +128,12 @@ const CryptoProviders = () => {
       } else if (url) {
         return window.open(url, '_blank');
       } else {
+        pendingTab = window.open('about:blank', '_blank');
+        if (!pendingTab) {
+          toast.error('Please allow pop-ups to continue');
+          return;
+        }
+        pendingTab.opener = null;
         setLoadingIndex(index);
         const resp = await getBuyCryptoUrl({
           ...item,
@@ -138,12 +145,14 @@ const CryptoProviders = () => {
         });
         const redirectUrl = resp?.data;
         if (!redirectUrl) {
+          pendingTab.close();
           toast.error('Unable to generate provider link');
           return;
         }
-        return window.open(redirectUrl, '_blank');
+        pendingTab.location.replace(redirectUrl);
       }
     } catch (e) {
+      pendingTab?.close();
       toast.error('Something went wrong');
       console.error('Error in press item', e);
     } finally {
