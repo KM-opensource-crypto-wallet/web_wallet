@@ -175,7 +175,7 @@ const CryptoProviders = () => {
         if (item.title?.toLowerCase() === '51pegasi') {
           return window.open('https://www.51pegasi.com/login', '_blank');
         } else if (url) {
-          launchUrl(url);
+          return window.open(url, '_blank');
         } else {
           const resp = await getBuyCryptoUrl({
             ...item,
@@ -191,7 +191,7 @@ const CryptoProviders = () => {
             toast.error('Unable to generate provider link');
             return;
           }
-          launchUrl(redirectUrl);
+          return window.open(redirectUrl, '_blank');
         }
       } catch (e) {
         toast.error('Something went wrong');
