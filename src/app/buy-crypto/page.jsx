@@ -1,13 +1,10 @@
 'use client';
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
 import {Formik} from 'formik';
 import styles from './CryptoProviders.module.css';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
 import {getUserCoinsOptions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {
-  getBuyCryptoUrl,
-  getIPAddress,
-} from 'dok-wallet-blockchain-networks/service/dokApi';
+import {getBuyCryptoUrl} from 'dok-wallet-blockchain-networks/service/dokApi';
 import GoBackButton from 'components/GoBackButton';
 import Image from 'next/image';
 import {
@@ -37,13 +34,7 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
 import Loading from 'components/Loading';
 import ModalAddCoins from 'components/ModalAddCoins';
-import {popupCenter} from 'utils/common';
-import {
-  getIsBuyCryptoInNewTab,
-  is51Pegasi,
-  isCastor24,
-  isUsdtNotSupportedWL,
-} from 'src/whitelabel/whiteLabelInfo';
+import {isUsdtNotSupportedWL} from 'src/whitelabel/whiteLabelInfo';
 import ModalRedirect from 'components/ModalRedirect';
 
 const currencyPicker = [
@@ -67,8 +58,9 @@ const CryptoProviders = () => {
   const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
   const [modalInfoVisible, setModalInfoVisible] = useState(false);
   const [buyCryptoUrl, setBuyCryptoUrl] = useState(null);
+  const [loadingIndex, setLoadingIndex] = useState(null);
   const selectedProviderRef = useRef(null);
-  const popupCleanupRef = useRef(null);
+
   const finalCoinOptions = useMemo(() => {
     if (isUsdtNotSupportedWL()) {
       return coinOptions.filter(
@@ -82,44 +74,6 @@ const CryptoProviders = () => {
     }
     return coinOptions;
   }, [coinOptions]);
-
-  useEffect(() => {
-    return () => {
-      try {
-        popupCleanupRef.current?.();
-      } catch {}
-    };
-  }, []);
-
-  const launchUrl = useCallback(async url => {
-    try {
-      const parsed = new URL(url);
-      if (parsed.protocol !== 'https:') {
-        toast.error('Invalid redirect URL');
-        return;
-      }
-    } catch {
-      toast.error('Invalid redirect URL');
-      return;
-    }
-    if (getIsBuyCryptoInNewTab()) {
-      setModalInfoVisible(true);
-      setBuyCryptoUrl(url);
-    } else {
-      const cleanup = await popupCenter({
-        url,
-        title: selectedProviderRef.current?.title || 'Buy Crypto',
-        callback: (success, params) => {
-          if (success) {
-            toast.success('Transaction completed');
-          }
-        },
-      });
-      if (typeof cleanup === 'function') {
-        popupCleanupRef.current = cleanup;
-      }
-    }
-  }, []);
 
   const handleNewTabClose = useCallback(() => {
     setBuyCryptoUrl(null);
@@ -141,65 +95,70 @@ const CryptoProviders = () => {
     handleNewTabClose();
   }, [buyCryptoUrl, handleNewTabClose]);
 
-  const onPressItem = useCallback(
-    async item => {
-      try {
-        const selectedCoin = formikRef.current?.values?.selectedCoin?.options;
-        const amount = formikRef.current?.values?.amount;
-        const fiatCurrency = formikRef.current?.values?.fiatCurrency;
-        if (!selectedCoin) {
-          formikRef?.current?.setFieldError(
-            'selectedCoin',
-            'Please select a coin',
-          );
-          formikRef?.current?.setFieldTouched('selectedCoin', true);
-          return;
-        }
-        if (isNaN(Number(amount)) || !Number(amount)) {
-          formikRef?.current?.setFieldError(
-            'amount',
-            'Please enter a valid amount',
-          );
-          formikRef?.current?.setFieldTouched('amount', true);
-          return;
-        }
-        let ipAddress = null;
-        if (item?.provider_name === 'simplex') {
-          ipAddress = await getIPAddress();
-        }
-        const url = item?.extraData?.url;
-        selectedProviderRef.current = item;
-        if (item.title?.toLowerCase() === 'castor24') {
-          return window.open('https://www.castor24.com/login', '_blank');
-        }
-        if (item.title?.toLowerCase() === '51pegasi') {
-          return window.open('https://www.51pegasi.com/login', '_blank');
-        } else if (url) {
-          return window.open(url, '_blank');
-        } else {
-          const resp = await getBuyCryptoUrl({
-            ...item,
-            selectedCoin,
-            fiatCurrency,
-            amount,
-            ipAddress,
-            appVersion: 'web',
-            from_device: 'web',
-          });
-          const redirectUrl = resp?.data;
-          if (!redirectUrl) {
-            toast.error('Unable to generate provider link');
-            return;
-          }
-          return window.open(redirectUrl, '_blank');
-        }
-      } catch (e) {
-        toast.error('Something went wrong');
-        console.error('Error in press item', e);
+  const onPressItem = useCallback(async (item, index) => {
+    let pendingTab = null;
+    try {
+      const selectedCoin = formikRef.current?.values?.selectedCoin?.options;
+      const amount = formikRef.current?.values?.amount;
+      const fiatCurrency = formikRef.current?.values?.fiatCurrency;
+      if (!selectedCoin) {
+        formikRef?.current?.setFieldError(
+          'selectedCoin',
+          'Please select a coin',
+        );
+        formikRef?.current?.setFieldTouched('selectedCoin', true);
+        return;
       }
-    },
-    [launchUrl],
-  );
+      if (isNaN(Number(amount)) || !Number(amount)) {
+        formikRef?.current?.setFieldError(
+          'amount',
+          'Please enter a valid amount',
+        );
+        formikRef?.current?.setFieldTouched('amount', true);
+        return;
+      }
+
+      const url = item?.extraData?.url;
+      selectedProviderRef.current = item;
+      if (item.title?.toLowerCase() === 'castor24') {
+        return window.open('https://www.castor24.com/login', '_blank');
+      }
+      if (item.title?.toLowerCase() === '51pegasi') {
+        return window.open('https://www.51pegasi.com/login', '_blank');
+      } else if (url) {
+        return window.open(url, '_blank');
+      } else {
+        pendingTab = window.open('about:blank', '_blank');
+        if (!pendingTab) {
+          toast.error('Please allow pop-ups to continue');
+          return;
+        }
+        pendingTab.opener = null;
+        setLoadingIndex(index);
+        const resp = await getBuyCryptoUrl({
+          ...item,
+          selectedCoin,
+          fiatCurrency,
+          amount,
+          appVersion: 'web',
+          from_device: 'web',
+        });
+        const redirectUrl = resp?.data;
+        if (!redirectUrl) {
+          pendingTab.close();
+          toast.error('Unable to generate provider link');
+          return;
+        }
+        pendingTab.location.replace(redirectUrl);
+      }
+    } catch (e) {
+      pendingTab?.close();
+      toast.error('Something went wrong');
+      console.error('Error in press item', e);
+    } finally {
+      setLoadingIndex(null);
+    }
+  }, []);
 
   const submitQuote = useCallback(
     async (values, {isDebounce = false} = {}) => {
@@ -417,38 +376,46 @@ const CryptoProviders = () => {
                     <Loading />
                   </div>
                 ) : (
-                  cryptoProviders?.map((item, index) => (
-                    <button
-                      key={index}
-                      className={styles.btn}
-                      onClick={() => {
-                        onPressItem(item);
-                      }}>
-                      <div className={styles.imageBox}>
-                        <Image
-                          src={item.src}
-                          alt={item.title}
-                          className={styles.image}
-                          height={40}
-                          width={40}
-                        />
-                      </div>
-                      <div className={styles.btnBox}>
-                        <p className={styles.btnTitle}>{item.title}</p>
-                        <p className={styles.btnCoins}>
-                          {item?.fromAmount &&
-                          item?.toAmount &&
-                          values.selectedCoin
-                            ? `${currencySymbol[values.fiatCurrency]}${
-                                item.fromAmount
-                              } ==> ${item.toAmount} ${
-                                values.selectedCoin?.options?.symbol
-                              }`
-                            : ''}
-                        </p>
-                      </div>
-                    </button>
-                  ))
+                  cryptoProviders?.map((item, index) => {
+                    const isItemLoading = loadingIndex === index;
+                    return (
+                      <button
+                        key={index}
+                        className={styles.btn}
+                        disabled={loadingIndex !== null}
+                        onClick={() => {
+                          onPressItem(item, index);
+                        }}>
+                        <div className={styles.imageBox}>
+                          <Image
+                            src={item.src}
+                            alt={item.title}
+                            className={styles.image}
+                            height={40}
+                            width={40}
+                          />
+                        </div>
+                        <div className={styles.btnBox}>
+                          <p className={styles.btnTitle}>{item.title}</p>
+                          {isItemLoading ? (
+                            <Loading size={18} height={'auto'} />
+                          ) : (
+                            <p className={styles.btnCoins}>
+                              {item?.fromAmount &&
+                              item?.toAmount &&
+                              values.selectedCoin
+                                ? `${currencySymbol[values.fiatCurrency]}${
+                                    item.fromAmount
+                                  } ==> ${item.toAmount} ${
+                                    values.selectedCoin?.options?.symbol
+                                  }`
+                                : ''}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
