@@ -31,18 +31,12 @@ import {
   StarIcon,
   VoteIcon,
 } from 'assets/images/icons';
+import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 
 const STATUS_CONFIG = {
   SUCCESS: {label: 'Success', color: '#71C441'},
   PENDING: {label: 'Pending', color: '#ffcc00'},
   FAILED: {label: 'Failed', color: '#FF4444'},
-};
-
-const truncateAddress = address => {
-  if (!address || typeof address !== 'string' || address.length <= 16) {
-    return typeof address === 'string' ? address : undefined;
-  }
-  return `${address.slice(0, 8)}...${address.slice(-8)}`;
 };
 
 const CopyRow = ({value}) => {
@@ -56,7 +50,9 @@ const CopyRow = ({value}) => {
   };
   return (
     <button className={s.rowValueRow} onClick={handleCopy}>
-      <span className={s.rowValue}>{truncateAddress(stringValue)}</span>
+      <span className={s.rowValue}>
+        {getCustomizePublicAddress(stringValue)}
+      </span>
       <CopyIcon />
     </button>
   );
@@ -475,7 +471,7 @@ const TransactionDetails = () => {
                       </div>
                       {!!tData?.to && (
                         <span className={s.batchItemTo}>
-                          To: {truncateAddress(tData.to)}
+                          To: {getCustomizePublicAddress(tData.to)}
                         </span>
                       )}
                     </div>
@@ -646,7 +642,8 @@ const TransactionDetails = () => {
                   <div className={s.validatorItem}>
                     <div className={s.validatorItemRow}>
                       <span className={s.validatorItemName}>
-                        {item?.name || truncateAddress(item?.validatorAddress)}
+                        {item?.name ||
+                          getCustomizePublicAddress(item?.validatorAddress)}
                       </span>
                       <span className={s.validatorItemVotes}>
                         {item?.votes} votes

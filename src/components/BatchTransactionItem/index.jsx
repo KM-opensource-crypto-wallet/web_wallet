@@ -11,7 +11,10 @@ import {
 import {currencySymbol} from 'data/currency';
 import CoinIcon from 'components/CoinIcon';
 import styles from './BatchTransactionItem.module.css';
-import {isBitcoinChain} from 'dok-wallet-blockchain-networks/helper';
+import {
+  getCustomizePublicAddress,
+  isBitcoinChain,
+} from 'dok-wallet-blockchain-networks/helper';
 import {showToast} from 'utils/toast';
 
 const BatchTransactionItem = ({
@@ -107,8 +110,7 @@ const BatchTransactionItem = ({
             <div className={styles.subAddressContainer}>
               <span className={styles.addressLabel}>From</span>
               <span className={styles.addressText}>
-                {item.transferData.fromAddress.slice(0, 8)}...
-                {item.transferData.fromAddress.slice(-6)}
+                {getCustomizePublicAddress(item.transferData.fromAddress)}
               </span>
             </div>
             <button
@@ -131,8 +133,7 @@ const BatchTransactionItem = ({
             <div className={styles.subAddressContainer}>
               <span className={styles.addressLabel}>To</span>
               <span className={styles.addressText}>
-                {item?.transferData?.toAddress?.slice?.(0, 8)}...
-                {item?.transferData?.toAddress?.slice?.(-6)}
+                {getCustomizePublicAddress(item?.transferData?.toAddress || '')}
               </span>
             </div>
             <button

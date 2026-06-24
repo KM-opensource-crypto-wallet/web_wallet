@@ -31,6 +31,7 @@ import {
   isPrivateKeyNotSupportedChain,
   isDeriveAddressSupportChain,
   isStakingChain,
+  getStakignKey,
 } from 'dok-wallet-blockchain-networks/helper';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import {toast} from 'react-toastify';
@@ -57,8 +58,9 @@ const SendScreen = () => {
   //   const styles = myStyles(theme);
 
   const isBitcoin = isBitcoinChain(currentCoin?.chain_name);
-  const isStaking =
-    isStakingChain(currentCoin?.chain_name) && currentCoin?.type === 'coin';
+  const isStaking = isStakingChain(
+    getStakignKey(currentCoin?.chain_name, currentCoin?.symbol),
+  );
 
   const [isLoading, setIsLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);

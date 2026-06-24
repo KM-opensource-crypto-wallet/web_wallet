@@ -74,3 +74,81 @@
   font-size: 12px;
   font-weight: 500;
 }
+
+.rewardCard {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px 10px 0;
+  background: var(--secondaryBackgroundColor, rgba(0, 0, 0, 0.04));
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.rewardAccentBar {
+  width: 4px;
+  align-self: stretch;
+  background: #21a366;
+  margin-right: 10px;
+}
+
+.rewardTokenLogo {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  margin-right: 10px;
+}
+
+.rewardTokenPlaceholder {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background: #21a366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+
+.rewardTokenPlaceholderText {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.rewardTextGroup {
+  flex: 1;
+}
+
+.rewardTitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray);
+}
+
+.rewardSymbolText {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--font);
+  margin-top: 2px;
+}
+
+.rewardValueText {
+  font-size: 14px;
+  font-weight: 700;
+  color: #21a366;
+}
+
+.claimButton {
+  margin-left: 10px;
+  padding: 6px 12px;
+  background: #21a366;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+}
