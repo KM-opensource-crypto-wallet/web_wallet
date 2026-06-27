@@ -11,6 +11,7 @@ import {currencySymbol} from 'data/currency';
 import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import BigNumber from 'bignumber.js';
 import {
+  isEVMChain,
   isHaveResourceTypeInCreateStakingScreen,
   isValidatorSupportCreateStakingScreen,
   multiplyBNWithFixed,
@@ -43,7 +44,6 @@ const WithdrawStaking = () => {
   const isDeactivateStaking = currentRouteData?.isDeactivateStaking;
   const isStakingRewards = currentRouteData?.isStakingRewards;
   const hideResource = currentRouteData?.hideResource;
-  console.log('istatke,isStakingRew', isStakingRewards);
   const currentCoin = useSelector(selectCurrentCoin);
   const localCurrency = useSelector(getLocalCurrency);
   const isValidatorSupport = useMemo(() => {
@@ -58,22 +58,61 @@ const WithdrawStaking = () => {
     return isResourceSupport ? resourcesData[currentCoin?.chain_name] : null;
   }, [isResourceSupport, currentCoin?.chain_name]);
 
+  const isEVMStaking =
+    isDeactivateStaking && isEVMChain(currentCoin?.chain_name);
+
+  const stakingProviderList = useMemo(() => {
+    if (!isEVMStaking) {
+      return [];
+    }
+    const staking = Array.isArray(currentCoin?.staking)
+      ? currentCoin.staking
+      : [];
+    return staking.map(item => ({
+      label: item?.validatorInfo?.name,
+      value: item?.validatorInfo?.name,
+      stakedAmount: item?.stakedAmount,
+      fiatAmount: multiplyBNWithFixed(
+        item?.stakedAmount,
+        currentCoin?.currencyRate,
+        2,
+      ),
+    }));
+  }, [isEVMStaking, currentCoin?.staking, currentCoin?.currencyRate]);
+
+  const [selectedProvider] = useState(
+    stakingProviderList.find(
+      p =>
+        p.value === selectedStake?.providerName ||
+        p.value === selectedStake?.validatorInfo?.name,
+    ) ||
+      stakingProviderList[0] ||
+      null,
+  );
+
+  const [isMaxCheckbox, setIsMaxCheckbox] = useState(true);
+
   const [state, setState] = useState({
     resourceType:
       isResourceSupport && isDeactivateStaking ? resourceData?.[1] : null,
-    amount: selectedStake?.amount || '0',
+    amount: selectedStake?.stakedAmount || selectedStake?.amount || '0',
     currencyAmount: selectedStake?.fiatAmount || '0',
     errors: {},
   });
   const {amount, currencyAmount, errors, resourceType} = state;
 
   const availableAmount = useMemo(() => {
+    if (isEVMStaking) {
+      return selectedProvider?.stakedAmount || '0';
+    }
     return selectedStake?.amount?.toString()
       ? selectedStake?.amount?.toString()
       : state?.resourceType?.value === 'ENERGY'
         ? currentCoin?.energyBalance
         : currentCoin?.bandwidthBalance;
   }, [
+    isEVMStaking,
+    selectedProvider?.stakedAmount,
     currentCoin?.bandwidthBalance,
     currentCoin?.energyBalance,
     selectedStake?.amount,
@@ -105,7 +144,21 @@ const WithdrawStaking = () => {
     state.resourceType?.value,
   ]);
   const disableTextInput =
-    isDisableTextInput(currentCoin?.chain_name) || !isDeactivateStaking;
+    isDisableTextInput(currentCoin?.chain_name) ||
+    !isDeactivateStaking ||
+    (isEVMStaking && isMaxCheckbox);
+
+  const handleMaxCheckboxToggle = value => {
+    setIsMaxCheckbox(value);
+    if (value) {
+      setState(prev => ({
+        ...prev,
+        amount: availableAmount,
+        currencyAmount: availableAmountCurrency,
+        errors: {},
+      }));
+    }
+  };
 
   const dispatch = useDispatch();
 
@@ -122,30 +175,41 @@ const WithdrawStaking = () => {
   }, [isWithdrawStaking, isDeactivateStaking, isStakingRewards]);
 
   const handleSubmitForm = async () => {
-    const localErrors = checkError(amount, currencyAmount);
+    const localErrors =
+      isEVMStaking && isMaxCheckbox ? {} : checkError(amount, currencyAmount);
     if (Object.keys(localErrors).length === 0) {
+      const stakingProviderName = isEVMStaking
+        ? selectedProvider?.value || selectedStake?.validatorInfo?.name
+        : selectedStake?.providerName || selectedStake?.validatorInfo?.name;
       dispatch(
         setCurrentTransferData({
           validatorPubKey: selectedStake?.validator_address,
           stakingAddress: selectedStake?.staking_address,
           validatorName: selectedStake?.validatorInfo?.name,
+          stakingProviderName,
           currentCoin,
           amount: validateBigNumberStr(amount),
           isStakingRewards: isStakingRewards,
           resourceType: resourceType?.value,
+          isMaxCheckbox: isEVMStaking && isMaxCheckbox,
         }),
       );
       dispatch(
         calculateEstimateFee({
           isFetchNonce: true,
           fromAddress: currentCoin?.address,
+          contractAddress:
+            selectedStake?.validator_address || currentCoin?.contractAddress,
           amount: validateBigNumberStr(amount),
+          tokenDecimals: currentCoin?.decimal,
           validatorPubKey: selectedStake?.validator_address,
           stakingAddress: selectedStake?.staking_address,
           isWithdrawStaking: isWithdrawStaking,
           isDeactivateStaking: isDeactivateStaking,
           isStakingRewards: isStakingRewards,
           resourceType: resourceType?.value,
+          stakingProviderName,
+          isMaxCheckbox: isEVMStaking && isMaxCheckbox,
         }),
       );
       dispatch(setExchangeSuccess(false));
@@ -202,7 +266,9 @@ const WithdrawStaking = () => {
   };
   const amountBN = new BigNumber(amount);
   const availableAmountBN = new BigNumber(availableAmount);
-  const isValid = validateNumber(amount) && amountBN.lte(availableAmountBN);
+  const isValid =
+    (isEVMStaking && isMaxCheckbox) ||
+    (validateNumber(amount) && amountBN.lte(availableAmountBN));
 
   return (
     <div className={styles.contentContainerStyle}>
@@ -230,6 +296,29 @@ const WithdrawStaking = () => {
                 style={{
                   flex: 1,
                 }}>
+                {isEVMStaking && (
+                  <div
+                    className={`${styles.unstakeMaxCard} ${
+                      isMaxCheckbox ? styles.unstakeMaxCardActive : ''
+                    }`}
+                    onClick={() => handleMaxCheckboxToggle(!isMaxCheckbox)}>
+                    <div className={styles.unstakeMaxInfo}>
+                      <div className={styles.unstakeMaxTitle}>
+                        Unstake Entire Balance
+                      </div>
+                      <div className={styles.unstakeMaxSubtitle}>
+                        Redeem all staked tokens at once
+                      </div>
+                    </div>
+                    <input
+                      type='checkbox'
+                      className={styles.unstakeMaxSwitch}
+                      checked={isMaxCheckbox}
+                      onChange={e => handleMaxCheckboxToggle(e.target.checked)}
+                      onClick={e => e.stopPropagation()}
+                    />
+                  </div>
+                )}
                 <div className={styles.boxInput}>
                   <div className={styles.listTitle}>Staking Amount</div>
                   <div className={styles.inputView}>
@@ -322,10 +411,20 @@ const WithdrawStaking = () => {
                     <div className={styles.textConfirm}>{errors.amount}</div>
                   )}
                 </div>
-                {isValidatorSupport && (
+                {isEVMStaking && stakingProviderList.length > 0 && (
+                  <div className={styles.boxInput}>
+                    <div className={styles.listTitle}>Staking Provider</div>
+                    <StakingItem item={selectedStake} isWithdraw={false} />
+                  </div>
+                )}
+                {isValidatorSupport && !isEVMStaking && (
                   <div className={styles.boxInput}>
                     <div className={styles.listTitle}>Validator</div>
-                    <StakingItem item={selectedStake} isWithdraw={false} />
+                    <StakingItem
+                      item={selectedStake}
+                      isWithdraw={false}
+                      showReward={false}
+                    />
                   </div>
                 )}
                 {isResourceSupport && resourceData?.length && !hideResource && (

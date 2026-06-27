@@ -6,7 +6,6 @@ import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import {Checkbox} from '@mui/material';
 import {updateCustomDerivedChecked} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
-import {isCustomDerivedChecked} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 
 const style = {
   position: 'absolute',
@@ -26,7 +25,7 @@ const style = {
 };
 
 const ModalCustomDerivation = ({visible, hideModal}) => {
-  const isCheckedStored = useSelector(isCustomDerivedChecked);
+  const [isCheckboxSelected, setIsCheckboxSelected] = React.useState(false);
   const dispatch = useDispatch();
   const handlerNo = useCallback(() => {
     dispatch(updateCustomDerivedChecked(false));
@@ -34,13 +33,13 @@ const ModalCustomDerivation = ({visible, hideModal}) => {
   }, [dispatch, hideModal]);
 
   const handlerYes = useCallback(() => {
-    dispatch(updateCustomDerivedChecked(!isCheckedStored));
+    dispatch(updateCustomDerivedChecked(isCheckboxSelected));
     hideModal(true);
-  }, [dispatch, hideModal, isCheckedStored]);
+  }, [dispatch, hideModal, isCheckboxSelected]);
 
   const handleCheckBox = useCallback(() => {
-    dispatch(updateCustomDerivedChecked(!isCheckedStored));
-  }, [dispatch, isCheckedStored]);
+    setIsCheckboxSelected(prevState => !prevState);
+  }, []);
 
   return (
     <Modal
@@ -64,7 +63,7 @@ const ModalCustomDerivation = ({visible, hideModal}) => {
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-            <Checkbox checked={isCheckedStored} onChange={handleCheckBox} />
+            <Checkbox checked={isCheckboxSelected} onChange={handleCheckBox} />
             <p className={styles.info}>{`Don't show this popup again`}</p>
           </div>
           <div className={styles.btnList}>

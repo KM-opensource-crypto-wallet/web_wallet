@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import styles from './ValidatorOptionItem.module.css';
+import {formatBalance} from 'dok-wallet-blockchain-networks/helper';
 
 const ValidatorOptionItem = ({item, currentCoin}) => {
   return (
@@ -28,9 +29,9 @@ const ValidatorOptionItem = ({item, currentCoin}) => {
             <div className={styles.text}>{item?.apy_estimate + '% APY'}</div>
           )}
           <div className={styles.text} numberOfLines={1}>
-            {`STAKE ${Math.round(item?.activated_stake)} ${
-              currentCoin?.symbol
-            }`}
+            {`STAKE ${formatBalance(
+              item?.totalStaked ?? item?.activated_stake ?? 0,
+            )} ${currentCoin?.symbol}`}
           </div>
         </div>
       </div>
