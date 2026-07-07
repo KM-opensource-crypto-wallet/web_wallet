@@ -13,6 +13,7 @@ import {
   fetchCurrencies,
 } from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
 import {ToastContainer} from 'react-toastify';
+import {Bugfender} from '@bugfender/sdk';
 import {ThemeContext} from 'theme/ThemeContext';
 import {isReduxStoreLoaded} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
 import {selectWalletConnectSessions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -87,6 +88,23 @@ function AppRouting({children, wlData}) {
       ReactGA.initialize(googleAnalyticsKey);
     }
   }, [googleAnalyticsKey]);
+
+  useEffect(() => {
+    const appKey = process.env.NEXT_PUBLIC_BUGFENDER_APP_KEY;
+    if (!appKey || process.env.ENV_MODE === 'DEV') {
+      return;
+    }
+    Bugfender.init({
+      appKey,
+      version: process.env.APP_VERSION,
+      logUIEvents: false,
+      logBrowserEvents: false,
+      enableLogcatLogging: false, // Android specific
+      printToConsole: false,
+    }).catch(error => {
+      console.warn('Bugfender init failed:', error);
+    });
+  }, []);
 
   useEffect(() => {
     let routeName = pathname;

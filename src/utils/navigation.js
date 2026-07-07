@@ -1,4 +1,3 @@
-import {store} from 'src/redux/store';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 
 let currentRouteName = '';
@@ -20,6 +19,7 @@ export const MainNavigation = {
       const link = params?.transaction?.link;
       if (link) {
         if (params) {
+          const {store} = require('src/redux/store');
           store.dispatch(setRouteStateData({[name]: params}));
         }
         navigatorRef(`/home/transactions/${encodeURIComponent(link)}`);
