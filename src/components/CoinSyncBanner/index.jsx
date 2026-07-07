@@ -106,7 +106,7 @@ const CoinSyncBanner = () => {
 
   return (
     <div
-      className={styles.banner}
+      className={`${styles.banner} ${styles.bannerClickable}`}
       onClick={handleBannerClick}
       role='button'
       tabIndex={0}
