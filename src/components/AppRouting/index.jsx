@@ -99,7 +99,6 @@ function AppRouting({children, wlData}) {
       version: process.env.APP_VERSION,
       logUIEvents: false,
       logBrowserEvents: false,
-      enableLogcatLogging: false, // Android specific
       printToConsole: false,
     }).catch(error => {
       console.warn('Bugfender init failed:', error);
