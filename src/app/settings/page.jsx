@@ -139,33 +139,27 @@ const Settings = ({navigation}) => {
             </div>
           </Link>
         )}
-        <div
-          role='button'
-          tabIndex={0}
-          style={{cursor: 'pointer'}}
-          className={s.btn}
-          onClick={() =>
-            window.open(getTermsUrl(), '_blank', 'noopener,noreferrer')
-          }>
+        <a
+          href={getTermsUrl()}
+          target='_blank'
+          rel='noopener noreferrer'
+          className={s.btn}>
           {icons.mail}
           <div className={s.box}>
             <p className={s.btnTitle}>{t('termsAndConditions')}</p>
           </div>
-        </div>
+        </a>
         {/* /////////////////////////////// */}
-        <div
-          role='button'
-          tabIndex={0}
-          style={{cursor: 'pointer'}}
-          className={s.btn}
-          onClick={() =>
-            window.open(getPrivacyUrl(), '_blank', 'noopener,noreferrer')
-          }>
+        <a
+          href={getPrivacyUrl()}
+          target='_blank'
+          rel='noopener noreferrer'
+          className={s.btn}>
           {icons.privacy}
           <div className={s.box}>
             <p className={s.btnTitle}>{t('privacyPolicy')}</p>
           </div>
-        </div>
+        </a>
         <p className={s.title}>Wallet Settings</p>
         <Link href='/settings/custom-rpc' className={s.btn}>
           {icons.link}
