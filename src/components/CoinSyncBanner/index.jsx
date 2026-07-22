@@ -15,16 +15,14 @@ import {
   selectIsSyncing,
   selectIsCreatingWallets,
   selectIsFetching,
-  selectIsBannerDismissed,
+  selectSyncingWalletClientId,
   selectSyncingWalletName,
 } from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSelectors';
-import {
-  dismissBanner,
-  cancelSync,
-} from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSlice';
+import {dismissBanner} from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSlice';
+import {dismissCoinSyncBanner} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {
   selectCurrentWalletClientId,
-  isCoinsScanTimestampValid,
+  selectShouldShowCoinSyncBanner,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import styles from './CoinSyncBanner.module.css';
 
@@ -37,10 +35,12 @@ const CoinSyncBanner = () => {
   const isSyncing = useSelector(selectIsSyncing);
   const isCreatingWallets = useSelector(selectIsCreatingWallets);
   const isFetching = useSelector(selectIsFetching);
-  const isBannerDismissed = useSelector(selectIsBannerDismissed);
   const syncingWalletName = useSelector(selectSyncingWalletName);
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
-  const isValidTimestamp = useSelector(isCoinsScanTimestampValid);
+  const shouldShowBanner = useSelector(selectShouldShowCoinSyncBanner);
+  // The banner may be showing a scan for a wallet other than the current one
+  // (scan started from another wallet's Edit screen).
+  const syncingWalletClientId = useSelector(selectSyncingWalletClientId);
 
   const isCompleted = status === 'completed';
   const isFailed = status === 'error';
@@ -79,22 +79,24 @@ const CoinSyncBanner = () => {
   const handleClose = useCallback(
     e => {
       e.stopPropagation();
-      if (isSyncing) {
-        dispatch(cancelSync());
-      } else {
-        dispatch(dismissBanner(currentWalletClientId));
-      }
+      // Persisted, per-wallet: once closed the banner never shows again.
+      // A finished/failed scan belongs to the syncing wallet (which may not be
+      // the current one); the idle promo state has no syncing wallet and falls
+      // back to the current wallet.
+      dispatch(
+        dismissCoinSyncBanner({
+          clientId: syncingWalletClientId || currentWalletClientId,
+        }),
+      );
+      // Resets a finished scan's completed/error status back to idle
+      dispatch(dismissBanner());
     },
-    [dispatch, isSyncing, currentWalletClientId],
+    [dispatch, syncingWalletClientId, currentWalletClientId],
   );
 
-  const shouldHide =
-    (!isValidTimestamp || isBannerDismissed) &&
-    !isSyncing &&
-    !isCompleted &&
-    !isFailed;
-
-  if (shouldHide) return null;
+  if (!shouldShowBanner && !isSyncing && !isCompleted && !isFailed) {
+    return null;
+  }
 
   const handleBannerKeyDown = e => {
     if (e.target !== e.currentTarget) return;

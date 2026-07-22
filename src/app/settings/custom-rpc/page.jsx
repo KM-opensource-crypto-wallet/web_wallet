@@ -6,7 +6,7 @@ import Image from 'next/image';
 import {Menu, MenuItem} from '@mui/material';
 import {selectAllCustomRpc} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
 import {deleteCustomRpc} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSlice';
-import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {selectVisibleWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import GoBackButton from 'components/GoBackButton';
 import s from './CustomRpc.module.css';
 
@@ -15,7 +15,7 @@ import {chainLogoMap} from 'assets/chain_logo';
 const CustomRpc = () => {
   const router = useRouter();
   const dispatch = useDispatch();
-  const allWallets = useSelector(selectAllWallets);
+  const allWallets = useSelector(selectVisibleWallets);
   const allCustomRpcList = useSelector(selectAllCustomRpc);
 
   // [anchorEl, item] for the open menu

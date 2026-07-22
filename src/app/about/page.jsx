@@ -22,7 +22,13 @@ const AboutScreen = () => {
         <button
           key={index}
           className={s.list}
-          onClick={() => router.push(item.route)}>
+          onClick={() => {
+            if (item.url) {
+              window.open(item.url, '_blank', 'noopener,noreferrer');
+            } else {
+              router.push(item.route);
+            }
+          }}>
           <div className={s.box}>
             <div className={s.iconBox}>{item.icon}</div>
             <p className={s.title}>{item.page}</p>

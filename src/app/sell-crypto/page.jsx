@@ -8,9 +8,9 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {
-  _currentWalletIndexSelector,
   getUserCoinsOptions,
-  selectAllWallets,
+  selectCurrentWalletClientId,
+  selectVisibleWallets,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {Formik} from 'formik';
 import React, {useCallback, useRef, useState} from 'react';
@@ -67,8 +67,8 @@ const SellCrypto = () => {
   const [pageLoading, setPageLoading] = useState(false);
   const [pageLoadingTitle, setPageLoadingTitle] = useState('Loading...');
 
-  const allWallets = useSelector(selectAllWallets);
-  const currentWalletIndex = useSelector(_currentWalletIndexSelector);
+  const allWallets = useSelector(selectVisibleWallets);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
 
   const sellCryptoError = useSelector(getSellCryptoError);
 
@@ -163,7 +163,7 @@ const SellCrypto = () => {
         if (tempCoinDetails?.chain_symbol === 'BNB') {
           tempCoinDetails.chain_symbol = 'BSC';
         }
-        if (i === currentWalletIndex && tempCoinDetails) {
+        if (tempWallet?.clientId === currentWalletClientId && tempCoinDetails) {
           selectedCoinDetails = tempCoinDetails;
           selectedWalletDetails = tempWallet;
         }
@@ -182,7 +182,7 @@ const SellCrypto = () => {
       }
       return {selectedCoinDetails, possibleCoinDetails, selectedWalletDetails};
     },
-    [allWallets, currentWalletIndex],
+    [allWallets, currentWalletClientId],
   );
 
   const onPressItem = useCallback(

@@ -3,7 +3,7 @@
 import React from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
-  selectAllWallets,
+  selectVisibleWalletsWithIndex,
   selectCurrentWallet,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
@@ -18,7 +18,7 @@ import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 
 const DeriveAddress = () => {
   const currentWalletName = useSelector(selectCurrentWallet)?.walletName;
-  const allWallets = useSelector(selectAllWallets);
+  const visibleWallets = useSelector(selectVisibleWalletsWithIndex);
   const dispatch = useDispatch();
 
   return (
@@ -29,7 +29,7 @@ const DeriveAddress = () => {
           Add or remove derive addresses for all EVM, SOL and TRX
         </p>
         <ul>
-          {allWallets.map((item, index) => {
+          {visibleWallets.map(({wallet: item, index}) => {
             return (
               <li className={s.walletBox} key={`dp_wallet_${item.walletName}`}>
                 <div className={s.walletList}>
