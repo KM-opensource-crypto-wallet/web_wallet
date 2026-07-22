@@ -56,6 +56,7 @@ import {getFeesInfo} from 'dok-wallet-blockchain-networks/feesInfo/feesInfo';
 
 import {
   createIfNotExistsMasterClientId,
+  reassignCurrentWalletIfHidden,
   resetCoinsToDefaultAddressForPrivacyMode,
   resetIsAdding50MoreAddresses,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
@@ -162,6 +163,9 @@ function AppRouting({children, wlData}) {
         }
       }
       dispatch(resetCoinsToDefaultAddressForPrivacyMode());
+      // On (re)load, RELAUNCH/BACKGROUND wallets are re-hidden by the persist
+      // transform; if the current wallet is now hidden, reassign to a visible one.
+      dispatch(reassignCurrentWalletIfHidden());
       dispatch(fetchSupportedBuyCryptoCurrency({fromDevice: 'web'}));
       dispatch(checkNewsAvailable({key: 'web'}));
       fetchRPCUrl();

@@ -40,6 +40,12 @@ import {
   refreshCoins,
   updateWalletName,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {
+  selectIsSyncing,
+  selectSyncingWalletIndex,
+  selectSyncingWalletName,
+} from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSelectors';
+import useCoinScanCooldown from 'src/hooks/useCoinScanCooldown';
 // import Spinner from "components/Spinner";
 
 import s from './CreateOrUpdateWallet.module.css';
@@ -47,6 +53,12 @@ import {useRouter, useSearchParams} from 'next/navigation';
 import allWallets from 'data/tmpAllWallets';
 const icons = require(`assets/images/icons`).default;
 import ModalDelete from 'components/ModalDelete';
+import {CircularProgress} from '@mui/material';
+import VisibilityOffOutlined from '@mui/icons-material/VisibilityOffOutlined';
+import ChevronRight from '@mui/icons-material/ChevronRight';
+import Radar from '@mui/icons-material/Radar';
+import ScheduleOutlined from '@mui/icons-material/ScheduleOutlined';
+import HourglassEmpty from '@mui/icons-material/HourglassEmpty';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
 import {
   getChainName,
@@ -90,6 +102,32 @@ const CreateOrUpdateWallet = () => {
 
   const [wrong, setWrong] = useState(false);
   const isCurrentWallet = walletName === defaultNewWalletName;
+
+  // The wallet being edited (only reachable while it's visible), as opposed to
+  // `currentWallet` which is the globally active wallet.
+  const editingWallet = walletIndex != null ? allWallets[walletIndex] : null;
+
+  // Coin scan (1 per 24h per wallet) targets the wallet being edited
+  const scanTargetIndex = walletIndex ?? currentWalletIndex;
+  const scanWallet = editingWallet ?? currentWallet;
+  const {isAvailable: isScanAvailable, remainingLabel: scanRemainingLabel} =
+    useCoinScanCooldown(scanWallet?.lastCoinsScanTimestamp);
+  const isCoinSyncRunning = useSelector(selectIsSyncing);
+  const syncingWalletIndex = useSelector(selectSyncingWalletIndex);
+  const syncingWalletName = useSelector(selectSyncingWalletName);
+  const isScanningThisWallet =
+    isCoinSyncRunning &&
+    syncingWalletIndex !== null &&
+    Number(syncingWalletIndex) === Number(scanTargetIndex);
+  // Only one scan can run at a time - lock the row while another wallet scans
+  const isScanningOtherWallet = isCoinSyncRunning && !isScanningThisWallet;
+  const isScanRowEnabled =
+    isScanningThisWallet || (isScanAvailable && !isScanningOtherWallet);
+  const ScanIcon = isScanningOtherWallet
+    ? HourglassEmpty
+    : isScanAvailable
+      ? Radar
+      : ScheduleOutlined;
 
   useEffect(() => {
     if (!walletName) {
@@ -263,7 +301,7 @@ const CreateOrUpdateWallet = () => {
                         borderColor: errors.name ? 'red' : 'var(--gray)',
                       }}
                       name='name'
-                      autoFocus={true}
+                      autoFocus={!walletName}
                       onChange={handleChange('name')}
                       onBlur={() => {
                         validateNewWalletName(values.name);
@@ -324,6 +362,87 @@ const CreateOrUpdateWallet = () => {
                           to help prevent the loss your crypto.
                         </p>
                       </div>
+
+                      <button
+                        type='button'
+                        className={s.item}
+                        style={{marginTop: 20}}
+                        onClick={() =>
+                          router.push(
+                            `/wallets/hide-wallet?walletIndex=${walletIndex}`,
+                          )
+                        }>
+                        <div className={s.itemIcon}>
+                          <VisibilityOffOutlined
+                            style={{color: 'var(--font)'}}
+                          />
+                        </div>
+                        <div className={s.itemSection}>
+                          <p className={s.itemName}>Hide Wallet</p>
+                          <p
+                            className={s.itemText}
+                            style={{color: 'var(--gray)'}}>
+                            {editingWallet?.hideSettings
+                              ? 'Hidden'
+                              : 'Not hidden'}
+                          </p>
+                        </div>
+                        <div className={s.rowSpacer} />
+                        <ChevronRight style={{color: 'var(--font)'}} />
+                      </button>
+
+                      <button
+                        type='button'
+                        className={s.item}
+                        style={{opacity: isScanRowEnabled ? 1 : 0.5}}
+                        disabled={!isScanRowEnabled}
+                        onClick={() =>
+                          router.push(
+                            `/home/coin-sync?walletIndex=${Number(
+                              scanTargetIndex,
+                            )}`,
+                          )
+                        }>
+                        <div
+                          className={`${s.scanIconBubble} ${
+                            !isScanRowEnabled ? s.scanIconBubbleDisabled : ''
+                          }`}>
+                          {isScanningThisWallet ? (
+                            <CircularProgress
+                              size={20}
+                              sx={{color: 'var(--background)'}}
+                            />
+                          ) : (
+                            <ScanIcon
+                              style={{
+                                color: isScanRowEnabled
+                                  ? 'var(--background)'
+                                  : 'var(--gray)',
+                              }}
+                            />
+                          )}
+                        </div>
+                        <div className={s.itemSection}>
+                          <p className={s.itemName}>Scan Coins</p>
+                          <p
+                            className={s.itemText}
+                            style={{color: 'var(--gray)'}}>
+                            {isScanningThisWallet
+                              ? 'Scanning in progress — tap to view'
+                              : isScanningOtherWallet
+                                ? syncingWalletName
+                                  ? `Scanning "${syncingWalletName}"…`
+                                  : 'Another wallet is being scanned…'
+                                : isScanAvailable
+                                  ? 'Discover assets across 200+ coins'
+                                  : `Available in ${scanRemainingLabel}`}
+                          </p>
+                        </div>
+                        <div className={s.rowSpacer} />
+                        {isScanRowEnabled && (
+                          <ChevronRight style={{color: 'var(--font)'}} />
+                        )}
+                      </button>
                     </div>
                   ) : null}
                 </div>

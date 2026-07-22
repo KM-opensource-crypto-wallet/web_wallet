@@ -17,6 +17,7 @@ import s from './Settings.module.css';
 const icons = require(`assets/images/settings`).default;
 const AllIcons = require(`assets/images/icons`).default;
 import Link from 'next/link';
+import {getPrivacyUrl, getTermsUrl} from 'whitelabel/whiteLabelInfo';
 import {FormControlLabel, Radio, RadioGroup, Switch} from '@mui/material';
 import {Password, Security} from '@mui/icons-material';
 import ModalConfirmEnableChatModal from 'components/ModalConfirmEnableChatModal';
@@ -138,19 +139,27 @@ const Settings = ({navigation}) => {
             </div>
           </Link>
         )}
-        <Link href='/about/terms-conditions' className={s.btn}>
+        <a
+          href={getTermsUrl()}
+          target='_blank'
+          rel='noopener noreferrer'
+          className={s.btn}>
           {icons.mail}
           <div className={s.box}>
             <p className={s.btnTitle}>{t('termsAndConditions')}</p>
           </div>
-        </Link>
+        </a>
         {/* /////////////////////////////// */}
-        <Link href='/about/privacy-policy' className={s.btn}>
+        <a
+          href={getPrivacyUrl()}
+          target='_blank'
+          rel='noopener noreferrer'
+          className={s.btn}>
           {icons.privacy}
           <div className={s.box}>
             <p className={s.btnTitle}>{t('privacyPolicy')}</p>
           </div>
-        </Link>
+        </a>
         <p className={s.title}>Wallet Settings</p>
         <Link href='/settings/custom-rpc' className={s.btn}>
           {icons.link}

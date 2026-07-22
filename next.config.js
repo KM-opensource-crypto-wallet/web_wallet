@@ -10,6 +10,7 @@ loadEnvConfig(projectDir);
 
 const withNextIntl = createNextIntlPlugin();
 const nextConfig = {
+  serverExternalPackages: ['bitcore-lib'],
   images: {
     remotePatterns: [
       {

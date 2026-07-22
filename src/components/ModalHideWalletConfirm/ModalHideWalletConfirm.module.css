@@ -1,0 +1,101 @@
+.content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.iconBadge {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background-color: color-mix(in srgb, var(--background) 13%, transparent);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.badgeIcon {
+  color: var(--background);
+  font-size: 26px !important;
+}
+
+.title {
+  color: var(--font);
+  font-size: 19px;
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.bulletList {
+  width: 100%;
+}
+
+.bulletRow {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.bulletDot {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  border-radius: 3px;
+  background-color: var(--background);
+  margin-right: 10px;
+  margin-top: 7px;
+}
+
+.bulletText {
+  color: var(--font);
+  font-size: 14px;
+  flex: 1;
+  line-height: 20px;
+  opacity: 0.85;
+}
+
+.btnList {
+  padding: 0 24px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.primaryBtn {
+  background-color: var(--background);
+  border: none;
+  border-radius: 14px;
+  height: 52px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.primaryBtnText {
+  color: var(--title);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.secondaryBtn {
+  height: 48px;
+  background-color: transparent;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.secondaryBtnText {
+  color: var(--gray);
+  font-size: 15px;
+  font-weight: 600;
+}

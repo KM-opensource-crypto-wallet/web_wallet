@@ -1,9 +1,16 @@
-import {persistStore, persistCombineReducers} from 'redux-persist';
+import {
+  persistStore,
+  persistCombineReducers,
+  createTransform,
+} from 'redux-persist';
 import {configureStore} from '@reduxjs/toolkit';
 import {encryptTransform} from 'redux-persist-transform-encrypt';
 import storage from 'redux-persist/lib/storage';
 import {authSlice} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
-import {walletsSlice} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {
+  RELOCK_OPTIONS,
+  walletsSlice,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {currencySlice} from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
 import {extraDataSlice} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {settingsSlice} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
@@ -30,10 +37,28 @@ const encryptor = encryptTransform({
   },
 });
 
+// On persist, re-hide any wallet whose re-lock option isn't MANUAL, so it comes
+// back hidden after a page reload/relaunch (web has no app-background event, so
+// BACKGROUND behaves the same as RELAUNCH here). Must run before the encryptor
+// on inbound so it operates on the plain wallets state.
+const walletsPersistTransform = createTransform(
+  inboundState => ({
+    ...inboundState,
+    allWallets: inboundState?.allWallets?.map(wallet =>
+      wallet?.hideSettings &&
+      wallet.hideSettings.relockOption !== RELOCK_OPTIONS.MANUAL
+        ? {...wallet, hideSettings: {...wallet.hideSettings, isHidden: true}}
+        : wallet,
+    ),
+  }),
+  outboundState => outboundState,
+  {whitelist: [walletsSlice.name]},
+);
+
 const persistConfig = {
   key: 'root', // Change this to your preferred storage key
   storage,
-  transforms: [encryptor], // Apply the encryption transformation
+  transforms: [walletsPersistTransform, encryptor], // Apply the encryption transformation
   blacklist: [
     currentTransferSlice.name,
     exchangeSlice.name,

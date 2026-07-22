@@ -3,15 +3,16 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {
-  getCurrentWalletIndex,
+  isWalletHiddenAndLocked,
   selectAllWallets,
   selectCurrentWallet,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
+  findHiddenWalletByCode,
   rearrangeWallet,
   refreshCoins,
   setCurrentWalletIndex,
-  setWalletPosition,
+  setWalletRevealed,
   sortWallets,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {
@@ -31,7 +32,13 @@ import {getPngIcons} from 'assets/images/icons/pngIcon';
 import {ThemeContext} from 'theme/ThemeContext';
 import icons from 'src/assets/images/icons';
 import PageTitle from 'components/PageTitle';
-import {moveItem} from 'dok-wallet-blockchain-networks/helper';
+import {debounce, moveItem} from 'dok-wallet-blockchain-networks/helper';
+import {
+  normalizeSecretCode,
+  SECRET_CODE_MAX_LENGTH,
+  SECRET_CODE_MIN_LENGTH,
+} from 'utils/hideWallet';
+import {store} from 'redux/store';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import SearchIcon from '@mui/icons-material/Search';
@@ -73,18 +80,19 @@ const WALLET_SORT_OPTIONS = [
 ];
 
 const Wallets = () => {
-  const currentWalletName = useSelector(selectCurrentWallet)?.walletName;
+  const currentWallet = useSelector(selectCurrentWallet);
+  const currentWalletName = currentWallet?.walletName;
   const allWallets = useSelector(selectAllWallets);
-  const currentWalletIndex = useSelector(getCurrentWalletIndex);
-  const allWalletsLength = useMemo(() => {
-    return allWallets.length;
-  }, [allWallets]);
+  const visibleWallets = useMemo(
+    () => allWallets.filter(wallet => !isWalletHiddenAndLocked(wallet)),
+    [allWallets],
+  );
   const dispatch = useDispatch();
   const router = useRouter();
   const [modalVisible, setmodalVisible] = useState(false);
   const {themeType} = useContext(ThemeContext);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchWallets, setSearchWallets] = useState([]);
+  const [matchedReveal, setMatchedReveal] = useState(null);
   const PngIcons = getPngIcons(themeType);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const filterButtonRef = useRef(null);
@@ -101,27 +109,103 @@ const Wallets = () => {
     [dispatch],
   );
 
+  // Name matches from the visible set, plus a hidden wallet appended when the
+  // search text is its exact (revealed) secret code.
+  const displayedWallets = useMemo(() => {
+    const nameMatches = visibleWallets;
+    if (!searchQuery) {
+      return nameMatches;
+    }
+    const query = searchQuery.toLowerCase();
+    const normalizedQuery = normalizeSecretCode(searchQuery);
+    const filteredNameMatches = nameMatches.filter(item =>
+      item?.walletName?.toLowerCase()?.includes(query),
+    );
+    if (matchedReveal && normalizedQuery === matchedReveal.code) {
+      const matchedWallet = allWallets.find(
+        item => item.walletName === matchedReveal.walletName,
+      );
+      // Once revealed (tapped), the wallet may already be in the name
+      // matches - appending it again would duplicate the row (and its key).
+      if (matchedWallet && !filteredNameMatches.includes(matchedWallet)) {
+        return [...filteredNameMatches, matchedWallet];
+      }
+    }
+    return filteredNameMatches;
+  }, [searchQuery, visibleWallets, allWallets, matchedReveal]);
+
+  const attemptRevealByCode = useMemo(
+    () =>
+      debounce(async code => {
+        const result = await findHiddenWalletByCode(store.getState(), code);
+        setMatchedReveal(
+          result?.matched
+            ? {code: normalizeSecretCode(code), walletName: result.walletName}
+            : null,
+        );
+      }, 400),
+    [],
+  );
+
   const handleSearch = useCallback(
     e => {
-      const text = e?.target?.value;
+      const text = e?.target?.value ?? '';
       setSearchQuery(text);
-      if (text) {
-        const newList = allWallets?.filter(item => {
-          return item?.walletName?.toLowerCase()?.includes(text?.toLowerCase());
-        });
-        setSearchWallets(newList);
+      const trimmed = text?.trim() || '';
+      if (
+        trimmed.length >= SECRET_CODE_MIN_LENGTH &&
+        trimmed.length <= SECRET_CODE_MAX_LENGTH
+      ) {
+        attemptRevealByCode(trimmed);
       } else {
-        setSearchWallets([]);
+        setMatchedReveal(null);
       }
     },
-    [allWallets],
+    [attemptRevealByCode],
+  );
+
+  // Map a reordered VISIBLE list back onto the full wallet array (hidden wallets
+  // keep their slots), recompute the active wallet's index, and persist it.
+  const commitDisplayedOrder = useCallback(
+    newDisplayedOrder => {
+      let visibleCursor = 0;
+      const newFullOrder = allWallets.map(wallet =>
+        isWalletHiddenAndLocked(wallet)
+          ? wallet
+          : newDisplayedOrder[visibleCursor++],
+      );
+      const currentId = currentWallet?.clientId || currentWallet?.id;
+      const newCurrentWalletIndex = newFullOrder.findIndex(
+        wallet => (wallet?.clientId || wallet?.id) === currentId,
+      );
+      dispatch(
+        rearrangeWallet({
+          allWallets: newFullOrder,
+          currentWalletIndex:
+            newCurrentWalletIndex !== -1 ? newCurrentWalletIndex : undefined,
+        }),
+      );
+      // A manual rearrange means the user is taking over the ordering; drop any
+      // active sort so it isn't silently reapplied on the next visit.
+      if (walletsSortOption !== 'default') {
+        dispatch(setWalletsSortOption('default'));
+      }
+    },
+    [allWallets, currentWallet, walletsSortOption, dispatch],
   );
 
   const onPressMove = useCallback(
-    (index, isMoveUp) => {
-      dispatch(setWalletPosition({index, isMoveUp}));
+    (visibleIndex, isMoveUp) => {
+      const targetIndex = isMoveUp ? visibleIndex - 1 : visibleIndex + 1;
+      if (targetIndex < 0 || targetIndex >= displayedWallets.length) {
+        return;
+      }
+      const reordered = [...displayedWallets];
+      const [moved] = reordered.splice(visibleIndex, 1);
+      reordered.splice(targetIndex, 0, moved);
+      commitDisplayedOrder(reordered);
     },
-    [dispatch],
+    [displayedWallets, commitDisplayedOrder],
   );
 
   const onDragEnd = event => {
@@ -133,31 +217,10 @@ const Wallets = () => {
     const from = active?.data?.current.sortable?.index;
     const to = over?.data?.current.sortable?.index;
 
-    // Reorder the list
-    const reorderedItems = moveItem(allWallets, from, to);
-
-    // Storing the udated list order
-    const isMoveDown = to > from;
-    dispatch(
-      rearrangeWallet({
-        allWallets: reorderedItems,
-        currentWalletIndex:
-          from === currentWalletIndex
-            ? to
-            : isMoveDown &&
-                to >= currentWalletIndex &&
-                from < currentWalletIndex
-              ? currentWalletIndex - 1
-              : !isMoveDown &&
-                  to <= currentWalletIndex &&
-                  from > currentWalletIndex
-                ? currentWalletIndex + 1
-                : undefined,
-      }),
-    );
+    commitDisplayedOrder(moveItem(displayedWallets, from, to));
   };
 
-  const walletList = searchQuery ? searchWallets : allWallets;
+  const walletList = displayedWallets;
   const uniqueIds = useMemo(() => {
     return walletList.map(item => item?.id);
   }, [walletList]);
@@ -250,6 +313,12 @@ const Wallets = () => {
                 {walletList.map((item, index) => {
                   const isSelectedWallet =
                     item.walletName === currentWalletName;
+                  const fullIndex = allWallets.findIndex(
+                    subItem => subItem.walletName === item.walletName,
+                  );
+                  const visibleIndex = index;
+                  const showMoveButtons =
+                    displayedWallets.length > 1 && !searchQuery;
                   const totalBalance =
                     item?.coins?.reduce((acc, coin) => {
                       if (!coin?.isInWallet) return acc;
@@ -273,16 +342,16 @@ const Wallets = () => {
                               onClick={() => {
                                 dispatch(refreshCoins());
                                 dispatch(resetPaymentUrl());
-                                if (searchQuery) {
-                                  const foundIndex = allWallets.findIndex(
-                                    subItem =>
-                                      subItem.walletName === item.walletName,
-                                  );
-                                  if (foundIndex !== -1) {
-                                    dispatch(setCurrentWalletIndex(foundIndex));
+                                if (fullIndex !== -1) {
+                                  if (isWalletHiddenAndLocked(item)) {
+                                    dispatch(
+                                      setWalletRevealed({
+                                        walletIndex: fullIndex,
+                                        isHidden: false,
+                                      }),
+                                    );
                                   }
-                                } else {
-                                  dispatch(setCurrentWalletIndex(index));
+                                  dispatch(setCurrentWalletIndex(fullIndex));
                                 }
                                 router.push('/home');
                               }}>
@@ -324,17 +393,19 @@ const Wallets = () => {
 
                             <div className={s.cardActions}>
                               {/* Move Up/Down Arrows (Preserved) */}
-                              {!searchQuery && (
+                              {showMoveButtons && (
                                 <>
                                   <button
-                                    disabled={index === 0}
+                                    disabled={visibleIndex === 0}
                                     className={s.actionButton}
                                     onClick={e => {
                                       e.stopPropagation();
-                                      onPressMove(index, true);
+                                      onPressMove(visibleIndex, true);
                                     }}>
                                     <Image
-                                      style={index === 0 ? disabledStyle : {}}
+                                      style={
+                                        visibleIndex === 0 ? disabledStyle : {}
+                                      }
                                       src={PngIcons.UpArrow}
                                       alt={'Up arrow'}
                                       width={20}
@@ -342,11 +413,14 @@ const Wallets = () => {
                                     />
                                   </button>
                                   <button
-                                    disabled={index === allWalletsLength - 1}
+                                    disabled={
+                                      visibleIndex ===
+                                      displayedWallets.length - 1
+                                    }
                                     className={s.actionButton}
                                     onClick={e => {
                                       e.stopPropagation();
-                                      onPressMove(index, false);
+                                      onPressMove(visibleIndex, false);
                                     }}>
                                     <Image
                                       src={PngIcons.DownArrow}
@@ -354,7 +428,8 @@ const Wallets = () => {
                                       width={20}
                                       height={20}
                                       style={
-                                        index === allWalletsLength - 1
+                                        visibleIndex ===
+                                        displayedWallets.length - 1
                                           ? disabledStyle
                                           : {}
                                       }
@@ -370,7 +445,7 @@ const Wallets = () => {
                                   e.stopPropagation();
                                   const walletName = item?.walletName;
                                   router.push(
-                                    `/wallets/create-wallet?walletName=${encodeURIComponent(walletName)}&walletIndex=${index}`,
+                                    `/wallets/create-wallet?walletName=${encodeURIComponent(walletName)}&walletIndex=${fullIndex}`,
                                   );
                                 }}>
                                 <Image
