@@ -1,6 +1,6 @@
 {
   "name": "dokwallet-desktop",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,6 +15,7 @@
     "@aptos-labs/ts-sdk": "^1.16.0",
     "@bitcoinerlab/secp256k1": "^1.0.5",
     "@breeztech/breez-sdk-spark": "0.7.18",
+    "@bugfender/sdk": "^4.0.0",
     "@cosmjs/encoding": "^0.32.2",
     "@cosmjs/launchpad": "^0.27.1",
     "@cosmjs/proto-signing": "0.32.3",
@@ -162,8 +163,6 @@
     "sharp/tar-fs": "^3.1.1",
     "tar": "7.5.4",
     "cacache/glob": "10.5.0",
-    "bitcore-lib": "8.25.47",
-    "bitcore-mnemonic": "8.25.47",
     "npm/cacache/glob": "10.5.0",
     "**/npm/glob": "10.5.0",
     "**/read-package-json/glob": "10.5.0",

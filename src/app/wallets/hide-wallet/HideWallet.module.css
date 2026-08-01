@@ -1,0 +1,98 @@
+.safeAreaView {
+  display: flex;
+  flex: 1;
+  background-color: var(--backgroundColor);
+}
+
+.container {
+  width: 100%;
+  background-color: var(--backgroundColor);
+  padding: 20px;
+}
+
+.content {
+  padding-top: 20px;
+}
+
+.input {
+  margin-bottom: 20px;
+  background-color: var(--backgroundColor);
+}
+
+.textConfirm {
+  margin-top: 8px;
+  color: var(--error);
+  margin-left: 10px;
+  font-size: 12px;
+}
+
+.hideWalletHeaderRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.hideWalletLabel {
+  color: var(--font);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.infoButton {
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.infoIcon {
+  color: var(--font);
+  font-size: 20px !important;
+}
+
+.spacer {
+  flex: 1;
+}
+.paddingDiv {
+  flex: 1;
+  height: 16px;
+}
+
+.hideToggleError {
+  margin-top: 8px;
+  color: var(--error);
+  font-size: 12px;
+}
+
+.button {
+  display: flex;
+  margin: 20px auto;
+  background-color: var(--background);
+  height: 60px;
+  border-radius: 10px;
+  font-size: 20px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+}
+
+.buttonTitle {
+  color: var(--title);
+  font-size: 16px;
+}
+
+@media (min-width: 769px) {
+  .button {
+    width: 50%;
+  }
+}

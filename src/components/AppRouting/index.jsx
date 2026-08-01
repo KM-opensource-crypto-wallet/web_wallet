@@ -12,6 +12,8 @@ import {
   checkNewsAvailable,
   fetchCurrencies,
 } from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
+import {ToastContainer} from 'react-toastify';
+import {Bugfender} from '@bugfender/sdk';
 import {ThemeContext} from 'theme/ThemeContext';
 import {isReduxStoreLoaded} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
 import {selectWalletConnectSessions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -54,6 +56,7 @@ import {getFeesInfo} from 'dok-wallet-blockchain-networks/feesInfo/feesInfo';
 
 import {
   createIfNotExistsMasterClientId,
+  reassignCurrentWalletIfHidden,
   resetCoinsToDefaultAddressForPrivacyMode,
   resetIsAdding50MoreAddresses,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
@@ -89,8 +92,34 @@ function AppRouting({children, wlData}) {
   }, [googleAnalyticsKey]);
 
   useEffect(() => {
-    MainNavigation.setCurrentRouteName(pathname);
+    const appKey = process.env.NEXT_PUBLIC_BUGFENDER_APP_KEY;
+    if (!appKey || process.env.ENV_MODE === 'DEV') {
+      return;
+    }
+    Bugfender.init({
+      appKey,
+      version: process.env.APP_VERSION,
+      logUIEvents: false,
+      logBrowserEvents: false,
+      printToConsole: false,
+    }).catch(error => {
+      console.warn('Bugfender init failed:', error);
+    });
+  }, []);
+
+  useEffect(() => {
+    let routeName = pathname;
+    if (pathname === '/home/transactions') {
+      routeName = 'TransactionList';
+    } else if (pathname?.startsWith('/home/transactions/')) {
+      routeName = 'TransactionDetails';
+    }
+    MainNavigation.setCurrentRouteName(routeName);
   }, [pathname]);
+
+  useEffect(() => {
+    MainNavigation.setNavigator(routing.push.bind(routing));
+  }, [routing]);
 
   const fetchFeesInfo = useCallback(() => {
     getFeesInfo().then(_ => {});
@@ -135,6 +164,9 @@ function AppRouting({children, wlData}) {
         }
       }
       dispatch(resetCoinsToDefaultAddressForPrivacyMode());
+      // On (re)load, RELAUNCH/BACKGROUND wallets are re-hidden by the persist
+      // transform; if the current wallet is now hidden, reassign to a visible one.
+      dispatch(reassignCurrentWalletIfHidden());
       dispatch(fetchSupportedBuyCryptoCurrency({fromDevice: 'web'}));
       dispatch(checkNewsAvailable({key: 'web'}));
       fetchRPCUrl();

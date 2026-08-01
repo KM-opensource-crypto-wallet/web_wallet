@@ -93,6 +93,10 @@
   font-size: 14px;
   color: var(--font);
 }
+.dropdownContainer {
+  border: solid 1px var(--whiteOutline);
+  border-radius: 6px;
+}
 
 /* ---- Error ---- */
 .error {

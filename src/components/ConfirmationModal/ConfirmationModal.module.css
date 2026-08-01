@@ -1,0 +1,93 @@
+.modalContainer {
+  padding: 26px 22px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.iconBadge {
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  background-color: rgba(245, 166, 35, 0.12);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  color: var(--font);
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--gray);
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.infoCard {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  background-color: var(--lightBackground);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 22px;
+  border: 1px solid var(--whiteOutline);
+}
+
+.infoText {
+  flex: 1;
+  color: var(--gray);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.btnRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.btn {
+  flex: 1;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.confirmBtn {
+  background-color: transparent;
+  border-width: 1.5px;
+  border-style: solid;
+}
+
+.confirmText {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.dismissBtn {
+  background-color: var(--background);
+  border: none;
+}
+
+.dismissText {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+}

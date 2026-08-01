@@ -134,7 +134,35 @@ export const validationSchemaSolanaStaking = (balanceAmount = 0) =>
       .required(
         'The amount that you entered is invalid. Please enter an amount which is less or equal to your available balance.',
       )
-      .max(balanceAmount, 'Amount greater than balance'),
+      .max(balanceAmount, 'Amount greater than balance')
+      .test('min-staking', '', function (value) {
+        // Minimum is read from the selected validator so per-validator/provider
+        // minimums work for free. Only enforced when the value is present.
+        const minAmount = this.parent?.validatorPubKey?.options?.minAmount;
+        if (
+          minAmount != null &&
+          Number(minAmount) > 0 &&
+          value != null &&
+          Number(value) < Number(minAmount)
+        ) {
+          return this.createError({
+            message: `Minimum staking amount is ${minAmount} SOL`,
+          });
+        }
+        return true;
+      }),
+  });
+
+export const validationSchemaDefaultStaking = (balanceAmount = 0) =>
+  Yup.object().shape({
+    amount: Yup.number()
+      .typeError('Please enter number value only')
+      .positive('Must be a positive number.')
+      .required(
+        'The amount that you entered is invalid. Please enter an amount which is less or equal to your available balance.',
+      )
+      .max(balanceAmount, 'Amount greater than available balance'),
+    validatorPubKey: Yup.object().required('validator is not valid!'),
   });
 
 export const validationSchemaTronStaking = (balanceAmount = 0) =>
@@ -179,7 +207,10 @@ export const getValidationSchemaForCreateStaking = (
   chain_name,
   balanceAmount = 0,
 ) => {
-  return validatationSchemForCreateStaking[chain_name]?.(balanceAmount);
+  return (
+    validatationSchemForCreateStaking[chain_name]?.(balanceAmount) ??
+    validationSchemaDefaultStaking(balanceAmount)
+  );
 };
 
 export const updateTransactionValidation = Yup.object().shape({

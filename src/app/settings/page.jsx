@@ -7,6 +7,7 @@ import {
   isChatOptions,
   isWalletReset,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {getTutorialVideos} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 import {
   setResetWallet,
   updateChatOptions,
@@ -16,6 +17,7 @@ import s from './Settings.module.css';
 const icons = require(`assets/images/settings`).default;
 const AllIcons = require(`assets/images/icons`).default;
 import Link from 'next/link';
+import {getPrivacyUrl, getTermsUrl} from 'whitelabel/whiteLabelInfo';
 import {FormControlLabel, Radio, RadioGroup, Switch} from '@mui/material';
 import {Password, Security} from '@mui/icons-material';
 import ModalConfirmEnableChatModal from 'components/ModalConfirmEnableChatModal';
@@ -31,6 +33,7 @@ const Settings = ({navigation}) => {
   const lockTimeDisplay = useSelector(getLockTimeDisplay);
   const chatOptions = useSelector(isChatOptions);
   const rateLimitCheck = useSelector(isWalletReset);
+  const tutorialVideos = useSelector(getTutorialVideos);
   const currentLocale = useLocale();
   const t = useTranslations('settings');
 
@@ -128,19 +131,36 @@ const Settings = ({navigation}) => {
             </div>
           </div>
         </div>
-        <Link href='/about/terms-conditions' className={s.btn}>
+        {tutorialVideos?.length > 0 && (
+          <Link href='/settings/tutorial-videos' className={s.btn}>
+            {icons.tutorialVideos}
+            <div className={s.box}>
+              <p className={s.btnTitle}>Tutorial Videos</p>
+              <p className={s.btnText}>Learn how to use wallet features</p>
+            </div>
+          </Link>
+        )}
+        <a
+          href={getTermsUrl()}
+          target='_blank'
+          rel='noopener noreferrer'
+          className={s.btn}>
           {icons.mail}
           <div className={s.box}>
             <p className={s.btnTitle}>{t('termsAndConditions')}</p>
           </div>
-        </Link>
+        </a>
         {/* /////////////////////////////// */}
-        <Link href='/about/privacy-policy' className={s.btn}>
+        <a
+          href={getPrivacyUrl()}
+          target='_blank'
+          rel='noopener noreferrer'
+          className={s.btn}>
           {icons.privacy}
           <div className={s.box}>
             <p className={s.btnTitle}>{t('privacyPolicy')}</p>
           </div>
-        </Link>
+        </a>
         <p className={s.title}>Wallet Settings</p>
         {isBackupRestoreEnabled() && (
           <>

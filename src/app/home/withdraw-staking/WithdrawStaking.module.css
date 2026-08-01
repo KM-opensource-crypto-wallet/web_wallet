@@ -162,3 +162,45 @@
 .selectInput {
   height: 50px;
 }
+
+.unstakeMaxCard {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--secondaryBackgroundColor);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 16px;
+  margin-bottom: 4px;
+  border: 1.5px solid var(--gray);
+  cursor: pointer;
+}
+
+.unstakeMaxCardActive {
+  border-color: var(--background);
+  background-color: rgba(244, 77, 3, 0.07);
+}
+
+.unstakeMaxInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.unstakeMaxTitle {
+  color: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.unstakeMaxSubtitle {
+  color: var(--gray);
+  font-size: 12px;
+}
+
+.unstakeMaxSwitch {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}

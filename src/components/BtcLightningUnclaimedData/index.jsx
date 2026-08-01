@@ -19,6 +19,7 @@ import {showToast} from 'utils/toast';
 import ModalConfirmTransaction from '../ModalConfirmTransaction';
 import {handleUnclaimedData} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import styles from './BtcLightningUnclaimedData.module.css';
+import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 
 export const BtcLightningUnclaimedData = ({hideModal}) => {
   const [activeRejectIndex, setActiveRejectIndex] = useState(null);
@@ -128,11 +129,6 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
     ],
   );
 
-  const trimTxId = txid => {
-    if (!txid) return '';
-    return `${txid.slice(0, 6)}........${txid.slice(-6)}`;
-  };
-
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -205,7 +201,7 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
                           </span>
                         </div>
                         <span className={styles.infoValue}>
-                          {trimTxId(item.txid)}
+                          {getCustomizePublicAddress(item.txid)}
                         </span>
                       </div>
 

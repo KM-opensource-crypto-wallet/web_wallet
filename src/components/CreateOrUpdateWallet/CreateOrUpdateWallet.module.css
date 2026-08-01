@@ -28,6 +28,7 @@
     width: 30px;
     height: 30px;
     margin-left: 10px;
+    fill: var(--font);
 }
 .deleteIcon > svg:hover {
     fill: red;
@@ -93,6 +94,11 @@
     display: flex;
     align-items: center;
     margin-bottom: 20px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
 }
 
 .itemSection {
@@ -100,8 +106,8 @@
 }
 
 .itemIcon {
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -119,6 +125,24 @@
 
 .itemText {
     font-size: 12px;
+}
+
+.rowSpacer {
+    flex: 1;
+}
+
+.scanIconBubble {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: color-mix(in srgb, var(--background) 8%, transparent);
+}
+
+.scanIconBubbleDisabled {
+    background-color: color-mix(in srgb, var(--gray) 12%, transparent);
 }
 
 .button {

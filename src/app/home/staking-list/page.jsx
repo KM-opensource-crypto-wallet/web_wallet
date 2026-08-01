@@ -13,6 +13,7 @@ import PageTitle from 'components/PageTitle';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {setSelectedVotes} from 'dok-wallet-blockchain-networks/redux/staking/stakingSlice';
 import {
+  isEVMChain,
   isShowUnstakingButton,
   isShowVoteButton,
   isSupportEpochTime,
@@ -36,6 +37,7 @@ const StakingList = () => {
   }, [stakingInfo]);
 
   const isShowUnstaking = isShowUnstakingButton(currentCoin?.chain_name);
+  const isEvmChain = isEVMChain(currentCoin?.chain_name);
   const isShowVote = isShowVoteButton(currentCoin?.chain_name);
 
   const estimateEpochTimestamp = useMemo(() => {
@@ -91,6 +93,32 @@ const StakingList = () => {
     },
     [currentCoin?.currencyRate, dispatch, router],
   );
+  const handleClaimReward = useCallback(
+    (rewardAmount, item) => {
+      const fiatAmount = multiplyBNWithFixed(
+        rewardAmount,
+        currentCoin?.currencyRate,
+        2,
+      );
+      const payload = {
+        withdrawStaking: {
+          selectedStake: {
+            validatorInfo: item?.validatorInfo,
+            validator_address: item?.validator_address,
+            staking_address: item?.staking_address,
+            amount: rewardAmount,
+            fiatAmount,
+          },
+          isStakingRewards: true,
+          hideResource: true,
+        },
+      };
+      dispatch(setRouteStateData(payload));
+      router.push('/home/withdraw-staking');
+    },
+    [currentCoin?.currencyRate, dispatch, router],
+  );
+
   const renderBoxItem = (title, value, buttonLabel, buttonValue, type) => {
     if (type === 'hidden') {
       return null;
@@ -157,7 +185,7 @@ const StakingList = () => {
                 Validators
               </button>
             )}
-            {isShowUnstaking && (
+            {isShowUnstaking && !isEvmChain && (
               <button
                 className={styles.button}
                 style={
@@ -193,6 +221,9 @@ const StakingList = () => {
                 item={item}
                 isWithdraw={true}
                 estimateEpochTimestamp={estimateEpochTimestamp}
+                showReward={true}
+                handleClaimReward={handleClaimReward}
+                isEvmChain={isEvmChain}
               />
             ))}
           </div>

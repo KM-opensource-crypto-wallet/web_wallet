@@ -182,7 +182,7 @@ const BackupPage = () => {
   const handleBackupPress = () => {
     if (selectedWalletIds.length === 0) {
       showToast({
-        type: 'error',
+        type: 'errorToast',
         message: 'Please select at least one wallet to backup.',
       });
       return;
@@ -269,7 +269,7 @@ const BackupPage = () => {
         err?.message?.includes('Session expired')
       ) {
         showToast({
-          type: 'error',
+          type: 'errorToast',
           message: err?.message || 'Session expired. Please sign in again.',
         });
         handleLogout(true);
@@ -277,7 +277,7 @@ const BackupPage = () => {
       }
 
       showToast({
-        type: 'error',
+        type: 'errorToast',
         message: err?.message || 'An unexpected error occurred during backup.',
       });
     } finally {

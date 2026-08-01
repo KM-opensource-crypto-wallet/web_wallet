@@ -11,11 +11,25 @@ import Image from 'next/image';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import styles from './StakingItem.module.css';
 
-const StakingItem = ({item, isWithdraw, estimateEpochTimestamp}) => {
+const StakingItem = ({
+  item,
+  isWithdraw,
+  estimateEpochTimestamp,
+  showReward,
+  handleClaimReward,
+  isEvmChain,
+}) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const currentCoin = useSelector(selectCurrentCoin);
   const localCurrency = useSelector(getLocalCurrency);
+
+  const rewardAmount = item?.reward?.amount
+    ? parseFloat(item.reward.amount)
+    : 0;
+  const hasReward = rewardAmount > 0;
+  const rewardSymbol = item?.reward?.symbol || null;
+  const rewardLogo = item?.reward?.logo || null;
 
   return (
     <div
@@ -26,6 +40,17 @@ const StakingItem = ({item, isWithdraw, estimateEpochTimestamp}) => {
             'Already deactivating: Please wait until epoch end then you can withdraw.',
           );
         } else if (item?.status) {
+          const payload = {
+            withdrawStaking: {
+              selectedStake: item,
+              ...(item?.status === 'inactive'
+                ? {isWithdrawStaking: true}
+                : {isDeactivateStaking: true}),
+            },
+          };
+          dispatch(setRouteStateData(payload));
+          router.push('/home/withdraw-staking');
+        } else if (isEvmChain) {
           const payload = {
             withdrawStaking: {
               selectedStake: item,
@@ -71,10 +96,9 @@ const StakingItem = ({item, isWithdraw, estimateEpochTimestamp}) => {
           </div>
           <div className={styles.rightRowView}>
             <div>
-              <div
-                className={
-                  styles.balanceStyle
-                }>{`${item?.amount} ${currentCoin?.symbol}`}</div>
+              <div className={styles.balanceStyle}>{`${
+                item?.stakedAmount ?? item?.amount
+              } ${currentCoin?.symbol}`}</div>
               <div
                 className={
                   styles.fiatStyle
@@ -85,6 +109,46 @@ const StakingItem = ({item, isWithdraw, estimateEpochTimestamp}) => {
             )}
           </div>
         </div>
+        {hasReward && showReward && (
+          <div
+            className={styles.rewardCard}
+            onClick={e => e.stopPropagation()}
+            style={{cursor: 'default'}}>
+            <div className={styles.rewardAccentBar} />
+            {rewardLogo ? (
+              <Image
+                src={rewardLogo}
+                className={styles.rewardTokenLogo}
+                alt=''
+                width={28}
+                height={28}
+              />
+            ) : (
+              <div className={styles.rewardTokenPlaceholder}>
+                <span className={styles.rewardTokenPlaceholderText}>
+                  {rewardSymbol?.[0] ?? '?'}
+                </span>
+              </div>
+            )}
+            <div className={styles.rewardTextGroup}>
+              <div className={styles.rewardTitle}>Rewards Earned</div>
+              <div className={styles.rewardSymbolText}>{rewardSymbol}</div>
+            </div>
+            <div className={styles.rewardValueText}>{`+${rewardAmount.toFixed(
+              6,
+            )}`}</div>
+            {!!isWithdraw && typeof handleClaimReward === 'function' && (
+              <button
+                className={styles.claimButton}
+                onClick={e => {
+                  e.stopPropagation();
+                  handleClaimReward(rewardAmount, item);
+                }}>
+                Claim
+              </button>
+            )}
+          </div>
+        )}
         {(item?.status?.toLowerCase() === 'activating' ||
           item?.status?.toLowerCase() === 'deactivating') &&
           !!isWithdraw &&

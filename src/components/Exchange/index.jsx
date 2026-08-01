@@ -3,9 +3,9 @@ import {shallowEqual, useSelector, useDispatch} from 'react-redux';
 import SelectInputExchange from 'components/SelectInputExchange';
 import DokDropdown from 'components/DokDropdown';
 import {
-  _currentWalletIndexSelector,
   getCoinsOptions,
-  selectAllWallets,
+  selectCurrentWalletClientId,
+  selectVisibleWallets,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {getExchange} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
 import {
@@ -98,8 +98,8 @@ const calculateEstimatePrice = async (
 const Exchange = ({}) => {
   const exchangeProviderText = useSelector(getExchangeProviders);
   const coinOptions = useSelector(getCoinsOptions, shallowEqual);
-  const allWallets = useSelector(selectAllWallets);
-  const currentWalletIndex = useSelector(_currentWalletIndexSelector);
+  const allWallets = useSelector(selectVisibleWallets);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const {
     selectedCoinToOptions,
     selectedFromAsset,
@@ -237,7 +237,7 @@ const Exchange = ({}) => {
           tempCoinDetails = {...tempCoinDetails};
           tempCoinDetails.chain_symbol = 'BSC';
         }
-        if (i === currentWalletIndex && tempCoinDetails) {
+        if (tempWallet?.clientId === currentWalletClientId && tempCoinDetails) {
           selectedCoinDetails = tempCoinDetails;
           selectedWalletDetails = tempWallet;
         }
@@ -259,8 +259,36 @@ const Exchange = ({}) => {
         selectedWalletDetails,
       };
     },
-    [allWallets, currentWalletIndex],
+    [allWallets, currentWalletClientId],
   );
+
+  // Keep the "Select address" wallet lists in sync when the set of visible
+  // wallets changes (e.g. a hidden wallet was revealed). Without this,
+  // possibleFromCoin/possibleToCoins stay stale until the coin is re-selected.
+  // Only the address options are recomputed here; the selected asset/amount are
+  // left untouched.
+  useEffect(() => {
+    const updatedFields = {};
+    if (selectedCoinFromOptions) {
+      const {possibleCoinDetails} = getCoinDetails(selectedCoinFromOptions);
+      updatedFields.possibleFromCoin = possibleCoinDetails;
+    }
+    if (selectedCoinToOptions) {
+      const {possibleCoinDetails} = getCoinDetails(selectedCoinToOptions);
+      updatedFields.possibleToCoins = [
+        ...possibleCoinDetails,
+        {
+          label: 'Custom',
+          value: 'Custom',
+          options: {coinDetails: {}, walletDetails: {}},
+        },
+      ];
+    }
+    if (Object.keys(updatedFields).length) {
+      dispatch(setExchangeFields(updatedFields));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allWallets]);
 
   const onChangeFromValues = useCallback(
     event => {

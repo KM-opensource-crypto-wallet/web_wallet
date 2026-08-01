@@ -256,6 +256,16 @@ const CommonTransfer = () => {
               isWithdrawStaking: !!isWithdrawStaking,
               isStakingRewards: !!isStakingRewards,
               isDeactivateStaking: !!isDeactivateStaking,
+              stakingProviderName:
+                isCreateStaking || isDeactivateStaking || isStakingRewards
+                  ? transferData?.stakingProviderName
+                  : null,
+              tokenDecimals: isStakingScreen
+                ? transferData?.currentCoin?.decimal
+                : null,
+              isMaxCheckbox: isDeactivateStaking
+                ? transferData?.isMaxCheckbox
+                : null,
               feesType: selectedFeesTypeRef.current,
               estimateGas: transferData?.estimateGas,
             }),
@@ -325,6 +335,10 @@ const CommonTransfer = () => {
         isStakingRewards: !!isStakingRewards,
         isCreateStaking: isCreateStaking,
         isDeactivateStaking: !!isDeactivateStaking,
+        stakingProviderName:
+          isCreateStaking || isDeactivateStaking || isStakingRewards
+            ? transferData?.stakingProviderName
+            : null,
         stakingAddress: isStakingScreen ? transferData?.stakingAddress : null,
         numberOfStakeAccount: isStakingScreen
           ? transferData?.currentCoin?.staking?.length || 0
@@ -352,6 +366,7 @@ const CommonTransfer = () => {
     transferData?.resourceType,
     transferData?.selectedVotes,
     transferData?.validatorPubKey,
+    transferData?.stakingProviderName,
     transferData?.stakingAddress,
     isSendFundScreen,
     isSellCryptoScreen,

@@ -8,7 +8,7 @@ import {
   addCustomRpc,
   updateCustomRpc,
 } from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSlice';
-import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {selectVisibleWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {isEVMChain, CustomRPCList} from 'dok-wallet-blockchain-networks/helper';
 import {getRPCUrl} from 'dok-wallet-blockchain-networks/rpcUrls/rpcUrls';
 import {validateRpcUrl} from 'dok-wallet-blockchain-networks/service/rpcService';
@@ -20,10 +20,18 @@ const AddCustomRpc = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
-  const allWallets = useSelector(selectAllWallets);
+  const allWallets = useSelector(selectVisibleWallets);
 
   const editChainName = searchParams.get('chain_name');
   const isEdit = Boolean(editChainName);
+
+  // The existing association may include hidden (locked) wallets. The picker
+  // only lists visible wallets, so remember the original set to carry those
+  // unpickable ids forward on save (otherwise updateCustomRpc drops them).
+  const previousWallets = useMemo(() => {
+    const walletsParam = searchParams.get('wallets');
+    return walletsParam ? walletsParam.split(',').filter(Boolean) : [];
+  }, [searchParams]);
 
   const [selectedChain, setSelectedChain] = useState(editChainName || '');
   const [rpcUrl, setRpcUrl] = useState(searchParams.get('customRpcUrl') || '');
@@ -108,11 +116,22 @@ const AddCustomRpc = () => {
     }
 
     const chainEntry = CustomRPCList.find(c => c.value === selectedChain);
+    // Carry forward any hidden wallets' ids that aren't in the (visible-only)
+    // picker so their association isn't silently dropped on update.
+    const pickerClientIds = new Set(allWallets.map(w => w.clientId));
+    const preservedClientIds = previousWallets.filter(
+      id => !pickerClientIds.has(id),
+    );
     const payload = {
       chain_name: selectedChain,
       chain_display_name: chainEntry?.label || selectedChain,
       customRpcUrl: rpcUrl.trim(),
-      wallets: selectedWallets,
+      wallets: Array.from(
+        new Set([
+          ...selectedWallets.filter(id => pickerClientIds.has(id)),
+          ...preservedClientIds,
+        ]),
+      ),
     };
 
     if (isEdit) {
@@ -122,7 +141,16 @@ const AddCustomRpc = () => {
     }
 
     router.back();
-  }, [selectedChain, rpcUrl, selectedWallets, isEdit, dispatch, router]);
+  }, [
+    selectedChain,
+    rpcUrl,
+    selectedWallets,
+    isEdit,
+    dispatch,
+    router,
+    allWallets,
+    previousWallets,
+  ]);
 
   return (
     <div className={s.container}>
@@ -137,12 +165,14 @@ const AddCustomRpc = () => {
       {/* Chain selector */}
       <div className={s.field}>
         <label className={s.label}>Select Chain</label>
-        <SelectInput
-          listData={CustomRPCList}
-          onValueChange={val => setSelectedChain(val)}
-          value={selectedChain}
-          placeholder='Select a chain'
-        />
+        <div className={s.dropdownContainer}>
+          <SelectInput
+            listData={CustomRPCList}
+            onValueChange={val => setSelectedChain(val)}
+            value={selectedChain}
+            placeholder='Select a chain'
+          />
+        </div>
       </div>
 
       {/* Default RPC URL (read-only, shown after chain selected) */}

@@ -10,6 +10,7 @@ loadEnvConfig(projectDir);
 
 const withNextIntl = createNextIntlPlugin();
 const nextConfig = {
+  serverExternalPackages: ['bitcore-lib'],
   images: {
     remotePatterns: [
       {
@@ -43,6 +44,8 @@ const nextConfig = {
     WALLET_CONNECT_ID: process.env.WALLET_CONNECT_ID,
     BLOCKFROST_API_KEY: process.env.BLOCKFROST_API_KEY,
     BREEZ_API_KEY: process.env.BREEZ_API_KEY,
+    NEXT_PUBLIC_BUGFENDER_APP_KEY: process.env.NEXT_PUBLIC_BUGFENDER_APP_KEY,
+    ENV_MODE: process.env.ENV_MODE,
   },
   trailingSlash: true,
   reactStrictMode: false,

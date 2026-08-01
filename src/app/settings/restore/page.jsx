@@ -106,7 +106,7 @@ const RestorePage = () => {
         err?.message?.includes('Session expired')
       ) {
         showToast({
-          type: 'error',
+          type: 'errorToast',
           message: err?.message || 'Session expired. Please sign in again.',
         });
         handleLogout(true);
@@ -115,7 +115,7 @@ const RestorePage = () => {
 
       setError(err);
       showToast({
-        type: 'error',
+        type: 'errorToast',
         message: err?.message || 'Failed to download backup.',
       });
     } finally {
@@ -186,13 +186,13 @@ const RestorePage = () => {
           router.push('/settings');
         } else if (failCount > 0) {
           showToast({
-            type: 'error',
+            type: 'errorToast',
             message: `Failed to restore ${failCount} wallets.`,
           });
         }
       } catch (err) {
         showToast({
-          type: 'error',
+          type: 'errorToast',
           message: err.message || 'Batch restore process failed.',
         });
       }
