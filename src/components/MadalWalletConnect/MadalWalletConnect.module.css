@@ -84,6 +84,14 @@
   margin: 0 auto;
 }
 
+.errorText {
+  color: #ff4444;
+  font-size: 13px;
+  width: 90%;
+  margin: 8px auto 0 auto;
+  text-align: center;
+}
+
 .btnList {
   width: 90%;
   display: flex;

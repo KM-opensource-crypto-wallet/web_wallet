@@ -9,6 +9,19 @@ import FormControl from '@mui/material/FormControl';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import walletConnect from 'data/walletConnect';
 import {createWalletConnection} from 'dok-wallet-blockchain-networks/service/walletconnect';
+import {parseUri} from '@walletconnect/utils';
+
+const isValidWalletConnectUri = value => {
+  if (!value?.startsWith('wc:')) {
+    return false;
+  }
+  try {
+    const {topic, version} = parseUri(value);
+    return Boolean(topic && version);
+  } catch (e) {
+    return false;
+  }
+};
 
 const style = {
   position: 'absolute',
@@ -27,14 +40,39 @@ const style = {
 
 const MadalWalletConnect = ({visible, onClose}) => {
   const [connectValue, setConnectValue] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const handleConnectChange = event => {
     setConnectValue(event.target.value);
+    if (errorMessage) {
+      setErrorMessage('');
+    }
   };
 
-  const handleSubmit = values => {
-    createWalletConnection({uri: values}).then();
-    onClose(false);
+  const handleSubmit = async values => {
+    const uri = values?.trim();
+    if (!isValidWalletConnectUri(uri)) {
+      setErrorMessage(
+        'Invalid WalletConnect URI. Copy the connection link starting with "wc:" from the dApp — a wallet address will not work here.',
+      );
+      return;
+    }
+    setIsConnecting(true);
+    try {
+      await createWalletConnection({uri});
+      setConnectValue('');
+      onClose(false);
+    } catch (e) {
+      console.error('WalletConnect pairing failed:', e);
+      setErrorMessage(
+        e?.message?.includes('Pairing already exists')
+          ? 'This URI was already used. Get a fresh connection link from the dApp.'
+          : 'Failed to connect. Get a fresh connection link from the dApp and try again.',
+      );
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   return (
@@ -64,7 +102,8 @@ const MadalWalletConnect = ({visible, onClose}) => {
                 onChange={handleConnectChange}
                 endAdornment={
                   <Chip
-                    label='Connect'
+                    label={isConnecting ? 'Connecting…' : 'Connect'}
+                    disabled={isConnecting}
                     onClick={() => handleSubmit(connectValue)}
                     sx={{
                       color: 'white',
@@ -90,6 +129,9 @@ const MadalWalletConnect = ({visible, onClose}) => {
                 }}
               />
             </FormControl>
+            {errorMessage ? (
+              <p className={styles.errorText}>{errorMessage}</p>
+            ) : null}
           </div>
 
           {/*<div className={styles.btnList}>*/}
