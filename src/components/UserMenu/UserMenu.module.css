@@ -1,0 +1,51 @@
+.userInfoSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  outline: none;
+}
+
+.userAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.userInfoDetails {
+  flex: 1;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--font-color);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.userEmail {
+  font-size: 12px;
+  color: var(--secondary-text-color);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.menuOption {
+  color: var(--font-color) !important;
+  font-size: 14px !important;
+  gap: 12px;
+  padding: 10px 16px !important;
+}
+
+.icon {
+  color: var(--font-color);
+}

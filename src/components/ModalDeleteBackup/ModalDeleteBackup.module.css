@@ -1,0 +1,68 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.infoList {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.titleInfo {
+  color: var(--font);
+  font-size: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.info {
+  color: var(--font);
+  font-size: 16px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--gray);
+  border-radius: 8px;
+  outline: none;
+  color: var(--font);
+  font-size: 16px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.btnList {
+  align-items: center;
+  border-top: 1px solid var(--gray);
+  display: flex;
+  justify-content: space-around;
+}
+
+.learnBox {
+  justify-content: center;
+  align-items: center;
+  height: 60px;
+  color: var(--background);
+  font-size: 17px;
+  width: 50%;
+  cursor: pointer;
+}
+
+.learnBox:first-child {
+  border-right: 1px solid var(--gray);
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -201,14 +201,25 @@ function AppRouting({children, wlData}) {
       ) {
         setRoutingDone(true);
       } else {
+        const shouldSkipLock =
+          typeof window !== 'undefined' &&
+          sessionStorage.getItem('skip_lock_screen') === 'true';
+
         if (!password) {
           if (pathname !== '/auth/registration') {
             routing.replace(searchString ? `/?${searchString}` : '/');
           }
-        } else {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('skip_lock_screen');
+          }
+        } else if (!shouldSkipLock) {
           routing.replace(
             searchString ? `/auth/login?${searchString}` : `/auth/login`,
           );
+        } else {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('skip_lock_screen');
+          }
         }
         setTimeout(() => {
           setRoutingDone(true);
