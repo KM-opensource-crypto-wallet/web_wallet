@@ -1,19 +1,23 @@
 import {getServerSession} from 'next-auth';
-import {createHmac} from 'crypto';
-import {authOptions} from '../../../auth/[...nextauth]/route';
+import {headers} from 'next/headers';
+import {buildAuthOptions} from 'whitelabel/serverAuthOptions';
 import {NextResponse} from 'next/server';
 
 /**
  * GET /api/drive/backup/key
  *
- * Returns a per-user encryption key derived via HMAC-SHA256
- * from a server-only secret and the authenticated user's email.
- * The key never leaves server memory except as the response to
- * an authenticated request.
+ * Returns the app-wide WALLET_BACKUP_SECRET to an authenticated session.
+ * The client mixes it into the backup encryption key together with the
+ * user's backup password (`${password}\x00${secret}`), matching the mobile
+ * app's v2-gcm format so backups are cross-platform restorable. The mobile
+ * app ships this same secret inside its binary; the user's password is the
+ * load-bearing secret.
  */
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const headersList = await headers();
+    const host = headersList.get('x-forwarded-host') ?? headersList.get('host');
+    const session = await getServerSession(buildAuthOptions(host));
 
     if (!session || !session.user?.email) {
       return NextResponse.json({error: 'Unauthorized'}, {status: 401});
@@ -28,16 +32,14 @@ export async function GET() {
       );
     }
 
-    // Derive a per-user key: HMAC-SHA256(serverSecret, userEmail)
-    const hmac = createHmac('sha256', serverSecret);
-    hmac.update(session.user.email);
-    const perUserKey = hmac.digest('hex');
-
-    return NextResponse.json({key: perUserKey});
-  } catch (error) {
-    console.error('Key derivation error:', error);
     return NextResponse.json(
-      {error: 'Failed to derive encryption key'},
+      {secret: serverSecret},
+      {headers: {'Cache-Control': 'no-store'}},
+    );
+  } catch (error) {
+    console.error('Backup key error:', error);
+    return NextResponse.json(
+      {error: 'Failed to fetch backup secret'},
       {status: 500},
     );
   }

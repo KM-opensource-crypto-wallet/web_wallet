@@ -1,0 +1,149 @@
+.walletCard {
+  background-color: var(--secondaryBackgroundColor);
+  border-radius: 16px;
+  border: 1.5px solid var(--whiteOutline);
+  margin-bottom: 12px;
+  padding: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.walletCardSelected {
+  border-color: var(--background);
+}
+
+.walletCardDisabled {
+  opacity: 0.6;
+  cursor: default;
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--background);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.titleWrapper {
+  flex: 1;
+  padding-left: 12px;
+  min-width: 0;
+}
+
+.walletName {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--font);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.walletNameSelected {
+  font-weight: 700;
+}
+
+.walletNameDisabled {
+  color: var(--gray);
+}
+
+.walletType {
+  font-size: 13px;
+  color: var(--gray);
+  font-weight: 500;
+}
+
+.restoredPill {
+  padding: 4px 8px;
+  border-radius: 12px;
+  background-color: var(--whiteOutline);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.restoredText {
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--gray);
+  text-transform: none;
+}
+
+.balanceSection {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--whiteOutline);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.balanceInfo {
+  flex: 1;
+}
+
+.balanceLabel {
+  font-size: 12px;
+  color: var(--gray);
+  margin-bottom: 4px;
+}
+
+.balanceValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--font);
+}
+
+.balanceValueDisabled {
+  color: var(--gray);
+}
+
+.coinsInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.topCoinsContainer {
+  display: flex;
+  margin-bottom: 4px;
+}
+
+.coinIconWrapper {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: #fff;
+  border: 2px solid var(--secondaryBackgroundColor);
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.coinIconOverlap {
+  margin-left: -8px;
+}
+
+.coinIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+.coinsCountText {
+  font-size: 12px;
+  color: var(--gray);
+  font-weight: 500;
+}

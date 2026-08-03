@@ -3,14 +3,21 @@ import React, {useState, useEffect, useCallback} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {createWalletsBatch} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {restoreWalletsFromDrive} from 'utils/googleDriveBackup';
+import {
+  fetchEncryptedBackup,
+  decryptBackup,
+  deleteWalletBackup,
+  BACKUP_ERROR_CODES,
+} from 'utils/googleDriveBackup';
 import {showToast} from 'utils/toast';
 import {useRouter} from 'next/navigation';
 import s from './Restore.module.css';
-import Image from 'next/image';
-import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 import GoBackButton from 'components/GoBackButton';
 import UserMenu from 'components/UserMenu';
+import DriveGuideModal from 'components/DriveGuideModal';
+import ModalBackupPassword from 'components/ModalBackupPassword';
+import ModalDeleteBackup from 'components/ModalDeleteBackup';
+import WalletSelectionCard from 'components/WalletSelectionCard';
 import {useSession, signIn, signOut} from 'next-auth/react';
 import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
 
@@ -18,7 +25,7 @@ const RestorePage = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const existingWallets = useSelector(selectAllWallets);
-  const {data: session, status, update: updateSession} = useSession();
+  const {data: session, status} = useSession();
 
   const [restorableWallets, setRestorableWallets] = useState([]);
   const [selectedWalletIds, setSelectedWalletIds] = useState([]);
@@ -26,6 +33,10 @@ const RestorePage = () => {
   const [restoring, setRestoring] = useState(false);
   const [showDriveGuideModal, setShowDriveGuideModal] = useState(false);
   const [error, setError] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [encryptedBackup, setEncryptedBackup] = useState(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
   const [hasMounted, setHasMounted] = useState(false);
 
   // Mark as mounted to prevent hydration mismatch
@@ -36,16 +47,20 @@ const RestorePage = () => {
     }
   }, [router]);
 
-  useEffect(() => {
-    if (status === 'authenticated' && session) {
-      fetchBackup();
+  const processBackupData = useCallback(data => {
+    if (data && data.wallets && Array.isArray(data.wallets)) {
+      const wallets = data.wallets.filter(w => w.phrase || w.privateKey);
+      setRestorableWallets(wallets);
+      setSelectedWalletIds(wallets.map(w => w.clientId));
+    } else {
+      setRestorableWallets([]);
+      showToast({
+        type: 'warningToast',
+        title: 'No Data',
+        message: 'No valid wallet backup found.',
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, session]);
-
-  const handleConnect = () => {
-    setShowDriveGuideModal(true);
-  };
+  }, []);
 
   const handleLogin = async () => {
     if (typeof window !== 'undefined') {
@@ -60,44 +75,32 @@ const RestorePage = () => {
     }
   };
 
-  const handleDriveGuideContinue = () => {
-    setShowDriveGuideModal(false);
-    if (status === 'authenticated') {
-      fetchBackup();
-    } else {
-      handleLogin();
-    }
-  };
-
-  const handleLogout = async (shouldSignInAfter = false) => {
+  const handleLogout = useCallback(async (shouldSignInAfter = false) => {
     await signOut({redirect: false});
     setRestorableWallets([]);
+    setSelectedWalletIds([]);
     setError(null);
+    setEncryptedBackup(null);
+    setShowPasswordModal(false);
+    setPasswordError('');
     if (shouldSignInAfter) {
       handleLogin();
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleRetry = async () => {
-    handleLogout(true);
-  };
-
-  const fetchBackup = async () => {
+  const fetchBackup = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await restoreWalletsFromDrive();
+      const {encryptedData, needsPassword} = await fetchEncryptedBackup();
 
-      if (data && data.wallets && Array.isArray(data.wallets)) {
-        const wallets = data.wallets.filter(w => w.phrase || w.privateKey);
-        setRestorableWallets(wallets);
-        setSelectedWalletIds(wallets.map(w => w.clientId));
+      if (needsPassword) {
+        setEncryptedBackup(encryptedData);
+        setPasswordError('');
+        setShowPasswordModal(true);
       } else {
-        setRestorableWallets([]);
-        showToast({
-          type: 'warning',
-          message: 'No valid wallet found.',
-        });
+        processBackupData(await decryptBackup(encryptedData));
       }
     } catch (err) {
       console.error('Fetch Backup Error:', err);
@@ -107,6 +110,7 @@ const RestorePage = () => {
       ) {
         showToast({
           type: 'errorToast',
+          title: 'Download Failed',
           message: err?.message || 'Session expired. Please sign in again.',
         });
         handleLogout(true);
@@ -116,11 +120,101 @@ const RestorePage = () => {
       setError(err);
       showToast({
         type: 'errorToast',
+        title: 'Download Failed',
         message: err?.message || 'Failed to download backup.',
       });
     } finally {
       setLoading(false);
     }
+  }, [processBackupData, handleLogout]);
+
+  useEffect(() => {
+    if (hasMounted && status === 'authenticated' && session) {
+      fetchBackup();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMounted, status]);
+
+  const handleConnect = () => {
+    setShowDriveGuideModal(true);
+  };
+
+  const handleDriveGuideContinue = () => {
+    setShowDriveGuideModal(false);
+    if (status === 'authenticated') {
+      fetchBackup();
+    } else {
+      handleLogin();
+    }
+  };
+
+  const handleDeleteBackup = useCallback(async () => {
+    try {
+      await deleteWalletBackup();
+      setRestorableWallets([]);
+      setSelectedWalletIds([]);
+      setEncryptedBackup(null);
+      setShowPasswordModal(false);
+      setPasswordError('');
+      showToast({
+        type: 'successToast',
+        title: 'Backup Deleted',
+        message: 'All wallet backups have been deleted from Google Drive.',
+      });
+    } catch (err) {
+      console.error('Delete Backup Failed:', err);
+      showToast({
+        type: 'errorToast',
+        title: 'Delete Failed',
+        message:
+          err?.message === 'No backup file found to delete.'
+            ? 'No backup found to delete.'
+            : err?.message || 'Failed to delete backup from Google Drive.',
+      });
+    }
+  }, []);
+
+  const handleRetry = async () => {
+    if (
+      error?.code === BACKUP_ERROR_CODES.PASSWORD_REQUIRED &&
+      encryptedBackup
+    ) {
+      setError(null);
+      setPasswordError('');
+      setShowPasswordModal(true);
+      return;
+    }
+    handleLogout(true);
+  };
+
+  const handleRestorePasswordSuccess = async password => {
+    try {
+      const data = await decryptBackup(encryptedBackup, password);
+      setShowPasswordModal(false);
+      setPasswordError('');
+      processBackupData(data);
+    } catch (err) {
+      if (err?.code === BACKUP_ERROR_CODES.WRONG_PASSWORD) {
+        setPasswordError('Incorrect backup password. Please try again.');
+        return;
+      }
+      setShowPasswordModal(false);
+      setError(err);
+      showToast({
+        type: 'errorToast',
+        title: 'Restore Failed',
+        message: err?.message || 'Failed to decrypt backup.',
+      });
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordModal(false);
+    setPasswordError('');
+    setError({
+      code: BACKUP_ERROR_CODES.PASSWORD_REQUIRED,
+      message: 'A password is required to unlock this backup.',
+    });
   };
 
   const isAllSelected =
@@ -180,25 +274,29 @@ const RestorePage = () => {
 
         if (successCount > 0) {
           showToast({
-            type: 'success',
+            type: 'successToast',
+            title: 'Restore Complete',
             message: `Restored ${successCount} wallets.`,
           });
           router.push('/settings');
         } else if (failCount > 0) {
           showToast({
             type: 'errorToast',
+            title: 'Restore Issues',
             message: `Failed to restore ${failCount} wallets.`,
           });
         }
       } catch (err) {
         showToast({
           type: 'errorToast',
+          title: 'Restore Failed',
           message: err.message || 'Batch restore process failed.',
         });
       }
     } else if (duplicateCount > 0) {
       showToast({
-        type: 'warning',
+        type: 'warningToast',
+        title: 'No New Wallets',
         message: 'All selected wallets already exist on this device.',
       });
     }
@@ -221,7 +319,11 @@ const RestorePage = () => {
     if (loading) {
       return (
         <div className={`${s.center}`}>
-          <p className={s.loadingText}>Loading...</p>
+          <p className={s.loadingText}>
+            {status === 'authenticated'
+              ? 'Searching for backups...'
+              : 'Loading...'}
+          </p>
         </div>
       );
     }
@@ -232,48 +334,38 @@ const RestorePage = () => {
         <div className={`${s.center}`}>
           <div className={s.emptyStateContainer}>
             <p className={`${s.text} ${s.emptyStateDescription}`}>
-              Connect your Google Drive to restore wallets.
+              Connect your Google Drive to restore wallet backups.
             </p>
             <button className={s.button} onClick={handleConnect}>
-              <p className={s.buttonTitle}>Connect with Google</p>
+              <p className={s.buttonTitle}>Connect Google Drive</p>
             </button>
           </div>
-
-          {showDriveGuideModal && (
-            <div className={s.modalOverlay}>
-              <div className={s.modalContent}>
-                <h2 className={s.modalTitle}>Authentication Required</h2>
-                <p className={s.modalDescription}>
-                  You need to sign in with Google to perform the restore.
-                </p>
-                <button
-                  className={s.modalButtonPrimary}
-                  onClick={handleDriveGuideContinue}>
-                  Sign in with Google
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       );
     }
 
     // Logged In but Fetch Error (Retry State)
     if (error) {
+      const isPasswordRequired =
+        error?.code === BACKUP_ERROR_CODES.PASSWORD_REQUIRED;
       return (
         <div className={`${s.center}`}>
           <div className={s.emptyStateContainer}>
             <p
               className={`${s.text} ${s.emptyStateTitle}`}
               style={{color: 'red'}}>
-              Failed to fetch wallets.
+              {isPasswordRequired
+                ? 'Backup is password protected.'
+                : 'Failed to fetch backups.'}
             </p>
             <p className={`${s.subTitle} ${s.emptyStateDescription}`}>
               {error.message ||
                 'Please check your internet connection and permissions.'}
             </p>
             <button className={s.button} onClick={handleRetry}>
-              <p className={s.buttonTitle}>Retry Login</p>
+              <p className={s.buttonTitle}>
+                {isPasswordRequired ? 'Enter Password' : 'Retry Login'}
+              </p>
             </button>
           </div>
         </div>
@@ -303,64 +395,21 @@ const RestorePage = () => {
 
         {restorableWallets.length === 0 ? (
           <div className={`${s.container} ${s.center}`}>
-            <p className={s.text}>No wallets found in your Drive.</p>
+            <p className={s.text}>No backups found in your Drive.</p>
           </div>
         ) : (
           <div className={s.walletSection}>
-            {restorableWallets.map(wallet => {
-              const isRestored = isWalletRestored(wallet);
-              return (
-                <div
-                  key={
-                    wallet.clientId ||
-                    `${wallet.walletName}-${wallet.chain_name}`
-                  }
-                  className={s.walletBox}>
-                  <label
-                    className={s.walletList}
-                    style={{
-                      cursor: isRestored ? 'not-allowed' : 'pointer',
-                      opacity: isRestored ? 0.6 : 1,
-                    }}>
-                    {!isRestored ? (
-                      <div className={s.checkboxContainer}>
-                        <input
-                          type='checkbox'
-                          className={s.checkbox}
-                          checked={selectedWalletIds.includes(wallet.clientId)}
-                          onChange={() => toggleSelect(wallet.clientId)}
-                        />
-                      </div>
-                    ) : (
-                      <div className={s.checkboxContainer}>
-                        <div className={s.restoredPill}>
-                          <span className={s.restoredText}>Restored</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className={s.avatarWrapper}>
-                      <Image
-                        className={s.avatarAvatar}
-                        alt='avatar'
-                        width={54}
-                        height={54}
-                        src={getAppIcon()}
-                      />
-                    </div>
-
-                    <div className={s.textContainer}>
-                      <p className={s.mainText}>{wallet.walletName}</p>
-                      <p className={s.secondaryText}>
-                        {wallet?.isImportWalletWithPrivateKey
-                          ? `${wallet?.coins?.[0]?.chain_display_name || ''} Wallet`
-                          : 'Multi - Coin Wallet'}
-                      </p>
-                    </div>
-                  </label>
-                </div>
-              );
-            })}
+            {restorableWallets.map(wallet => (
+              <WalletSelectionCard
+                key={
+                  wallet.clientId || `${wallet.walletName}-${wallet.chain_name}`
+                }
+                item={wallet}
+                isSelected={selectedWalletIds.includes(wallet.clientId)}
+                toggleSelect={toggleSelect}
+                isRestored={isWalletRestored(wallet)}
+              />
+            ))}
           </div>
         )}
 
@@ -380,7 +429,6 @@ const RestorePage = () => {
               restorableWallets.length === 0
             }>
             <p className={s.buttonTitle}>
-              {' '}
               {restoring ? 'Restoring...' : 'Restore Selected'}
             </p>
           </button>
@@ -402,10 +450,34 @@ const RestorePage = () => {
           </div>
         </div>
         {session && session.user && (
-          <UserMenu user={session.user} onLogout={() => handleLogout()} />
+          <UserMenu
+            user={session.user}
+            onLogout={() => handleLogout()}
+            onDeleteBackup={() => setShowDeleteModal(true)}
+          />
         )}
       </div>
+
       {renderContent()}
+
+      <DriveGuideModal
+        visible={showDriveGuideModal}
+        onContinue={handleDriveGuideContinue}
+      />
+
+      <ModalBackupPassword
+        visible={showPasswordModal}
+        mode='enter'
+        errorText={passwordError}
+        hideModal={handlePasswordCancel}
+        onSuccess={handleRestorePasswordSuccess}
+      />
+
+      <ModalDeleteBackup
+        visible={showDeleteModal}
+        hideModal={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteBackup}
+      />
     </div>
   );
 };

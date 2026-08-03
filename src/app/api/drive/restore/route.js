@@ -1,13 +1,16 @@
 import {getServerSession} from 'next-auth';
 import {google} from 'googleapis';
 import {NextResponse} from 'next/server';
-import {authOptions} from '../../auth/[...nextauth]/route';
+import {headers} from 'next/headers';
+import {buildAuthOptions} from 'whitelabel/serverAuthOptions';
 
 const BACKUP_FILE_NAME = 'wallet_backup_encrypted.json';
 
 export async function GET(req) {
   try {
-    const session = await getServerSession(authOptions);
+    const headersList = await headers();
+    const host = headersList.get('x-forwarded-host') ?? headersList.get('host');
+    const session = await getServerSession(buildAuthOptions(host));
 
     if (!session || !session.accessToken) {
       return NextResponse.json({error: 'Unauthorized'}, {status: 401});

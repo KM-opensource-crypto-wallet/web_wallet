@@ -1,51 +1,47 @@
 'use client';
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useContext,
-  useRef,
-} from 'react';
+import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {useSelector} from 'react-redux';
 import {
-  selectAllWallets,
+  selectVisibleWallets,
   getMasterClientId,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {backupWalletsToDrive} from 'utils/googleDriveBackup';
+import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {currencySymbol} from 'data/currency';
+import {
+  backupWalletsToDrive,
+  deleteWalletBackup,
+  BACKUP_ERROR_CODES,
+} from 'utils/googleDriveBackup';
 import {showToast} from 'utils/toast';
 import s from './Backup.module.css';
-import Image from 'next/image';
-import {getAppIcon} from 'whitelabel/whiteLabelInfo';
-import {ThemeContext} from 'theme/ThemeContext';
 import GoBackButton from 'components/GoBackButton';
 import UserMenu from 'components/UserMenu';
+import ModalConfirm from 'components/ModalConfirm';
+import DriveGuideModal from 'components/DriveGuideModal';
+import ModalBackupPassword from 'components/ModalBackupPassword';
+import ModalDeleteBackup from 'components/ModalDeleteBackup';
+import WalletSelectionCard from 'components/WalletSelectionCard';
 import {useSession, signIn, signOut} from 'next-auth/react';
 import {useRouter} from 'next/navigation';
 import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
 
-const FOCUSABLE_SELECTORS =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 const BackupPage = () => {
   const router = useRouter();
-  const {data: session, status, update: updateSession} = useSession();
-  const allWallets = useSelector(selectAllWallets);
+  const {data: session, status} = useSession();
+  const allWallets = useSelector(selectVisibleWallets);
   const masterClientId = useSelector(getMasterClientId);
-  const {themeType} = useContext(ThemeContext);
+  const localCurrency = useSelector(getLocalCurrency);
+  const symbol = currencySymbol[localCurrency] || '$';
 
   const [selectedWalletIds, setSelectedWalletIds] = useState([]);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [showDriveGuideModal, setShowDriveGuideModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordMode, setPasswordMode] = useState('create');
+  const [passwordError, setPasswordError] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
-
-  // Stores the element that triggered each modal so focus can be restored on close
-  const warningTriggerRef = useRef(null);
-  const driveTriggerRef = useRef(null);
-  // Refs to modal content divs for focus trapping
-  const warningModalRef = useRef(null);
-  const driveModalRef = useRef(null);
 
   // Mark as mounted to prevent hydration mismatch
   useEffect(() => {
@@ -81,7 +77,8 @@ const BackupPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMounted, allWallets.length]);
 
-  // Handle automatic backup trigger after redirect
+  // Resume after the OAuth redirect: the password is never persisted, so
+  // reopen the password modal instead of backing up directly
   useEffect(() => {
     if (
       hasMounted &&
@@ -92,15 +89,20 @@ const BackupPage = () => {
     ) {
       sessionStorage.removeItem('backup_pending');
       sessionStorage.removeItem('backup_selected_wallet_ids');
-      startBackupProcess();
+      setPasswordMode('create');
+      setPasswordError('');
+      setShowPasswordModal(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMounted, status, allWallets.length, selectedWalletIds.length]);
 
-  const isAllSelected =
-    hasMounted &&
-    allWallets.length > 0 &&
-    selectedWalletIds.length === allWallets.length;
+  const isAllSelected = useMemo(
+    () =>
+      hasMounted &&
+      allWallets.length > 0 &&
+      selectedWalletIds.length === allWallets.length,
+    [hasMounted, allWallets, selectedWalletIds],
+  );
 
   const toggleSelectAll = useCallback(() => {
     if (isAllSelected) {
@@ -119,81 +121,19 @@ const BackupPage = () => {
     });
   }, []);
 
-  // Focus trap and Escape handler for warning modal
-  useEffect(() => {
-    if (!showWarningModal) return;
-    const modal = warningModalRef.current;
-    const focusable = modal?.querySelectorAll(FOCUSABLE_SELECTORS);
-    if (focusable?.length) focusable[0].focus();
-
-    const handleKeyDown = e => {
-      if (e.key === 'Escape') {
-        setShowWarningModal(false);
-        warningTriggerRef.current?.focus();
-        return;
-      }
-      if (e.key === 'Tab' && modal) {
-        const all = Array.from(modal.querySelectorAll(FOCUSABLE_SELECTORS));
-        const first = all[0];
-        const last = all[all.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showWarningModal]);
-
-  // Focus trap and Escape handler for drive guide modal
-  useEffect(() => {
-    if (!showDriveGuideModal) return;
-    const modal = driveModalRef.current;
-    const focusable = modal?.querySelectorAll(FOCUSABLE_SELECTORS);
-    if (focusable?.length) focusable[0].focus();
-
-    const handleKeyDown = e => {
-      if (e.key === 'Escape') {
-        setShowDriveGuideModal(false);
-        driveTriggerRef.current?.focus();
-        return;
-      }
-      if (e.key === 'Tab' && modal) {
-        const all = Array.from(modal.querySelectorAll(FOCUSABLE_SELECTORS));
-        const first = all[0];
-        const last = all[all.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showDriveGuideModal]);
-
   const handleBackupPress = () => {
     if (selectedWalletIds.length === 0) {
       showToast({
         type: 'errorToast',
+        title: 'No Wallets Selected',
         message: 'Please select at least one wallet to backup.',
       });
       return;
     }
-    warningTriggerRef.current = document.activeElement;
     setShowWarningModal(true);
   };
 
   const performBackup = () => {
-    // Drive modal inherits the same trigger so Escape/close restores focus correctly
-    driveTriggerRef.current = warningTriggerRef.current;
     setShowWarningModal(false);
     setShowDriveGuideModal(true);
   };
@@ -218,9 +158,10 @@ const BackupPage = () => {
 
   const handleDriveGuideContinue = () => {
     setShowDriveGuideModal(false);
-    driveTriggerRef.current?.focus();
     if (status === 'authenticated') {
-      startBackupProcess();
+      setPasswordMode('create');
+      setPasswordError('');
+      setShowPasswordModal(true);
     } else {
       handleLogin();
     }
@@ -233,8 +174,31 @@ const BackupPage = () => {
     }
   };
 
-  const startBackupProcess = async () => {
+  const handleDeleteBackup = useCallback(async () => {
+    try {
+      await deleteWalletBackup();
+      showToast({
+        type: 'successToast',
+        title: 'Backup Deleted',
+        message: 'All wallet backups have been deleted from Google Drive.',
+      });
+    } catch (err) {
+      console.error('Delete Backup Failed:', err);
+      showToast({
+        type: 'errorToast',
+        title: 'Delete Failed',
+        message:
+          err?.message === 'No backup file found to delete.'
+            ? 'No backup found to delete.'
+            : err?.message || 'Failed to delete backup from Google Drive.',
+      });
+    }
+  }, []);
+
+  const handleBackupPasswordSuccess = async password => {
+    setShowPasswordModal(false);
     setIsBackingUp(true);
+
     try {
       const selectedWallets = allWallets.filter(w =>
         selectedWalletIds.includes(w.clientId),
@@ -255,14 +219,22 @@ const BackupPage = () => {
         masterClientId: masterClientId || '',
       };
 
-      await backupWalletsToDrive(backupData);
+      await backupWalletsToDrive(backupData, password);
 
       showToast({
-        type: 'success',
+        type: 'successToast',
+        title: 'Backup Successful',
         message: 'Your wallets have been safely backed up to Google Drive.',
       });
     } catch (err) {
       console.error('Backup Failed:', err);
+
+      if (err?.code === BACKUP_ERROR_CODES.WRONG_PASSWORD) {
+        setPasswordMode('enter');
+        setPasswordError(err?.message || 'Incorrect backup password.');
+        setShowPasswordModal(true);
+        return;
+      }
 
       if (
         err?.message?.includes('insufficient authentication scopes') ||
@@ -270,6 +242,7 @@ const BackupPage = () => {
       ) {
         showToast({
           type: 'errorToast',
+          title: 'Backup Failed',
           message: err?.message || 'Session expired. Please sign in again.',
         });
         handleLogout(true);
@@ -278,6 +251,7 @@ const BackupPage = () => {
 
       showToast({
         type: 'errorToast',
+        title: 'Backup Failed',
         message: err?.message || 'An unexpected error occurred during backup.',
       });
     } finally {
@@ -313,42 +287,15 @@ const BackupPage = () => {
         </div>
 
         <div className={s.walletSection}>
-          {allWallets.map(wallet => {
-            const isSelected = selectedWalletIds.includes(wallet.clientId);
-            return (
-              <div key={wallet.clientId} className={s.walletBox}>
-                <label className={s.walletList} style={{cursor: 'pointer'}}>
-                  <div className={s.checkboxContainer}>
-                    <input
-                      type='checkbox'
-                      className={s.checkbox}
-                      checked={isSelected}
-                      onChange={() => toggleSelect(wallet.clientId)}
-                    />
-                  </div>
-
-                  <div className={s.avatarWrapper}>
-                    <Image
-                      className={s.avatarAvatar}
-                      alt='avatar'
-                      width={54}
-                      height={54}
-                      src={getAppIcon()}
-                    />
-                  </div>
-
-                  <div className={s.textContainer}>
-                    <p className={s.mainText}>{wallet.walletName}</p>
-                    <p className={s.secondaryText}>
-                      {wallet?.isImportWalletWithPrivateKey
-                        ? `${wallet?.coins?.[0]?.chain_display_name || ''} Wallet`
-                        : 'Multi - Coin Wallet'}
-                    </p>
-                  </div>
-                </label>
-              </div>
-            );
-          })}
+          {allWallets.map(wallet => (
+            <WalletSelectionCard
+              key={wallet.clientId}
+              item={wallet}
+              isSelected={selectedWalletIds.includes(wallet.clientId)}
+              toggleSelect={toggleSelect}
+              currencySymbol={symbol}
+            />
+          ))}
         </div>
 
         <div className={s.footer}>
@@ -380,69 +327,44 @@ const BackupPage = () => {
           </div>
         </div>
         {session && session.user && (
-          <UserMenu user={session.user} onLogout={() => handleLogout()} />
+          <UserMenu
+            user={session.user}
+            onLogout={() => handleLogout()}
+            onDeleteBackup={() => setShowDeleteModal(true)}
+          />
         )}
       </div>
 
       {renderContent()}
 
-      {/* Warning Modal */}
-      {showWarningModal && (
-        <div className={s.modalOverlay}>
-          <div
-            className={s.modalContent}
-            ref={warningModalRef}
-            role='dialog'
-            aria-modal='true'
-            aria-labelledby='warning-modal-title'>
-            <h2 id='warning-modal-title' className={s.modalTitle}>
-              Backup Warning
-            </h2>
-            <p className={s.modalDescription}>
-              This is not a foolproof backup. You are responsible for keeping
-              your recovery phrase safe. Google Drive backup is for convenience
-              only.
-            </p>
-            <div className={s.modalButtons}>
-              <button
-                className={s.modalButtonSecondary}
-                onClick={() => {
-                  setShowWarningModal(false);
-                  warningTriggerRef.current?.focus();
-                }}>
-                Cancel
-              </button>
-              <button className={s.modalButtonPrimary} onClick={performBackup}>
-                I Understand
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ModalConfirm
+        visible={showWarningModal}
+        title='Backup Warning'
+        description='This is not a foolproof backup. You are responsible for keeping your recovery phrase safe. Google Drive backup is for convenience only.'
+        yesButtonTitle='I Understand'
+        noButtonTitle='Cancel'
+        onPressYes={performBackup}
+        onPressNo={() => setShowWarningModal(false)}
+      />
 
-      {/* Drive Guide Modal */}
-      {showDriveGuideModal && (
-        <div className={s.modalOverlay}>
-          <div
-            className={s.modalContent}
-            ref={driveModalRef}
-            role='dialog'
-            aria-modal='true'
-            aria-labelledby='drive-guide-modal-title'>
-            <h2 id='drive-guide-modal-title' className={s.modalTitle}>
-              Authentication Required
-            </h2>
-            <p className={s.modalDescription}>
-              You need to sign in with Google to perform the backup.
-            </p>
-            <button
-              className={s.modalButtonPrimary}
-              onClick={handleDriveGuideContinue}>
-              {status === 'authenticated' ? 'Continue' : 'Sign in with Google'}
-            </button>
-          </div>
-        </div>
-      )}
+      <DriveGuideModal
+        visible={showDriveGuideModal}
+        onContinue={handleDriveGuideContinue}
+      />
+
+      <ModalBackupPassword
+        visible={showPasswordModal}
+        mode={passwordMode}
+        errorText={passwordError}
+        hideModal={() => setShowPasswordModal(false)}
+        onSuccess={handleBackupPasswordSuccess}
+      />
+
+      <ModalDeleteBackup
+        visible={showDeleteModal}
+        hideModal={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteBackup}
+      />
     </div>
   );
 };

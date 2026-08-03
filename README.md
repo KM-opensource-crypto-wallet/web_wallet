@@ -57,6 +57,39 @@ We have 2 apps dokwallet and 51pegasi. when we add new app add appName and add i
 
 Whenever we add new WL we need to add provider list for the new WL app in data.js file. Also need to update "allWhiteLabelProviderLists" variable in CryptoProviders page.
 
+## Google Drive Backup & Restore
+
+The backup/restore feature (Settings → Backup Wallets / Restore Wallets) needs the
+following server-side environment variables in `.env`:
+
+```bash
+# Per-brand Google OAuth clients for NextAuth + Drive appDataFolder access.
+# Each brand's client MUST belong to the SAME Google Cloud project as that
+# brand's mobile app client, otherwise web cannot see backups created on
+# mobile (appDataFolder is per-project). The brand is resolved per-request
+# from the Host header (src/whitelabel/serverBrand.js); localhost and
+# unknown hosts fall back to DOK.
+DOK_WALLET_GOOGLE_WEB_CLIENT_ID=
+DOK_WALLET_GOOGLE_WEB_CLIENT_SECRET=
+KIML_WALLET_GOOGLE_WEB_CLIENT_ID=
+KIML_WALLET_GOOGLE_WEB_CLIENT_SECRET=
+
+# App-wide backup secret mixed into the encryption key together with the
+# user's backup password. MUST be identical to the mobile app's
+# WALLET_BACKUP_SECRET and must NEVER be rotated — existing backups would
+# become unrecoverable.
+WALLET_BACKUP_SECRET=
+
+# Standard NextAuth configuration
+NEXTAUTH_SECRET=
+# Leave NEXTAUTH_URL unset in production (a single value cannot serve both
+# brand domains); instead set AUTH_TRUST_HOST=true (automatic on Vercel) so
+# the OAuth callback follows the request host. Dev defaults to localhost:3000.
+```
+
+Backups are encrypted client-side with AES-256-GCM (`v2-gcm` format, identical to the
+mobile app) and stored as `wallet_backup_encrypted.json` in the Drive `appDataFolder`.
+
 ## Getting Started
 
 First, run the development server:

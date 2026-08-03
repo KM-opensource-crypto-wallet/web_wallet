@@ -66,7 +66,6 @@ import {setWLAppName} from 'utils/wlData';
 import {ThemeProvider} from '@mui/system';
 import {createDynamicTheme} from 'src/theme';
 import CoinSyncWidget from 'components/CoinSyncWidget';
-import {ToastContainer} from 'react-toastify';
 
 function AppRouting({children, wlData}) {
   const password = useSelector(getUserPassword);

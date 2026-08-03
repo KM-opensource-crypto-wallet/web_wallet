@@ -1,9 +1,9 @@
 import React, {useState} from 'react';
-import {Menu, MenuItem, Divider, IconButton, Avatar} from '@mui/material';
-import {Logout, AccountCircle} from '@mui/icons-material';
+import {Menu, MenuItem, Divider, IconButton} from '@mui/material';
+import {Logout, AccountCircle, Delete} from '@mui/icons-material';
 import s from './UserMenu.module.css';
 
-const UserMenu = ({user, onLogout}) => {
+const UserMenu = ({user, onLogout, onDeleteBackup}) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -67,6 +67,24 @@ const UserMenu = ({user, onLogout}) => {
         </div>
 
         <Divider sx={{my: 0.5, borderColor: 'var(--whiteOutline)'}} />
+
+        {onDeleteBackup && [
+          <MenuItem
+            key='delete-backup'
+            onClick={() => {
+              handleClose();
+              onDeleteBackup();
+            }}
+            className={s.menuOption}
+            sx={{color: '#ff4444'}}>
+            <Delete fontSize='small' sx={{color: '#ff4444'}} />
+            Delete Backup
+          </MenuItem>,
+          <Divider
+            key='delete-backup-divider'
+            sx={{my: 0.5, borderColor: 'var(--whiteOutline)'}}
+          />,
+        ]}
 
         <MenuItem onClick={handleLogout} className={s.menuOption}>
           <Logout fontSize='small' className={s.icon} />
