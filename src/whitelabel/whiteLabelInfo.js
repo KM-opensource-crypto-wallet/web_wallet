@@ -23,7 +23,7 @@ export const setWhiteLabelInfo = info => {
   setWhiteLabelIdToDokApi(getWhiteLabelId());
   const isKimlWallet = whiteLabelInfo?._id === KIML_WALLET_ID;
   setupWebCaptchaInterceptor(getAppName());
-  
+
   if (isKimlWallet) {
     document.documentElement.style.setProperty('--background', '#4F8DD8');
   }
