@@ -29,7 +29,7 @@ import {wallet} from 'data/data';
 // import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 // import ModalDelete from "components/ModalDelete";
 import {
-  _currentWalletIndexSelector,
+  selectCurrentWalletClientId,
   selectAllWalletName,
   selectAllWallets,
   selectCurrentWallet,
@@ -42,7 +42,7 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {
   selectIsSyncing,
-  selectSyncingWalletIndex,
+  selectSyncingWalletClientId,
   selectSyncingWalletName,
 } from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSelectors';
 import useCoinScanCooldown from 'src/hooks/useCoinScanCooldown';
@@ -81,14 +81,14 @@ const CreateOrUpdateWallet = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
   const walletName = searchParams.get('walletName');
-  const walletIndex = searchParams.get('walletIndex');
+  const walletClientId = searchParams.get('walletClientId');
   const phrase = useSelector(getPhrase);
   const privateKey = useSelector(getPrivateKey);
   const chain_name = useSelector(getChainName);
   const router = useRouter();
 
   const currentWallet = useSelector(selectCurrentWallet);
-  const currentWalletIndex = useSelector(_currentWalletIndexSelector);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const allWalletName = useSelector(selectAllWalletName, shallowEqual);
   const allWallets = useSelector(selectAllWallets);
   const finalAllWallets = useRef(
@@ -105,20 +105,19 @@ const CreateOrUpdateWallet = () => {
 
   // The wallet being edited (only reachable while it's visible), as opposed to
   // `currentWallet` which is the globally active wallet.
-  const editingWallet = walletIndex != null ? allWallets[walletIndex] : null;
+  const editingWallet =
+    allWallets.find(item => item?.clientId === walletClientId) || null;
 
   // Coin scan (1 per 24h per wallet) targets the wallet being edited
-  const scanTargetIndex = walletIndex ?? currentWalletIndex;
+  const scanTargetClientId = walletClientId ?? currentWalletClientId;
   const scanWallet = editingWallet ?? currentWallet;
   const {isAvailable: isScanAvailable, remainingLabel: scanRemainingLabel} =
     useCoinScanCooldown(scanWallet?.lastCoinsScanTimestamp);
   const isCoinSyncRunning = useSelector(selectIsSyncing);
-  const syncingWalletIndex = useSelector(selectSyncingWalletIndex);
+  const syncingWalletClientId = useSelector(selectSyncingWalletClientId);
   const syncingWalletName = useSelector(selectSyncingWalletName);
   const isScanningThisWallet =
-    isCoinSyncRunning &&
-    syncingWalletIndex !== null &&
-    Number(syncingWalletIndex) === Number(scanTargetIndex);
+    isCoinSyncRunning && syncingWalletClientId === scanTargetClientId;
   // Only one scan can run at a time - lock the row while another wallet scans
   const isScanningOtherWallet = isCoinSyncRunning && !isScanningThisWallet;
   const isScanRowEnabled =
@@ -187,11 +186,11 @@ const CreateOrUpdateWallet = () => {
     setShowDeleteModal(false);
     router.push('/home');
     setTimeout(() => {
-      if (walletIndex !== null && walletIndex !== undefined) {
-        dispatch(deleteWallet(walletIndex));
+      if (walletClientId) {
+        dispatch(deleteWallet(walletClientId));
       }
     }, 1000);
-  }, [dispatch, router, walletIndex]);
+  }, [dispatch, router, walletClientId]);
 
   const onPressNo = useCallback(() => {
     setShowDeleteModal(false);
@@ -210,7 +209,7 @@ const CreateOrUpdateWallet = () => {
         if (walletName) {
           dispatch(
             updateWalletName({
-              index: walletIndex ?? currentWalletIndex,
+              clientId: walletClientId ?? currentWalletClientId,
               walletName: values.name,
             }),
           );
@@ -369,7 +368,7 @@ const CreateOrUpdateWallet = () => {
                         style={{marginTop: 20}}
                         onClick={() =>
                           router.push(
-                            `/wallets/hide-wallet?walletIndex=${walletIndex}`,
+                            `/wallets/hide-wallet?walletClientId=${walletClientId}`,
                           )
                         }>
                         <div className={s.itemIcon}>
@@ -398,9 +397,7 @@ const CreateOrUpdateWallet = () => {
                         disabled={!isScanRowEnabled}
                         onClick={() =>
                           router.push(
-                            `/home/coin-sync?walletIndex=${Number(
-                              scanTargetIndex,
-                            )}`,
+                            `/home/coin-sync?walletClientId=${scanTargetClientId}`,
                           )
                         }>
                         <div

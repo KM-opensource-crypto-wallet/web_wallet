@@ -11,7 +11,7 @@ import {
   selectIsCreatingWallets,
   selectIsSyncing,
   selectSelectedCount,
-  selectSyncingWalletIndex,
+  selectSyncingWalletClientId,
   selectSyncingWalletName,
 } from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSelectors';
 import {
@@ -23,7 +23,7 @@ import {
 import {addCoinsToWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {
   selectAllWallets,
-  getCurrentWalletIndex,
+  selectCurrentWalletClientId,
   isCoinScanAvailableForTimestamp,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {showToast} from 'src/utils/toast';
@@ -44,7 +44,7 @@ const CoinSync = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Wallet to scan (from the Scan Coins row); null/undefined = current wallet
-  const targetWalletIndexParam = searchParams.get('walletIndex');
+  const targetWalletClientId = searchParams.get('walletClientId');
 
   const status = useSelector(selectCoinSyncStatus);
   const progress = useSelector(selectCoinSyncProgress);
@@ -54,19 +54,18 @@ const CoinSync = () => {
   const isCreatingWallets = useSelector(selectIsCreatingWallets);
   const isSyncing = useSelector(selectIsSyncing);
   const selectedCount = useSelector(selectSelectedCount);
-  const syncingWalletIndex = useSelector(selectSyncingWalletIndex);
+  const syncingWalletClientId = useSelector(selectSyncingWalletClientId);
   const syncingWalletName = useSelector(selectSyncingWalletName);
   const allWallets = useSelector(selectAllWallets);
-  const currentWalletIndex = useSelector(getCurrentWalletIndex);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
 
-  const resolvedWalletIndex =
-    targetWalletIndexParam !== undefined && targetWalletIndexParam !== null
-      ? Number(targetWalletIndexParam)
-      : currentWalletIndex;
-  const targetWalletName =
-    targetWalletIndexParam !== undefined && targetWalletIndexParam !== null
-      ? allWallets?.[resolvedWalletIndex]?.walletName || null
-      : null;
+  const resolvedWalletClientId = targetWalletClientId || currentWalletClientId;
+  const resolvedWallet = allWallets?.find(
+    item => item?.clientId === resolvedWalletClientId,
+  );
+  const targetWalletName = targetWalletClientId
+    ? resolvedWallet?.walletName || null
+    : null;
 
   const isCompleted = status === 'completed';
   // Coins found but not yet added - leaving the screen would discard them
@@ -112,8 +111,8 @@ const CoinSync = () => {
   useEffect(() => {
     if (
       !isSyncing &&
-      syncingWalletIndex !== null &&
-      Number(syncingWalletIndex) !== Number(resolvedWalletIndex)
+      syncingWalletClientId !== null &&
+      syncingWalletClientId !== resolvedWalletClientId
     ) {
       dispatch(resetCoinSync());
     }
@@ -121,8 +120,7 @@ const CoinSync = () => {
   }, []);
 
   const handleStartSync = useCallback(() => {
-    const lastScanTimestamp =
-      allWallets?.[resolvedWalletIndex]?.lastCoinsScanTimestamp;
+    const lastScanTimestamp = resolvedWallet?.lastCoinsScanTimestamp;
     if (!isCoinScanAvailableForTimestamp(lastScanTimestamp)) {
       showToast({
         type: 'errorToast',
@@ -131,8 +129,8 @@ const CoinSync = () => {
       });
       return;
     }
-    dispatch(syncAllCoins({walletIndex: resolvedWalletIndex}));
-  }, [dispatch, allWallets, resolvedWalletIndex]);
+    dispatch(syncAllCoins({walletClientId: resolvedWalletClientId}));
+  }, [dispatch, resolvedWallet, resolvedWalletClientId]);
 
   // Cancelling arms the 24h cooldown, so always confirm first
   const handleCancel = useCallback(() => {
@@ -207,7 +205,7 @@ const CoinSync = () => {
       return;
     }
     dispatch(
-      addCoinsToWallet({coins: selectedCoins, walletIndex: syncingWalletIndex}),
+      addCoinsToWallet({coins: selectedCoins, clientId: syncingWalletClientId}),
     );
     showToast({
       type: 'successToast',
@@ -216,7 +214,7 @@ const CoinSync = () => {
     });
     dispatch(resetCoinSync());
     router.back();
-  }, [coinsWithBalance, dispatch, router, syncingWalletIndex]);
+  }, [coinsWithBalance, dispatch, router, syncingWalletClientId]);
 
   return (
     <div className={styles.safeArea}>

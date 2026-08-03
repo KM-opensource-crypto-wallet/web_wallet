@@ -40,10 +40,12 @@ const HideWallet = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const walletIndex = searchParams.get('walletIndex')?.toString();
+  const walletClientId = searchParams.get('walletClientId');
   const allWallets = useSelector(selectAllWallets);
   const allWalletName = useSelector(selectAllWalletName, shallowEqual);
-  const editingWallet = allWallets[walletIndex];
+  const editingWallet = allWallets.find(
+    item => item?.clientId === walletClientId,
+  );
   const initialHideSettings = editingWallet?.hideSettings || null;
   const otherWalletNames = useMemo(
     () => allWalletName.filter(name => name !== editingWallet?.walletName),
@@ -67,8 +69,8 @@ const HideWallet = () => {
   // background, which would leave zero visible wallets. Disable the toggle
   // outright instead of letting the user tap it and then blocking.
   const hasOtherPublicWallet = allWallets.some(
-    (item, index) =>
-      index !== Number(walletIndex) &&
+    item =>
+      item?.clientId !== walletClientId &&
       !!item?.walletName &&
       !item?.hideSettings,
   );
@@ -107,14 +109,14 @@ const HideWallet = () => {
         const inUse = await isSecretCodeInUseByOtherWallet(
           store.getState(),
           code,
-          walletIndex,
+          walletClientId,
         );
         setSecretCodeError(
           inUse ? 'This code is already used by another hidden wallet' : null,
         );
       }, 300);
     },
-    [walletIndex],
+    [walletClientId],
   );
 
   const handleSecretCodeChange = text => {
@@ -169,7 +171,7 @@ const HideWallet = () => {
         const hash = await hashSecretCode(secretCode, salt);
         dispatch(
           setWalletHideSettings({
-            walletIndex,
+            clientId: walletClientId,
             secretCodeSalt: salt,
             secretCodeHash: hash,
             secretCodeIterations: SECRET_CODE_ITERATIONS,
@@ -181,7 +183,7 @@ const HideWallet = () => {
         // re-lock option may have changed.
         dispatch(
           setWalletHideSettings({
-            walletIndex,
+            clientId: walletClientId,
             secretCodeSalt: initialHideSettings.secretCodeSalt,
             secretCodeHash: initialHideSettings.secretCodeHash,
             secretCodeIterations: initialHideSettings.secretCodeIterations,
@@ -190,7 +192,7 @@ const HideWallet = () => {
         );
       }
     } else if (initialHideSettings) {
-      dispatch(clearWalletHideSettings({walletIndex}));
+      dispatch(clearWalletHideSettings({clientId: walletClientId}));
     }
     if (isHideEnabled) {
       // The wallet is now hidden (setWalletHideSettings always re-locks it),
@@ -206,7 +208,7 @@ const HideWallet = () => {
     secretCode,
     relockOption,
     initialHideSettings,
-    walletIndex,
+    walletClientId,
     dispatch,
     router,
   ]);
@@ -233,7 +235,7 @@ const HideWallet = () => {
           codeInUse = await isSecretCodeInUseByOtherWallet(
             store.getState(),
             secretCode,
-            walletIndex,
+            walletClientId,
           );
         } finally {
           setIsSaving(false);
@@ -253,7 +255,7 @@ const HideWallet = () => {
     isHideEnabled,
     secretCode,
     otherWalletNames,
-    walletIndex,
+    walletClientId,
     performHideSave,
   ]);
 

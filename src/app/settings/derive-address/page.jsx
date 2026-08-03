@@ -3,7 +3,7 @@
 import React from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
-  selectVisibleWalletsWithIndex,
+  selectVisibleWallets,
   selectCurrentWallet,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
@@ -18,7 +18,7 @@ import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 
 const DeriveAddress = () => {
   const currentWalletName = useSelector(selectCurrentWallet)?.walletName;
-  const visibleWallets = useSelector(selectVisibleWalletsWithIndex);
+  const visibleWallets = useSelector(selectVisibleWallets);
   const dispatch = useDispatch();
 
   return (
@@ -29,9 +29,9 @@ const DeriveAddress = () => {
           Add or remove derive addresses for all EVM, SOL and TRX
         </p>
         <ul>
-          {visibleWallets.map(({wallet: item, index}) => {
+          {visibleWallets.map(item => {
             return (
-              <li className={s.walletBox} key={`dp_wallet_${item.walletName}`}>
+              <li className={s.walletBox} key={`dp_wallet_${item.clientId}`}>
                 <div className={s.walletList}>
                   <div className={s.avatarWrapper}>
                     <Image
@@ -58,10 +58,15 @@ const DeriveAddress = () => {
                     const value = e.target.checked;
                     if (value) {
                       dispatch(
-                        addEVMAndTronDeriveAddresses({index, wallet: item}),
+                        addEVMAndTronDeriveAddresses({
+                          clientId: item.clientId,
+                          wallet: item,
+                        }),
                       );
                     } else {
-                      dispatch(removeEVMDeriveAddresses({index}));
+                      dispatch(
+                        removeEVMDeriveAddresses({clientId: item.clientId}),
+                      );
                     }
                   }}
                   color='warning'
