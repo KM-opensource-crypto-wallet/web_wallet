@@ -81,7 +81,6 @@ const WALLET_SORT_OPTIONS = [
 
 const Wallets = () => {
   const currentWallet = useSelector(selectCurrentWallet);
-  const currentWalletName = currentWallet?.walletName;
   const allWallets = useSelector(selectAllWallets);
   const visibleWallets = useMemo(
     () => allWallets.filter(wallet => !isWalletHiddenAndLocked(wallet)),
@@ -207,12 +206,15 @@ const Wallets = () => {
     const from = active?.data?.current.sortable?.index;
     const to = over?.data?.current.sortable?.index;
 
-    commitDisplayedOrder(moveItem(displayedWallets, from, to));
+    const reordered = moveItem(displayedWallets, from, to);
+    if (reordered) {
+      commitDisplayedOrder(reordered);
+    }
   };
 
   const walletList = displayedWallets;
   const uniqueIds = useMemo(() => {
-    return walletList.map(item => item?.id);
+    return walletList.map(item => item?.clientId);
   }, [walletList]);
   return (
     <>
@@ -302,7 +304,7 @@ const Wallets = () => {
               <ul style={{listStyle: 'none', padding: 0}}>
                 {walletList.map((item, index) => {
                   const isSelectedWallet =
-                    item.walletName === currentWalletName;
+                    item.clientId === currentWallet?.clientId;
                   const visibleIndex = index;
                   const showMoveButtons =
                     displayedWallets.length > 1 && !searchQuery;
@@ -318,7 +320,7 @@ const Wallets = () => {
                   const displayCoins = walletCoins.slice(0, 4);
 
                   return (
-                    <SortableItem key={item.id} id={item.id}>
+                    <SortableItem key={item.clientId} id={item.clientId}>
                       {dragHandleProps => (
                         <div
                           className={`${s.walletCard} ${isSelectedWallet ? s.walletCardActive : ''}`}>
