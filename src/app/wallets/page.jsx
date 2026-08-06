@@ -11,7 +11,7 @@ import {
   findHiddenWalletByCode,
   rearrangeWallet,
   refreshCoins,
-  setCurrentWalletIndex,
+  setCurrentWalletClientId,
   setWalletRevealed,
   sortWallets,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
@@ -81,7 +81,6 @@ const WALLET_SORT_OPTIONS = [
 
 const Wallets = () => {
   const currentWallet = useSelector(selectCurrentWallet);
-  const currentWalletName = currentWallet?.walletName;
   const allWallets = useSelector(selectAllWallets);
   const visibleWallets = useMemo(
     () => allWallets.filter(wallet => !isWalletHiddenAndLocked(wallet)),
@@ -174,24 +173,14 @@ const Wallets = () => {
           ? wallet
           : newDisplayedOrder[visibleCursor++],
       );
-      const currentId = currentWallet?.clientId || currentWallet?.id;
-      const newCurrentWalletIndex = newFullOrder.findIndex(
-        wallet => (wallet?.clientId || wallet?.id) === currentId,
-      );
-      dispatch(
-        rearrangeWallet({
-          allWallets: newFullOrder,
-          currentWalletIndex:
-            newCurrentWalletIndex !== -1 ? newCurrentWalletIndex : undefined,
-        }),
-      );
+      dispatch(rearrangeWallet({allWallets: newFullOrder}));
       // A manual rearrange means the user is taking over the ordering; drop any
       // active sort so it isn't silently reapplied on the next visit.
       if (walletsSortOption !== 'default') {
         dispatch(setWalletsSortOption('default'));
       }
     },
-    [allWallets, currentWallet, walletsSortOption, dispatch],
+    [allWallets, walletsSortOption, dispatch],
   );
 
   const onPressMove = useCallback(
@@ -217,12 +206,15 @@ const Wallets = () => {
     const from = active?.data?.current.sortable?.index;
     const to = over?.data?.current.sortable?.index;
 
-    commitDisplayedOrder(moveItem(displayedWallets, from, to));
+    const reordered = moveItem(displayedWallets, from, to);
+    if (reordered) {
+      commitDisplayedOrder(reordered);
+    }
   };
 
   const walletList = displayedWallets;
   const uniqueIds = useMemo(() => {
-    return walletList.map(item => item?.id);
+    return walletList.map(item => item?.clientId);
   }, [walletList]);
   return (
     <>
@@ -312,10 +304,7 @@ const Wallets = () => {
               <ul style={{listStyle: 'none', padding: 0}}>
                 {walletList.map((item, index) => {
                   const isSelectedWallet =
-                    item.walletName === currentWalletName;
-                  const fullIndex = allWallets.findIndex(
-                    subItem => subItem.walletName === item.walletName,
-                  );
+                    item.clientId === currentWallet?.clientId;
                   const visibleIndex = index;
                   const showMoveButtons =
                     displayedWallets.length > 1 && !searchQuery;
@@ -331,7 +320,7 @@ const Wallets = () => {
                   const displayCoins = walletCoins.slice(0, 4);
 
                   return (
-                    <SortableItem key={item.id} id={item.id}>
+                    <SortableItem key={item.clientId} id={item.clientId}>
                       {dragHandleProps => (
                         <div
                           className={`${s.walletCard} ${isSelectedWallet ? s.walletCardActive : ''}`}>
@@ -342,17 +331,17 @@ const Wallets = () => {
                               onClick={() => {
                                 dispatch(refreshCoins());
                                 dispatch(resetPaymentUrl());
-                                if (fullIndex !== -1) {
-                                  if (isWalletHiddenAndLocked(item)) {
-                                    dispatch(
-                                      setWalletRevealed({
-                                        walletIndex: fullIndex,
-                                        isHidden: false,
-                                      }),
-                                    );
-                                  }
-                                  dispatch(setCurrentWalletIndex(fullIndex));
+                                if (isWalletHiddenAndLocked(item)) {
+                                  dispatch(
+                                    setWalletRevealed({
+                                      clientId: item?.clientId,
+                                      isHidden: false,
+                                    }),
+                                  );
                                 }
+                                dispatch(
+                                  setCurrentWalletClientId(item?.clientId),
+                                );
                                 router.push('/home');
                               }}>
                               <div
@@ -445,7 +434,7 @@ const Wallets = () => {
                                   e.stopPropagation();
                                   const walletName = item?.walletName;
                                   router.push(
-                                    `/wallets/create-wallet?walletName=${encodeURIComponent(walletName)}&walletIndex=${fullIndex}`,
+                                    `/wallets/create-wallet?walletName=${encodeURIComponent(walletName)}&walletClientId=${item?.clientId}`,
                                   );
                                 }}>
                                 <Image

@@ -3,7 +3,7 @@
 import React from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
-  selectVisibleWalletsWithIndex,
+  selectVisibleWallets,
   selectCurrentWallet,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {togglePrivacyMode} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
@@ -15,7 +15,7 @@ import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 
 const PrivacyMode = () => {
   const currentWalletName = useSelector(selectCurrentWallet)?.walletName;
-  const visibleWallets = useSelector(selectVisibleWalletsWithIndex);
+  const visibleWallets = useSelector(selectVisibleWallets);
   const dispatch = useDispatch();
 
   return (
@@ -28,9 +28,9 @@ const PrivacyMode = () => {
             '\t• This ensures enhanced privacy and security for your transactions.'}
         </p>
         <ul>
-          {visibleWallets.map(({wallet: item, index}) => {
+          {visibleWallets.map(item => {
             return (
-              <li className={s.walletBox} key={`pm_wallet_${item.walletName}`}>
+              <li className={s.walletBox} key={`pm_wallet_${item.clientId}`}>
                 <div className={s.walletList}>
                   <div className={s.avatarWrapper}>
                     <Image
@@ -54,7 +54,7 @@ const PrivacyMode = () => {
                 <Switch
                   checked={!!item.privacyMode}
                   onChange={() => {
-                    dispatch(togglePrivacyMode({walletIndex: index}));
+                    dispatch(togglePrivacyMode({clientId: item.clientId}));
                   }}
                   color='warning'
                 />

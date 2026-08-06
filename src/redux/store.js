@@ -51,7 +51,25 @@ const walletsPersistTransform = createTransform(
         : wallet,
     ),
   }),
-  outboundState => outboundState,
+  // One-time migration for users persisted currentWalletIndex
+  outboundState => {
+    if (outboundState?.currentWalletClientId) {
+      return outboundState;
+    }
+    const allWallets = outboundState?.allWallets?.map(wallet => ({
+      ...wallet,
+      clientId: wallet?.clientId,
+    }));
+    const {currentWalletIndex, ...restState} = outboundState || {};
+    return {
+      ...restState,
+      allWallets,
+      currentWalletClientId:
+        allWallets?.[currentWalletIndex]?.clientId ||
+        allWallets?.[0]?.clientId ||
+        null,
+    };
+  },
   {whitelist: [walletsSlice.name]},
 );
 
