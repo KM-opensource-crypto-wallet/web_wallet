@@ -243,6 +243,12 @@ export const downloadCsv = arrayData => {
   document.body.removeChild(link);
 };
 
+export const getCoinSlug = coin =>
+  `${coin?.chain_name}-${coin?.symbol}`.toLowerCase();
+
+export const findCoinBySlug = (coins, slug) =>
+  coins?.find(coin => getCoinSlug(coin) === slug) || null;
+
 export const allPublicRoutes = ['/auth/learn-reset/'];
 
 export const publicRoutes = [

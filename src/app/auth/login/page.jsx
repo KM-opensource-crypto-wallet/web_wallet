@@ -33,6 +33,7 @@ import {getAppSubTitle} from 'whitelabel/whiteLabelInfo';
 import {isWalletReset} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import ModalInfo from 'src/components/ModalInfo';
 import {Constants} from 'src/utils/common';
+import {setLastActiveTime} from 'utils/localStorageData';
 
 const LoginScreen = () => {
   const [hide, setHide] = useState(true);
@@ -63,6 +64,7 @@ const LoginScreen = () => {
     async values => {
       if (storePassword === values.password) {
         dispatch(logInSuccess(values.password));
+        setLastActiveTime();
         if (rateLimitCheck) {
           dispatch(resetAttempts());
         }

@@ -3,7 +3,10 @@ import styles from './ReceivePaymentUrl.module.css';
 import React, {useCallback, useRef} from 'react';
 import SelectInputExchange from 'components/SelectInputExchange';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {getUserCoinsOptions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  getUserCoinsOptions,
+  selectCurrentWalletClientId,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {Formik} from 'formik';
 import {
   setPaymentUrlAmount,
@@ -30,6 +33,7 @@ const ReceivePaymentUrl = () => {
   const paymentUrlCoin = useSelector(getPaymentUrlCoin);
   const paymentUrlAmount = useSelector(getPaymentUrlAmount);
   const paymentUrlCurrencyAmount = useSelector(getPaymentUrlCurrencyAmount);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const dispatch = useDispatch();
   const formikRef = useRef();
   const localCurrency = useSelector(getLocalCurrency);
@@ -59,7 +63,7 @@ const ReceivePaymentUrl = () => {
         innerRef={formikRef}
         onSubmit={() => {}}>
         {({handleBlur, values, errors, setFieldValue}) => {
-          const url = `${getDesktopWalletUrl()}/home/send/send-funds?address=${
+          const url = `${getDesktopWalletUrl()}/home/wallet/${currentWalletClientId}/send/send-funds?address=${
             values?.coin?.options?.walletAddress
           }&amount=${values?.amount}&currency=${
             values?.coin?.options?.chain_name

@@ -21,7 +21,10 @@ import {initWalletConnect} from 'dok-wallet-blockchain-networks/service/walletco
 import {
   clearWalletConnectStorageCache,
   createAIDIfNotExists,
+  getLastActiveTime,
+  setLastActiveTime,
 } from 'utils/localStorageData';
+import {getLockTime} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import Loading from '../Loading';
 import {
   getWalletConnectDetails,
@@ -83,6 +86,7 @@ function AppRouting({children, wlData}) {
 
   const disableMessage = useSelector(getDisableMessage);
   const googleAnalyticsKey = useSelector(getGoogleAnalyticsKey);
+  const lockTime = useSelector(getLockTime);
 
   useEffect(() => {
     if (googleAnalyticsKey) {
@@ -125,6 +129,37 @@ function AppRouting({children, wlData}) {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const ACTIVITY_THROTTLE_MS = 5000;
+    let lastWrite = 0;
+    const isReloadShortcut = e =>
+      e.type === 'keydown' &&
+      (e.key === 'F5' ||
+        ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 'r'));
+    const handleActivity = e => {
+      if (isReloadShortcut(e)) {
+        return;
+      }
+      const now = Date.now();
+      if (now - lastWrite > ACTIVITY_THROTTLE_MS) {
+        lastWrite = now;
+        setLastActiveTime();
+      }
+    };
+    const activityEvents = ['mousedown', 'keydown', 'touchstart', 'wheel'];
+    activityEvents.forEach(event =>
+      window.addEventListener(event, handleActivity, {passive: true}),
+    );
+    return () => {
+      activityEvents.forEach(event =>
+        window.removeEventListener(event, handleActivity),
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     const setUpWindowHeight = () => {
       const appHeight = () => {
         const doc = document.documentElement;
@@ -141,6 +176,40 @@ function AppRouting({children, wlData}) {
       }, 2000);
     }
   }, []);
+
+  const redirectToLoginOnTimeout = useCallback(() => {
+    const currentSearchString = searchParams?.toString();
+    const searchString = currentSearchString
+      ? `${currentSearchString}&redirectRoute=${pathname}`
+      : `redirectRoute=${pathname}`;
+    routing.replace(`/auth/login?${searchString}`);
+  }, [pathname, searchParams, routing]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !password || !(lockTime > 0)) {
+      return;
+    }
+    const isProtectedRoute =
+      !pathname?.includes('/auth') &&
+      pathname !== '/' &&
+      !publicRoutes.includes(pathname) &&
+      !allPublicRoutes.includes(pathname);
+    if (!isProtectedRoute) {
+      return;
+    }
+    const AUTO_LOCK_CHECK_INTERVAL_MS = 5000;
+    const intervalId = setInterval(() => {
+      const lastActiveTime = getLastActiveTime();
+      const elapsedMinutesSinceLastActive = lastActiveTime
+        ? (Date.now() - lastActiveTime) / (1000 * 60)
+        : Infinity;
+      if (elapsedMinutesSinceLastActive >= lockTime) {
+        clearInterval(intervalId);
+        redirectToLoginOnTimeout();
+      }
+    }, AUTO_LOCK_CHECK_INTERVAL_MS);
+    return () => clearInterval(intervalId);
+  }, [password, lockTime, pathname, redirectToLoginOnTimeout]);
 
   useEffect(() => {
     if (isReduxStoreLoad) {
@@ -201,9 +270,16 @@ function AppRouting({children, wlData}) {
       ) {
         setRoutingDone(true);
       } else {
+        const lastActiveTime = getLastActiveTime();
+        const elapsedMinutesSinceLastActive = lastActiveTime
+          ? (Date.now() - lastActiveTime) / (1000 * 60)
+          : Infinity;
+        const isWithinAutoLockWindow =
+          lockTime > 0 && elapsedMinutesSinceLastActive < lockTime;
         const shouldSkipLock =
           typeof window !== 'undefined' &&
-          sessionStorage.getItem('skip_lock_screen') === 'true';
+          (sessionStorage.getItem('skip_lock_screen') === 'true' ||
+            isWithinAutoLockWindow);
 
         if (!password) {
           if (pathname !== '/auth/registration') {

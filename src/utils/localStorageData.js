@@ -25,3 +25,14 @@ export const createAIDIfNotExists = aid => {
 
 export const getAIDFromLocalStorage = () =>
   typeof window !== 'undefined' && window.localStorage.getItem('aid');
+
+export const getLastActiveTime = () =>
+  typeof window !== 'undefined'
+    ? Number(window.localStorage.getItem('last_active_time')) || 0
+    : 0;
+
+export const setLastActiveTime = () => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem('last_active_time', String(Date.now()));
+  }
+};
