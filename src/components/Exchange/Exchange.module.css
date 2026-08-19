@@ -2,258 +2,126 @@
   flex: 1;
   background-color: var(--backgroundColor);
   padding: 20px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.contentContainerStyle {
-  flex-grow: 1;
-  padding: 20px;
-  background-color: var(--backgroundColor);
-  padding-top: 30px;
-}
-
-.inputFrom {
-  /* display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between; */
-
-  padding: 10px 20px;
-  border: solid 1px var(--whiteOutline);
-  border-width: 1px;
-  border-radius: 6px;
-  background-color: var(--secondaryBackgroundColor);
-}
-
-.coinTitle {
-  /* width: 30%; */
-}
-
-.lable {
+.headerRow {
   display: flex;
   flex-direction: row;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 3px;
-}
-
-.inputsWrapper {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
-.inputWrapper {
-  display: flex;
-  flex: 1;
-  justify-content: flex-end;
-  min-width: 70px;
-}
-
-.inputWrapper > label {
-  display: flex;
-  align-items: center;
-}
-
-.title {
-  font-size: 15px;
-  font-weight: bold;
+.pageTitle {
   color: var(--font);
-  width: 70%;
+  font-size: 20px;
+  font-weight: 700;
 }
 
-.amountAvailable {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-.amountAvailableText {
-  margin-right: 5px;
-  color: var(--gray);
-}
-.amountAvailableText > span {
-  margin-right: 5px;
-}
-
-.scurvedIcon {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-end;
-  margin-top: 22px;
-}
-
-.select {
-  border-width: 0;
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-.selectInput {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-}
-
-.iconBox {
-  width: 39px;
-  height: 39px;
-  color: var(--backgroundColor);
-  background-color: var(--font);
-  border-radius: 20px;
-  margin: 10px 5px;
+.historyButton {
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.coinTitle {
-  width: 100%;
-  font-size: 22px;
-  color: var(--font);
 }
 
 .errorText {
+  color: var(--error);
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.addressView {
+  margin-top: 14px;
+}
+
+.addressTitle {
+  color: var(--font);
   font-size: 14px;
-  color: red;
-  text-align: right;
-  margin-top: 6px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.addCoinText {
+  color: var(--gray);
+  font-size: 13px;
+  margin-top: 14px;
+}
+
+.addCoinLink {
+  /* Native button reset — keep the inline text-link look. */
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--background);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.detailsCard {
+  background-color: var(--lightBackground);
+  border-radius: 12px;
+  padding: 8px 14px;
+  margin-top: 14px;
+}
+
+.boxFooter {
+  margin-top: 20px;
+}
+
+.footerText {
+  color: var(--gray);
+  font-size: 12px;
+  text-align: center;
 }
 
 .warningText {
-  font-size: 14px;
-  color: #fdab15;
+  color: var(--warning);
+  font-size: 13px;
   text-align: center;
-  margin-bottom: 8px;
+  margin-top: 10px;
 }
 
-.picker {
-  width: 1px;
+.buttonHintError {
+  color: var(--error);
+  font-size: 13px;
+  text-align: center;
+  margin-top: 10px;
 }
 
-.arrow {
-  transform: rotate(90deg);
-  padding-bottom: 20px;
-}
-
-.inputWrapper svg {
-  width: 24px;
-  fill: var(--gray);
-}
-
-.inputsWrapper .loaderWrapper {
-  margin-right: 10px;
-}
-
-.curvedIcon {
-  margin: 20px 0 0px;
-  direction: rtl;
-}
-
-.textContainer {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 25px;
-}
-.rowView {
-  margin-top: 16px;
-  flex-direction: row;
-  display: flex;
-  width: 100%;
-  justify-content: center;
-  align-items: center;
-}
-.text {
-  font-size: 14px;
+.buttonHintInfo {
   color: var(--gray);
-}
-.highlightText{
-    font-size: 14px;
-    color: var(--background);
-    margin-left: 6px;
-    cursor: pointer;
-    font-weight: 700;
-}
-
-.textValue {
-  font-size: 14px;
-  color: var(--font);
+  font-size: 13px;
+  text-align: center;
+  margin-top: 10px;
 }
 
 .button {
-  display: flex;
-  margin: 0 auto;
-  background-color: var(--background);
+  margin-top: 16px;
+  height: 50px;
   width: 100%;
-  height: 60px;
-  border-radius: 10px;
-  font-size: 20px;
+  border-radius: 25px;
+  border: none;
+  display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+}
+
+.button:disabled {
+  cursor: default;
 }
 
 .buttonTitle {
   color: var(--title);
   font-size: 16px;
-}
-
-.footer {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  margin-top: 25px;
-}
-
-.footerText {
-  font-size: 15px;
-  color: var(--gray);
-  margin-right: 5px;
-}
-
-.addressViewWrapper {
-  margin-top: 30px;
-}
-.sliderView {
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.addressViev {
-  border: solid 1px var(--whiteOutline);
-  border-width: 1px;
-  border-radius: 6px;
-}
-
-.input {
-  margin: 0 20px;
-  background-color: var(--backgroundColor);
-}
-
-.boxFooter {
-  flex: 1;
-  padding-bottom: 20px;
-  justify-content: flex-end;
-}
-
-.textStyle {
-  color: var(--primary);
-  font-size: 16px;
-  margin-bottom: 24px;
-  font-weight: bold;
-  margin-top: 20px;
-  text-align: center;
-}
-
-@media (min-width: 769px) {
-  .button {
-    width: 50%;
-  }
+  font-weight: 700;
 }

@@ -8,7 +8,7 @@ import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/se
 import BigNumber from 'bignumber.js';
 import {
   calculateEstimateFee,
-  setCurrentTransferData,
+  updateCurrentTransferData,
 } from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import {currencySymbol} from 'data/currency';
 import {
@@ -224,7 +224,12 @@ const SendFunds = () => {
       const resolvedToAddress = validAddress || values?.send?.trim();
       checkPoisoningThenProceed(resolvedToAddress, () => {
         dispatch(
-          setCurrentTransferData({
+          // Full reset+merge: drops whatever a previous flow (exchange quote,
+          // staking, NFT, batch) left behind in transferData. The UTXO fields
+          // are the one thing set before this dispatch (SelectUTXOs screen)
+          // that the fee poll, the max clamp and the send itself still read
+          // from the store, so they must be carried through the reset.
+          updateCurrentTransferData({
             toAddress: resolvedToAddress,
             currentCoin,
             amount: validateBigNumberStr(values?.amount),
@@ -234,6 +239,8 @@ const SendFunds = () => {
             isSendFunds: true,
             validName: validAddress ? values?.send : null,
             memo: values?.memo?.trim(),
+            selectedUTXOs: transferData?.selectedUTXOs,
+            selectedUTXOsValue: transferData?.selectedUTXOsValue,
           }),
         );
         dispatch(

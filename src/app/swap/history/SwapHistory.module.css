@@ -1,0 +1,89 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--app-height) - 70px);
+  background-color: var(--backgroundColor);
+}
+
+.scrollContainer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.list {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 20px 24px;
+}
+
+.headerAction {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.refreshButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--font);
+  cursor: pointer;
+}
+
+.refreshButton:disabled {
+  cursor: default;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background-color: var(--lightBackground);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.errorText {
+  color: var(--gray);
+  font-size: 12px;
+  text-align: center;
+  padding: 6px 20px;
+}
+
+.emptyContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.emptyText {
+  color: var(--gray);
+  font-size: 14px;
+  text-align: center;
+  max-width: 360px;
+}
+
+.emptyButton {
+  border: none;
+  border-radius: 8px;
+  background-color: var(--background);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 24px;
+  cursor: pointer;
+}

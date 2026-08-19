@@ -28,7 +28,13 @@ const Dropdown = ({
   className,
   searchable = false,
   filterOptions,
+  bordered = false,
 }) => {
+  // Mobile's DokDropdown draws a 1px bordered trigger; SelectInput-style
+  // consumers keep the borderless look.
+  const outline = bordered
+    ? {border: '1px solid var(--whiteOutline)'}
+    : {border: 0};
   const selectedOption =
     listData.find(item => item.id === defaultValue) || null;
 
@@ -142,22 +148,15 @@ const Dropdown = ({
             width: '100%',
             minHeight: '40px',
             boxShadow: 'none',
-            '.MuiOutlinedInput-notchedOutline': {border: 0},
+            borderRadius: '5px',
+            '.MuiOutlinedInput-notchedOutline': outline,
+            '&:hover .MuiOutlinedInput-notchedOutline': outline,
             '&.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
-              {
-                border: 0,
-              },
+              outline,
             '& .MuiSelect-icon': {
               fill: 'gray',
               width: 24,
               transform: 'rotate(90deg)',
-            },
-          }}
-          MenuProps={{
-            PaperProps: {
-              sx: {
-                minWidth: '400px !important',
-              },
             },
           }}
           {...(renderValue ? {renderValue} : {})}

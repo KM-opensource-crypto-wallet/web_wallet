@@ -1,0 +1,51 @@
+.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 32px;
+}
+
+.label {
+  color: var(--gray);
+  font-size: 13px;
+}
+
+.valueRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.valueButton {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.value {
+  color: var(--font);
+  font-size: 13px;
+}
+
+.input {
+  color: var(--font);
+  font-size: 13px;
+  padding: 0;
+  margin: 0;
+  min-width: 40px;
+  max-width: 80px;
+  text-align: right;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  border-bottom: 1px solid var(--whiteOutline);
+}
+
+.input::placeholder {
+  color: var(--gray);
+}

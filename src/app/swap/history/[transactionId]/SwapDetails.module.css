@@ -1,0 +1,199 @@
+.container {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 20px 32px;
+}
+
+/* ── Hero swap card ──────────────────────────────────────────── */
+.swapCard {
+  background-color: var(--lightBackground);
+  border: 1px solid var(--whiteOutline);
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.swapCardHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.logoCircle {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  overflow: hidden;
+  background-color: var(--backgroundColor);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.logoCircle .logoFallbackIcon {
+  width: 26px;
+  height: 26px;
+  font-size: 26px;
+  color: var(--background);
+}
+
+.amountBlock {
+  padding: 0 4px;
+}
+
+.amountLabel {
+  color: var(--gray);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.amountRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.amountTextBox {
+  margin-left: 10px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.amountValue {
+  color: var(--font);
+  font-size: 22px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chainNameText {
+  color: var(--gray);
+  font-size: 12px;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arrowDivider {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 14px 0;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background-color: var(--whiteOutline);
+}
+
+.arrowChip {
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  /* theme.background + '14' on mobile (~8% alpha) */
+  background-color: color-mix(in srgb, var(--background) 8%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.arrowChip .arrowChipIcon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  color: var(--background);
+}
+
+.metaFooter {
+  color: var(--gray);
+  font-size: 12px;
+  text-align: center;
+  margin-top: 18px;
+}
+
+.pendingHintRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  gap: 5px;
+}
+
+.pendingHintRow .pendingHintIcon {
+  width: 13px;
+  height: 13px;
+  font-size: 13px;
+  color: var(--gray);
+}
+
+.pendingHint {
+  color: var(--gray);
+  font-size: 12px;
+}
+
+/* ── Sections ────────────────────────────────────────────────── */
+.sectionTitle {
+  color: var(--gray);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  margin-left: 4px;
+}
+
+.sectionCard {
+  background-color: var(--lightBackground);
+  border: 1px solid var(--whiteOutline);
+  border-radius: 16px;
+  padding: 2px 16px;
+}
+
+/* ── Empty / error state ─────────────────────────────────────── */
+.emptyContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.emptyText {
+  color: var(--gray);
+  font-size: 14px;
+  text-align: center;
+  max-width: 360px;
+}
+
+.emptyButton {
+  border: none;
+  border-radius: 8px;
+  background-color: var(--background);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 24px;
+  cursor: pointer;
+}

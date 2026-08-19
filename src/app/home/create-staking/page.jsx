@@ -13,7 +13,7 @@ import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/se
 import {useDispatch} from 'react-redux';
 import {
   calculateEstimateFee,
-  setCurrentTransferData,
+  updateCurrentTransferData,
 } from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import {currencySymbol} from 'data/currency';
 import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -129,7 +129,7 @@ const CreateStaking = () => {
   const navigateToTransfer = useCallback(
     (values, allowanceType) => {
       dispatch(
-        setCurrentTransferData({
+        updateCurrentTransferData({
           validatorPubKey: isValidatorSupport
             ? values?.validatorPubKey?.value
             : null,
