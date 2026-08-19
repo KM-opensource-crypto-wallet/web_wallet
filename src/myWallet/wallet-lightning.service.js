@@ -340,6 +340,19 @@ export const getLightningTransaction = async (phrase, txHash) => {
       'N/A';
     const isSend = item.paymentType === 'send' || item.paymentType === 1;
 
+    // Same endpoint semantics as the list mapping above: the wallet's own
+    // spark address sits on its side of the payment, the unknown
+    // counterparty is null.
+    let address = null;
+    try {
+      const addressResp = await sdk.receivePayment({
+        paymentMethod: {type: 'sparkAddress'},
+      });
+      address = addressResp?.paymentRequest || null;
+    } catch (e) {
+      console.error('error fetching lightning spark address', e);
+    }
+
     return {
       data: {
         amount: item.amount,
@@ -350,8 +363,8 @@ export const getLightningTransaction = async (phrase, txHash) => {
             ? 'Pending'
             : 'SUCCESS',
         date: Number(item?.timestamp) * 1000,
-        from: isSend ? null : undefined,
-        to: isSend ? undefined : null,
+        from: isSend ? address : null,
+        to: isSend ? null : address,
         paymentType: item.paymentType,
         totalCourse: '0$',
       },

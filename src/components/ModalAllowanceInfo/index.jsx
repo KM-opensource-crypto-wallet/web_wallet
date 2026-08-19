@@ -197,9 +197,12 @@ const ModalAllowanceInfo = ({
     );
   }, [displayRequiredAmount, availableAmount]);
 
+  // No truthiness guard on nativeBalance: a zero balance must count as
+  // insufficient whenever a nonzero fee is required (the selector already
+  // defaults a missing coin to 0, and isBalanceNotAvailable compares
+  // numerically via BigNumber).
   const isInsufficientFeeBalance = useMemo(
     () =>
-      !!nativeBalance &&
       !!allowanceData?.transactionFee &&
       isBalanceNotAvailable(nativeBalance, allowanceData.transactionFee),
     [nativeBalance, allowanceData?.transactionFee],

@@ -789,11 +789,12 @@ const Exchange = () => {
       )}
       <p className={s.addCoinText}>
         {'Looking for more coins?'}
-        <span
+        <button
+          type='button'
           className={s.addCoinLink}
           onClick={() => setModalAddCoinsVisible(true)}>
           {' Add coins to this wallet'}
-        </span>
+        </button>
       </p>
       {!!selectedExchangeChain &&
         (backendSlippage !== undefined && backendSlippage !== null

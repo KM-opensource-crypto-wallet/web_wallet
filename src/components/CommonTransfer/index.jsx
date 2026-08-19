@@ -122,15 +122,19 @@ const CommonTransfer = () => {
   const router = useRouter();
 
   // Fresh data for the long-lived 10s poll closure (avoids stale
-  // transferData/exchange captures inside the interval callback).
+  // transferData/exchange captures inside the interval callback). Assigned
+  // post-commit so a discarded concurrent render can't leave the ref
+  // holding values that never committed.
   const transferContextRef = useRef({});
-  transferContextRef.current = {
-    transferData,
-    selectedFromAsset,
-    selectedFromWallet,
-    amountFrom,
-    currentWallet,
-  };
+  useLayoutEffect(() => {
+    transferContextRef.current = {
+      transferData,
+      selectedFromAsset,
+      selectedFromWallet,
+      amountFrom,
+      currentWallet,
+    };
+  });
 
   const quoteExpiresAt = useMemo(() => {
     // Quote TTLs only exist for exchange flows. Gating on the screen flag

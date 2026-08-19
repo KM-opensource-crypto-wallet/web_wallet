@@ -108,12 +108,23 @@ const ModalPermitInfo = ({
     }
   }, [visible]);
 
-  // Sync nonce input when permitAllowanceData updates
+  // Sync nonce input when permitAllowanceData updates, and clear it when the
+  // modal closes so a reopen never submits a stale (possibly user-edited)
+  // nonce from the previous session.
   useEffect(() => {
-    if (permitAllowanceData?.nonce != null) {
-      setCustomNonce(String(permitAllowanceData.nonce));
+    if (!visible) {
+      setCustomNonce('');
+      customNonceRef.current = '';
+      return;
     }
-  }, [permitAllowanceData?.nonce]);
+
+    const nonce =
+      permitAllowanceData?.nonce != null
+        ? String(permitAllowanceData.nonce)
+        : '';
+    setCustomNonce(nonce);
+    customNonceRef.current = nonce;
+  }, [visible, permitAllowanceData?.nonce]);
 
   // Sync custom gas price when feesOptions arrive/refresh, tracking whichever
   // non-custom tier is currently selected (not always the first option).

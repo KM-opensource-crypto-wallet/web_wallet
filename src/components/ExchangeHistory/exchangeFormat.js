@@ -1,4 +1,5 @@
 // Formatting helpers shared by the exchange history list and details screens.
+import BigNumber from 'bignumber.js';
 import {PrivateKeyList} from 'dok-wallet-blockchain-networks/helper';
 
 export const EXCHANGE_STATUS_CONFIG = {
@@ -31,13 +32,17 @@ export const truncateExchangeAmount = amount => {
   if (abs < 0.000001) {
     return num.toExponential(2);
   }
+  // Truncate (never round) so a displayed amount is never more than what
+  // actually moved; BigNumber.toString also trims trailing zeros.
+  const truncate = decimals =>
+    new BigNumber(num).decimalPlaces(decimals, BigNumber.ROUND_DOWN).toString();
   if (abs < 1) {
-    return parseFloat(num.toFixed(6)).toString();
+    return truncate(6);
   }
   if (abs < 1000) {
-    return parseFloat(num.toFixed(4)).toString();
+    return truncate(4);
   }
-  return parseFloat(num.toFixed(2)).toString();
+  return truncate(2);
 };
 
 export const exchangePairLabel = transaction =>

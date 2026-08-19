@@ -13,24 +13,44 @@ const RateRefreshCountdown = ({fetchedAt, paused = false, onRefresh}) => {
   const [secondsLeft, setSecondsLeft] = useState(null);
   const onRefreshRef = useRef(onRefresh);
   onRefreshRef.current = onRefresh;
+  // fetchedAt value the expiry callback already fired for — keeps a stale
+  // quote (e.g. after a failed refresh) from re-firing onRefresh every tick.
+  const expiredForRef = useRef(null);
 
   useEffect(() => {
     if (!fetchedAt || paused) {
       return undefined;
     }
+    // (Re)starting the countdown — new quote or resumed from pause — arms
+    // one expiry callback for this run.
+    expiredForRef.current = null;
+    let interval = null;
     const tick = () => {
       const elapsed = Date.now() - fetchedAt;
       const left = Math.ceil((QUOTE_REFRESH_INTERVAL_MS - elapsed) / 1000);
       if (left <= 0) {
         setSecondsLeft(0);
-        onRefreshRef.current?.();
-      } else {
-        setSecondsLeft(left);
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+        if (expiredForRef.current !== fetchedAt) {
+          expiredForRef.current = fetchedAt;
+          onRefreshRef.current?.();
+        }
+        return;
       }
+      setSecondsLeft(left);
     };
     tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
+    if (expiredForRef.current !== fetchedAt) {
+      interval = setInterval(tick, 1000);
+    }
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [fetchedAt, paused]);
 
   if (!fetchedAt) {
