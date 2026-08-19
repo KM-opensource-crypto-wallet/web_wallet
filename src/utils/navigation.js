@@ -15,6 +15,13 @@ export const MainNavigation = {
   },
   navigate: ({name, params} = {}) => {
     if (!navigatorRef) return;
+    if (name === 'ExchangeTransactionDetails') {
+      const transactionId = params?.transactionId;
+      if (transactionId) {
+        navigatorRef(`/swap/history/${encodeURIComponent(transactionId)}`);
+      }
+      return;
+    }
     if (name === 'TransactionDetails') {
       const link = params?.transaction?.link;
       if (link) {

@@ -3,30 +3,34 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Modal} from '@mui/material';
 import {useDispatch, useSelector} from 'react-redux';
 import BigNumber from 'bignumber.js';
+import GppGoodIcon from '@mui/icons-material/GppGood';
+import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import EditIcon from '@mui/icons-material/Edit';
+import AllInclusiveIcon from '@mui/icons-material/AllInclusive';
+import LocalGasStationIcon from '@mui/icons-material/LocalGasStation';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
-  isEVMChain,
   isBalanceNotAvailable,
+  isEVMChain,
   GAS_CURRENCY,
+  delay,
   validateNumberInInput,
 } from 'dok-wallet-blockchain-networks/helper';
 import {
-  fetchStakingApproveEstimationFee,
-  updateApproveFees,
-} from 'dok-wallet-blockchain-networks/redux/staking/stakingSlice';
-import {
-  getStakingAllowance,
-  getStakingAllowanceLoading,
-} from 'dok-wallet-blockchain-networks/redux/staking/stakingSelectors';
-import {
-  fetchExchangeApproveEstimationFee,
+  fetchExchangePermitApproveEstimationFee,
   updateExchangeApproveFees,
 } from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
 import {
-  getExchangeAllowance,
-  getExchangeAllowanceLoading,
+  getExchangePermitAllowance,
+  getExchangePermitAllowanceLoading,
 } from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
 import {selectUserCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import s from './ModalAllowanceInfo.module.css';
+import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
+import s from './ModalPermitInfo.module.css';
+
+const FEES_TYPE_TO_INDEX = {recommended: 0, normal: 1};
 
 const selectNativeBalance = (chainName, chainSymbol) => state => {
   const allCoins = selectUserCoins(state);
@@ -39,8 +43,10 @@ const selectNativeBalance = (chainName, chainSymbol) => state => {
   return nativeCoin?.totalAmount || 0;
 };
 
-const ModalAllowanceInfo = ({
-  source = 'staking',
+// Router-level (Permit2) allowance confirmation, shown after the ERC20-level
+// ModalAllowanceInfo approval when the swap quote uses a permit2 spender
+// (swapData.permit_abi is present).
+const ModalPermitInfo = ({
   visible,
   onClose,
   tokenSymbol,
@@ -48,27 +54,20 @@ const ModalAllowanceInfo = ({
   availableAmount,
   approveLoading,
   onContinue,
-  stakingProviderName,
-  amount,
   chainName,
   chainSymbol,
 }) => {
   const dispatch = useDispatch();
-  const isExchange = source === 'exchange';
-  const contractLabel = isExchange ? 'exchange provider' : 'staking contract';
 
-  const allowanceData = useSelector(
-    isExchange ? getExchangeAllowance : getStakingAllowance,
-  );
-  const isLoading = useSelector(
-    isExchange ? getExchangeAllowanceLoading : getStakingAllowanceLoading,
-  );
+  const permitAllowanceData = useSelector(getExchangePermitAllowance);
+  const isLoading = useSelector(getExchangePermitAllowanceLoading);
   const nativeBalance = useSelector(
     selectNativeBalance(chainName, chainSymbol),
   );
 
   const [selectedType, setSelectedType] = useState('manual');
   const [selectedFeesType, setSelectedFeesType] = useState('recommended');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [customNonce, setCustomNonce] = useState('');
   const [customFees, setCustomFees] = useState('');
   const [isFetchingFeesAgain, setIsFetchingFeesAgain] = useState(false);
@@ -77,30 +76,26 @@ const ModalAllowanceInfo = ({
 
   const convertedChainName = isEVMChain(chainName) ? 'ethereum' : chainName;
 
-  // Refs mirror volatile values so the interval reads them at call time
+  // Refs mirror volatile values so the fetch can read them at call time
   // without being recreated on every change (keeps the interval stable).
   const isFetchingFeesRef = useRef(false);
   const isPauseCalculateFees = useRef(false);
   const selectedFeesTypeRef = useRef('recommended');
   const selectedTypeRef = useRef('manual');
   const customNonceRef = useRef('');
-  const customFeesRef = useRef('');
-  const allowanceDataRef = useRef(null);
+  const permitAllowanceDataRef = useRef(null);
 
   useEffect(() => {
     customNonceRef.current = customNonce;
   }, [customNonce]);
   useEffect(() => {
-    customFeesRef.current = customFees;
-  }, [customFees]);
-  useEffect(() => {
     selectedTypeRef.current = selectedType;
   }, [selectedType]);
   useEffect(() => {
-    allowanceDataRef.current = allowanceData;
-  }, [allowanceData]);
+    permitAllowanceDataRef.current = permitAllowanceData;
+  }, [permitAllowanceData]);
 
-  // Reset local UI each time the modal opens.
+  // Reset local UI each time the modal opens (replaces mobile's present()).
   useEffect(() => {
     if (visible) {
       setSelectedType('manual');
@@ -113,23 +108,53 @@ const ModalAllowanceInfo = ({
     }
   }, [visible]);
 
-  // Sync nonce input when allowanceData updates.
+  // Sync nonce input when permitAllowanceData updates
   useEffect(() => {
-    if (allowanceData?.nonce != null) {
-      setCustomNonce(String(allowanceData.nonce));
+    if (permitAllowanceData?.nonce != null) {
+      setCustomNonce(String(permitAllowanceData.nonce));
     }
-  }, [allowanceData?.nonce]);
+  }, [permitAllowanceData?.nonce]);
 
-  // Default custom gas price when feesOptions arrive, unless user picked custom.
+  // Sync custom gas price when feesOptions arrive/refresh, tracking whichever
+  // non-custom tier is currently selected (not always the first option).
   useEffect(() => {
-    if (
-      allowanceData?.feesOptions?.[0]?.gasPrice &&
-      selectedFeesTypeRef.current !== 'custom'
-    ) {
-      setCustomFees(allowanceData?.feesOptions?.[0]?.gasPrice);
+    const currentType = selectedFeesTypeRef.current;
+    if (currentType === 'custom') {
+      return;
     }
-  }, [allowanceData?.feesOptions]);
+    const tierIndex = FEES_TYPE_TO_INDEX[currentType] ?? 0;
+    const gasPrice = permitAllowanceData?.feesOptions?.[tierIndex]?.gasPrice;
+    if (gasPrice) {
+      setCustomFees(gasPrice);
+    }
+  }, [permitAllowanceData?.feesOptions]);
 
+  const onChangeCustomFees = useCallback(
+    event => {
+      const tempValues = validateNumberInInput(
+        event.target.value,
+        permitAllowanceData?.decimal,
+      );
+      setCustomFees(tempValues);
+      // Without this the displayed Network Fee would ignore a custom gas price
+      // entirely, even though the value is still used to sign the approval.
+      dispatch(
+        updateExchangeApproveFees({
+          target: 'permit',
+          gasPrice: tempValues || '0',
+          convertedChainName,
+        }),
+      );
+    },
+    [permitAllowanceData?.decimal, convertedChainName, dispatch],
+  );
+
+  const onChangeCustomNonce = useCallback(event => {
+    setCustomNonce(event.target.value.replace(/[^0-9]/g, ''));
+  }, []);
+
+  // Stable across renders: volatile values (nonce, fees type) are read from
+  // refs at call time, so completing a fetch never recreates this callback.
   const fetchEstimationFee = useCallback(() => {
     if (isFetchingFeesRef.current) {
       return;
@@ -137,43 +162,31 @@ const ModalAllowanceInfo = ({
     isFetchingFeesRef.current = true;
     setIsFetchingFeesAgain(true);
     setHasError(false);
-    const latestAllowanceData = allowanceDataRef.current;
-    const action = isExchange
-      ? fetchExchangeApproveEstimationFee({
-          feesType: selectedFeesTypeRef.current,
-          nonce: customNonceRef.current || latestAllowanceData?.nonce,
-        })
-      : fetchStakingApproveEstimationFee({
-          isFetchNonce: false,
-          stakingProviderName,
-          amount,
-          nonce: customNonceRef.current || latestAllowanceData?.nonce,
-          feesType: selectedFeesTypeRef.current,
-          estimateGas: latestAllowanceData?.estimateGas,
-          customGasPrice:
-            selectedFeesTypeRef.current === 'custom'
-              ? customFeesRef.current
-              : undefined,
-          allowanceType: selectedTypeRef.current,
-        });
-    dispatch(action)
+    const latestPermitAllowanceData = permitAllowanceDataRef.current;
+    dispatch(
+      fetchExchangePermitApproveEstimationFee({
+        feesType: selectedFeesTypeRef.current,
+        nonce: customNonceRef.current || latestPermitAllowanceData?.nonce,
+      }),
+    )
       .unwrap()
       .then(() => {
         setIsFetchingFeesAgain(false);
         isFetchingFeesRef.current = false;
       })
       .catch(error => {
-        console.error('error in allowance fee estimation', error);
+        console.error('error in permit fee estimation', error);
         setIsFetchingFeesAgain(false);
         isFetchingFeesRef.current = false;
         setHasError(true);
       });
-  }, [dispatch, stakingProviderName, amount, isExchange]);
+  }, [dispatch]);
 
-  // Fire once when the modal opens, then refresh every 10s. Gated by refs so it
-  // never piles up and never runs while custom fees are selected.
+  // Single source of fee refresh: fire once when the modal opens, then every
+  // 10s. The tick is gated by refs (in-flight + pause), so it never piles up
+  // and never runs while custom fees are selected or a transaction is pending.
   useEffect(() => {
-    if (!visible || (!isExchange && (!stakingProviderName || !amount))) {
+    if (!visible) {
       return;
     }
     fetchEstimationFee();
@@ -183,10 +196,9 @@ const ModalAllowanceInfo = ({
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [visible, stakingProviderName, amount, isExchange, fetchEstimationFee]);
+  }, [visible, fetchEstimationFee]);
 
-  const displayRequiredAmount =
-    allowanceData?.stakeAmountFormatted || requiredAmount || '0';
+  const displayRequiredAmount = requiredAmount || '0';
 
   const insufficientBalance = useMemo(() => {
     if (!displayRequiredAmount || !availableAmount) {
@@ -199,19 +211,16 @@ const ModalAllowanceInfo = ({
 
   const isInsufficientFeeBalance = useMemo(
     () =>
-      !!nativeBalance &&
-      !!allowanceData?.transactionFee &&
-      isBalanceNotAvailable(nativeBalance, allowanceData.transactionFee),
-    [nativeBalance, allowanceData?.transactionFee],
+      nativeBalance != null &&
+      permitAllowanceData?.transactionFee != null &&
+      isBalanceNotAvailable(nativeBalance, permitAllowanceData.transactionFee),
+    [nativeBalance, permitAllowanceData?.transactionFee],
   );
 
-  // Each flow keeps its fee on its own slice, so the recompute has to be routed
-  // to the matching one. Dispatching the staking action unconditionally would
-  // write into state.staking.allowanceData even in exchange mode, which would
-  // leave the exchange fee on screen unchanged and corrupt staking state.
-  const updateFeesAction = isExchange
-    ? updateExchangeApproveFees
-    : updateApproveFees;
+  const handleContinue = useCallback(() => {
+    setShowConfirmModal(true);
+    isPauseCalculateFees.current = true;
+  }, []);
 
   const onSelectFeesType = useCallback(
     (type, gasPrice) => {
@@ -225,30 +234,18 @@ const ModalAllowanceInfo = ({
         selectedFeesTypeRef.current = type;
         if (gasPrice) {
           setCustomFees(gasPrice);
-          dispatch(updateFeesAction({gasPrice, convertedChainName}));
+          dispatch(
+            updateExchangeApproveFees({
+              target: 'permit',
+              gasPrice,
+              convertedChainName,
+            }),
+          );
         }
       }
     },
-    [dispatch, convertedChainName, updateFeesAction],
+    [convertedChainName, dispatch],
   );
-
-  const onChangeCustomFees = useCallback(
-    event => {
-      const tempValues = validateNumberInInput(
-        event.target.value,
-        allowanceData?.decimal,
-      );
-      setCustomFees(tempValues);
-      dispatch(
-        updateFeesAction({gasPrice: tempValues || '0', convertedChainName}),
-      );
-    },
-    [allowanceData?.decimal, convertedChainName, dispatch, updateFeesAction],
-  );
-
-  const onChangeCustomNonce = useCallback(event => {
-    setCustomNonce(event.target.value.replace(/[^0-9]/g, ''));
-  }, []);
 
   const isDisabled =
     isLoading ||
@@ -257,44 +254,48 @@ const ModalAllowanceInfo = ({
     insufficientBalance ||
     isInsufficientFeeBalance;
 
-  const handleApprove = useCallback(() => {
+  const submitTransferData = useCallback(async () => {
     if (!onContinue) {
       return;
     }
-    isPauseCalculateFees.current = true;
     const gasFeeWei =
-      selectedFeesType === 'recommended' && allowanceData?.gasFee
-        ? allowanceData?.gasFee
+      selectedFeesType === 'recommended' && permitAllowanceData?.gasFee
+        ? permitAllowanceData?.gasFee
         : new BigNumber(customFees || '0').multipliedBy(1e9).toFixed(0);
     const finalNonce = parseInt(customNonce, 10);
     onContinue({
-      isFetchNonce: false,
       type: selectedType,
       gasFee: gasFeeWei,
-      maxPriorityFeePerGas: allowanceData?.maxPriorityFeePerGas,
-      stakingProviderName,
-      amount,
-      nonce: !isNaN(finalNonce) ? finalNonce : allowanceData?.nonce,
+      maxPriorityFeePerGas: permitAllowanceData?.maxPriorityFeePerGas,
+      nonce: !isNaN(finalNonce) ? finalNonce : permitAllowanceData?.nonce,
       feesType: selectedFeesTypeRef.current,
-      estimateGas: allowanceData?.estimateGas,
-      customGasPrice:
-        selectedFeesTypeRef.current === 'custom' ? customFees : undefined,
+      estimateGas: permitAllowanceData?.estimateGas,
     });
   }, [
-    onContinue,
-    selectedFeesType,
-    allowanceData?.gasFee,
-    allowanceData?.maxPriorityFeePerGas,
-    allowanceData?.nonce,
-    allowanceData?.estimateGas,
     customFees,
     customNonce,
+    onContinue,
+    permitAllowanceData?.estimateGas,
+    permitAllowanceData?.gasFee,
+    permitAllowanceData?.maxPriorityFeePerGas,
+    permitAllowanceData?.nonce,
+    selectedFeesType,
     selectedType,
-    stakingProviderName,
-    amount,
   ]);
 
-  const feesOptions = allowanceData?.feesOptions;
+  const onSuccess = useCallback(async () => {
+    setShowConfirmModal(false);
+    await delay(300);
+    await submitTransferData();
+  }, [submitTransferData]);
+
+  const hideConfirmModal = useCallback(() => {
+    setShowConfirmModal(false);
+    // Resume refresh only if not on a custom fee (custom must stay local).
+    isPauseCalculateFees.current = selectedFeesTypeRef.current === 'custom';
+  }, []);
+
+  const feesOptions = permitAllowanceData?.feesOptions;
   const gasCurrency = GAS_CURRENCY[convertedChainName] || 'Gwei';
 
   const style = {
@@ -310,10 +311,19 @@ const ModalAllowanceInfo = ({
   };
 
   return (
-    <Modal open={!!visible} onClose={onClose} sx={{zIndex: 99999}}>
+    // ModalConfirmTransaction renders at MUI's default modal z-index (1300),
+    // so while it is open this modal must sit just below it — the permit
+    // content stays visible (dimmed) underneath, like mobile's stacked sheet.
+    <Modal
+      open={!!visible}
+      onClose={onClose}
+      sx={{zIndex: showConfirmModal ? 1299 : 99999}}>
       <Box sx={style}>
         <div className={s.container}>
-          <div className={s.title}>Token Allowance</div>
+          <div className={s.header}>
+            <GppGoodIcon sx={{fontSize: 24, color: 'var(--background)'}} />
+            <div className={s.title}>Router Permission</div>
+          </div>
 
           {approveLoading ? (
             <div className={s.centerView}>
@@ -323,10 +333,11 @@ const ModalAllowanceInfo = ({
           ) : isLoading && !isFetchingFeesAgain ? (
             <div className={s.centerView}>
               <div className={s.spinner} />
-              <p className={s.body}>Fetching allowance...</p>
+              <p className={s.body}>Fetching permit allowance...</p>
             </div>
           ) : hasError ? (
             <div className={s.centerView}>
+              <ErrorOutlineIcon sx={{fontSize: 48, color: 'var(--error)'}} />
               <p className={s.title}>Something went wrong</p>
               <p className={s.body}>
                 We couldn&apos;t estimate the network fee right now. Please
@@ -338,36 +349,41 @@ const ModalAllowanceInfo = ({
             </div>
           ) : (
             <>
-              {allowanceData ? (
-                <div
-                  className={`${s.statusText} ${
-                    allowanceData.isApproved
-                      ? s.statusApproved
-                      : s.statusPending
-                  }`}>
-                  {allowanceData.isApproved
-                    ? `Current allowance: ${parseFloat(
-                        allowanceData.allowanceFormatted || '0',
-                      ).toFixed(6)}`
-                    : `Allowance required: ${parseFloat(
-                        allowanceData.requiredFormatted || '0',
-                      ).toFixed(6)} (current: ${parseFloat(
-                        allowanceData.allowanceFormatted || '0',
-                      ).toFixed(6)})`}
-                </div>
-              ) : isFetchingFeesAgain ? (
-                <div className={`${s.statusText} ${s.statusPending}`}>
-                  Current allowance: Refreshing...
+              {permitAllowanceData ? (
+                <div className={s.statusRow}>
+                  {permitAllowanceData.isApproved ? (
+                    <CheckCircleIcon
+                      sx={{fontSize: 18, color: 'var(--success)'}}
+                    />
+                  ) : (
+                    <ErrorOutlineIcon
+                      sx={{fontSize: 18, color: 'var(--warning)'}}
+                    />
+                  )}
+                  <span
+                    className={`${s.statusText} ${
+                      permitAllowanceData.isApproved
+                        ? s.statusApproved
+                        : s.statusPending
+                    }`}>
+                    {permitAllowanceData.isApproved
+                      ? `Router allowance: ${parseFloat(
+                          permitAllowanceData.permit2AmountFormatted || '0',
+                        ).toFixed(6)}`
+                      : `Router allowance required: ${parseFloat(
+                          permitAllowanceData.requiredFormatted || '0',
+                        ).toFixed(6)} (current: ${parseFloat(
+                          permitAllowanceData.permit2AmountFormatted || '0',
+                        ).toFixed(6)})`}
+                  </span>
                 </div>
               ) : null}
 
               <div className={s.sectionLabel}>Select Approval Type</div>
               <p className={s.whatIsApprove}>
-                {`Approval is a one-time on-chain permission that lets the ${contractLabel} use your ${
+                {`This lets the swap router use your ${
                   tokenSymbol || 'tokens'
-                }. Your tokens stay in your wallet until you ${
-                  isExchange ? 'swap' : 'stake'
-                }.`}
+                } through Permit2. Your tokens stay in your wallet until you swap.`}
               </p>
 
               <div className={s.cardsRow}>
@@ -376,6 +392,22 @@ const ModalAllowanceInfo = ({
                     selectedType === 'manual' ? s.cardSelected : ''
                   }`}
                   onClick={() => setSelectedType('manual')}>
+                  <div className={s.cardHeader}>
+                    <EditIcon
+                      sx={{
+                        fontSize: 20,
+                        color:
+                          selectedType === 'manual'
+                            ? 'var(--background)'
+                            : 'var(--gray)',
+                      }}
+                    />
+                    {selectedType === 'manual' ? (
+                      <CheckCircleIcon
+                        sx={{fontSize: 16, color: 'var(--background)'}}
+                      />
+                    ) : null}
+                  </div>
                   <div className={s.cardTitle}>Manual</div>
                   <div className={s.cardDesc}>Approve only this amount</div>
                   <div className={s.cardAmount}>
@@ -389,6 +421,22 @@ const ModalAllowanceInfo = ({
                     selectedType === 'unlimited' ? s.cardSelected : ''
                   }`}
                   onClick={() => setSelectedType('unlimited')}>
+                  <div className={s.cardHeader}>
+                    <AllInclusiveIcon
+                      sx={{
+                        fontSize: 20,
+                        color:
+                          selectedType === 'unlimited'
+                            ? 'var(--background)'
+                            : 'var(--gray)',
+                      }}
+                    />
+                    {selectedType === 'unlimited' ? (
+                      <CheckCircleIcon
+                        sx={{fontSize: 16, color: 'var(--background)'}}
+                      />
+                    ) : null}
+                  </div>
                   <div className={s.cardTitle}>Unlimited</div>
                   <div className={s.cardDesc}>Approve once, skip future</div>
                   <div className={s.cardAmount}>∞</div>
@@ -403,28 +451,48 @@ const ModalAllowanceInfo = ({
                   ).toFixed(6)} ${tokenSymbol || ''}.`}
                 </p>
               ) : (
-                <p
-                  className={
-                    selectedType === 'unlimited' ? s.noteWarning : s.noteSafe
-                  }>
-                  {selectedType === 'unlimited'
-                    ? `The ${contractLabel} can move any amount of your ${
-                        tokenSymbol || 'tokens'
-                      } until you revoke it. Saves fees and time on future ${
-                        isExchange ? 'swaps' : 'stakes'
-                      } — choose only for protocols you trust.`
-                    : `Safest option. The contract can only ever move this exact amount — you'll need to approve again for future ${
-                        isExchange ? 'swaps' : 'stakes'
-                      }.`}
-                </p>
+                <>
+                  <div className={s.selectionNote}>
+                    {selectedType === 'unlimited' ? (
+                      <WarningAmberIcon
+                        sx={{fontSize: 16, color: 'var(--warning)'}}
+                      />
+                    ) : (
+                      <GppGoodOutlinedIcon
+                        sx={{fontSize: 16, color: 'var(--gray)'}}
+                      />
+                    )}
+                    <p
+                      className={
+                        selectedType === 'unlimited'
+                          ? s.noteWarning
+                          : s.noteSafe
+                      }>
+                      {selectedType === 'unlimited'
+                        ? `The swap router can move any amount of your ${
+                            tokenSymbol || 'tokens'
+                          } via Permit2 until you revoke it. Saves fees and time on future swaps — choose only for protocols you trust.`
+                        : `Safest option. The router can only ever move this exact amount via Permit2 — you'll need to approve again for future swaps.`}
+                    </p>
+                  </div>
+                  <p className={s.hint}>
+                    Permit2 approval transaction will be submitted before
+                    swapping.
+                  </p>
+                </>
               )}
 
               <div className={s.feeRow}>
-                <span className={s.feeLabel}>Network Fee</span>
+                <span className={s.feeLabelRow}>
+                  <LocalGasStationIcon
+                    sx={{fontSize: 16, color: 'var(--background)'}}
+                  />
+                  <span className={s.feeLabel}>Network Fee</span>
+                </span>
                 <span className={s.feeValue}>
                   {isFetchingFeesAgain
                     ? 'Refreshing...'
-                    : `${allowanceData?.transactionFee || '0'} ${
+                    : `${permitAllowanceData?.transactionFee || '0'} ${
                         chainSymbol || ''
                       }`}
                 </span>
@@ -510,25 +578,35 @@ const ModalAllowanceInfo = ({
 
           {!approveLoading && !hasError && (
             <div className={s.actions}>
-              <button
-                className={s.primaryBtn}
-                disabled={isDisabled}
-                style={{
-                  backgroundColor: isDisabled ? 'var(--gray)' : undefined,
-                  cursor: isDisabled ? 'not-allowed' : 'pointer',
-                }}
-                onClick={handleApprove}>
-                Approve
-              </button>
+              {onContinue ? (
+                <button
+                  className={s.primaryBtn}
+                  disabled={isDisabled}
+                  style={{
+                    backgroundColor: isDisabled
+                      ? 'var(--disabledButton)'
+                      : undefined,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  }}
+                  onClick={handleContinue}>
+                  Approve
+                </button>
+              ) : null}
               <button className={s.secondaryBtn} onClick={onClose}>
                 Cancel
               </button>
             </div>
           )}
+
+          <ModalConfirmTransaction
+            visible={showConfirmModal}
+            hideModal={hideConfirmModal}
+            onSuccess={onSuccess}
+          />
         </div>
       </Box>
     </Modal>
   );
 };
 
-export default ModalAllowanceInfo;
+export default ModalPermitInfo;

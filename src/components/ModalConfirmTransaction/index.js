@@ -1,6 +1,12 @@
 'use client';
 
-import React, {useState, useEffect, useContext, useCallback} from 'react';
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+  useRef,
+} from 'react';
 // import {Dimensions, button, View} from 'react-native';
 // import {Modal, Text, input} from 'react-native-paper';
 // import myStyles from './ModalConfirmTransactionStyles';
@@ -29,6 +35,23 @@ const ModalConfirmTransaction = ({visible, hideModal, onSuccess}) => {
   // const keyboardHeight = useKeyboardHeight();
   const storePassword = useSelector(getUserPassword);
   const [wrong, setWrong] = useState(false);
+  // Guards against double-submit (Enter key + click racing, or rapid clicks)
+  // firing onSuccess twice and broadcasting the transaction twice.
+  const isSubmittingRef = useRef(false);
+
+  useEffect(() => {
+    if (!visible) {
+      isSubmittingRef.current = false;
+    }
+  }, [visible]);
+
+  const triggerSuccess = useCallback(() => {
+    if (isSubmittingRef.current) {
+      return;
+    }
+    isSubmittingRef.current = true;
+    onSuccess && onSuccess();
+  }, [onSuccess]);
   // const fingerprint = useSelector(isFingerprint);
 
   // const handleFingerprintAuth = useCallback(async () => {
@@ -65,7 +88,7 @@ const ModalConfirmTransaction = ({visible, hideModal, onSuccess}) => {
   const onSubmit = values => {
     const {currentPassword} = values;
     if (currentPassword === storePassword) {
-      onSuccess && onSuccess();
+      triggerSuccess();
     } else {
       setWrong(true);
     }

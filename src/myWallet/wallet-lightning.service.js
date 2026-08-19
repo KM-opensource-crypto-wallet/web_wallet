@@ -325,6 +325,45 @@ export const getLightningTransactions = async phrase => {
   }
 };
 
+export const getLightningTransaction = async (phrase, txHash) => {
+  try {
+    const sdk = await connectToSdk(phrase);
+    if (!sdk || !txHash) return null;
+    const response = await sdk.getPayment({paymentId: txHash});
+    const item = response?.payment;
+    if (!item) return null;
+
+    const hash =
+      item?.details?.inner?.txId ||
+      item?.details?.inner?.paymentHash ||
+      item?.id ||
+      'N/A';
+    const isSend = item.paymentType === 'send' || item.paymentType === 1;
+
+    return {
+      data: {
+        amount: item.amount,
+        link: hash,
+        url: null,
+        status:
+          `${item?.status ?? ''}`.toLowerCase() !== 'completed'
+            ? 'Pending'
+            : 'SUCCESS',
+        date: Number(item?.timestamp) * 1000,
+        from: isSend ? null : undefined,
+        to: isSend ? undefined : null,
+        paymentType: item.paymentType,
+        totalCourse: '0$',
+      },
+    };
+  } catch (error) {
+    console.error(
+      `error getting transaction by hash for bitcoin lightning ${error}`,
+    );
+    return null;
+  }
+};
+
 export const claimOnchainDeposit = async phrase => {
   try {
     const sdk = await connectToSdk(phrase);

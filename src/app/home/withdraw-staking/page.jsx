@@ -5,7 +5,7 @@ import {useSelector, useDispatch} from 'react-redux';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {
   calculateEstimateFee,
-  setCurrentTransferData,
+  updateCurrentTransferData,
 } from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import {currencySymbol} from 'data/currency';
 import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -182,7 +182,7 @@ const WithdrawStaking = () => {
         ? selectedProvider?.value || selectedStake?.validatorInfo?.name
         : selectedStake?.providerName || selectedStake?.validatorInfo?.name;
       dispatch(
-        setCurrentTransferData({
+        updateCurrentTransferData({
           validatorPubKey: selectedStake?.validator_address,
           stakingAddress: selectedStake?.staking_address,
           validatorName: selectedStake?.validatorInfo?.name,

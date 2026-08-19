@@ -1,0 +1,52 @@
+.container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-height: 48px;
+  padding: 6px 10px;
+  border-radius: 24px;
+  border: 1px solid var(--whiteOutline);
+  background-color: var(--backgroundColor);
+  cursor: pointer;
+}
+
+.iconBox {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 8px;
+  background-color: var(--lightBackground);
+  flex-shrink: 0;
+}
+
+.icon {
+  height: 100%;
+  width: 100%;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+.labelBox {
+  margin-right: 6px;
+  flex-shrink: 1;
+  text-align: left;
+  overflow: hidden;
+}
+
+.symbol {
+  color: var(--font);
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chain {
+  color: var(--gray);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
