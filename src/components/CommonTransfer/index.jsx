@@ -43,7 +43,17 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {useRouter} from 'next/navigation';
 import {getRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
-import {getExchange} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
+import {
+  selectExchangeAmountFrom,
+  selectExchangeAmountTo,
+  selectExchangeFromAsset,
+  selectExchangeFromWallet,
+  selectExchangeLoading,
+  selectExchangeToAddress,
+  selectExchangeToAsset,
+  selectExchangeToName,
+  selectSelectedExchangeChain,
+} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
 import PageTitle from 'components/PageTitle';
 import {
   calculateEstimateFee,
@@ -81,25 +91,22 @@ const CommonTransfer = () => {
   const isPauseCalculateFees = useRef(false);
   const titleRef = useRef('Transfer');
 
-  const [isFetchedSuccessful, setIsFetchedSuccessful] = useState('null');
+  const [estimateStatus, setEstimateStatus] = useState('pending'); // 'pending' | 'success' | 'failed'
   const dispatch = useDispatch();
   const currentWallet = useSelector(selectCurrentWallet);
   const routeData = useSelector(getRouteStateData);
   const routeStateData = routeData?.transfer;
   const fromScreen = routeStateData?.fromScreen;
   const isCreateVote = routeStateData?.isCreateVote;
-  const {
-    selectedFromAsset,
-    selectedFromWallet,
-    selectedToAsset,
-    amountFrom,
-    amountTo,
-    isLoading: isExchangeLoading,
-    success: isExchangeSuccess,
-    exchangeToName,
-    exchangeToAddress,
-    selectedExchangeChain,
-  } = useSelector(getExchange);
+  const selectedFromAsset = useSelector(selectExchangeFromAsset);
+  const selectedFromWallet = useSelector(selectExchangeFromWallet);
+  const selectedToAsset = useSelector(selectExchangeToAsset);
+  const amountFrom = useSelector(selectExchangeAmountFrom);
+  const amountTo = useSelector(selectExchangeAmountTo);
+  const isExchangeLoading = useSelector(selectExchangeLoading);
+  const exchangeToName = useSelector(selectExchangeToName);
+  const exchangeToAddress = useSelector(selectExchangeToAddress);
+  const selectedExchangeChain = useSelector(selectSelectedExchangeChain);
 
   const isExchangeScreen = fromScreen === 'Exchange';
   const isSendFundScreen = fromScreen === 'SendFunds';
@@ -113,6 +120,62 @@ const CommonTransfer = () => {
   const isCreateStaking = routeStateData?.isCreateStaking;
   const isStakingRewards = routeStateData?.isStakingRewards;
   const router = useRouter();
+
+  // Fresh data for the long-lived 10s poll closure (avoids stale
+  // transferData/exchange captures inside the interval callback). Assigned
+  // post-commit so a discarded concurrent render can't leave the ref
+  // holding values that never committed.
+  const transferContextRef = useRef({});
+  useLayoutEffect(() => {
+    transferContextRef.current = {
+      transferData,
+      selectedFromAsset,
+      selectedFromWallet,
+      amountFrom,
+      currentWallet,
+    };
+  });
+
+  const quoteExpiresAt = useMemo(() => {
+    // Quote TTLs only exist for exchange flows. Gating on the screen flag
+    // keeps a leftover quote window from a flow that skipped the entry
+    // reset from ever blocking a plain send with "Quote expired".
+    if (!isExchangeScreen) {
+      return null;
+    }
+    const created = transferData?.quoteCreatedAt;
+    const ttl = transferData?.quoteTtlSeconds;
+    return created && ttl ? created + ttl * 1000 : null;
+  }, [
+    isExchangeScreen,
+    transferData?.quoteCreatedAt,
+    transferData?.quoteTtlSeconds,
+  ]);
+  const [isQuoteExpired, setIsQuoteExpired] = useState(false);
+  const isQuoteExpiredRef = useRef(false);
+
+  useEffect(() => {
+    if (!quoteExpiresAt) {
+      isQuoteExpiredRef.current = false;
+      setIsQuoteExpired(false);
+      return;
+    }
+    const remaining = quoteExpiresAt - Date.now();
+    if (remaining <= 0) {
+      isQuoteExpiredRef.current = true;
+      setIsQuoteExpired(true);
+      return;
+    }
+    isQuoteExpiredRef.current = false;
+    setIsQuoteExpired(false);
+    const timer = setTimeout(() => {
+      isQuoteExpiredRef.current = true;
+      setIsQuoteExpired(true);
+    }, remaining);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [quoteExpiresAt]);
 
   const chainName = isExchangeScreen
     ? selectedFromAsset?.chain_name
@@ -147,6 +210,14 @@ const CommonTransfer = () => {
     }
   }, [transferData?.nonce]);
 
+  // customNonce is a string and is '' until the estimated nonce arrives, which
+  // would defeat the `?? transferData.nonce` fallbacks in the send thunks.
+  // Normalise once here so every branch receives a number or undefined.
+  const finalNonce = useMemo(() => {
+    const parsed = Number(customNonce);
+    return customNonce === '' || isNaN(parsed) ? undefined : parsed;
+  }, [customNonce]);
+
   useLayoutEffect(() => {
     titleRef.current = isSendFundScreen
       ? 'Transfer'
@@ -173,125 +244,169 @@ const CommonTransfer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWithdrawStaking, isDeactivateStaking, isStakingRewards, isSendNFT]);
 
+  // Latch the render/poll state machine on the first successful estimate.
+  // The screen can mount while the first estimate is still in flight, so this
+  // fires whenever feeSuccess arrives rather than at mount.
   useEffect(() => {
+    if (feeSuccess) {
+      setEstimateStatus('success');
+    }
+  }, [feeSuccess]);
+
+  // Exchange mode used to start polling from quote creation and self-heal a
+  // failed FIRST estimate every 10s. Keep that: when the initial estimate
+  // settles unsuccessfully (loading finished, no success), enter 'failed' so
+  // the poll below starts and the screen can recover on a later tick.
+  useEffect(() => {
+    if (isExchangeScreen && !isLoading && !isExchangeLoading && !feeSuccess) {
+      setEstimateStatus(prev => (prev === 'pending' ? 'failed' : prev));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isExchangeScreen, isLoading, isExchangeLoading, feeSuccess]);
+
+  useEffect(() => {
+    // VoteStaking was never part of the polling mode set — keep it out so
+    // its one-shot estimate isn't re-run every 10s.
+    // 'failed' keeps polling too: a transient RPC error on one re-estimate
+    // must not kill the interval permanently — the next successful tick
+    // dispatches setCurrentTransferSuccess(true), the feeSuccess latch flips
+    // estimateStatus back to 'success', and the form self-heals.
     if (
-      (isExchangeSuccess && isExchangeScreen) ||
-      ((isSendFundScreen ||
-        isSellCryptoScreen ||
-        isSendNFT ||
-        isStakingScreen ||
-        isBatchTransaction) &&
-        feeSuccess)
+      (estimateStatus === 'success' || estimateStatus === 'failed') &&
+      !isVoteStakingScreen
     ) {
-      setIsFetchedSuccessful('true');
-      let timeout = setInterval(() => {
-        if (!isFetchingRef.current && !isPauseCalculateFees.current) {
+      let interval = setInterval(() => {
+        if (
+          !isFetchingRef.current &&
+          !isPauseCalculateFees.current &&
+          !isQuoteExpiredRef.current
+        ) {
           setIsFetchingFeesAgain(true);
 
           isFetchingRef.current = true;
+          const {
+            transferData: freshTransferData,
+            selectedFromAsset: freshFromAsset,
+            selectedFromWallet: freshFromWallet,
+            amountFrom: freshAmountFrom,
+            currentWallet: freshCurrentWallet,
+          } = transferContextRef.current;
           dispatch(
             calculateEstimateFee({
               isFetchNonce: false,
-              existingNonce: transferData?.nonce,
+              existingNonce: freshTransferData?.nonce,
               fromAddress:
                 isSendFundScreen ||
                 isSellCryptoScreen ||
                 isStakingScreen ||
                 isBatchTransaction
-                  ? transferData?.currentCoin?.address
+                  ? freshTransferData?.currentCoin?.address
                   : isExchangeScreen
-                    ? selectedFromAsset?.address
-                    : transferData?.selectedNFT?.coin?.address,
-              toAddress: transferData.toAddress,
-              memo: transferData.memo,
+                    ? freshFromAsset?.address
+                    : freshTransferData?.selectedNFT?.coin?.address,
+              toAddress: freshTransferData?.toAddress,
+              memo: freshTransferData?.memo,
               amount:
                 isSendFundScreen || isSellCryptoScreen || isStakingScreen
-                  ? transferData?.amount
+                  ? freshTransferData?.amount
                   : isExchangeScreen
-                    ? amountFrom
+                    ? freshAmountFrom
                     : null,
               contractAddress: isSendNFT
-                ? transferData?.selectedNFT?.token_address ||
-                  transferData?.selectedNFT?.associatedTokenAddress
-                : transferData?.currentCoin?.contractAddress,
-              balance: transferData?.currentCoin?.totalAmount,
+                ? freshTransferData?.selectedNFT?.token_address ||
+                  freshTransferData?.selectedNFT?.associatedTokenAddress
+                : freshTransferData?.currentCoin?.contractAddress,
+              balance: freshTransferData?.currentCoin?.totalAmount,
               selectedWallet: isExchangeScreen
-                ? selectedFromWallet
+                ? freshFromWallet
                 : isSendNFT
-                  ? currentWallet
+                  ? freshCurrentWallet
                   : null,
               selectedCoin: isExchangeScreen
-                ? selectedFromAsset
+                ? freshFromAsset
                 : isSendNFT
-                  ? transferData?.currentCoin
+                  ? freshTransferData?.currentCoin
                   : null,
               contract_type: isSendNFT
-                ? transferData?.selectedNFT?.contract_type
+                ? freshTransferData?.selectedNFT?.contract_type
                 : null,
               isNFT: isSendNFT,
-              mint: isSendNFT ? transferData?.selectedNFT?.mint : null,
-              tokenId: isSendNFT ? transferData?.selectedNFT?.token_id : null,
+              isExchange: isExchangeScreen,
+              mint: isSendNFT ? freshTransferData?.selectedNFT?.mint : null,
+              tokenId: isSendNFT
+                ? freshTransferData?.selectedNFT?.token_id
+                : null,
               tokenAmount: isSendNFT
-                ? transferData?.selectedNFT?.amount || 1
+                ? freshTransferData?.selectedNFT?.amount || 1
                 : null,
               validatorPubKey: isStakingScreen
-                ? transferData?.validatorPubKey
+                ? freshTransferData?.validatorPubKey
                 : null,
               stakingAddress: isStakingScreen
-                ? transferData?.stakingAddress
+                ? freshTransferData?.stakingAddress
                 : null,
               stakingBalance: isStakingScreen
-                ? transferData?.stakingBalance
+                ? freshTransferData?.stakingBalance
                 : null,
-              resourceType: isStakingScreen ? transferData?.resourceType : null,
+              resourceType: isStakingScreen
+                ? freshTransferData?.resourceType
+                : null,
               selectedVotes: isVoteStakingScreen
-                ? transferData?.selectedVotes
+                ? freshTransferData?.selectedVotes
                 : null,
               isBatchTransaction,
               currentCoin: isBatchTransaction
-                ? transferData?.currentCoin
+                ? freshTransferData?.currentCoin
                 : null,
-              calls: isBatchTransaction ? transferData?.calls : null,
+              calls: isBatchTransaction ? freshTransferData?.calls : null,
               isCreateStaking: isCreateStaking,
               isWithdrawStaking: !!isWithdrawStaking,
               isStakingRewards: !!isStakingRewards,
               isDeactivateStaking: !!isDeactivateStaking,
               stakingProviderName:
                 isCreateStaking || isDeactivateStaking || isStakingRewards
-                  ? transferData?.stakingProviderName
+                  ? freshTransferData?.stakingProviderName
                   : null,
               tokenDecimals: isStakingScreen
-                ? transferData?.currentCoin?.decimal
+                ? freshTransferData?.currentCoin?.decimal
                 : null,
               isMaxCheckbox: isDeactivateStaking
-                ? transferData?.isMaxCheckbox
+                ? freshTransferData?.isMaxCheckbox
                 : null,
               feesType: selectedFeesTypeRef.current,
-              estimateGas: transferData?.estimateGas,
+              estimateGas: freshTransferData?.estimateGas,
             }),
           )
             .unwrap()
             .then(resp => {
               setIsFetchingFeesAgain(false);
               isFetchingRef.current = false;
-              setIsFetchedSuccessful(resp ? 'true' : 'false');
+              setEstimateStatus(resp ? 'success' : 'failed');
+            })
+            .catch(() => {
+              // calculateEstimateFee rethrows expired-quote errors; the slice
+              // already set customError, so flipping estimateStatus swaps the
+              // form for that message. Reset the in-flight flags or polling
+              // would stop permanently.
+              setIsFetchingFeesAgain(false);
+              isFetchingRef.current = false;
+              setEstimateStatus('failed');
             });
         }
       }, 10000);
       return () => {
-        clearTimeout(timeout);
+        clearInterval(interval);
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feeSuccess, isExchangeSuccess]);
+  }, [estimateStatus]);
 
   const submitTransferData = useCallback(async () => {
-    console.log('custom nonce', customNonce);
     await dispatch(
       sendFunds({
         to: transferData.toAddress,
         memo: transferData.memo,
-        nonce: Number(customNonce),
+        nonce: finalNonce,
         amount:
           isSendFundScreen || isSellCryptoScreen || isStakingScreen
             ? transferData?.amount
@@ -348,7 +463,7 @@ const CommonTransfer = () => {
       }),
     );
   }, [
-    customNonce,
+    finalNonce,
     dispatch,
     transferData.toAddress,
     transferData.memo,
@@ -438,10 +553,28 @@ const CommonTransfer = () => {
   const onSuccess = useCallback(async () => {
     setShowConfirmModal(false);
     await delay(300);
-    await submitTransferData();
-  }, [submitTransferData]);
+    try {
+      // Recompute expiry rather than trusting the timer: the tab may have
+      // been suspended past the deadline while the modal was open.
+      if (quoteExpiresAt && Date.now() >= quoteExpiresAt) {
+        isQuoteExpiredRef.current = true;
+        setIsQuoteExpired(true);
+        return;
+      }
+      await submitTransferData();
+    } finally {
+      // Resume fee polling after a failed/expired send; a successful send
+      // navigates away anyway.
+      isPauseCalculateFees.current = false;
+    }
+  }, [submitTransferData, quoteExpiresAt]);
 
   const handleSubmitForm = () => {
+    if (quoteExpiresAt && Date.now() >= quoteExpiresAt) {
+      isQuoteExpiredRef.current = true;
+      setIsQuoteExpired(true);
+      return;
+    }
     setShowConfirmModal(true);
     isPauseCalculateFees.current = true;
   };
@@ -725,7 +858,7 @@ const CommonTransfer = () => {
           {!!selectedExchangeChain?.providerName && (
             <div className={s.itemView}>
               <p className={s.title}>{'Exchange Provider'}</p>
-              <p className={s.boxBalance}>
+              <p className={s.boxBalance} style={{textTransform: 'capitalize'}}>
                 {selectedExchangeChain?.providerName}
               </p>
             </div>
@@ -897,7 +1030,7 @@ const CommonTransfer = () => {
       {/* {!!isSubmitting && <Spinner />} */}
       {(isLoading || isExchangeLoading) && !isFetchingFeesAgain ? (
         <Loading />
-      ) : feeSuccess || isExchangeSuccess || isFetchedSuccessful === 'true' ? (
+      ) : feeSuccess || estimateStatus === 'success' ? (
         <div className={s.container}>
           {isSendFundScreen
             ? renderSendFundUI()
@@ -910,163 +1043,124 @@ const CommonTransfer = () => {
                   : isBatchTransaction
                     ? renderBatchTransactionUI()
                     : renderVotingUI()}
-          {isFeesOptionChain(convertedChainName) &&
-            !!feesOptions?.length &&
-            !isExchangeScreen && (
-              <div className={s.advancedOptionsContainer}>
-                <button
-                  className={s.advancedOptionsHeader}
-                  onClick={toggleAdvancedOptions}>
-                  <div className={s.advancedOptionsTitleContainer}>
-                    <span className={s.advancedOptionsSettingsIcon}>
-                      {icons.settingsSlider}
-                    </span>
-                    <span className={s.advancedOptionsTitle}>
-                      Advanced Options
-                    </span>
-                  </div>
-                  <span
-                    className={`${s.advancedOptionsChevron} ${isAdvancedOptionsOpen ? s.advancedOptionsChevronOpen : ''}`}>
-                    {icons.chevronDown}
+          {isFeesOptionChain(convertedChainName) && !!feesOptions?.length && (
+            <div className={s.advancedOptionsContainer}>
+              <button
+                className={s.advancedOptionsHeader}
+                onClick={toggleAdvancedOptions}>
+                <div className={s.advancedOptionsTitleContainer}>
+                  <span className={s.advancedOptionsSettingsIcon}>
+                    {icons.settingsSlider}
                   </span>
-                </button>
-                {isAdvancedOptionsOpen && (
-                  <div className={s.advancedOptionsContent}>
-                    <div className={s.feesMainContainer}>
-                      <div className={s.feesOptionContainer}>
-                        <button
-                          onClick={() => {
-                            isPauseCalculateFees.current = false;
-                            setSelectedFeesType('recommended');
-                            selectedFeesTypeRef.current = 'recommended';
-                            dispatch(
-                              updateFees({
-                                gasPrice: feesOptions?.[0].gasPrice,
-                                convertedChainName,
-                              }),
-                            );
-                          }}
-                          style={
-                            selectedFeesType?.toLowerCase() ===
-                            feesOptions?.[0]?.title?.toLowerCase()
-                              ? {
-                                  borderColor: 'var(--background)',
-                                  borderWidth: '3px',
-                                }
-                              : {}
-                          }
-                          className={s.feesOptionsItem}>
-                          <p
-                            className={
-                              s.feesOptionTitle
-                            }>{`${feesOptions?.[0].title}`}</p>
-                          <p className={s.feesOptionDescription}>
-                            {`${feesOptions?.[0].gasPrice} ${GAS_CURRENCY[convertedChainName]}`}
-                          </p>
-                        </button>
-                        <button
-                          className={s.feesOptionsItem}
-                          style={
-                            selectedFeesType?.toLowerCase() ===
-                            feesOptions?.[1]?.title?.toLowerCase()
-                              ? {
-                                  borderColor: 'var(--background)',
-                                  borderWidth: '3px',
-                                }
-                              : {}
-                          }
-                          onClick={() => {
-                            isPauseCalculateFees.current = false;
-                            setSelectedFeesType('normal');
-                            selectedFeesTypeRef.current = 'normal';
-                            dispatch(
-                              updateFees({
-                                gasPrice: feesOptions?.[1].gasPrice,
-                                convertedChainName,
-                              }),
-                            );
-                          }}>
-                          <p
-                            className={
-                              s.feesOptionTitle
-                            }>{`${feesOptions?.[1].title}`}</p>
-                          <p className={s.feesOptionDescription}>
-                            {`${feesOptions?.[1].gasPrice} ${GAS_CURRENCY[convertedChainName]}`}
-                          </p>
-                        </button>
-                        <button
-                          className={s.feesOptionsItem}
-                          style={
-                            selectedFeesType?.toLowerCase() === 'custom'
-                              ? {
-                                  borderColor: 'var(--background)',
-                                  borderWidth: '3px',
-                                }
-                              : {}
-                          }
-                          onClick={() => {
-                            isPauseCalculateFees.current = true;
-                            setSelectedFeesType('custom');
-                            selectedFeesTypeRef.current = 'custom';
-                          }}>
-                          <p className={s.feesOptionTitle}>{`Custom`}</p>
-                        </button>
-                      </div>
-                      {selectedFeesType === 'custom' && (
-                        <div className={s.inputFieldContainer}>
-                          <div className={s.inputLabelWithIcon}>
-                            <span className={s.inputIcon}>{icons.gasPump}</span>
-                            <span className={s.inputLabelText}>
-                              Gas Fee (Gwei)
-                            </span>
-                          </div>
-                          <FormControl variant='outlined' fullWidth>
-                            <OutlinedInput
-                              fullWidth
-                              autoFocus={true}
-                              id='customText'
-                              type={'text'}
-                              name='Gas Price'
-                              onChange={onChangeCustomFees}
-                              value={customFees}
-                              placeholder='Enter Gas fee in Gwei'
-                              sx={{
-                                '& .MuiOutlinedInput-notchedOutline': {
-                                  borderColor: 'var(--sidebarIcon)',
-                                },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline':
-                                  {
-                                    borderColor: 'var(--borderActiveColor)',
-                                  },
-                                '& .MuiInputLabel-outlined': {
-                                  color: 'var(--sidebarIcon)',
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: 'var(--sidebarIcon) !important',
-                                },
-                              }}
-                            />
-                          </FormControl>
-                        </div>
-                      )}
+                  <span className={s.advancedOptionsTitle}>
+                    Advanced Options
+                  </span>
+                </div>
+                <span
+                  className={`${s.advancedOptionsChevron} ${isAdvancedOptionsOpen ? s.advancedOptionsChevronOpen : ''}`}>
+                  {icons.chevronDown}
+                </span>
+              </button>
+              {isAdvancedOptionsOpen && (
+                <div className={s.advancedOptionsContent}>
+                  <div className={s.feesMainContainer}>
+                    <div className={s.feesOptionContainer}>
+                      <button
+                        onClick={() => {
+                          isPauseCalculateFees.current = false;
+                          setSelectedFeesType('recommended');
+                          selectedFeesTypeRef.current = 'recommended';
+                          dispatch(
+                            updateFees({
+                              gasPrice: feesOptions?.[0].gasPrice,
+                              convertedChainName,
+                            }),
+                          );
+                        }}
+                        style={
+                          selectedFeesType?.toLowerCase() ===
+                          feesOptions?.[0]?.title?.toLowerCase()
+                            ? {
+                                borderColor: 'var(--background)',
+                                borderWidth: '3px',
+                              }
+                            : {}
+                        }
+                        className={s.feesOptionsItem}>
+                        <p
+                          className={
+                            s.feesOptionTitle
+                          }>{`${feesOptions?.[0].title}`}</p>
+                        <p className={s.feesOptionDescription}>
+                          {`${feesOptions?.[0].gasPrice} ${GAS_CURRENCY[convertedChainName]}`}
+                        </p>
+                      </button>
+                      <button
+                        className={s.feesOptionsItem}
+                        style={
+                          selectedFeesType?.toLowerCase() ===
+                          feesOptions?.[1]?.title?.toLowerCase()
+                            ? {
+                                borderColor: 'var(--background)',
+                                borderWidth: '3px',
+                              }
+                            : {}
+                        }
+                        onClick={() => {
+                          isPauseCalculateFees.current = false;
+                          setSelectedFeesType('normal');
+                          selectedFeesTypeRef.current = 'normal';
+                          dispatch(
+                            updateFees({
+                              gasPrice: feesOptions?.[1].gasPrice,
+                              convertedChainName,
+                            }),
+                          );
+                        }}>
+                        <p
+                          className={
+                            s.feesOptionTitle
+                          }>{`${feesOptions?.[1].title}`}</p>
+                        <p className={s.feesOptionDescription}>
+                          {`${feesOptions?.[1].gasPrice} ${GAS_CURRENCY[convertedChainName]}`}
+                        </p>
+                      </button>
+                      <button
+                        className={s.feesOptionsItem}
+                        style={
+                          selectedFeesType?.toLowerCase() === 'custom'
+                            ? {
+                                borderColor: 'var(--background)',
+                                borderWidth: '3px',
+                              }
+                            : {}
+                        }
+                        onClick={() => {
+                          isPauseCalculateFees.current = true;
+                          setSelectedFeesType('custom');
+                          selectedFeesTypeRef.current = 'custom';
+                        }}>
+                        <p className={s.feesOptionTitle}>{`Custom`}</p>
+                      </button>
                     </div>
-                    {isEVMChain(convertedChainName) && (
+                    {selectedFeesType === 'custom' && (
                       <div className={s.inputFieldContainer}>
                         <div className={s.inputLabelWithIcon}>
-                          <span className={s.inputIcon}>
-                            {icons.hashNumber}
+                          <span className={s.inputIcon}>{icons.gasPump}</span>
+                          <span className={s.inputLabelText}>
+                            Gas Fee (Gwei)
                           </span>
-                          <span className={s.inputLabelText}>Nonce</span>
                         </div>
                         <FormControl variant='outlined' fullWidth>
                           <OutlinedInput
                             fullWidth
-                            id='nonceInput'
+                            autoFocus={true}
+                            id='customText'
                             type={'text'}
-                            name='Nonce'
-                            onChange={onChangeNonce}
-                            value={customNonce}
-                            placeholder='Enter custom nonce'
+                            name='Gas Price'
+                            onChange={onChangeCustomFees}
+                            value={customFees}
+                            placeholder='Enter Gas fee in Gwei'
                             sx={{
                               '& .MuiOutlinedInput-notchedOutline': {
                                 borderColor: 'var(--sidebarIcon)',
@@ -1087,22 +1181,69 @@ const CommonTransfer = () => {
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-            )}
+                  {isEVMChain(convertedChainName) && (
+                    <div className={s.inputFieldContainer}>
+                      <div className={s.inputLabelWithIcon}>
+                        <span className={s.inputIcon}>{icons.hashNumber}</span>
+                        <span className={s.inputLabelText}>Nonce</span>
+                      </div>
+                      <FormControl variant='outlined' fullWidth>
+                        <OutlinedInput
+                          fullWidth
+                          id='nonceInput'
+                          type={'text'}
+                          name='Nonce'
+                          onChange={onChangeNonce}
+                          value={customNonce}
+                          placeholder='Enter custom nonce'
+                          sx={{
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: 'var(--sidebarIcon)',
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: 'var(--borderActiveColor)',
+                            },
+                            '& .MuiInputLabel-outlined': {
+                              color: 'var(--sidebarIcon)',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: 'var(--sidebarIcon) !important',
+                            },
+                          }}
+                        />
+                      </FormControl>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {isDisabled && (
             <p
               className={
                 s.errorText
               }>{`You don't have enough balance for make transaction you require ${transferData?.transactionFee} ${transferData?.currentCoin?.chain_symbol} to complete the transaction `}</p>
           )}
+          {isQuoteExpired && (
+            <p className={s.errorText}>
+              {'Quote expired — go back and refresh the quote.'}
+            </p>
+          )}
           <button
-            disabled={isDisabled || isSubmitting || isFetchingFeesAgain}
+            disabled={
+              isDisabled ||
+              isSubmitting ||
+              isFetchingFeesAgain ||
+              isQuoteExpired
+            }
             className={s.button}
             style={{
               backgroundColor:
-                isDisabled || isSubmitting || isFetchingFeesAgain
-                  ? '#708090'
+                isDisabled ||
+                isSubmitting ||
+                isFetchingFeesAgain ||
+                isQuoteExpired
+                  ? 'var(--disabledButton)'
                   : 'var(--background)',
             }}
             onClick={handleSubmitForm}>

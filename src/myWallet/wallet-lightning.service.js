@@ -325,6 +325,58 @@ export const getLightningTransactions = async phrase => {
   }
 };
 
+export const getLightningTransaction = async (phrase, txHash) => {
+  try {
+    const sdk = await connectToSdk(phrase);
+    if (!sdk || !txHash) return null;
+    const response = await sdk.getPayment({paymentId: txHash});
+    const item = response?.payment;
+    if (!item) return null;
+
+    const hash =
+      item?.details?.inner?.txId ||
+      item?.details?.inner?.paymentHash ||
+      item?.id ||
+      'N/A';
+    const isSend = item.paymentType === 'send' || item.paymentType === 1;
+
+    // Same endpoint semantics as the list mapping above: the wallet's own
+    // spark address sits on its side of the payment, the unknown
+    // counterparty is null.
+    let address = null;
+    try {
+      const addressResp = await sdk.receivePayment({
+        paymentMethod: {type: 'sparkAddress'},
+      });
+      address = addressResp?.paymentRequest || null;
+    } catch (e) {
+      console.error('error fetching lightning spark address', e);
+    }
+
+    return {
+      data: {
+        amount: item.amount,
+        link: hash,
+        url: null,
+        status:
+          `${item?.status ?? ''}`.toLowerCase() !== 'completed'
+            ? 'Pending'
+            : 'SUCCESS',
+        date: Number(item?.timestamp) * 1000,
+        from: isSend ? address : null,
+        to: isSend ? null : address,
+        paymentType: item.paymentType,
+        totalCourse: '0$',
+      },
+    };
+  } catch (error) {
+    console.error(
+      `error getting transaction by hash for bitcoin lightning ${error}`,
+    );
+    return null;
+  }
+};
+
 export const claimOnchainDeposit = async phrase => {
   try {
     const sdk = await connectToSdk(phrase);

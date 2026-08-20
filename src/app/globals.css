@@ -51,6 +51,9 @@
   --successBottom: #71c441;
   --blue: #006ee6;
   --error: #f44336;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --disabledButton: #708090;
   --leftMsgBg: #ececec;
   --rightMsgBg: #579ffb;
   --leftReplyBg: #22222231;
@@ -87,6 +90,9 @@
   --successBottom: #71c441;
   --blue: #006ee6;
   --error: #f44336;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --disabledButton: #708090;
   --leftMsgBg: #ececec;
   --rightMsgBg: #579ffb;
   --leftReplyBg: #22222231;

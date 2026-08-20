@@ -18,24 +18,29 @@ import {
   getStakingAllowanceLoading,
 } from 'dok-wallet-blockchain-networks/redux/staking/stakingSelectors';
 import {
-  selectCurrentCoin,
-  selectUserCoins,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+  fetchExchangeApproveEstimationFee,
+  updateExchangeApproveFees,
+} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
+import {
+  getExchangeAllowance,
+  getExchangeAllowanceLoading,
+} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
+import {selectUserCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import s from './ModalAllowanceInfo.module.css';
 
-const selectNativeBalance = state => {
-  const currentCoin = selectCurrentCoin(state);
+const selectNativeBalance = (chainName, chainSymbol) => state => {
   const allCoins = selectUserCoins(state);
   const nativeCoin = allCoins.find(
     item =>
-      item.symbol === currentCoin?.chain_symbol &&
-      item.chain_name === currentCoin?.chain_name &&
+      item.symbol === chainSymbol &&
+      item.chain_name === chainName &&
       item.type !== 'token',
   );
   return nativeCoin?.totalAmount || 0;
 };
 
 const ModalAllowanceInfo = ({
+  source = 'staking',
   visible,
   onClose,
   tokenSymbol,
@@ -49,9 +54,18 @@ const ModalAllowanceInfo = ({
   chainSymbol,
 }) => {
   const dispatch = useDispatch();
-  const allowanceData = useSelector(getStakingAllowance);
-  const isLoading = useSelector(getStakingAllowanceLoading);
-  const nativeBalance = useSelector(selectNativeBalance);
+  const isExchange = source === 'exchange';
+  const contractLabel = isExchange ? 'exchange provider' : 'staking contract';
+
+  const allowanceData = useSelector(
+    isExchange ? getExchangeAllowance : getStakingAllowance,
+  );
+  const isLoading = useSelector(
+    isExchange ? getExchangeAllowanceLoading : getStakingAllowanceLoading,
+  );
+  const nativeBalance = useSelector(
+    selectNativeBalance(chainName, chainSymbol),
+  );
 
   const [selectedType, setSelectedType] = useState('manual');
   const [selectedFeesType, setSelectedFeesType] = useState('recommended');
@@ -124,21 +138,25 @@ const ModalAllowanceInfo = ({
     setIsFetchingFeesAgain(true);
     setHasError(false);
     const latestAllowanceData = allowanceDataRef.current;
-    dispatch(
-      fetchStakingApproveEstimationFee({
-        isFetchNonce: false,
-        stakingProviderName,
-        amount,
-        nonce: customNonceRef.current || latestAllowanceData?.nonce,
-        feesType: selectedFeesTypeRef.current,
-        estimateGas: latestAllowanceData?.estimateGas,
-        customGasPrice:
-          selectedFeesTypeRef.current === 'custom'
-            ? customFeesRef.current
-            : undefined,
-        allowanceType: selectedTypeRef.current,
-      }),
-    )
+    const action = isExchange
+      ? fetchExchangeApproveEstimationFee({
+          feesType: selectedFeesTypeRef.current,
+          nonce: customNonceRef.current || latestAllowanceData?.nonce,
+        })
+      : fetchStakingApproveEstimationFee({
+          isFetchNonce: false,
+          stakingProviderName,
+          amount,
+          nonce: customNonceRef.current || latestAllowanceData?.nonce,
+          feesType: selectedFeesTypeRef.current,
+          estimateGas: latestAllowanceData?.estimateGas,
+          customGasPrice:
+            selectedFeesTypeRef.current === 'custom'
+              ? customFeesRef.current
+              : undefined,
+          allowanceType: selectedTypeRef.current,
+        });
+    dispatch(action)
       .unwrap()
       .then(() => {
         setIsFetchingFeesAgain(false);
@@ -150,12 +168,12 @@ const ModalAllowanceInfo = ({
         isFetchingFeesRef.current = false;
         setHasError(true);
       });
-  }, [dispatch, stakingProviderName, amount]);
+  }, [dispatch, stakingProviderName, amount, isExchange]);
 
   // Fire once when the modal opens, then refresh every 10s. Gated by refs so it
   // never piles up and never runs while custom fees are selected.
   useEffect(() => {
-    if (!visible || !stakingProviderName || !amount) {
+    if (!visible || (!isExchange && (!stakingProviderName || !amount))) {
       return;
     }
     fetchEstimationFee();
@@ -165,7 +183,7 @@ const ModalAllowanceInfo = ({
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [visible, stakingProviderName, amount, fetchEstimationFee]);
+  }, [visible, stakingProviderName, amount, isExchange, fetchEstimationFee]);
 
   const displayRequiredAmount =
     allowanceData?.stakeAmountFormatted || requiredAmount || '0';
@@ -179,13 +197,24 @@ const ModalAllowanceInfo = ({
     );
   }, [displayRequiredAmount, availableAmount]);
 
+  // No truthiness guard on nativeBalance: a zero balance must count as
+  // insufficient whenever a nonzero fee is required (the selector already
+  // defaults a missing coin to 0, and isBalanceNotAvailable compares
+  // numerically via BigNumber).
   const isInsufficientFeeBalance = useMemo(
     () =>
-      !!nativeBalance &&
       !!allowanceData?.transactionFee &&
       isBalanceNotAvailable(nativeBalance, allowanceData.transactionFee),
     [nativeBalance, allowanceData?.transactionFee],
   );
+
+  // Each flow keeps its fee on its own slice, so the recompute has to be routed
+  // to the matching one. Dispatching the staking action unconditionally would
+  // write into state.staking.allowanceData even in exchange mode, which would
+  // leave the exchange fee on screen unchanged and corrupt staking state.
+  const updateFeesAction = isExchange
+    ? updateExchangeApproveFees
+    : updateApproveFees;
 
   const onSelectFeesType = useCallback(
     (type, gasPrice) => {
@@ -198,11 +227,12 @@ const ModalAllowanceInfo = ({
         setSelectedFeesType(type);
         selectedFeesTypeRef.current = type;
         if (gasPrice) {
-          dispatch(updateApproveFees({gasPrice, convertedChainName}));
+          setCustomFees(gasPrice);
+          dispatch(updateFeesAction({gasPrice, convertedChainName}));
         }
       }
     },
-    [dispatch, convertedChainName],
+    [dispatch, convertedChainName, updateFeesAction],
   );
 
   const onChangeCustomFees = useCallback(
@@ -213,10 +243,10 @@ const ModalAllowanceInfo = ({
       );
       setCustomFees(tempValues);
       dispatch(
-        updateApproveFees({gasPrice: tempValues || '0', convertedChainName}),
+        updateFeesAction({gasPrice: tempValues || '0', convertedChainName}),
       );
     },
-    [allowanceData?.decimal, convertedChainName, dispatch],
+    [allowanceData?.decimal, convertedChainName, dispatch, updateFeesAction],
   );
 
   const onChangeCustomNonce = useCallback(event => {
@@ -336,9 +366,11 @@ const ModalAllowanceInfo = ({
 
               <div className={s.sectionLabel}>Select Approval Type</div>
               <p className={s.whatIsApprove}>
-                {`Approval is a one-time on-chain permission that lets the staking contract use your ${
+                {`Approval is a one-time on-chain permission that lets the ${contractLabel} use your ${
                   tokenSymbol || 'tokens'
-                }. Your tokens stay in your wallet until you stake.`}
+                }. Your tokens stay in your wallet until you ${
+                  isExchange ? 'swap' : 'stake'
+                }.`}
               </p>
 
               <div className={s.cardsRow}>
@@ -379,10 +411,14 @@ const ModalAllowanceInfo = ({
                     selectedType === 'unlimited' ? s.noteWarning : s.noteSafe
                   }>
                   {selectedType === 'unlimited'
-                    ? `The staking contract can move any amount of your ${
+                    ? `The ${contractLabel} can move any amount of your ${
                         tokenSymbol || 'tokens'
-                      } until you revoke it. Saves fees and time on future stakes — choose only for protocols you trust.`
-                    : "Safest option. The contract can only ever move this exact amount — you'll need to approve again for future stakes."}
+                      } until you revoke it. Saves fees and time on future ${
+                        isExchange ? 'swaps' : 'stakes'
+                      } — choose only for protocols you trust.`
+                    : `Safest option. The contract can only ever move this exact amount — you'll need to approve again for future ${
+                        isExchange ? 'swaps' : 'stakes'
+                      }.`}
                 </p>
               )}
 

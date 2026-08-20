@@ -1,0 +1,51 @@
+.container {
+  margin-top: 20px;
+}
+
+.headerRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.headerTitle {
+  color: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.stateBox {
+  background-color: var(--lightBackground);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stateText {
+  color: var(--gray);
+  font-size: 13px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.errorText {
+  color: var(--error);
+  font-size: 13px;
+  text-align: center;
+}
+
+.retryButton {
+  margin-top: 12px;
+  padding: 8px 24px;
+  border-radius: 16px;
+  border: none;
+  background-color: var(--background);
+  color: var(--title);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}

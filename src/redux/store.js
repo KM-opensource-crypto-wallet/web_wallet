@@ -20,6 +20,7 @@ import {
   walletConnectSlice,
 } from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSlice';
 import {exchangeSlice} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
+import {exchangeHistorySlice} from 'dok-wallet-blockchain-networks/redux/exchangeHistory/exchangeHistorySlice';
 import {cryptoProviderSlice} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
 import {stakingSlice} from 'dok-wallet-blockchain-networks/redux/staking/stakingSlice';
 import {messageSlice} from 'dok-wallet-blockchain-networks/redux/messages/messageSlice';
@@ -80,6 +81,7 @@ const persistConfig = {
   blacklist: [
     currentTransferSlice.name,
     exchangeSlice.name,
+    exchangeHistorySlice.name,
     currencySlice.name,
     extraDataSlice.name,
     walletConnectSlice.name,
@@ -98,6 +100,7 @@ const rootReducer = persistCombineReducers(persistConfig, {
   [currentTransferSlice.name]: currentTransferSlice.reducer,
   [walletConnectSlice.name]: walletConnectSlice.reducer,
   [exchangeSlice.name]: exchangeSlice.reducer,
+  [exchangeHistorySlice.name]: exchangeHistorySlice.reducer,
   [cryptoProviderSlice.name]: cryptoProviderSlice.reducer,
   [stakingSlice.name]: stakingSlice.reducer,
   [messageSlice.name]: messageSlice.reducer,

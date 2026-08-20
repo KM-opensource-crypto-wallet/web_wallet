@@ -13,6 +13,7 @@ const DokDropdown = ({listData, onValueChange, placeholder, value}) => {
       listData={list}
       placeholder={placeholder}
       defaultValue={value}
+      bordered
     />
   );
 };
