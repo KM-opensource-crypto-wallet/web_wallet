@@ -16,6 +16,7 @@ import {
   isEVMChain,
   isValidDerivePath,
   validateSupportedChain,
+  DERIVATION_CONFIG,
 } from 'dok-wallet-blockchain-networks/helper';
 import SelectInputExchange from 'components/SelectInputExchange';
 import {useFormik} from 'formik';
@@ -30,28 +31,6 @@ import {
   addCustomDeriveAddress,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {downloadCsv} from 'utils/common';
-
-const DERIVATION_CONFIG = {
-  ethereum: {
-    Ledger: j => `m/44'/60'/${j}'/0/0`,
-    Metamask: j => `m/44'/60'/0'/0/${j}`,
-  },
-  solana: {
-    Ledger: j => `m/44'/501'/${j}'`,
-  },
-  tron: {
-    Ledger: j => `m/44'/195'/${j}'/0/0`,
-  },
-  bitcoin: {
-    Ledger: j => `m/84'/0'/${j}'/0/0`,
-  },
-  bitcoin_segwit: {
-    Ledger: j => `m/49'/0'/${j}'/0/0`,
-  },
-  bitcoin_legacy: {
-    Ledger: j => `m/44'/0'/${j}'/0/0`,
-  },
-};
 
 const generatePaths = (chain, label) => {
   const config = DERIVATION_CONFIG[chain];
