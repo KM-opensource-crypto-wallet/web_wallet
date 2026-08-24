@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "jest",
     "git:update": "git submodule update --init --recursive --remote",
     "postinstall": "patch-package"
   },
@@ -126,6 +127,7 @@
     "eslint-config-next": "15.5.9",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
+    "jest": "^29",
     "patch-package": "^8.0.0",
     "prettier": "^3.0.3"
   },

@@ -60,14 +60,6 @@ const nextConfig = {
       dns: path.resolve('./node_modules/@i2labs/dns'),
       fs: path.resolve('./node_modules/bare-fs'),
     };
-    // react-native-tcp-socket is a native-only module used by the shared
-    // Electrum client on mobile. It has no web build; stub it so bundling
-    // electrum.js does not fail. On the server the /api/bitcoin route uses
-    // node:tls instead; in the browser the client is never used.
-    config.resolve.fallback = {
-      ...(config.resolve.fallback || {}),
-      'react-native-tcp-socket': false,
-    };
     if (isServer) {
       if (!dev) {
         config.plugins.push(
