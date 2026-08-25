@@ -164,6 +164,10 @@ describe('runElectrumQuery private-key boundary', () => {
   it.each([
     ['balances', {derive_addresses: [{address: 'a', privateKey: 'k'}]}],
     ['txdetails', {transaction_data: [{txid: 't', vout: 0, privateKey: 'k'}]}],
+    // Shapes no op sends today, and exactly the ones the previous
+    // two-list-only strip would have put on the wire.
+    ['broadcast', {txHex: 'ff', privateKey: 'k'}],
+    ['utxo', {change: {address: 'a', privateKey: 'k'}}],
   ])('never serializes a privateKey for %s', async (op, payload) => {
     global.fetch = jest.fn(async () => jsonResponse({ok: true, result: {}}));
     await runElectrumQuery(op, payload);

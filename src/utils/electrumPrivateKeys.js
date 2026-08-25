@@ -11,22 +11,37 @@
  * without standing up a fetch.
  */
 
-const stripKeyFromItem = item =>
-  item && typeof item === 'object' && !Array.isArray(item)
-    ? (({privateKey, ...rest}) => rest)(item)
-    : item;
-
-/** A shallow copy of `payload` with no `privateKey` anywhere in it. */
-export const stripPrivateKeys = payload => {
-  const clone = {...payload};
-  if (Array.isArray(clone.derive_addresses)) {
-    clone.derive_addresses = clone.derive_addresses.map(stripKeyFromItem);
+// Recurses instead of reaching into the two lists the ops happen to use today
+// (derive_addresses, transaction_data): a root-level or newly nested key-bearing
+// field would otherwise be serialized silently, since nothing downstream reads
+// `privateKey` and so nothing would fail. Copies at every level -- the caller's
+// payload must keep its keys, because reattachPrivateKeys reads them back out
+// of it after the response lands.
+//
+// Any non-array object is recursed, exotic ones included: for a value about to
+// be JSON-serialized, rebuilding it as a plain object costs nothing, and the
+// alternative -- passing it through intact -- is the one that could leak.
+const stripDeep = value => {
+  if (Array.isArray(value)) {
+    return value.map(stripDeep);
   }
-  if (Array.isArray(clone.transaction_data)) {
-    clone.transaction_data = clone.transaction_data.map(stripKeyFromItem);
+  if (!value || typeof value !== 'object') {
+    return value;
   }
-  return clone;
+  const out = {};
+  Object.entries(value).forEach(([key, inner]) => {
+    if (key !== 'privateKey') {
+      out[key] = stripDeep(inner);
+    }
+  });
+  return out;
 };
+
+/**
+ * A deep copy of `payload` with no `privateKey` anywhere in it. The spread
+ * normalizes a missing payload to `{}`, so callers always get an object.
+ */
+export const stripPrivateKeys = payload => stripDeep({...payload});
 
 // Requires a truthy key: a derive address with no usable key contributes
 // nothing, and mapping it would shadow nothing useful.

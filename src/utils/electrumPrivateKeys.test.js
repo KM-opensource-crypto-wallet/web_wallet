@@ -39,6 +39,40 @@ describe('stripPrivateKeys', () => {
   it('leaves payloads with neither list alone', () => {
     expect(stripPrivateKeys({txHex: 'deadbeef'})).toEqual({txHex: 'deadbeef'});
   });
+
+  it('removes a root-level key', () => {
+    expect(stripPrivateKeys({address: 'addr-1', privateKey: 'secret'})).toEqual(
+      {address: 'addr-1'},
+    );
+  });
+
+  it('removes keys nested anywhere, not just in the two known lists', () => {
+    const payload = {
+      change: {address: 'addr-2', privateKey: 'secret-2'},
+      inputs: [{utxos: [{txid: 'tx-1', privateKey: 'secret-3'}]}],
+    };
+    expect(stripPrivateKeys(payload)).toEqual({
+      change: {address: 'addr-2'},
+      inputs: [{utxos: [{txid: 'tx-1'}]}],
+    });
+  });
+
+  it('does not mutate nested input', () => {
+    const payload = {change: {address: 'a', privateKey: 'secret'}};
+    stripPrivateKeys(payload);
+    expect(payload.change.privateKey).toBe('secret');
+  });
+
+  it('passes non-object list entries through', () => {
+    // The transactions/addressusage ops send plain address strings.
+    expect(stripPrivateKeys({derive_addresses: ['addr-1', null]})).toEqual({
+      derive_addresses: ['addr-1', null],
+    });
+  });
+
+  it('normalizes a missing payload to an object', () => {
+    expect(stripPrivateKeys(undefined)).toEqual({});
+  });
 });
 
 describe('reattachPrivateKeys', () => {
