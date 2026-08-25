@@ -139,3 +139,94 @@ describe('connectToSdk wallet isolation', () => {
     });
   });
 });
+
+// prepareSendPayment is the only SDK call in the estimate path, so a fake sdk
+// carrying just that method is enough to drive every outcome. Same registry
+// discipline as `load()` above: reset modules first, then pull the mocked
+// helper out of the FRESH registry so mockReturnValue lands on the jest.fn the
+// service actually calls.
+const loadPrepare = () => {
+  jest.resetModules();
+  build.mockReset();
+  const helper = require('dok-wallet-blockchain-networks/helper');
+  const {prepareLightning} = require('myWallet/wallet-lightning.service');
+  const sdk = {prepareSendPayment: jest.fn()};
+  build.mockImplementation(async () => sdk);
+  helper.convertToSmallAmount.mockReturnValue('6608');
+  return {prepareLightning, sdk};
+};
+
+const INVOICE = 'lnbc66080n1p4gccf9pp5zn4fkzz39983lvzz4a2yye8pye3zja6hxkkdc9';
+
+describe('prepareLightning', () => {
+  it('rejects when the SDK cannot prepare the payment', async () => {
+    const {prepareLightning, sdk} = loadPrepare();
+    sdk.prepareSendPayment.mockRejectedValue(new Error('prepare blew up'));
+
+    // Before the fix prepareAndSendPayment swallowed this and returned
+    // undefined, so the failure surfaced as a confusing destructuring
+    // TypeError instead of the real cause.
+    await expect(
+      prepareLightning('wallet-a', INVOICE, '0.00006608'),
+    ).rejects.toThrow('prepare blew up');
+  });
+
+  it('rejects when the prepared payment method is not one we can price', async () => {
+    const {prepareLightning, sdk} = loadPrepare();
+    // 0.23.0 added crossChainAddress, which this service prices nothing for.
+    sdk.prepareSendPayment.mockResolvedValue({
+      paymentMethod: {type: 'crossChainAddress'},
+    });
+
+    // Before the fix this returned {}, so prepareLightning resolved to
+    // {fee: '0'}: calculateEstimateFee reported success and Transfer rendered
+    // the form with a zero fee instead of its error view.
+    await expect(
+      prepareLightning('wallet-a', INVOICE, '0.00006608'),
+    ).rejects.toThrow(
+      'Unsupported lightning payment method: crossChainAddress',
+    );
+  });
+
+  it('sends the invoice as a PaymentRequest input variant and returns the fee', async () => {
+    const {prepareLightning, sdk} = loadPrepare();
+    sdk.prepareSendPayment.mockResolvedValue({
+      paymentMethod: {
+        type: 'bolt11Invoice',
+        lightningFeeSats: 12,
+        sparkTransferFeeSats: undefined,
+      },
+    });
+
+    const result = await prepareLightning('wallet-a', INVOICE, '0.00006608');
+
+    // SDK 0.23.0 takes the PaymentRequest union, not a bare string. The WASM
+    // binding spells it as a `{type, ...}` object where mobile's uniffi
+    // binding uses `new PaymentRequest.Input({input})`.
+    const request = sdk.prepareSendPayment.mock.calls[0][0];
+    expect(request.paymentRequest).toEqual({type: 'input', input: INVOICE});
+    expect(request.amount).toBe(6608n);
+    // parseBalance is mocked to the identity, so the fee arrives verbatim.
+    expect(result.fee).toBe(12);
+  });
+});
+
+describe('claimOnchainDeposit', () => {
+  it('still lists a deposit that reports no claim error', async () => {
+    jest.resetModules();
+    build.mockReset();
+    const {claimOnchainDeposit} = require('myWallet/wallet-lightning.service');
+    build.mockImplementation(async () => ({
+      listUnclaimedDeposits: async () => ({
+        deposits: [{txid: 'abc', vout: 0, amountSats: 5000}],
+      }),
+    }));
+
+    // Before the guard, reading requiredFeeSats off an absent claimError threw
+    // a TypeError that the catch turned into [], so the unclaimed-deposit
+    // modal showed nothing at all -- not even the refund action.
+    expect(await claimOnchainDeposit('wallet-a')).toEqual([
+      {txid: 'abc', vout: 0, amount: 5000, fees: 0, receivedAmount: 5000},
+    ]);
+  });
+});
