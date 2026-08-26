@@ -24,6 +24,7 @@ import InputLabel from '@mui/material/InputLabel';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import {useRouter} from 'next/navigation';
 import Image from 'next/image';
+import AddressTypeBadge from 'components/AddressTypeBadge';
 import CustomDerivationPopOver from 'components/CustomDerivationPopOver';
 import {
   add50AddressesOnCurrentCoin,
@@ -191,9 +192,13 @@ const CustomDerivation = () => {
     },
   });
 
+  // Cap counts only user-created custom derivations, matching the reducer-side
+  // check in walletsSlice -- automatic gap-limit discovery can legitimately
+  // grow the full list past 100.
   const isAtLimit =
     isBitcoinChain(currentCoin?.chain_name) &&
-    (currentCoin?.deriveAddresses?.length ?? 0) >= 100;
+    (currentCoin?.deriveAddresses?.filter(item => item?.isCustom)?.length ??
+      0) >= 100;
 
   const onAdd50MoreAddresses = useCallback(async () => {
     try {
@@ -370,6 +375,10 @@ const CustomDerivation = () => {
                 <div className={s.item}>
                   <div className={s.rowStyle}>
                     <p className={s.title}>{item?.derivePath || 'default'}</p>
+                    <AddressTypeBadge
+                      chain_name={currentCoin?.chain_name}
+                      item={item}
+                    />
                     {item?.address === currentCoin?.address && (
                       <p className={s.chainDisplayName}>{'selected'}</p>
                     )}

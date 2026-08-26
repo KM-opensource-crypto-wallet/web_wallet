@@ -1,0 +1,44 @@
+.title {
+  color: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  min-height: 50px;
+  padding: 6px 15px;
+  border: 1px solid var(--whiteOutline);
+  border-radius: 5px;
+  background-color: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.leftRow {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  min-width: 0;
+}
+
+.addressText {
+  color: var(--font);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.balanceText {
+  color: var(--gray);
+  font-size: 13px;
+  margin-left: 8px;
+  white-space: nowrap;
+}

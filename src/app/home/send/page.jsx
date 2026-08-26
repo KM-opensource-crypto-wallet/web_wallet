@@ -26,20 +26,23 @@ import GoBackButton from 'components/GoBackButton';
 import Loading from 'components/Loading';
 import Image from 'next/image';
 import {
-  getCustomizePublicAddress,
+  delay,
   isBitcoinChain,
   isPrivateKeyNotSupportedChain,
   isDeriveAddressSupportChain,
   isStakingChain,
   getStakignKey,
 } from 'dok-wallet-blockchain-networks/helper';
+import {getVisibleDeriveAddresses} from 'dok-wallet-blockchain-networks/service/bitcoinHdAddress';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import {toast} from 'react-toastify';
 import classNames from '../Home.module.css';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import IconButton from '@mui/material/IconButton';
 import Close from '@mui/icons-material/Close';
-import SelectInput from 'components/SelectInput';
+import AddressSelectorSheet from 'components/AddressSelectorSheet';
+import AddressSelectorTrigger from 'components/AddressSelectorTrigger';
+import AddressTypeBadge from 'components/AddressTypeBadge';
 import SendPopOver from 'components/SendPopOver';
 import {clearSelectedUTXOs} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import ModalUnclaimedDeposit from 'components/ModalUnclaimedDeposit';
@@ -53,6 +56,9 @@ const SendScreen = () => {
   );
   const [modalUnclaimDepositVisible, setModalUnclaimDepositVisible] =
     useState(false);
+  // One sheet serves the picker; the selected entry comes straight back to
+  // onChangeSelectedAddress.
+  const addressSheetRef = useRef();
 
   //   const { theme } = useContext(ThemeContext);
   //   const styles = myStyles(theme);
@@ -79,15 +85,20 @@ const SendScreen = () => {
   );
   const isImportWithPrivateKey = useSelector(isImportWalletWithPrivateKey);
 
+  // Change-chain entries are not user accounts, so they only show up in the
+  // picker when they actually hold funds (getVisibleDeriveAddresses).
   const deriveAddresses = useMemo(() => {
-    return currentCoin?.deriveAddresses?.map(subItem => ({
-      options: subItem,
-      label: `${getCustomizePublicAddress(subItem?.address)} ${
-        isBitcoin ? `(${subItem?.balance || 0} ${currentCoin?.symbol})` : ''
-      }`,
-      value: subItem.address,
-    }));
-  }, [currentCoin?.deriveAddresses, currentCoin?.symbol, isBitcoin]);
+    return getVisibleDeriveAddresses(
+      currentCoin?.chain_name,
+      currentCoin?.deriveAddresses,
+    );
+  }, [currentCoin?.chain_name, currentCoin?.deriveAddresses]);
+
+  const selectedDeriveAddressItem = useMemo(() => {
+    return currentCoin?.deriveAddresses?.find(
+      subItem => subItem?.address === currentCoin?.address,
+    );
+  }, [currentCoin?.deriveAddresses, currentCoin?.address]);
 
   const coinId = useMemo(() => {
     return currentCoin?._id + currentCoin?.name + currentCoin?.chain_name;
@@ -134,11 +145,13 @@ const SendScreen = () => {
   }, []);
 
   const onChangeSelectedAddress = useCallback(
-    async value => {
-      const subItem = deriveAddresses.find(item => item.value === value);
+    async subItem => {
+      // Let the sheet's close animation finish before the refresh re-renders
+      // the screen underneath it.
+      await delay(300);
       dispatch(
         setSelectedDeriveAddress({
-          address: subItem.options?.address,
+          address: subItem?.address,
           chain_name: currentCoin?.chain_name,
         }),
       );
@@ -148,13 +161,13 @@ const SendScreen = () => {
           isFetchUnclaimDeposit: true,
           currentCoin: {
             ...currentCoin,
-            address: subItem.options?.address,
-            privateKey: subItem?.options?.privateKey || currentCoin?.privateKey,
+            address: subItem?.address,
+            privateKey: subItem?.privateKey || currentCoin?.privateKey,
           },
         }),
       ).unwrap();
     },
-    [currentCoin, deriveAddresses, dispatch],
+    [currentCoin, dispatch],
   );
 
   const onSuccessOfPrivateKey = useCallback(() => {
@@ -258,22 +271,36 @@ const SendScreen = () => {
                 <p className={s.btnText}>Receive</p>
               </Link>
             </div>
-            {(isBitcoinChain || isDeriveAddressChain) &&
-              Array.isArray(deriveAddresses) && (
+            {(isBitcoin || isDeriveAddressChain) &&
+              deriveAddresses?.length > 0 && (
                 <div>
                   <p className={s.addresTitle}>Select Address:</p>
-                  <div className={s.addressViev}>
-                    <SelectInput
-                      listData={deriveAddresses}
-                      onValueChange={onChangeSelectedAddress}
-                      value={currentCoin?.address}
-                      placeholder={'Select Network'}
+                  <div className={s.addressSelector}>
+                    <AddressSelectorTrigger
+                      chain_name={currentCoin?.chain_name}
+                      item={selectedDeriveAddressItem}
+                      symbol={currentCoin?.symbol}
+                      fallbackAddress={currentCoin?.address}
+                      onPress={() =>
+                        addressSheetRef.current?.present({
+                          chain_name: currentCoin?.chain_name,
+                          symbol: currentCoin?.symbol,
+                          items: deriveAddresses,
+                          selectedAddress: currentCoin?.address,
+                        })
+                      }
                     />
                   </div>
                 </div>
               )}
             <div className={s.boxAdress}>
-              <p className={s.addresTitle}>Your Address:</p>
+              <div className={s.addressTitleRow}>
+                <p className={s.addresTitle}>Your Address:</p>
+                <AddressTypeBadge
+                  chain_name={currentCoin?.chain_name}
+                  item={selectedDeriveAddressItem}
+                />
+              </div>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(currentCoin?.address || '');
@@ -333,6 +360,10 @@ const SendScreen = () => {
           hideModal={hideModal}
         />
       )}
+      <AddressSelectorSheet
+        ref={addressSheetRef}
+        onSelect={onChangeSelectedAddress}
+      />
     </>
   );
 };

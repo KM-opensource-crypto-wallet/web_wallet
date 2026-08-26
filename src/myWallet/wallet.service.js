@@ -20,6 +20,14 @@ import {Account, SigningSchemeInput} from '@aptos-labs/ts-sdk';
 import {toCashAddress} from 'bchaddrjs';
 import {BlockfrostProvider, MeshWallet} from '@meshsdk/core';
 import {keyPairFromPrivateKey} from '@nodefactory/filecoin-address';
+import {
+  CHANGE_CHAIN,
+  GAP_LIMIT,
+  RECEIVE_CHAIN,
+  deriveAddressRange,
+  getAccountBasePath,
+  getNetworkByChainName,
+} from 'dok-wallet-blockchain-networks/service/bitcoinHdAddress';
 
 const createEvmWallet = async mnemonic => {
   try {
@@ -34,202 +42,81 @@ const createEvmWallet = async mnemonic => {
   }
 };
 
-const mainNetworkKeys = {
-  bitcoin: {
-    public: 0x04b24746,
-    private: 0x04b2430c,
-  },
-  bitcoin_segwit: {
-    public: 0x049d7cb2,
-    private: 0x049d7878,
-  },
-  bitcoin_legacy: {
-    public: 0x0488b21e,
-    private: 0x0488ade4,
-  },
+// Network + account base path come from the shared bitcoinHdAddress helpers,
+// which read IS_SANDBOX themselves -- the same value createWallet is always
+// invoked with (see cryptoChain/index.js), so the `isSandbox` argument the
+// public entry points still accept is redundant for the bitcoin chains.
+const getBitcoinRoot = (chain_name, mnemonic) => {
+  const network = getNetworkByChainName(chain_name);
+  const seed = bip39.mnemonicToSeedSync(mnemonic);
+  return {network, root: BIP32Factory(ecc).fromSeed(seed, network)};
 };
 
-const testnetNetworkKeys = {
-  bitcoin: {
-    public: 0x045f1cf6,
-    private: 0x045f18bc,
-  },
-  bitcoin_segwit: {
-    public: 0x044a5262,
-    private: 0x044a4e28,
-  },
-  bitcoin_legacy: {
-    public: 0x043587cf,
-    private: 0x04358394,
-  },
+// Extended keys of the account-level node (m/84'|49'|44'/coinType'/0'), which
+// is all deriveAddressRange needs to walk either standard chain.
+const getBitcoinAccount = (chain_name, mnemonic) => {
+  const {root} = getBitcoinRoot(chain_name, mnemonic);
+  const accountNode = root.derivePath(getAccountBasePath(chain_name));
+  return {
+    extendedPublicKey: accountNode.neutered().toBase58(),
+    extendedPrivateKey: accountNode.toBase58(),
+  };
 };
 
-const getNetworkByChainName = (chain_name, isSandbox) => {
-  return chain_name === 'bitcoin' && isSandbox
-    ? Object.assign({}, bitcoin.networks.testnet, {
-        bip32: testnetNetworkKeys.bitcoin,
-      })
-    : chain_name === 'bitcoin'
-      ? Object.assign({}, bitcoin.networks.bitcoin, {
-          bip32: mainNetworkKeys.bitcoin,
-        })
-      : chain_name === 'bitcoin_legacy' && isSandbox
-        ? Object.assign({}, bitcoin.networks.testnet, {
-            bip32: testnetNetworkKeys.bitcoin_legacy,
-          })
-        : chain_name === 'bitcoin_legacy'
-          ? Object.assign({}, bitcoin.networks.bitcoin, {
-              bip32: mainNetworkKeys.bitcoin_legacy,
-            })
-          : chain_name === 'bitcoin_segwit' && isSandbox
-            ? Object.assign({}, bitcoin.networks.testnet, {
-                bip32: testnetNetworkKeys.bitcoin_segwit,
-              })
-            : chain_name === 'bitcoin_segwit'
-              ? Object.assign({}, bitcoin.networks.bitcoin, {
-                  bip32: mainNetworkKeys.bitcoin_segwit,
-                })
-              : '';
-};
-const createBitcoinWallet = async (mnemonic, isSandbox) => {
-  try {
-    const customNetwork = getNetworkByChainName('bitcoin', isSandbox);
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const bip32 = BIP32Factory(ecc);
-    const root = bip32.fromSeed(seed, customNetwork);
-    const child1 = root.derivePath(
-      isSandbox ? "m/84'/1'/0'/0/0" : "m/84'/0'/0'/0/0",
-    );
-    const extendedKey = root.derivePath(
-      isSandbox ? "m/84'/1'/0'" : "m/84'/0'/0'",
-    );
-    const xPubKey = extendedKey.neutered().toBase58();
-    const xPrvKey = extendedKey.toBase58();
-    const {address} = bitcoin.payments.p2wpkh({
-      pubkey: child1.publicKey,
-      network: customNetwork,
-    });
-    const coinType = isSandbox ? 1 : 0;
-    const deriveAddresses = [];
-    for (let i = 0; i < 20; i++) {
-      const derivePath = `m/84'/${coinType}'/0'/${i}/0`;
-      const child = root.derivePath(derivePath);
-      const {address: deriveAddress} = bitcoin.payments.p2wpkh({
-        pubkey: child.publicKey,
-        network: customNetwork,
-      });
-      deriveAddresses.push({
-        derivePath,
-        privateKey: child.toWIF(),
-        address: deriveAddress,
-      });
-    }
-
-    return {
-      privateKey: child1.toWIF(),
-      address,
-      extendedPublicKey: xPubKey,
-      extendedPrivateKey: xPrvKey,
-      deriveAddresses,
-    };
-  } catch (e) {
-    console.error('Error in createBitcoinWallet', e);
-    throw e;
+// Address for one public key, by chain: BIP84 native segwit, BIP49
+// p2sh-wrapped segwit, BIP44 legacy. Mirrors buildAddress in
+// dok-wallet-blockchain-networks/service/bitcoinHdAddress.js, which keeps it
+// private; only the arbitrary-path custom derivations below need it, since the
+// standard windows come from deriveAddressRange.
+const buildBitcoinAddress = (chain_name, pubkey, network) => {
+  if (chain_name === 'bitcoin_legacy') {
+    return bitcoin.payments.p2pkh({pubkey, network}).address;
   }
+  if (chain_name === 'bitcoin_segwit') {
+    return bitcoin.payments.p2sh({
+      redeem: bitcoin.payments.p2wpkh({pubkey, network}),
+      network,
+    }).address;
+  }
+  return bitcoin.payments.p2wpkh({pubkey, network}).address;
 };
-const createBitcoinSegwitWallet = async (mnemonic, isSandbox) => {
+
+// BIP44 standard account layout: 20 external/receive (.../0/i) + 20
+// internal/change (.../1/i), what BlueWallet / Electrum / hardware wallets
+// derive. The coin's own address stays .../0/0 -- the same path the previous
+// nonstandard ".../i/0" window started on, so existing wallets keep theirs.
+const createBitcoinChainWallet = chain_name => async mnemonic => {
   try {
-    const customNetwork = getNetworkByChainName('bitcoin_segwit', isSandbox);
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const bip32 = BIP32Factory(ecc);
-    const root = bip32.fromSeed(seed, customNetwork);
-    const child1 = root.derivePath(
-      isSandbox ? "m/49'/1'/0'/0/0" : "m/49'/0'/0'/0/0",
+    const {extendedPublicKey, extendedPrivateKey} = getBitcoinAccount(
+      chain_name,
+      mnemonic,
     );
-    const extendedKey = root.derivePath(
-      isSandbox ? "m/49'/1'/0'" : "m/49'/0'/0'",
-    );
-    const xPubKey = extendedKey.neutered().toBase58();
-    const xPrvKey = extendedKey.toBase58();
-    const {address} = bitcoin.payments.p2sh({
-      redeem: bitcoin.payments.p2wpkh({
-        pubkey: child1.publicKey,
-        network: customNetwork,
+    const common = {chain_name, accountKey: extendedPrivateKey, start: 0};
+    const deriveAddresses = [
+      ...deriveAddressRange({
+        ...common,
+        chainIndex: RECEIVE_CHAIN,
+        count: GAP_LIMIT,
       }),
-      network: customNetwork,
-    });
-    const coinType = isSandbox ? 1 : 0;
-    const deriveAddresses = [];
-    for (let i = 0; i < 20; i++) {
-      const derivePath = `m/49'/${coinType}'/0'/${i}/0`;
-      const child = root.derivePath(derivePath);
-      const {address: deriveAddress} = bitcoin.payments.p2sh({
-        redeem: bitcoin.payments.p2wpkh({
-          pubkey: child.publicKey,
-          network: customNetwork,
-        }),
-        network: customNetwork,
-      });
-      deriveAddresses.push({
-        derivePath,
-        privateKey: child.toWIF(),
-        address: deriveAddress,
-      });
+      ...deriveAddressRange({
+        ...common,
+        chainIndex: CHANGE_CHAIN,
+        count: GAP_LIMIT,
+      }),
+    ];
+    const primary = deriveAddresses[0];
+    if (!primary?.address) {
+      throw new Error(`could not derive ${chain_name} account addresses`);
     }
     return {
-      privateKey: child1.toWIF(),
-      address,
-      extendedPublicKey: xPubKey,
-      extendedPrivateKey: xPrvKey,
+      privateKey: primary.privateKey,
+      address: primary.address,
+      extendedPublicKey,
+      extendedPrivateKey,
       deriveAddresses,
     };
   } catch (e) {
-    console.error('Error in createBitcoinSegwitWallet', e);
-    throw e;
-  }
-};
-const createBitcoinLegacySegwitWallet = async (mnemonic, isSandbox) => {
-  try {
-    const customNetwork = getNetworkByChainName('bitcoin_legacy', isSandbox);
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const bip32 = BIP32Factory(ecc);
-    const root = bip32.fromSeed(seed, customNetwork);
-    const child1 = root.derivePath(
-      isSandbox ? "m/44'/1'/0'/0/0" : "m/44'/0'/0'/0/0",
-    );
-    const extendedKey = root.derivePath(
-      isSandbox ? "m/44'/1'/0'" : "m/44'/0'/0'",
-    );
-    const xPubKey = extendedKey.neutered().toBase58();
-    const xPrvKey = extendedKey.toBase58();
-    const {address} = bitcoin.payments.p2pkh({
-      pubkey: child1.publicKey,
-      network: customNetwork,
-    });
-    const coinType = isSandbox ? 1 : 0;
-    const deriveAddresses = [];
-    for (let i = 0; i < 20; i++) {
-      const derivePath = `m/44'/${coinType}'/0'/${i}/0`;
-      const child = root.derivePath(derivePath);
-      const {address: deriveAddress} = bitcoin.payments.p2pkh({
-        pubkey: child.publicKey,
-        network: customNetwork,
-      });
-      deriveAddresses.push({
-        derivePath,
-        privateKey: child.toWIF(),
-        address: deriveAddress,
-      });
-    }
-    return {
-      privateKey: child1.toWIF(),
-      address,
-      extendedPublicKey: xPubKey,
-      extendedPrivateKey: xPrvKey,
-      deriveAddresses,
-    };
-  } catch (e) {
-    console.error('Error in createBitcoinLegacySegwitWallet', e);
+    console.error('Error in createBitcoinChainWallet', chain_name, e);
     throw e;
   }
 };
@@ -498,9 +385,9 @@ const createWalletObj = {
   zksync: createEvmWallet,
   kava: createEvmWallet,
   ethereum_classic: createEvmWallet,
-  bitcoin: createBitcoinWallet,
-  bitcoin_segwit: createBitcoinSegwitWallet,
-  bitcoin_legacy: createBitcoinLegacySegwitWallet,
+  bitcoin: createBitcoinChainWallet('bitcoin'),
+  bitcoin_segwit: createBitcoinChainWallet('bitcoin_segwit'),
+  bitcoin_legacy: createBitcoinChainWallet('bitcoin_legacy'),
   litecoin: createLitecoinWallet,
   bitcoin_cash: createBitcoinCashWallet,
   solana: createSolanaWallet,
@@ -652,92 +539,37 @@ const addCustomTronDeriveAddress = async (mnemonic, customDerivePath) => {
     throw e;
   }
 };
-const addCustomBitcoinDeriveAddress = async (
-  mnemonic,
-  customDerivePath,
-  isSandbox,
-) => {
-  try {
-    const customNetwork = getNetworkByChainName('bitcoin', isSandbox);
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const bip32 = BIP32Factory(ecc);
-    const root = bip32.fromSeed(seed, customNetwork);
-    const child1 = root.derivePath(customDerivePath);
-    const {address} = bitcoin.payments.p2wpkh({
-      pubkey: child1.publicKey,
-      network: customNetwork,
-    });
-    return {
-      privateKey: child1.toWIF(),
-      address: address,
-      derivePath: customDerivePath,
-    };
-  } catch (e) {
-    console.error('Error in addCustomBitcoinDeriveAddress', e);
-    throw e;
-  }
-};
-const addCustomBitcoinSegwitDeriveAddress = async (
-  mnemonic,
-  customDerivePath,
-  isSandbox,
-) => {
-  try {
-    const customNetwork = getNetworkByChainName('bitcoin_segwit', isSandbox);
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const bip32 = BIP32Factory(ecc);
-    const root = bip32.fromSeed(seed, customNetwork);
-    const child1 = root.derivePath(customDerivePath);
-    const {address} = bitcoin.payments.p2sh({
-      redeem: bitcoin.payments.p2wpkh({
-        pubkey: child1.publicKey,
-        network: customNetwork,
-      }),
-      network: customNetwork,
-    });
-    return {
-      privateKey: child1.toWIF(),
-      address: address,
-      derivePath: customDerivePath,
-    };
-  } catch (e) {
-    console.error('Error in addCustomBitcoinSegwitDeriveAddress', e);
-    throw e;
-  }
-};
-const addCustomBitcoinLegacyDeriveAddress = async (
-  mnemonic,
-  customDerivePath,
-  isSandbox,
-) => {
-  try {
-    const customNetwork = getNetworkByChainName('bitcoin_legacy', isSandbox);
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const bip32 = BIP32Factory(ecc);
-    const root = bip32.fromSeed(seed, customNetwork);
-    const child1 = root.derivePath(customDerivePath);
-    const {address} = bitcoin.payments.p2pkh({
-      pubkey: child1.publicKey,
-      network: customNetwork,
-    });
-    return {
-      privateKey: child1.toWIF(),
-      address: address,
-      derivePath: customDerivePath,
-    };
-  } catch (e) {
-    console.error('Error in addCustomBitcoinLegacyDeriveAddress', e);
-    throw e;
-  }
-};
+// One arbitrary derive path (Ledger/Metamask style accounts, e.g.
+// m/84'/0'/5'/0/0), so it cannot go through deriveAddressRange -- that only
+// walks the two standard chains under the account base path.
+const addCustomBitcoinDeriveAddress =
+  chain_name => async (mnemonic, customDerivePath) => {
+    try {
+      const {network, root} = getBitcoinRoot(chain_name, mnemonic);
+      const child = root.derivePath(customDerivePath);
+      return {
+        privateKey: child.toWIF(),
+        address: buildBitcoinAddress(
+          chain_name,
+          // eslint-disable-next-line no-undef
+          Buffer.from(child.publicKey),
+          network,
+        ),
+        derivePath: customDerivePath,
+      };
+    } catch (e) {
+      console.error('Error in addCustomBitcoinDeriveAddress', chain_name, e);
+      throw e;
+    }
+  };
 
 const addCustomDerivePath = {
   ethereum: addCustomEVMDeriveAddress,
   solana: addCustomSolanaDeriveAddress,
   tron: addCustomTronDeriveAddress,
-  bitcoin: addCustomBitcoinDeriveAddress,
-  bitcoin_segwit: addCustomBitcoinSegwitDeriveAddress,
-  bitcoin_legacy: addCustomBitcoinLegacyDeriveAddress,
+  bitcoin: addCustomBitcoinDeriveAddress('bitcoin'),
+  bitcoin_segwit: addCustomBitcoinDeriveAddress('bitcoin_segwit'),
+  bitcoin_legacy: addCustomBitcoinDeriveAddress('bitcoin_legacy'),
 };
 export const addCustomDeriveAddressToWallet = async (
   chain_name,
