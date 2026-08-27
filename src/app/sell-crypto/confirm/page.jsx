@@ -1,9 +1,6 @@
 'use client';
-import React from 'react';
-import CommonTransfer from 'components/CommonTransfer';
+import RedirectToWalletRoute from 'components/RedirectToWalletRoute';
 
-const Transfer = () => {
-  return <CommonTransfer />;
-};
-
-export default Transfer;
+export default function SellCryptoConfirmPage() {
+  return <RedirectToWalletRoute suffix='/home' />;
+}

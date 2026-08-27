@@ -551,8 +551,8 @@ const Exchange = () => {
         },
       }),
     );
-    router.push('/swap/confirm');
-  }, [dispatch, router]);
+    router.push(`/wallet/${currentWalletClientId}/swap/confirm`);
+  }, [dispatch, router, currentWalletClientId]);
 
   // After the ERC20-level allowance is confirmed (already approved, or just
   // approved via the allowance modal), a permit2 swap quote still needs a
@@ -676,7 +676,9 @@ const Exchange = () => {
         <button
           type='button'
           className={s.historyButton}
-          onClick={() => router.push('/swap/history')}
+          onClick={() =>
+            router.push(`/wallet/${currentWalletClientId}/swap/history`)
+          }
           aria-label='Swap history'>
           <AccessTimeIcon
             sx={{fontSize: 24, color: 'var(--borderActiveColor)'}}

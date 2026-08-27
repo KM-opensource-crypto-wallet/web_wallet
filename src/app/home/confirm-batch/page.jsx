@@ -1,10 +1,6 @@
 'use client';
+import RedirectToWalletRoute from 'components/RedirectToWalletRoute';
 
-import React from 'react';
-import CommonTransfer from 'components/CommonTransfer';
-
-const ConfirmBatch = () => {
-  return <CommonTransfer />;
-};
-
-export default ConfirmBatch;
+export default function ConfirmBatchPage() {
+  return <RedirectToWalletRoute suffix='/home' />;
+}

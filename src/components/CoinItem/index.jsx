@@ -61,7 +61,7 @@ const CoinItem = ({
     dispatch(setCurrentCoin(item?._id));
     router.push(
       currentWalletClientId
-        ? `/home/wallet/${currentWalletClientId}/send/${getCoinSlug(item)}`
+        ? `/wallet/${currentWalletClientId}/home/send/${getCoinSlug(item)}`
         : `/home/send`,
     );
   }, [dispatch, item, currentWalletClientId, router]);

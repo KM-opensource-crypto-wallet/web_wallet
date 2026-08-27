@@ -40,7 +40,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import PageTitle from 'components/PageTitle';
 import InfiniteScroll from 'react-infinite-scroller';
-import {useRouter} from 'next/navigation';
+import {useParams, useRouter} from 'next/navigation';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 
 const VoteStaking = () => {
@@ -61,6 +61,7 @@ const VoteStaking = () => {
   const isMountedRef = useRef(false);
   const initialSelectedVotes = useRef(null);
   const router = useRouter();
+  const {clientId} = useParams();
 
   useEffect(() => {
     setValidatorsList(validators.slice(0, displayItemRef.current));
@@ -136,7 +137,7 @@ const VoteStaking = () => {
         },
       }),
     );
-    router.push('/home/confirm-staking');
+    router.push(`/wallet/${clientId}/home/confirm-staking`);
   };
 
   const handleSearch = useCallback(

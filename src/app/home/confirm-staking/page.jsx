@@ -1,10 +1,6 @@
 'use client';
+import RedirectToWalletRoute from 'components/RedirectToWalletRoute';
 
-import React from 'react';
-import CommonTransfer from 'components/CommonTransfer';
-
-const ConfirmStaking = () => {
-  return <CommonTransfer />;
-};
-
-export default ConfirmStaking;
+export default function ConfirmStakingPage() {
+  return <RedirectToWalletRoute suffix='/home' />;
+}

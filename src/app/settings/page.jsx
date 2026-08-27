@@ -7,6 +7,7 @@ import {
   isChatOptions,
   isWalletReset,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {getTutorialVideos} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 import {
   setResetWallet,
@@ -34,6 +35,7 @@ const Settings = ({navigation}) => {
   const chatOptions = useSelector(isChatOptions);
   const rateLimitCheck = useSelector(isWalletReset);
   const tutorialVideos = useSelector(getTutorialVideos);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const currentLocale = useLocale();
   const t = useTranslations('settings');
 
@@ -75,7 +77,9 @@ const Settings = ({navigation}) => {
             <p className={s.btnText}>{localCurrency}</p>
           </div>
         </Link>
-        <Link href='/manage-coins' className={s.btn}>
+        <Link
+          href={`/wallet/${currentWalletClientId}/manage-coins`}
+          className={s.btn}>
           {icons.setCurrency}
           <div className={s.box}>
             <p className={s.btnTitle}>{t('coinList')}</p>

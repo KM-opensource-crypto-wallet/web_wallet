@@ -73,8 +73,8 @@ const CoinSyncBanner = () => {
   };
 
   const handleBannerClick = useCallback(() => {
-    router.push('/home/coin-sync');
-  }, [router]);
+    router.push(`/wallet/${currentWalletClientId}/home/coin-sync`);
+  }, [router, currentWalletClientId]);
 
   const handleClose = useCallback(
     e => {

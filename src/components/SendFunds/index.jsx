@@ -8,7 +8,7 @@ import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/se
 import BigNumber from 'bignumber.js';
 import {
   calculateEstimateFee,
-  setCurrentTransferData,
+  updateCurrentTransferData,
 } from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import {currencySymbol} from 'data/currency';
 import {
@@ -16,6 +16,7 @@ import {
   selectCurrentWallet,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {useSearchParams} from 'next/navigation';
+import {useParams} from 'next/navigation';
 import {useRouter} from 'next/navigation';
 import ModalSend from 'components/ModalSend';
 import ModalDelegation from 'components/ModalDelegation';
@@ -46,23 +47,34 @@ import {
   selectAllCustomRpc,
 } from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
 import {findLookalikeAddress} from 'dok-wallet-blockchain-networks/helper/addressPoisoning';
+import {getBolt11InvoiceAmount} from 'dok-wallet-blockchain-networks/helper/bolt11';
 import {getSentAddressHistory} from 'dok-wallet-blockchain-networks/redux/sentAddressHistory/sentAddressHistorySelectors';
 import ModalAddressPoisoningWarning from 'components/ModalAddressPoisoningWarning';
 
 const SendFunds = () => {
   const currentCoin = useSelector(selectCurrentCoin);
+  const {clientId} = useParams();
   const searchParams = useSearchParams();
   const qrAddress = searchParams.get('address');
   const qrAmount = searchParams.get('amount');
   const localCurrency = useSelector(getLocalCurrency);
   const transferData = useSelector(getTransferData);
   const isBitcoin = isBitcoinChain(currentCoin?.chain_name);
+  const isLightning = currentCoin?.chain_name === 'bitcoin_lightning';
   const allCustomRPC = useSelector(selectAllCustomRpc);
   const currentWallet = useSelector(selectCurrentWallet);
   const sentAddressHistory = useSelector(getSentAddressHistory);
   const [poisonWarning, setPoisonWarning] = useState(null);
   const [modal, setModal] = useState(false);
   const [maxAmount, setMaxAmount] = useState('0.00000');
+
+  // A fixed-amount invoice must be paid exactly and locks the amount fields
+  // (see isInvoiceAmountLocked below), so it outranks any amount carried by the
+  // QR/deep link -- otherwise "lightning:lnbc..?amount=" would prefill an
+  // uneditable wrong amount. Variable-amount invoices fall through as before.
+  const linkInvoiceAmount = useMemo(() => {
+    return isLightning ? getBolt11InvoiceAmount(qrAddress) : null;
+  }, [isLightning, qrAddress]);
   const [sendInput, setSendInput] = useState(qrAddress || '');
   const [isDelegationModalVisible, setIsDelegationModalVisible] =
     useState(false);
@@ -81,7 +93,8 @@ const SendFunds = () => {
       '0';
 
     const minBalance = currentCoin?.minimumBalance || '0';
-    return new BigNumber(amount).minus(new BigNumber(minBalance)).toString();
+    // toFixed, never toString: a balance under 1e-7 would render as "1.3e-7".
+    return new BigNumber(amount).minus(new BigNumber(minBalance)).toFixed();
   }, [
     isBitcoin,
     currentCoin?.minimumBalance,
@@ -224,7 +237,12 @@ const SendFunds = () => {
       const resolvedToAddress = validAddress || values?.send?.trim();
       checkPoisoningThenProceed(resolvedToAddress, () => {
         dispatch(
-          setCurrentTransferData({
+          // Full reset+merge: drops whatever a previous flow (exchange quote,
+          // staking, NFT, batch) left behind in transferData. The UTXO fields
+          // are the one thing set before this dispatch (SelectUTXOs screen)
+          // that the fee poll, the max clamp and the send itself still read
+          // from the store, so they must be carried through the reset.
+          updateCurrentTransferData({
             toAddress: resolvedToAddress,
             currentCoin,
             amount: validateBigNumberStr(values?.amount),
@@ -234,6 +252,8 @@ const SendFunds = () => {
             isSendFunds: true,
             validName: validAddress ? values?.send : null,
             memo: values?.memo?.trim(),
+            selectedUTXOs: transferData?.selectedUTXOs,
+            selectedUTXOsValue: transferData?.selectedUTXOsValue,
           }),
         );
         dispatch(
@@ -256,7 +276,7 @@ const SendFunds = () => {
             },
           }),
         );
-        router.push('/home/send/send-funds/transfer');
+        router.push(`/wallet/${clientId}/home/send/send-funds/transfer`);
       });
     } else {
       formikRef?.current?.setFieldError('send', 'address is not valid');
@@ -311,8 +331,14 @@ const SendFunds = () => {
           enableReinitialize={true}
           initialValues={{
             send: qrAddress || sendInput,
-            amount: qrAmount || '',
-            currencyAmount: '',
+            amount: linkInvoiceAmount || qrAmount || '',
+            currencyAmount: linkInvoiceAmount
+              ? multiplyBNWithFixed(
+                  linkInvoiceAmount,
+                  currentCoin?.currencyRate,
+                  2,
+                )
+              : '',
             memo: '',
           }}
           validationSchema={validationSchemaSendFunds(
@@ -329,162 +355,218 @@ const SendFunds = () => {
             touched,
             isValid,
             setFieldValue,
-          }) => (
-            <div style={{display: 'flex', flex: 1}}>
-              <div className={s.container}>
-                <div className={s.formInput}>
-                  <p className={s.title}>Your balance</p>
-                  <div className={s.box}>
-                    <p className={s.boxTitle}>{availableAmount}</p>
-                    <p className={s.boxTitle}>{' ' + currentCoin?.symbol}</p>
-                  </div>
-                  <div className={s.box}>
-                    <p className={s.boxBalance}>
-                      {currencySymbol[localCurrency] || ''}
-                      {availableAmountCurrency}
-                    </p>
-                  </div>
-
-                  <div className={s.boxInputFull}>
-                    <p className={s.listTitle}>Send to</p>
-                    <input
-                      className={s.input}
-                      placeholder='Enter wallet adress'
-                      style={{
-                        borderColor: errors.send ? 'red' : 'var(--gray)',
-                      }}
-                      name='send'
-                      onChange={handleChange('send')}
-                      onBlur={handleBlur('send')}
-                      value={values.send}
-                      onSubmit={handleSubmit}
-                    />
-                    {errors.send && (
-                      <p className={s.textConfirm}>{errors.send}</p>
-                    )}
-                  </div>
-
-                  <div className={s.inputWrapper}>
-                    {/* //////////amount//////////// */}
-                    <div className={s.boxInput}>
-                      <p className={s.listTitle}>Amount</p>
-                      <div className={s.inputView}>
-                        <input
-                          className={s.input}
-                          placeholder='Enter amount of Crypto to send'
-                          style={{
-                            borderColor: errors.amount ? 'red' : 'var(--gray)',
-                          }}
-                          name='amount'
-                          onChange={async event => {
-                            const tempValues = validateNumberInInput(
-                              event.target.value,
-                              currentCoin?.decimal,
-                            );
-                            const tempAmount = multiplyBNWithFixed(
-                              tempValues,
-                              currentCoin?.currencyRate,
-                              2,
-                            );
-                            await setFieldValue('amount', tempValues);
-                            await setFieldValue('currencyAmount', tempAmount);
-                          }}
-                          onBlur={handleBlur('amount')}
-                          value={values.amount}
-                          onSubmit={handleSubmit}
-                          type='number'
-                        />
-                        <button
-                          className={s.btnMax}
-                          onClick={async () => {
-                            await setFieldValue(
-                              'currencyAmount',
-                              availableAmountCurrency,
-                            );
-                            await setFieldValue('amount', maxAmount + '');
-                          }}>
-                          <p className={s.btnText}>Max</p>
-                        </button>
-                      </div>
-
-                      {errors.amount && (
-                        <p className={s.textConfirm}>{errors.amount}</p>
-                      )}
+          }) => {
+            // Fixed-amount BOLT11 invoices must be paid exactly, so the amount
+            // fields stay locked while such an invoice is entered.
+            const isInvoiceAmountLocked =
+              isLightning && !!getBolt11InvoiceAmount(values.send);
+            return (
+              <div style={{display: 'flex', flex: 1}}>
+                <div className={s.container}>
+                  <div className={s.formInput}>
+                    <p className={s.title}>Your balance</p>
+                    <div className={s.box}>
+                      <p className={s.boxTitle}>{availableAmount}</p>
+                      <p className={s.boxTitle}>{' ' + currentCoin?.symbol}</p>
                     </div>
-                    <div className={s.boxInput}>
-                      <p className={s.listTitle}>Currency Amount</p>
-                      <div className={s.inputView}>
-                        <input
-                          className={s.input}
-                          placeholder={`Enter ${localCurrency} amount of Crypto to send`}
-                          style={{
-                            borderColor: errors.currencyAmount
-                              ? 'red'
-                              : 'var(--gray)',
-                          }}
-                          name='currencyAmount'
-                          onChange={async event => {
-                            const tempValues = validateNumberInInput(
-                              event.target.value,
-                              2,
-                            );
-                            const tempAmount = new BigNumber(tempValues)
-                              .dividedBy(
-                                new BigNumber(currentCoin?.currencyRate),
-                              )
-                              .toFixed(Number(currentCoin?.decimal));
-                            await setFieldValue('currencyAmount', tempValues);
-                            await setFieldValue('amount', tempAmount);
-                          }}
-                          onBlur={handleBlur('currencyAmount')}
-                          value={values.currencyAmount}
-                          onSubmit={handleSubmit}
-                          type='number'
-                        />
-                        <button
-                          className={s.btnMax}
-                          onClick={async () => {
-                            await setFieldValue(
-                              'currencyAmount',
-                              availableAmountCurrency,
-                            );
-                            await setFieldValue('amount', maxAmount + '');
-                          }}>
-                          <p className={s.btnText}>Max</p>
-                        </button>
-                      </div>
-
-                      {errors.currencyAmount && (
-                        <p className={s.textConfirm}>{errors.currencyAmount}</p>
-                      )}
+                    <div className={s.box}>
+                      <p className={s.boxBalance}>
+                        {currencySymbol[localCurrency] || ''}
+                        {availableAmountCurrency}
+                      </p>
                     </div>
-                    {isMemoSupported && (
-                      <div className={s.boxInputFull}>
-                        <p className={s.listTitle}>Memo</p>
-                        <input
-                          className={s.input}
-                          placeholder='Enter memo'
-                          style={{
-                            borderColor: errors.memo ? 'red' : 'var(--gray)',
-                          }}
-                          name='send'
-                          onChange={handleChange('memo')}
-                          onBlur={handleBlur('memo')}
-                          value={values.memo}
-                        />
-                        <p className={s.infoText}>
-                          {
-                            'Memo or Tag is optional, It is only required when recipient needed.'
+
+                    <div className={s.boxInputFull}>
+                      <p className={s.listTitle}>Send to</p>
+                      <input
+                        className={s.input}
+                        placeholder='Enter wallet adress'
+                        style={{
+                          borderColor: errors.send ? 'red' : 'var(--gray)',
+                        }}
+                        name='send'
+                        onChange={async event => {
+                          const text = event.target.value;
+                          await setFieldValue('send', text);
+                          if (!isLightning) {
+                            return;
                           }
-                        </p>
-                        {errors.memo && (
-                          <p className={s.textConfirm}>{errors.memo}</p>
+                          const invoiceAmount = getBolt11InvoiceAmount(text);
+                          if (invoiceAmount) {
+                            await setFieldValue('amount', invoiceAmount);
+                            await setFieldValue(
+                              'currencyAmount',
+                              multiplyBNWithFixed(
+                                invoiceAmount,
+                                currentCoin?.currencyRate,
+                                2,
+                              ),
+                            );
+                          } else if (getBolt11InvoiceAmount(values.send)) {
+                            // The previous recipient was a fixed-amount invoice;
+                            // its amount no longer applies to this recipient.
+                            await setFieldValue('amount', '');
+                            await setFieldValue('currencyAmount', '');
+                          }
+                        }}
+                        onBlur={handleBlur('send')}
+                        value={values.send}
+                        onSubmit={handleSubmit}
+                      />
+                      {errors.send && (
+                        <p className={s.textConfirm}>{errors.send}</p>
+                      )}
+                    </div>
+
+                    <div className={s.inputWrapper}>
+                      {/* //////////amount//////////// */}
+                      <div className={s.boxInput}>
+                        <p className={s.listTitle}>Amount</p>
+                        <div className={s.inputView}>
+                          <input
+                            className={s.input}
+                            placeholder='Enter amount of Crypto to send'
+                            style={{
+                              borderColor: errors.amount
+                                ? 'red'
+                                : 'var(--gray)',
+                              color: isInvoiceAmountLocked
+                                ? 'var(--gray)'
+                                : undefined,
+                            }}
+                            name='amount'
+                            readOnly={isInvoiceAmountLocked}
+                            onChange={async event => {
+                              const tempValues = validateNumberInInput(
+                                event.target.value,
+                                currentCoin?.decimal,
+                              );
+                              const tempAmount = multiplyBNWithFixed(
+                                tempValues,
+                                currentCoin?.currencyRate,
+                                2,
+                              );
+                              await setFieldValue('amount', tempValues);
+                              await setFieldValue('currencyAmount', tempAmount);
+                            }}
+                            onBlur={handleBlur('amount')}
+                            value={values.amount}
+                            onSubmit={handleSubmit}
+                            type='number'
+                          />
+                          {!isInvoiceAmountLocked && (
+                            <button
+                              className={s.btnMax}
+                              onClick={async () => {
+                                await setFieldValue(
+                                  'currencyAmount',
+                                  availableAmountCurrency,
+                                );
+                                await setFieldValue('amount', maxAmount + '');
+                              }}>
+                              <p className={s.btnText}>Max</p>
+                            </button>
+                          )}
+                        </div>
+
+                        {errors.amount && (
+                          <p className={s.textConfirm}>{errors.amount}</p>
                         )}
                       </div>
-                    )}
+                      <div className={s.boxInput}>
+                        <p className={s.listTitle}>Currency Amount</p>
+                        <div className={s.inputView}>
+                          <input
+                            className={s.input}
+                            placeholder={`Enter ${localCurrency} amount of Crypto to send`}
+                            style={{
+                              borderColor: errors.currencyAmount
+                                ? 'red'
+                                : 'var(--gray)',
+                              color: isInvoiceAmountLocked
+                                ? 'var(--gray)'
+                                : undefined,
+                            }}
+                            name='currencyAmount'
+                            readOnly={isInvoiceAmountLocked}
+                            onChange={async event => {
+                              const tempValues = validateNumberInInput(
+                                event.target.value,
+                                2,
+                              );
+                              const tempAmount = new BigNumber(tempValues)
+                                .dividedBy(
+                                  new BigNumber(currentCoin?.currencyRate),
+                                )
+                                .toFixed(Number(currentCoin?.decimal));
+                              await setFieldValue('currencyAmount', tempValues);
+                              await setFieldValue('amount', tempAmount);
+                            }}
+                            onBlur={handleBlur('currencyAmount')}
+                            value={values.currencyAmount}
+                            onSubmit={handleSubmit}
+                            type='number'
+                          />
+                          {!isInvoiceAmountLocked && (
+                            <button
+                              className={s.btnMax}
+                              onClick={async () => {
+                                await setFieldValue(
+                                  'currencyAmount',
+                                  availableAmountCurrency,
+                                );
+                                await setFieldValue('amount', maxAmount + '');
+                              }}>
+                              <p className={s.btnText}>Max</p>
+                            </button>
+                          )}
+                        </div>
+
+                        {errors.currencyAmount && (
+                          <p className={s.textConfirm}>
+                            {errors.currencyAmount}
+                          </p>
+                        )}
+                      </div>
+                      {isMemoSupported && (
+                        <div className={s.boxInputFull}>
+                          <p className={s.listTitle}>Memo</p>
+                          <input
+                            className={s.input}
+                            placeholder='Enter memo'
+                            style={{
+                              borderColor: errors.memo ? 'red' : 'var(--gray)',
+                            }}
+                            name='send'
+                            onChange={handleChange('memo')}
+                            onBlur={handleBlur('memo')}
+                            value={values.memo}
+                          />
+                          <p className={s.infoText}>
+                            {
+                              'Memo or Tag is optional, It is only required when recipient needed.'
+                            }
+                          </p>
+                          {errors.memo && (
+                            <p className={s.textConfirm}>{errors.memo}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                {isEip7702SupportedChain(currentCoin?.chain_name) && (
+                  {isEip7702SupportedChain(currentCoin?.chain_name) && (
+                    <button
+                      disabled={!isValid}
+                      className={s.button}
+                      style={{
+                        backgroundColor: isValid
+                          ? 'var(--background)'
+                          : 'var(--gray)',
+                      }}
+                      onClick={addToBatch}>
+                      <p className={s.buttonTitle}>Add to Batch</p>
+                    </button>
+                  )}
                   <button
                     disabled={!isValid}
                     className={s.button}
@@ -493,24 +575,13 @@ const SendFunds = () => {
                         ? 'var(--background)'
                         : 'var(--gray)',
                     }}
-                    onClick={addToBatch}>
-                    <p className={s.buttonTitle}>Add to Batch</p>
+                    onClick={handleSubmit}>
+                    <p className={s.buttonTitle}>Next</p>
                   </button>
-                )}
-                <button
-                  disabled={!isValid}
-                  className={s.button}
-                  style={{
-                    backgroundColor: isValid
-                      ? 'var(--background)'
-                      : 'var(--gray)',
-                  }}
-                  onClick={handleSubmit}>
-                  <p className={s.buttonTitle}>Next</p>
-                </button>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          }}
         </Formik>
 
         {currentCoin?.isDelegationAvailable &&

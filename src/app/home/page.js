@@ -1,6 +1,6 @@
 'use client';
-import Home from 'components/Home';
+import RedirectToWalletRoute from 'components/RedirectToWalletRoute';
 
 export default function HomePage() {
-  return <Home />;
+  return <RedirectToWalletRoute suffix='/home' />;
 }

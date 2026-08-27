@@ -342,7 +342,7 @@ const Wallets = () => {
                                 dispatch(
                                   setCurrentWalletClientId(item?.clientId),
                                 );
-                                router.push(`/home/wallet/${item.clientId}`);
+                                router.push(`/wallet/${item.clientId}/home`);
                               }}>
                               <div
                                 className={s.dragHandle}

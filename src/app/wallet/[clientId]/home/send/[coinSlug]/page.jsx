@@ -25,7 +25,7 @@ export default function SendWithCoinSlug() {
     }
     const matchedCoin = findCoinBySlug(currentWallet?.coins, coinSlug);
     if (!matchedCoin) {
-      router.replace(`/home/wallet/${clientId}`);
+      router.replace(`/wallet/${clientId}/home`);
       return;
     }
     if (getCoinSlug(currentCoin) !== coinSlug) {

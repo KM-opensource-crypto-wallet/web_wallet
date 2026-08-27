@@ -1,8 +1,6 @@
 'use client';
-import Exchange from 'components/Exchange';
+import RedirectToWalletRoute from 'components/RedirectToWalletRoute';
 
-const Swap = () => {
-  return <Exchange />;
-};
-
-export default Swap;
+export default function SwapPage() {
+  return <RedirectToWalletRoute suffix='/home' />;
+}

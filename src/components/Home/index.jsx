@@ -6,7 +6,7 @@ import classNames from './Home.module.css';
 
 const icons = require(`assets/images/icons`).default;
 import Link from 'next/link';
-import {useSearchParams} from 'next/navigation';
+import {useParams, useSearchParams} from 'next/navigation';
 import WalletConnectStatus from 'components/WalletConnectStatus';
 import WalletConnectRequestModal from 'components/WalletConnectRequestModal';
 import WalletConnectTransactionModal from 'components/WalletConnectTransactionModal';
@@ -96,6 +96,7 @@ const COIN_SORT_OPTIONS = [
 ];
 
 const Home = () => {
+  const {clientId} = useParams();
   const searchParams = useSearchParams();
   const walletConnect = searchParams.get('connect');
   const [number, setNumber] = useState(1);
@@ -358,7 +359,9 @@ const Home = () => {
         </div>
         <WalletConnectStatus />
         <div className={classNames.btnBox}>
-          <Link href='/manage-coins' className={classNames.btn}>
+          <Link
+            href={`/wallet/${clientId}/manage-coins`}
+            className={classNames.btn}>
             {icons.addCircle}
             <p className={classNames.btnText}>More Coins</p>
           </Link>

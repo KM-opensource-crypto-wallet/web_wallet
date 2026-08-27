@@ -15,7 +15,7 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 
 import s from './Send.module.css';
-import {useRouter} from 'next/navigation';
+import {useParams, useRouter} from 'next/navigation';
 
 const icons = require(`assets/images/send`).default;
 const copyIcon = require(`assets/images/icons`).default;
@@ -34,7 +34,7 @@ import {
 import {getVisibleDeriveAddresses} from 'dok-wallet-blockchain-networks/service/bitcoinHdAddress';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import {toast} from 'react-toastify';
-import classNames from '../Home.module.css';
+import classNames from 'components/Home/Home.module.css';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import IconButton from '@mui/material/IconButton';
 import Close from '@mui/icons-material/Close';
@@ -47,6 +47,7 @@ import ModalUnclaimedDeposit from 'components/ModalUnclaimedDeposit';
 
 const SendScreen = () => {
   const router = useRouter();
+  const {clientId} = useParams();
   const localCurrency = useSelector(getLocalCurrency);
   const currentCoin = useSelector(selectCurrentCoin);
   const isAddMoreAddressPopupHide = useSelector(
@@ -255,7 +256,7 @@ const SendScreen = () => {
             </div>
             <div className={s.btnList}>
               <Link
-                href={`/home/send/send-funds`}
+                href={`/wallet/${clientId}/home/send/send-funds`}
                 className={`${s.btn} ${s.shadow}`}
                 style={{marginRight: 20}}
                 onClick={() => dispatch(clearSelectedUTXOs())}>
@@ -264,7 +265,7 @@ const SendScreen = () => {
               </Link>
               <Link
                 className={`${s.btn} ${s.shadow}`}
-                href={'/home/send/receive-funds'}>
+                href={`/wallet/${clientId}/home/send/receive-funds`}>
                 <div className={s.icon}>{icons.rec}</div>
                 <p className={s.btnText}>Receive</p>
               </Link>
@@ -331,13 +332,17 @@ const SendScreen = () => {
             <div className={s.actionBtnList}>
               <button
                 className={s.button}
-                onClick={() => router.push(`/home/transactions`)}>
+                onClick={() =>
+                  router.push(`/wallet/${clientId}/home/transactions`)
+                }>
                 TRANSACTION HISTORY
               </button>
               {isStaking && (
                 <button
                   className={s.button}
-                  onClick={() => router.push(`/home/staking-list`)}>
+                  onClick={() =>
+                    router.push(`/wallet/${clientId}/home/staking-list`)
+                  }>
                   STAKING
                 </button>
               )}

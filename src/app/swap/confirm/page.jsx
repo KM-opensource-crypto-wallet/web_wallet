@@ -1,10 +1,6 @@
 'use client';
+import RedirectToWalletRoute from 'components/RedirectToWalletRoute';
 
-import React from 'react';
-import CommonTransfer from 'components/CommonTransfer';
-
-const SwapConfirm = () => {
-  return <CommonTransfer />;
-};
-
-export default SwapConfirm;
+export default function SwapConfirmPage() {
+  return <RedirectToWalletRoute suffix='/home' />;
+}

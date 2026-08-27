@@ -249,6 +249,14 @@ export const getCoinSlug = coin =>
 export const findCoinBySlug = (coins, slug) =>
   coins?.find(coin => getCoinSlug(coin) === slug) || null;
 
+export const getActiveNavSegment = pathname => {
+  const segments = pathname?.split('/') || [];
+  if (segments[1] === 'wallet' && segments[3]) {
+    return `/${segments[3]}`;
+  }
+  return `/${segments[1]}`;
+};
+
 export const allPublicRoutes = ['/auth/learn-reset/'];
 
 export const publicRoutes = [

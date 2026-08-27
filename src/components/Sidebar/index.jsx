@@ -39,12 +39,13 @@ import {showToast} from 'src/utils/toast';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import {isChatOptions} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {useTranslations} from 'next-intl';
-import {publicRoutes} from 'utils/common';
+import {publicRoutes, getActiveNavSegment} from 'utils/common';
 import {
   getCryptoProviders,
   getExchangeProviders,
   getSellCryptoAllProviders,
 } from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
+import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 
 const Sidebar = () => {
   const router = useRouter();
@@ -58,7 +59,7 @@ const Sidebar = () => {
   const t = useTranslations('home');
 
   const path = usePathname();
-  const pathname = `/${path.split('/')[1]}`;
+  const pathname = getActiveNavSegment(path);
 
   const selectedConversation = useSelector(
     getSelectedConversations,
@@ -77,19 +78,21 @@ const Sidebar = () => {
   const buyCryptoProvider = useSelector(getCryptoProviders);
   const sellCryptoProvider = useSelector(getSellCryptoAllProviders);
   const exchangeCryptoProvider = useSelector(getExchangeProviders);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
 
   const [isOpenMenu, setIsOpenMenu] = useState(false);
   const dispatch = useDispatch();
 
   const filterSideBarList = useMemo(
     () =>
-      sidebarList.filter(item => {
-        if (item.href === '/buy-crypto') return buyCryptoProvider.length > 0;
-        if (item.href === '/sell-crypto') return sellCryptoProvider.length > 0;
-        if (item.href === '/swap') return exchangeCryptoProvider.length > 0;
+      sidebarList(currentWalletClientId).filter(item => {
+        if (item.key === 'buyCrypto') return buyCryptoProvider.length > 0;
+        if (item.key === 'sellCrypto') return sellCryptoProvider.length > 0;
+        if (item.key === 'swap') return exchangeCryptoProvider.length > 0;
         return true;
       }),
     [
+      currentWalletClientId,
       buyCryptoProvider.length,
       exchangeCryptoProvider.length,
       sellCryptoProvider.length,
@@ -212,8 +215,8 @@ const Sidebar = () => {
       <>
         <aside className={s.container}>
           <ul>
-            {filterSideBarList.map(({href, item}) => (
-              <li key={href}>
+            {filterSideBarList.map(({key, href, item}) => (
+              <li key={key}>
                 <ActiveLink href={href} setModal={setModal} setPage={setPage}>
                   {item(t)}
                 </ActiveLink>
@@ -237,8 +240,8 @@ const Sidebar = () => {
           itemListClassName={s.bmItemList}
           overlayClassName={s.bmOverlay}>
           <ul className={s.navList}>
-            {filterSideBarList.map(({href, item}) => (
-              <li key={href} onClick={handleCheckMenu}>
+            {filterSideBarList.map(({key, href, item}) => (
+              <li key={key} onClick={handleCheckMenu}>
                 <ActiveLink href={href} setModal={setModal} setPage={setPage}>
                   {item(t)}
                 </ActiveLink>
