@@ -5,10 +5,19 @@ import {
   parseBalance,
 } from 'dok-wallet-blockchain-networks/helper';
 
-let sdkInstance = null;
-let connectingPromise = null;
 let prepareSendResponse;
+// Connected instances, keyed by mnemonic. This is the single source of truth:
+// never gate a lookup on a mutable "current instance" global, or a failed
+// connect for one wallet makes the next call re-connect an already-live one.
 const sdkMap = new Map();
+// In-flight connects, keyed by mnemonic. Keying matters: a single shared
+// promise would hand wallet B the SDK of whichever wallet connected first.
+const connectingMap = new Map();
+// Only for callers that pass no phrase at all (getChain is called with
+// currentWallet?.phrase, which can be undefined).
+let lastConnectedSdk = null;
+
+const STORAGE_DIR = './.data';
 
 const commonConnectSdk = async mnemonic => {
   try {
@@ -27,52 +36,70 @@ const commonConnectSdk = async mnemonic => {
       mnemonic: mnemonic,
     });
 
-    sdkBuilder = await sdkBuilder.withDefaultStorage('./.data');
+    sdkBuilder = await sdkBuilder.withDefaultStorage(STORAGE_DIR);
 
-    sdkInstance = await sdkBuilder.build();
+    const sdk = await sdkBuilder.build();
 
-    // await sdkInstance.addEventListener(eventListener);
-    sdkMap.set(mnemonic, sdkInstance);
-    return sdkInstance;
+    // await sdk.addEventListener(eventListener);
+    sdkMap.set(mnemonic, sdk);
+    lastConnectedSdk = sdk;
+    return sdk;
   } catch (err) {
-    console.error('❌ Connection error:', err);
-    sdkInstance = null;
-    connectingPromise = null;
+    // Breez errors carry their cause in .tag/.inner, which a bare
+    // console.error drops -- leaving only "Error" with no message.
+    console.error('❌ Connection error:', {
+      name: err?.constructor?.name,
+      message: err?.message,
+      tag: err?.tag,
+      inner: err?.inner,
+      storageDir: STORAGE_DIR,
+      raw: JSON.stringify(err, Object.getOwnPropertyNames(err || {})),
+    });
+    // Deliberately no shared state cleared here: one wallet's failure must
+    // not invalidate another wallet's working instance.
     throw err;
   }
 };
 
 async function connectToSdk(phrase) {
-  let mnemonic = phrase;
-  if (sdkInstance) {
-    if (sdkMap.has(mnemonic)) {
-      return sdkMap.get(mnemonic);
-    } else {
-      // Initialize sdkInstance for the new mnemonic
-      if (!mnemonic) return sdkInstance;
-      connectingPromise = commonConnectSdk(mnemonic);
-      return connectingPromise;
-    }
+  const mnemonic = phrase;
+  if (!mnemonic) {
+    return lastConnectedSdk;
   }
-
-  if (connectingPromise) {
-    return connectingPromise;
+  const existing = sdkMap.get(mnemonic);
+  if (existing) {
+    return existing;
   }
-
-  connectingPromise = commonConnectSdk(mnemonic);
-
-  return connectingPromise;
+  // Per mnemonic, so a concurrent connect for a DIFFERENT wallet is never
+  // handed this wallet's in-flight promise.
+  const inflight = connectingMap.get(mnemonic);
+  if (inflight) {
+    return inflight;
+  }
+  const promise = commonConnectSdk(mnemonic);
+  connectingMap.set(mnemonic, promise);
+  try {
+    return await promise;
+  } finally {
+    connectingMap.delete(mnemonic);
+  }
 }
 
 async function prepareAndSendPayment(phrase, paymentRequest, amount) {
   try {
     const sdk = await connectToSdk(phrase);
     if (!sdk || !paymentRequest) {
-      console.error('Error', 'SDK not connected or no payment request');
-      return;
+      // Must throw, not return: the fee estimate is only reported as failed
+      // when this rejects, and a bare `return` would leave prepareLightning
+      // destructuring undefined.
+      throw new Error('SDK not connected or no payment request');
     }
     const prepareResponse = await sdk.prepareSendPayment({
-      paymentRequest,
+      // 0.23.0 changed `paymentRequest` from a plain string to the
+      // PaymentRequest union. The WASM binding spells its variants as
+      // `{type, ...}` objects, so this is the twin of mobile's
+      // `new PaymentRequest.Input({input})`.
+      paymentRequest: {type: 'input', input: paymentRequest},
       amount: BigInt(convertToSmallAmount(amount, 8)),
     });
     prepareSendResponse = prepareResponse;
@@ -99,9 +126,15 @@ async function prepareAndSendPayment(phrase, paymentRequest, amount) {
         sparkFee: '',
       };
     }
-    return {};
+    // No known payment method matched, so the payment cannot be priced. Never
+    // fall through to an empty object: the estimate would look successful and
+    // Transfer would show a 0 fee instead of its error state.
+    throw new Error(
+      `Unsupported lightning payment method: ${prepareResponse.paymentMethod?.type}`,
+    );
   } catch (err) {
     console.error('Error preparing payment:', err);
+    throw err;
   }
 }
 
@@ -300,11 +333,10 @@ export const getLightningTransactions = async phrase => {
 
     if (Array.isArray(transactions)) {
       return transactions.map(item => {
-        const txHash =
-          item?.details.inner?.txId ||
-          item?.details.inner?.paymentHash ||
-          item?.id ||
-          'N/A';
+        // `details` is a flat `{type, ...}` union in the WASM binding -- the
+        // `.inner` hop is mobile's uniffi shape and is always undefined here,
+        // so every row silently fell back to the payment id.
+        const txHash = item?.details?.txId || item?.id || 'N/A';
         return {
           amount: item.amount,
           link: txHash?.substring(0, 13) + '...',
@@ -333,11 +365,8 @@ export const getLightningTransaction = async (phrase, txHash) => {
     const item = response?.payment;
     if (!item) return null;
 
-    const hash =
-      item?.details?.inner?.txId ||
-      item?.details?.inner?.paymentHash ||
-      item?.id ||
-      'N/A';
+    // Flat union, not mobile's `.inner` -- see getLightningTransactions.
+    const hash = item?.details?.txId || item?.id || 'N/A';
     const isSend = item.paymentType === 'send' || item.paymentType === 1;
 
     // Same endpoint semantics as the list mapping above: the wallet's own
@@ -388,7 +417,12 @@ export const claimOnchainDeposit = async phrase => {
     const response = await sdk.listUnclaimedDeposits(request);
 
     for (const deposit of response.deposits) {
-      const requiredFeeRate = deposit.claimError.requiredFeeSats || BigInt(0);
+      // `?? 0`, not `|| BigInt(0)`: amountSats is a number, so a bigint
+      // fallback throws "Cannot mix BigInt and other types" on the next line.
+      // claimError is optional, and only its maxDepositClaimFeeExceeded
+      // variant carries requiredFeeSats -- without the guard a single such
+      // deposit collapsed the whole list to [].
+      const requiredFeeRate = deposit.claimError?.requiredFeeSats ?? 0;
       const amountReceive = deposit.amountSats - requiredFeeRate;
       result.push({
         txid: deposit.txid,

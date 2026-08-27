@@ -1,5 +1,6 @@
 import {Roboto} from 'next/font/google';
 import './globals.css';
+import 'utils/bigNumberConfig';
 import StateProvider from '../redux/StateProvider';
 import AppRouting from 'components/AppRouting';
 import ThemeProvider from 'theme/ThemeContext';

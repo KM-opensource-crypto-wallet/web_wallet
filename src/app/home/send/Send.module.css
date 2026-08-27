@@ -137,12 +137,22 @@
   margin-top: 21px;
 }
 
+.addressTitleRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
 .addresTitle {
   color: var(--gray);
   font-size: 16px;
   margin-bottom: 10px;
   margin-top: 21px;
   text-transform: uppercase;
+}
+
+.addressSelector {
+  margin-bottom: 20px;
 }
 
 .addressViev {
@@ -171,7 +181,6 @@
   font-size: 14px;
   margin-bottom: 18px;
 }
-
 
 .grayLine {
   color: var(--gray);
@@ -242,7 +251,7 @@
   padding-right: 16px;
   height: 60px;
   flex-direction: row;
-  display:flex;
+  display: flex;
   background-color: var(--walletItemColor);
   align-items: center;
 }
@@ -265,7 +274,7 @@
   font-family: var(--font-roboto);
   font-weight: 600;
   flex: 1;
-  display:flex;
+  display: flex;
 }
 
 .syncButtonTitle {

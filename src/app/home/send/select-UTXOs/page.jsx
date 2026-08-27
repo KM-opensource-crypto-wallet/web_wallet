@@ -1,4 +1,5 @@
 'use client';
+import AddressTypeBadge from 'components/AddressTypeBadge';
 import GoBackButton from 'components/GoBackButton';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import {
@@ -25,6 +26,18 @@ const SelectUTXOs = () => {
   const coinId = useMemo(() => {
     return currentCoin?._id + currentCoin?.name + currentCoin?.chain_name;
   }, [currentCoin]);
+
+  // UTXO groups are keyed by bare address; map back to the derive entry so the
+  // group header can show the address type.
+  const deriveAddressByAddress = useMemo(() => {
+    const map = new Map();
+    (currentCoin?.deriveAddresses || []).forEach(item => {
+      if (item?.address) {
+        map.set(item.address, item);
+      }
+    });
+    return map;
+  }, [currentCoin?.deriveAddresses]);
 
   const disableContinue = useMemo(
     () => allUTXOs.every(item => !item.isSelected),
@@ -155,6 +168,10 @@ const SelectUTXOs = () => {
                       {getCustomizePublicAddress(item.label)} (
                       {item.data.reduce((acc, e) => (acc += e.value), 0)})
                     </p>
+                    <AddressTypeBadge
+                      chain_name={currentCoin?.chain_name}
+                      item={deriveAddressByAddress.get(item.label)}
+                    />
                   </div>
                   <div className={s.subItem}>
                     {item.data.map(items => (
