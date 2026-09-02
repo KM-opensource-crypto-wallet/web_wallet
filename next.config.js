@@ -28,6 +28,7 @@ const nextConfig = {
     BREEZ_API_KEY: process.env.BREEZ_API_KEY,
     NEXT_PUBLIC_BUGFENDER_APP_KEY: process.env.NEXT_PUBLIC_BUGFENDER_APP_KEY,
     ENV_MODE: process.env.ENV_MODE,
+    SPONSOR_TREASURY_ADDRESS: process.env.SPONSOR_TREASURY_ADDRESS,
   },
   trailingSlash: true,
   reactStrictMode: false,

@@ -14,6 +14,7 @@ import {sendFunds} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSli
 import {
   getTransferData,
   getTransferDataCustomError,
+  getTransferDataCustomErrorCode,
   getTransferDataFeeSuccess,
   getTransferDataLoading,
   getTransferDataSubmitting,
@@ -31,6 +32,9 @@ import {
   isCustomAddressNotSupportedChain,
   isEVMChain,
   isFeesOptionChain,
+  isSponsoredGasChain,
+  getSponsoredGasTokenSymbol,
+  SPONSOR_EMPTY_CODE,
 } from 'dok-wallet-blockchain-networks/helper';
 import {
   getBalanceForNativeCoin,
@@ -52,7 +56,11 @@ import {
   selectSelectedExchangeChain,
 } from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
 import PageTitle from 'components/PageTitle';
-import {calculateEstimateFee} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
+import {
+  calculateEstimateFee,
+  setCurrentTransferData,
+} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
+import SponsoredGasToggle from 'components/SponsoredGasToggle';
 import icons from 'assets/images/icons';
 import ValidatorItem from 'components/ValidatorItem';
 import {getSellCryptoRequestDetails} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
@@ -112,6 +120,7 @@ const CommonTransfer = () => {
   const isLoading = useSelector(getTransferDataLoading);
   const feeSuccess = useSelector(getTransferDataFeeSuccess);
   const customError = useSelector(getTransferDataCustomError);
+  const customErrorCode = useSelector(getTransferDataCustomErrorCode);
   const balance = useSelector(getBalanceForNativeCoin);
   const phrase = useSelector(getCurrentWalletPhrase);
   const failedTransaction = useSelector(getFailedTransaction);
@@ -170,6 +179,9 @@ const CommonTransfer = () => {
   });
 
   const quoteExpiresAt = useMemo(() => {
+    if (transferData?.payGasWithToken) {
+      return transferData?.sponsoredQuote?.expiresAt || null;
+    }
     // Quote TTLs only exist for exchange flows. Gating on the screen flag
     // keeps a leftover quote window from a flow that skipped the entry
     // reset from ever blocking a plain send with "Quote expired".
@@ -181,6 +193,8 @@ const CommonTransfer = () => {
     return created && ttl ? created + ttl * 1000 : null;
   }, [
     isExchangeScreen,
+    transferData?.payGasWithToken,
+    transferData?.sponsoredQuote?.expiresAt,
     transferData?.quoteCreatedAt,
     transferData?.quoteTtlSeconds,
   ]);
@@ -225,6 +239,203 @@ const CommonTransfer = () => {
     isCustomFeesValid,
   } = useAdvancedFees({chainName, convertedChainName, isPauseCalculateFees});
 
+  const buildEstimatePayload = () => {
+    const {
+      transferData: freshTransferData,
+      selectedFromAsset: freshFromAsset,
+      selectedFromWallet: freshFromWallet,
+      amountFrom: freshAmountFrom,
+      currentWallet: freshCurrentWallet,
+    } = transferContextRef.current;
+    return {
+      isFetchNonce: false,
+      existingNonce: freshTransferData?.nonce,
+      fromAddress:
+        isSendFundScreen ||
+        isSellCryptoScreen ||
+        isStakingScreen ||
+        isBatchTransaction
+          ? freshTransferData?.currentCoin?.address
+          : isExchangeScreen
+            ? freshFromAsset?.address
+            : freshTransferData?.selectedNFT?.coin?.address,
+      toAddress: freshTransferData?.toAddress,
+      memo: freshTransferData?.memo,
+      amount:
+        isSendFundScreen || isSellCryptoScreen || isStakingScreen
+          ? freshTransferData?.amount
+          : isExchangeScreen
+            ? freshAmountFrom
+            : null,
+      contractAddress: isSendNFT
+        ? freshTransferData?.selectedNFT?.token_address ||
+          freshTransferData?.selectedNFT?.associatedTokenAddress
+        : freshTransferData?.currentCoin?.contractAddress,
+      balance: freshTransferData?.currentCoin?.totalAmount,
+      selectedWallet: isExchangeScreen
+        ? freshFromWallet
+        : isSendNFT
+          ? freshCurrentWallet
+          : null,
+      selectedCoin: isExchangeScreen
+        ? freshFromAsset
+        : isSendNFT
+          ? freshTransferData?.currentCoin
+          : null,
+      contract_type: isSendNFT
+        ? freshTransferData?.selectedNFT?.contract_type
+        : null,
+      isNFT: isSendNFT,
+      isExchange: isExchangeScreen,
+      mint: isSendNFT ? freshTransferData?.selectedNFT?.mint : null,
+      tokenId: isSendNFT ? freshTransferData?.selectedNFT?.token_id : null,
+      tokenAmount: isSendNFT
+        ? freshTransferData?.selectedNFT?.amount || 1
+        : null,
+      validatorPubKey: isStakingScreen
+        ? freshTransferData?.validatorPubKey
+        : null,
+      stakingAddress: isStakingScreen
+        ? freshTransferData?.stakingAddress
+        : null,
+      stakingBalance: isStakingScreen
+        ? freshTransferData?.stakingBalance
+        : null,
+      resourceType: isStakingScreen ? freshTransferData?.resourceType : null,
+      selectedVotes: isVoteStakingScreen
+        ? freshTransferData?.selectedVotes
+        : null,
+      isBatchTransaction,
+      currentCoin: isBatchTransaction ? freshTransferData?.currentCoin : null,
+      calls: isBatchTransaction ? freshTransferData?.calls : null,
+      isCreateStaking: isCreateStaking,
+      isWithdrawStaking: !!isWithdrawStaking,
+      isStakingRewards: !!isStakingRewards,
+      isDeactivateStaking: !!isDeactivateStaking,
+      stakingProviderName:
+        isCreateStaking || isDeactivateStaking || isStakingRewards
+          ? freshTransferData?.stakingProviderName
+          : null,
+      tokenDecimals: isStakingScreen
+        ? freshTransferData?.currentCoin?.decimal
+        : null,
+      isMaxCheckbox: isDeactivateStaking
+        ? freshTransferData?.isMaxCheckbox
+        : null,
+      feesType: selectedFeesTypeRef.current,
+      estimateGas: freshTransferData?.estimateGas,
+    };
+  };
+
+  const sponsoredGasCoins = useMemo(() => {
+    if (!isSponsoredGasChain(chainName)) {
+      return [];
+    }
+    const items = isBatchTransaction
+      ? transferData?.transactionsData?.map(item => item?.coinInfo)
+      : [transferData?.currentCoin];
+    if (!items?.length || items.some(item => !item?.contractAddress)) {
+      return [];
+    }
+    return (currentWallet?.coins ?? [])
+      .filter(
+        coin =>
+          coin?.chain_name === chainName &&
+          Number(coin?.totalAmount) > 0 &&
+          getSponsoredGasTokenSymbol(chainName, coin?.contractAddress),
+      )
+      .map(coin => ({
+        symbol: getSponsoredGasTokenSymbol(chainName, coin?.contractAddress),
+        contractAddress: coin?.contractAddress,
+      }));
+  }, [
+    chainName,
+    isBatchTransaction,
+    transferData?.transactionsData,
+    transferData?.currentCoin,
+    currentWallet?.coins,
+  ]);
+
+  const payGasWithToken = !!transferData?.payGasWithToken;
+  const payGasWithTokenRef = useRef(payGasWithToken);
+  payGasWithTokenRef.current = payGasWithToken;
+
+  const activeGasToken = useMemo(
+    () =>
+      sponsoredGasCoins.find(
+        item => item.symbol === transferData?.gasTokenSymbol,
+      ) || sponsoredGasCoins[0],
+    [sponsoredGasCoins, transferData?.gasTokenSymbol],
+  );
+
+  const requoteSponsoredGas = useCallback(() => {
+    setIsFetchingFeesAgain(true);
+    isFetchingRef.current = true;
+    dispatch(calculateEstimateFee(buildEstimatePayload()))
+      .unwrap()
+      .then(resp => {
+        setIsFetchingFeesAgain(false);
+        isFetchingRef.current = false;
+        setEstimateStatus(resp ? 'success' : 'failed');
+      })
+      .catch(() => {
+        setIsFetchingFeesAgain(false);
+        isFetchingRef.current = false;
+        setEstimateStatus('failed');
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]);
+
+  const onToggleSponsoredGas = useCallback(() => {
+    const next = !payGasWithToken;
+    if (next) {
+      isPauseCalculateFees.current = false;
+    }
+    dispatch(
+      setCurrentTransferData({
+        payGasWithToken: next,
+        gasTokenSymbol: next ? activeGasToken?.symbol : null,
+        gasTokenContractAddress: next ? activeGasToken?.contractAddress : null,
+        sponsoredQuote: null,
+      }),
+    );
+    requoteSponsoredGas();
+  }, [dispatch, payGasWithToken, activeGasToken, requoteSponsoredGas]);
+
+  const onSelectGasToken = useCallback(
+    symbol => {
+      const picked = sponsoredGasCoins.find(item => item.symbol === symbol);
+      if (!picked) {
+        return;
+      }
+      dispatch(
+        setCurrentTransferData({
+          gasTokenSymbol: picked.symbol,
+          gasTokenContractAddress: picked.contractAddress,
+          sponsoredQuote: null,
+        }),
+      );
+      requoteSponsoredGas();
+    },
+    [dispatch, sponsoredGasCoins, requoteSponsoredGas],
+  );
+
+  const isFetchingSponsoredQuote =
+    payGasWithToken && !transferData?.sponsoredQuote;
+
+  const sponsoredFeeSymbol =
+    payGasWithToken && activeGasToken
+      ? activeGasToken.symbol
+      : transferData?.currentCoin?.chain_symbol;
+
+  const sponsoredGasToggle = activeGasToken ? (
+    <SponsoredGasToggle
+      tokenSymbol={activeGasToken.symbol}
+      checked={payGasWithToken}
+      onToggle={onToggleSponsoredGas}
+    />
+  ) : null;
+
   const nativeBalanceForBatchTransactions = useMemo(() => {
     if (isBatchTransaction && transferData?.transactionsData?.length) {
       const totalBN = transferData?.transactionsData?.reduce((sum, item) => {
@@ -264,19 +475,12 @@ const CommonTransfer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWithdrawStaking, isDeactivateStaking, isStakingRewards, isSendNFT]);
 
-  // Latch the render/poll state machine on the first successful estimate.
-  // The screen can mount while the first estimate is still in flight, so this
-  // fires whenever feeSuccess arrives rather than at mount.
   useEffect(() => {
     if (feeSuccess) {
       setEstimateStatus('success');
     }
   }, [feeSuccess]);
 
-  // Exchange mode used to start polling from quote creation and self-heal a
-  // failed FIRST estimate every 10s. Keep that: when the initial estimate
-  // settles unsuccessfully (loading finished, no success), enter 'failed' so
-  // the poll below starts and the screen can recover on a later tick.
   useEffect(() => {
     if (isExchangeScreen && !isLoading && !isExchangeLoading && !feeSuccess) {
       setEstimateStatus(prev => (prev === 'pending' ? 'failed' : prev));
@@ -285,12 +489,6 @@ const CommonTransfer = () => {
   }, [isExchangeScreen, isLoading, isExchangeLoading, feeSuccess]);
 
   useEffect(() => {
-    // VoteStaking was never part of the polling mode set — keep it out so
-    // its one-shot estimate isn't re-run every 10s.
-    // 'failed' keeps polling too: a transient RPC error on one re-estimate
-    // must not kill the interval permanently — the next successful tick
-    // dispatches setCurrentTransferSuccess(true), the feeSuccess latch flips
-    // estimateStatus back to 'success', and the form self-heals.
     if (
       (estimateStatus === 'success' || estimateStatus === 'failed') &&
       !isVoteStakingScreen
@@ -299,104 +497,12 @@ const CommonTransfer = () => {
         if (
           !isFetchingRef.current &&
           !isPauseCalculateFees.current &&
-          !isQuoteExpiredRef.current
+          (!isQuoteExpiredRef.current || payGasWithTokenRef.current)
         ) {
           setIsFetchingFeesAgain(true);
 
           isFetchingRef.current = true;
-          const {
-            transferData: freshTransferData,
-            selectedFromAsset: freshFromAsset,
-            selectedFromWallet: freshFromWallet,
-            amountFrom: freshAmountFrom,
-            currentWallet: freshCurrentWallet,
-          } = transferContextRef.current;
-          dispatch(
-            calculateEstimateFee({
-              isFetchNonce: false,
-              existingNonce: freshTransferData?.nonce,
-              fromAddress:
-                isSendFundScreen ||
-                isSellCryptoScreen ||
-                isStakingScreen ||
-                isBatchTransaction
-                  ? freshTransferData?.currentCoin?.address
-                  : isExchangeScreen
-                    ? freshFromAsset?.address
-                    : freshTransferData?.selectedNFT?.coin?.address,
-              toAddress: freshTransferData?.toAddress,
-              memo: freshTransferData?.memo,
-              amount:
-                isSendFundScreen || isSellCryptoScreen || isStakingScreen
-                  ? freshTransferData?.amount
-                  : isExchangeScreen
-                    ? freshAmountFrom
-                    : null,
-              contractAddress: isSendNFT
-                ? freshTransferData?.selectedNFT?.token_address ||
-                  freshTransferData?.selectedNFT?.associatedTokenAddress
-                : freshTransferData?.currentCoin?.contractAddress,
-              balance: freshTransferData?.currentCoin?.totalAmount,
-              selectedWallet: isExchangeScreen
-                ? freshFromWallet
-                : isSendNFT
-                  ? freshCurrentWallet
-                  : null,
-              selectedCoin: isExchangeScreen
-                ? freshFromAsset
-                : isSendNFT
-                  ? freshTransferData?.currentCoin
-                  : null,
-              contract_type: isSendNFT
-                ? freshTransferData?.selectedNFT?.contract_type
-                : null,
-              isNFT: isSendNFT,
-              isExchange: isExchangeScreen,
-              mint: isSendNFT ? freshTransferData?.selectedNFT?.mint : null,
-              tokenId: isSendNFT
-                ? freshTransferData?.selectedNFT?.token_id
-                : null,
-              tokenAmount: isSendNFT
-                ? freshTransferData?.selectedNFT?.amount || 1
-                : null,
-              validatorPubKey: isStakingScreen
-                ? freshTransferData?.validatorPubKey
-                : null,
-              stakingAddress: isStakingScreen
-                ? freshTransferData?.stakingAddress
-                : null,
-              stakingBalance: isStakingScreen
-                ? freshTransferData?.stakingBalance
-                : null,
-              resourceType: isStakingScreen
-                ? freshTransferData?.resourceType
-                : null,
-              selectedVotes: isVoteStakingScreen
-                ? freshTransferData?.selectedVotes
-                : null,
-              isBatchTransaction,
-              currentCoin: isBatchTransaction
-                ? freshTransferData?.currentCoin
-                : null,
-              calls: isBatchTransaction ? freshTransferData?.calls : null,
-              isCreateStaking: isCreateStaking,
-              isWithdrawStaking: !!isWithdrawStaking,
-              isStakingRewards: !!isStakingRewards,
-              isDeactivateStaking: !!isDeactivateStaking,
-              stakingProviderName:
-                isCreateStaking || isDeactivateStaking || isStakingRewards
-                  ? freshTransferData?.stakingProviderName
-                  : null,
-              tokenDecimals: isStakingScreen
-                ? freshTransferData?.currentCoin?.decimal
-                : null,
-              isMaxCheckbox: isDeactivateStaking
-                ? freshTransferData?.isMaxCheckbox
-                : null,
-              feesType: selectedFeesTypeRef.current,
-              estimateGas: freshTransferData?.estimateGas,
-            }),
-          )
+          dispatch(calculateEstimateFee(buildEstimatePayload()))
             .unwrap()
             .then(resp => {
               setIsFetchingFeesAgain(false);
@@ -607,20 +713,28 @@ const CommonTransfer = () => {
     setIsAdvancedOptionsOpen(prev => !prev);
   };
 
-  const isDisabled = isBalanceNotAvailable(
-    transferData?.selectedUTXOsValue || balance,
-    transferData?.transactionFee,
-    isExchangeScreen && selectedFromAsset?.type === 'coin'
-      ? amountFrom
-      : isBatchTransaction
-        ? nativeBalanceForBatchTransactions
-        : null,
-  );
+  const isDisabled = payGasWithToken
+    ? isBalanceNotAvailable(
+        transferData?.currentCoin?.totalAmount,
+        transferData?.transactionFee,
+        isSendFundScreen ? transferData?.amount : null,
+      )
+    : isBalanceNotAvailable(
+        transferData?.selectedUTXOsValue || balance,
+        transferData?.transactionFee,
+        isExchangeScreen && selectedFromAsset?.type === 'coin'
+          ? amountFrom
+          : isBatchTransaction
+            ? nativeBalanceForBatchTransactions
+            : null,
+      );
 
   const feeSummaryProps = {
     isRefreshing: isFetchingFeesAgain,
     fee: transferData?.transactionFee,
-    feeSymbol: transferData?.currentCoin?.chain_symbol,
+    // Falls back to the native symbol unless sponsored, where the fee is
+    // denominated in the user's token.
+    feeSymbol: sponsoredFeeSymbol,
     isEip1559,
     estimatedFee: transferData?.estimatedFee,
   };
@@ -701,8 +815,9 @@ const CommonTransfer = () => {
         </div>
         <FeeSummaryBox
           {...feeSummaryProps}
-          maxTotalDisplay={`${currencySymbol[localCurrency]}${totalValue || 0}`}
-        />
+          maxTotalDisplay={`${currencySymbol[localCurrency]}${totalValue || 0}`}>
+          {sponsoredGasToggle}
+        </FeeSummaryBox>
       </div>
     );
   };
@@ -955,7 +1070,7 @@ const CommonTransfer = () => {
             localCurrency={localCurrency}
           />
         ))}
-        <FeeSummaryBox {...feeSummaryProps} />
+        <FeeSummaryBox {...feeSummaryProps}>{sponsoredGasToggle}</FeeSummaryBox>
       </div>
     );
   };
@@ -981,40 +1096,51 @@ const CommonTransfer = () => {
                   : isBatchTransaction
                     ? renderBatchTransactionUI()
                     : renderVotingUI()}
-          {isFeesOptionChain(convertedChainName) && !!feesOptions?.length && (
-            <div className={s.advancedOptionsContainer}>
-              <button
-                className={s.advancedOptionsHeader}
-                onClick={toggleAdvancedOptions}>
-                <div className={s.advancedOptionsTitleContainer}>
-                  <span className={s.advancedOptionsSettingsIcon}>
-                    {icons.settingsSlider}
+          {isFeesOptionChain(convertedChainName) &&
+            ((!!feesOptions?.length && !payGasWithToken) ||
+              (payGasWithToken && sponsoredGasCoins.length > 1)) && (
+              <div className={s.advancedOptionsContainer}>
+                <button
+                  className={s.advancedOptionsHeader}
+                  onClick={toggleAdvancedOptions}>
+                  <div className={s.advancedOptionsTitleContainer}>
+                    <span className={s.advancedOptionsSettingsIcon}>
+                      {icons.settingsSlider}
+                    </span>
+                    <span className={s.advancedOptionsTitle}>
+                      Advanced Options
+                    </span>
+                  </div>
+                  <span
+                    className={`${s.advancedOptionsChevron} ${isAdvancedOptionsOpen ? s.advancedOptionsChevronOpen : ''}`}>
+                    {icons.chevronDown}
                   </span>
-                  <span className={s.advancedOptionsTitle}>
-                    Advanced Options
-                  </span>
-                </div>
-                <span
-                  className={`${s.advancedOptionsChevron} ${isAdvancedOptionsOpen ? s.advancedOptionsChevronOpen : ''}`}>
-                  {icons.chevronDown}
-                </span>
-              </button>
-              {isAdvancedOptionsOpen && (
-                <div className={s.advancedOptionsContent}>
-                  <AdvancedFeesSheet {...advancedFeesSheetProps} />
-                </div>
-              )}
-            </div>
-          )}
+                </button>
+                {isAdvancedOptionsOpen && (
+                  <div className={s.advancedOptionsContent}>
+                    <AdvancedFeesSheet
+                      {...advancedFeesSheetProps}
+                      payGasWithToken={payGasWithToken}
+                      gasTokenCandidates={sponsoredGasCoins}
+                      selectedGasTokenSymbol={activeGasToken?.symbol}
+                      onSelectGasToken={onSelectGasToken}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           {isDisabled && (
-            <p
-              className={
-                s.errorText
-              }>{`You don't have enough balance for make transaction you require ${transferData?.transactionFee} ${transferData?.currentCoin?.chain_symbol} to complete the transaction `}</p>
+            <p className={s.errorText}>
+              {payGasWithToken
+                ? `Not enough ${sponsoredFeeSymbol}. This send needs the amount plus a ${transferData?.transactionFee} ${sponsoredFeeSymbol} network fee.`
+                : `You don't have enough balance for make transaction you require ${transferData?.transactionFee} ${transferData?.currentCoin?.chain_symbol} to complete the transaction `}
+            </p>
           )}
           {isQuoteExpired && (
             <p className={s.errorText}>
-              {'Quote expired — go back and refresh the quote.'}
+              {payGasWithToken
+                ? 'Gas quote expired — fetching a new one.'
+                : 'Quote expired — go back and refresh the quote.'}
             </p>
           )}
           {!isCustomFeesValid && (
@@ -1030,7 +1156,8 @@ const CommonTransfer = () => {
               isSubmitting ||
               isFetchingFeesAgain ||
               isQuoteExpired ||
-              !isCustomFeesValid
+              !isCustomFeesValid ||
+              isFetchingSponsoredQuote
             }
             className={s.button}
             style={{
@@ -1039,7 +1166,8 @@ const CommonTransfer = () => {
                 isSubmitting ||
                 isFetchingFeesAgain ||
                 isQuoteExpired ||
-                !isCustomFeesValid
+                !isCustomFeesValid ||
+                isFetchingSponsoredQuote
                   ? 'var(--disabledButton)'
                   : 'var(--background)',
             }}
@@ -1054,6 +1182,19 @@ const CommonTransfer = () => {
               ? customError?.toString()
               : 'Something went wrong in generating transaction fees'}
           </p>
+          {customErrorCode === SPONSOR_EMPTY_CODE && (
+            <>
+              <p className={s.sponsorEmptyHint}>
+                {`You can still send this by paying the fee yourself — go back and turn off "Pay gas fees with ${sponsoredFeeSymbol}". Or contact us and we will top it up.`}
+              </p>
+              <button
+                className={s.button}
+                style={{backgroundColor: 'var(--background)'}}
+                onClick={() => router.push('/contact-us')}>
+                <p className={s.buttonTitle}>Contact Us</p>
+              </button>
+            </>
+          )}
         </div>
       )}
       <ModalConfirmTransaction

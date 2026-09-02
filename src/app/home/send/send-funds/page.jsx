@@ -32,8 +32,10 @@ import {
   validateNumberInInput,
   isBitcoinChain,
   isEip7702SupportedChain,
+  getSponsoredGasTokenSymbol,
 } from 'dok-wallet-blockchain-networks/helper';
 import PageTitle from 'components/PageTitle';
+import SponsoredGasToggle from 'components/SponsoredGasToggle';
 import s from './SendFunds.module.css';
 import {showToast} from 'src/utils/toast';
 import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
@@ -106,6 +108,35 @@ const SendFunds = () => {
   const isMemoSupported = useMemo(() => {
     return isMemoSupportChain(currentCoin?.chain_name);
   }, [currentCoin?.chain_name]);
+
+  const sponsoredGasToken = useMemo(() => {
+    if (!currentCoin?.contractAddress) {
+      return null;
+    }
+    const held = (currentWallet?.coins ?? []).find(
+      item =>
+        item?.chain_name === currentCoin?.chain_name &&
+        Number(item?.totalAmount) > 0 &&
+        getSponsoredGasTokenSymbol(
+          currentCoin?.chain_name,
+          item?.contractAddress,
+        ),
+    );
+    if (!held) {
+      return null;
+    }
+    return {
+      symbol: getSponsoredGasTokenSymbol(
+        currentCoin?.chain_name,
+        held?.contractAddress,
+      ),
+      contractAddress: held?.contractAddress,
+    };
+  }, [
+    currentCoin?.chain_name,
+    currentCoin?.contractAddress,
+    currentWallet?.coins,
+  ]);
 
   useEffect(() => {
     const currency = searchParams?.get('currency');
@@ -252,6 +283,9 @@ const SendFunds = () => {
             memo: values?.memo?.trim(),
             selectedUTXOs: transferData?.selectedUTXOs,
             selectedUTXOsValue: transferData?.selectedUTXOsValue,
+            payGasWithToken: !!sponsoredGasToken && !!values?.payGasWithToken,
+            gasTokenSymbol: sponsoredGasToken?.symbol ?? null,
+            gasTokenContractAddress: sponsoredGasToken?.contractAddress ?? null,
           }),
         );
         dispatch(
@@ -338,6 +372,7 @@ const SendFunds = () => {
                 )
               : '',
             memo: '',
+            payGasWithToken: false,
           }}
           validationSchema={validationSchemaSendFunds(
             availableAmount,
@@ -548,6 +583,20 @@ const SendFunds = () => {
                           {errors.memo && (
                             <p className={s.textConfirm}>{errors.memo}</p>
                           )}
+                        </div>
+                      )}
+                      {!!sponsoredGasToken && (
+                        <div className={s.boxInputFull}>
+                          <SponsoredGasToggle
+                            tokenSymbol={sponsoredGasToken.symbol}
+                            checked={!!values?.payGasWithToken}
+                            onToggle={() =>
+                              setFieldValue(
+                                'payGasWithToken',
+                                !values?.payGasWithToken,
+                              )
+                            }
+                          />
                         </div>
                       )}
                     </div>

@@ -81,6 +81,10 @@ const AdvancedFeesSheet = ({
   onChangeCustomPriorityFee,
   baseFeePerGas,
   customFeesError = null,
+  payGasWithToken,
+  gasTokenCandidates,
+  selectedGasTokenSymbol,
+  onSelectGasToken,
 }) => {
   const isEVM = isEVMChain(chainName);
   const showPriorityFee = isEip1559 && !!onChangeCustomPriorityFee;
@@ -91,8 +95,34 @@ const AdvancedFeesSheet = ({
 
   return (
     <>
+      {/* Token Gas Price Section */}
+      {!!payGasWithToken && gasTokenCandidates?.length > 1 && (
+        <div className={s.feesMainContainer}>
+          <div className={s.feesOptionContainer}>
+            {gasTokenCandidates.map(item => (
+              <button
+                key={`gas_token_${item.symbol}`}
+                type='button'
+                className={`${s.feesOptionsItem} ${
+                  selectedGasTokenSymbol === item.symbol
+                    ? s.feesOptionsItemSelected
+                    : ''
+                }`}
+                onClick={() => onSelectGasToken(item.symbol)}>
+                <p className={s.feesOptionTitle}>{item.symbol}</p>
+              </button>
+            ))}
+          </div>
+          <p className={s.hint}>
+            {
+              'The network fee is taken from this token as part of your transaction.'
+            }
+          </p>
+        </div>
+      )}
+
       {/* Gas Price / Max Fee Section */}
-      {!!feesOptions?.length && (
+      {!!feesOptions?.length && !payGasWithToken && (
         <div className={s.feesMainContainer}>
           <div className={s.feesOptionContainer}>
             {feesOptions.map(option => {
@@ -169,7 +199,7 @@ const AdvancedFeesSheet = ({
         </div>
       )}
       {/* Nonce Section */}
-      {isEVM && (
+      {isEVM && !payGasWithToken && (
         <>
           <FeeInput
             id='nonceInput'
