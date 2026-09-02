@@ -1,18 +1,13 @@
 'use client';
-import {useEffect} from 'react';
-import {useRouter} from 'next/navigation';
-import {useSelector} from 'react-redux';
-import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {useParams} from 'next/navigation';
+import RedirectToWalletRoute from 'components/RedirectToWalletRoute';
 
 export default function TransactionDetailsPage() {
-  const router = useRouter();
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
+  const {txHash} = useParams();
 
-  useEffect(() => {
-    if (currentWalletClientId) {
-      router.replace(`/wallet/${currentWalletClientId}/home`);
-    }
-  }, [currentWalletClientId, router]);
-
-  return null;
+  return (
+    <RedirectToWalletRoute
+      suffix={`/home/transactions/${encodeURIComponent(txHash)}`}
+    />
+  );
 }
