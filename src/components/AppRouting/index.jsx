@@ -1,5 +1,5 @@
 'use client';
-import React, {useCallback, useContext, useEffect, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import s from './AppRouting.module.css';
 import {usePathname, useSearchParams} from 'next/navigation';
 import ReactGA from 'react-ga4';
@@ -52,7 +52,6 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 import DisabledView from 'components/DisabledView';
 import {MainNavigation} from 'utils/navigation';
-import {getFeesInfo} from 'dok-wallet-blockchain-networks/feesInfo/feesInfo';
 
 import {
   createIfNotExistsMasterClientId,
@@ -120,10 +119,6 @@ function AppRouting({children, wlData}) {
     MainNavigation.setNavigator(routing.push.bind(routing));
   }, [routing]);
 
-  const fetchFeesInfo = useCallback(() => {
-    getFeesInfo().then(_ => {});
-  }, []);
-
   useEffect(() => {
     const setUpWindowHeight = () => {
       const appHeight = () => {
@@ -175,13 +170,6 @@ function AppRouting({children, wlData}) {
           fetchRPCUrl();
         },
         1000 * 60 * 10,
-      );
-      fetchFeesInfo();
-      setInterval(
-        () => {
-          fetchFeesInfo();
-        },
-        1000 * 60 * 60 * 8,
       );
       const walletConnectData = getWalletConnectDetails();
       if (!Object.keys(walletConnectSessions).length) {
