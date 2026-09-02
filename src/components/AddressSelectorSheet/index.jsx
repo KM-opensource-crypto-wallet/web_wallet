@@ -7,9 +7,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {Box, CircularProgress, Modal} from '@mui/material';
+import {Box, CircularProgress, IconButton, Modal} from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
 import AddressTypeBadge from 'components/AddressTypeBadge';
+import AddressQRSheet from 'components/AddressQRSheet';
+import {copyToClipboard} from 'utils/copyToClipboard';
 import {
   getCustomizePublicAddress,
   isBitcoinChain,
@@ -39,6 +43,7 @@ const modalStyle = {
 // payload.context is handed back to onSelect with the chosen entry.
 const AddressSelectorSheet = forwardRef(({onSelect}, ref) => {
   const contextRef = useRef(null);
+  const qrSheetRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const [payload, setPayload] = useState(null);
   // Address whose selection is currently being applied. While set, the sheet
@@ -78,6 +83,22 @@ const AddressSelectorSheet = forwardRef(({onSelect}, ref) => {
     [onSelect, applyingAddress],
   );
 
+  const onPressCopy = useCallback(item => {
+    copyToClipboard(item?.address);
+  }, []);
+
+  const onPressQR = useCallback(
+    item => {
+      qrSheetRef.current?.present({
+        address: item?.address,
+        symbol: payload?.symbol,
+        chain_name: payload?.chain_name,
+        derivePath: item?.derivePath,
+      });
+    },
+    [payload?.symbol, payload?.chain_name],
+  );
+
   const items = Array.isArray(payload?.items) ? payload.items : [];
   const showBalance = isBitcoinChain(payload?.chain_name);
 
@@ -98,31 +119,56 @@ const AddressSelectorSheet = forwardRef(({onSelect}, ref) => {
                 const isSelected = item?.address === payload?.selectedAddress;
                 const isApplying = item?.address === applyingAddress;
                 return (
-                  <button
-                    type='button'
+                  <div
                     key={item?.derivePath || item?.address}
-                    className={s.optionRow}
-                    disabled={!!applyingAddress}
-                    onClick={() => onPressItem(item)}>
-                    <div className={s.optionLabelBox}>
-                      <p className={s.addressRow}>
-                        <span className={s.addressText} title={item?.address}>
-                          {getCustomizePublicAddress(item?.address)}
-                        </span>
-                        <AddressTypeBadge
-                          chain_name={payload?.chain_name}
-                          item={item}
-                        />
-                      </p>
-                      {!!item?.derivePath && (
-                        <p className={s.derivePathText}>{item.derivePath}</p>
+                    className={s.optionRow}>
+                    <button
+                      type='button'
+                      className={s.optionMain}
+                      aria-label={`Select address ${getCustomizePublicAddress(
+                        item?.address,
+                      )}`}
+                      aria-pressed={isSelected}
+                      disabled={!!applyingAddress}
+                      onClick={() => onPressItem(item)}>
+                      <div className={s.optionLabelBox}>
+                        <p className={s.addressRow}>
+                          <span className={s.addressText} title={item?.address}>
+                            {getCustomizePublicAddress(item?.address)}
+                          </span>
+                          <AddressTypeBadge
+                            chain_name={payload?.chain_name}
+                            item={item}
+                          />
+                        </p>
+                        {!!item?.derivePath && (
+                          <p className={s.derivePathText}>{item.derivePath}</p>
+                        )}
+                      </div>
+                      {showBalance && (
+                        <p className={s.balanceText}>
+                          {`${item?.balance || 0} ${payload?.symbol || ''}`}
+                        </p>
                       )}
-                    </div>
-                    {showBalance && (
-                      <p className={s.balanceText}>
-                        {`${item?.balance || 0} ${payload?.symbol || ''}`}
-                      </p>
-                    )}
+                    </button>
+                    <IconButton
+                      size='small'
+                      aria-label='Copy address'
+                      disabled={!!applyingAddress}
+                      className={s.iconButton}
+                      sx={{color: 'var(--gray)'}}
+                      onClick={() => onPressCopy(item)}>
+                      <ContentCopyIcon sx={{fontSize: 20}} />
+                    </IconButton>
+                    <IconButton
+                      size='small'
+                      aria-label='Show address QR code'
+                      disabled={!!applyingAddress}
+                      className={s.iconButton}
+                      sx={{color: 'var(--gray)'}}
+                      onClick={() => onPressQR(item)}>
+                      <QrCode2Icon sx={{fontSize: 20}} />
+                    </IconButton>
                     {isApplying ? (
                       <CircularProgress
                         size={18}
@@ -139,7 +185,7 @@ const AddressSelectorSheet = forwardRef(({onSelect}, ref) => {
                         />
                       )
                     )}
-                  </button>
+                  </div>
                 );
               })
             ) : (
@@ -147,6 +193,9 @@ const AddressSelectorSheet = forwardRef(({onSelect}, ref) => {
             )}
           </div>
         </div>
+        {/* Opens OVER this sheet; MUI stacks nested modals so the selector
+            stays mounted (dimmed + non-interactive) underneath. */}
+        <AddressQRSheet ref={qrSheetRef} />
       </Box>
     </Modal>
   );

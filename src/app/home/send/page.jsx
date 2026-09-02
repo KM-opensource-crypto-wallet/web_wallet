@@ -272,7 +272,7 @@ const SendScreen = () => {
               </Link>
             </div>
             {(isBitcoin || isDeriveAddressChain) &&
-              deriveAddresses?.length > 0 && (
+              deriveAddresses?.length > 1 && (
                 <div>
                   <p className={s.addresTitle}>Select Address:</p>
                   <div className={s.addressSelector}>

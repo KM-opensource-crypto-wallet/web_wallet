@@ -526,7 +526,7 @@ const CreateStaking = () => {
                     </div>
                   )}
 
-                  {isResourceSupport && resourceData?.length && (
+                  {isResourceSupport && !!resourceData?.length && (
                     <div className={styles.boxInput}>
                       <div className={styles.listTitle}>Resource Type</div>
                       <div className={styles.addressView}>

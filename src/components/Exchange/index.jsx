@@ -739,7 +739,7 @@ const Exchange = () => {
           {`You don't have ${amountFrom} ${selectedFromAsset?.symbol || ''}`}
         </p>
       )}
-      {!!possibleFromCoin?.length && (
+      {possibleFromCoin?.length > 1 && (
         <div className={s.addressView}>
           <h3 className={s.addressTitle}>Pay from address</h3>
           <DokDropdown
