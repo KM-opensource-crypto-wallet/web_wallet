@@ -24,6 +24,7 @@ import {
   CHANGE_CHAIN,
   GAP_LIMIT,
   RECEIVE_CHAIN,
+  buildAddressByChain,
   deriveAddressRange,
   getAccountBasePath,
   getNetworkByChainName,
@@ -61,24 +62,6 @@ const getBitcoinAccount = (chain_name, mnemonic) => {
     extendedPublicKey: accountNode.neutered().toBase58(),
     extendedPrivateKey: accountNode.toBase58(),
   };
-};
-
-// Address for one public key, by chain: BIP84 native segwit, BIP49
-// p2sh-wrapped segwit, BIP44 legacy. Mirrors buildAddress in
-// dok-wallet-blockchain-networks/service/bitcoinHdAddress.js, which keeps it
-// private; only the arbitrary-path custom derivations below need it, since the
-// standard windows come from deriveAddressRange.
-const buildBitcoinAddress = (chain_name, pubkey, network) => {
-  if (chain_name === 'bitcoin_legacy') {
-    return bitcoin.payments.p2pkh({pubkey, network}).address;
-  }
-  if (chain_name === 'bitcoin_segwit') {
-    return bitcoin.payments.p2sh({
-      redeem: bitcoin.payments.p2wpkh({pubkey, network}),
-      network,
-    }).address;
-  }
-  return bitcoin.payments.p2wpkh({pubkey, network}).address;
 };
 
 // BIP44 standard account layout: 20 external/receive (.../0/i) + 20
@@ -388,6 +371,7 @@ const createWalletObj = {
   bitcoin: createBitcoinChainWallet('bitcoin'),
   bitcoin_segwit: createBitcoinChainWallet('bitcoin_segwit'),
   bitcoin_legacy: createBitcoinChainWallet('bitcoin_legacy'),
+  bitcoin_taproot: createBitcoinChainWallet('bitcoin_taproot'),
   litecoin: createLitecoinWallet,
   bitcoin_cash: createBitcoinCashWallet,
   solana: createSolanaWallet,
@@ -549,7 +533,9 @@ const addCustomBitcoinDeriveAddress =
       const child = root.derivePath(customDerivePath);
       return {
         privateKey: child.toWIF(),
-        address: buildBitcoinAddress(
+        // Shared with the standard windows (deriveAddressRange) so every
+        // address type, taproot included, is built in exactly one place.
+        address: buildAddressByChain(
           chain_name,
           // eslint-disable-next-line no-undef
           Buffer.from(child.publicKey),
@@ -570,6 +556,7 @@ const addCustomDerivePath = {
   bitcoin: addCustomBitcoinDeriveAddress('bitcoin'),
   bitcoin_segwit: addCustomBitcoinDeriveAddress('bitcoin_segwit'),
   bitcoin_legacy: addCustomBitcoinDeriveAddress('bitcoin_legacy'),
+  bitcoin_taproot: addCustomBitcoinDeriveAddress('bitcoin_taproot'),
 };
 export const addCustomDeriveAddressToWallet = async (
   chain_name,

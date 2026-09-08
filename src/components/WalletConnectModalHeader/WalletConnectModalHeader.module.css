@@ -1,0 +1,57 @@
+.mainImageStyle {
+  width: 80%;
+  height: 120px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+@media (min-width: 769px) {
+  .mainImageStyle {
+    height: 150px;
+  }
+}
+
+.borderView {
+  height: 1.5px;
+  background-color: var(--whiteOutline);
+  width: 100%;
+}
+
+.mainView {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+}
+
+@media (min-width: 769px) {
+  .mainView {
+    padding: 10px 20px;
+  }
+}
+
+.imageStyle {
+  object-fit: contain;
+  margin-right: 8px;
+  border-radius: 8px;
+  height: 30px;
+  width: 30px;
+}
+
+.box {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.url {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary);
+  word-break: break-all;
+}

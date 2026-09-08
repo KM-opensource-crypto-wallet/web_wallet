@@ -280,11 +280,13 @@ const SendScreen = () => {
                       chain_name={currentCoin?.chain_name}
                       item={selectedDeriveAddressItem}
                       symbol={currentCoin?.symbol}
+                      decimal={currentCoin?.decimal}
                       fallbackAddress={currentCoin?.address}
                       onPress={() =>
                         addressSheetRef.current?.present({
                           chain_name: currentCoin?.chain_name,
                           symbol: currentCoin?.symbol,
+                          decimal: currentCoin?.decimal,
                           items: deriveAddresses,
                           selectedAddress: currentCoin?.address,
                         })

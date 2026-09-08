@@ -61,8 +61,11 @@ import dayjs from 'dayjs';
 import DuplicateTransactionModal from 'components/DuplicateTransactionModal';
 import AdvancedFeesSheet from 'components/AdvancedFeesSheet';
 import useAdvancedFees from 'src/hooks/useAdvancedFees';
+import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
+import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 
-const FeeRow = ({label, value}) => (
+// One label/value line of a details or fee box.
+const InfoRow = ({label, value}) => (
   <div className={s.itemView}>
     <p className={s.title}>{label}</p>
     <p className={s.boxBalance}>{value}</p>
@@ -89,17 +92,17 @@ const FeeSummaryBox = ({
       {children}
       {isEip1559 ? (
         <>
-          <FeeRow
+          <InfoRow
             label={'Estimated Fee'}
             value={formatFee(estimatedFee ?? fee)}
           />
-          <FeeRow label={'Max Fee'} value={formatFee(fee)} />
+          <InfoRow label={'Max Fee'} value={formatFee(fee)} />
         </>
       ) : (
-        <FeeRow label={'Network Fee'} value={formatFee(fee)} />
+        <InfoRow label={'Network Fee'} value={formatFee(fee)} />
       )}
       {maxTotalDisplay != null && (
-        <FeeRow label={'Max Total'} value={maxTotalDisplay} />
+        <InfoRow label={'Max Total'} value={maxTotalDisplay} />
       )}
     </div>
   );
@@ -114,6 +117,21 @@ const CommonTransfer = () => {
   const customError = useSelector(getTransferDataCustomError);
   const balance = useSelector(getBalanceForNativeCoin);
   const phrase = useSelector(getCurrentWalletPhrase);
+  // Hedera: the recipient's ledger account id; a missing id means the
+  // transfer will auto-create the account (sender pays).
+  const hederaToAddress =
+    transferData?.currentCoin?.chain_name === 'hedera'
+      ? transferData?.toAddress
+      : null;
+  const getHederaChain = useCallback(
+    () => getChain('hedera', phrase),
+    [phrase],
+  );
+  const {status: hederaRecipientStatus, result: hederaRecipient} =
+    useHederaRecipientLookup({
+      address: hederaToAddress,
+      getHederaChain,
+    });
   const failedTransaction = useSelector(getFailedTransaction);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isFetchingFeesAgain, setIsFetchingFeesAgain] = useState(false);
@@ -697,6 +715,24 @@ const CommonTransfer = () => {
               <p className={s.title}>{'Memo'}</p>
               <p className={s.boxBalance}>{transferData?.memo}</p>
             </div>
+          )}
+          {chainName === 'hedera' && (
+            <>
+              {!!transferData?.currentCoin?.accountId && (
+                <InfoRow
+                  label={'Account ID'}
+                  value={transferData.currentCoin.accountId}
+                />
+              )}
+              <InfoRow
+                label={'To account ID'}
+                value={
+                  hederaRecipientStatus === 'resolving'
+                    ? 'Resolving…'
+                    : hederaRecipient?.accountId || 'New account'
+                }
+              />
+            </>
           )}
         </div>
         <FeeSummaryBox

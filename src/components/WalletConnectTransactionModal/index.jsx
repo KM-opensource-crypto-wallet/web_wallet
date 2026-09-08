@@ -2,6 +2,7 @@ import React, {useCallback, useMemo} from 'react';
 import styles from './WalletConnectTransactionModal.module.css';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import {currencySymbol} from 'data/currency';
 import {
   convertHexToUtf8IfPossible,
@@ -9,36 +10,31 @@ import {
   getCustomizePublicAddress,
   isValidBigInt,
   parseBalance,
+  safelyJsonParse,
   safelyJsonStringify,
 } from 'dok-wallet-blockchain-networks/helper';
-import Image from 'next/image';
-
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
 import {getWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
 import {selectWalletConnectTransactionData} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
 import {selectWalletConnectData} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {walletConnect} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {
-  ETH_SIGN,
-  isWalletConnectTransaction,
-  PERSONAL_SIGN,
-} from 'dok-wallet-blockchain-networks/service/etherWalletConnect';
-
-import {createWalletConnectTransaction} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectActions';
+  EVM_SIGN_REQUEST_HANDLERS,
+  isNonEVMChain,
+  NON_EVM_METHOD_HANDLERS,
+} from 'dok-wallet-blockchain-networks/config/config';
+import {getSolanaFeePayer} from 'dok-wallet-blockchain-networks/helper/solanaTransaction';
+import {describeHederaRequest} from 'dok-wallet-blockchain-networks/helper/hederaWalletConnect';
 import BigNumber from 'bignumber.js';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {copyToClipboard} from 'utils/copyToClipboard';
+import WalletConnectModalHeader from 'components/WalletConnectModalHeader';
 import {
-  TRON_SIGN_MESSAGE,
-  TRON_SIGN_TRANSACTION,
-} from 'dok-wallet-blockchain-networks/service/tronWalletConnect';
-import {
-  SOLANA_SIGN_AND_SEND_TRANSACTION,
-  SOLANA_SIGN_MESSAGE,
-  SOLANA_SIGN_TRANSACTION,
-} from 'dok-wallet-blockchain-networks/service/solanaWalletConnect';
+  BatchCallDataView,
+  MessageNode,
+  stringifyPrimitive,
+} from 'components/WalletConnectMessageTree';
 
-const WalletConnect = require(`assets/images/WalletConnect.png`).default;
-
-///////////////////////////////////////
 const style = {
   position: 'absolute',
   top: '50%',
@@ -53,29 +49,88 @@ const style = {
   },
 };
 
-const displayMessage = (method, message) => {
+export const ETH_SEND_TRANSACTION = 'eth_sendTransaction';
+export const ETH_SIGN_TRANSACTION = 'eth_signTransaction';
+const transactionType = [ETH_SEND_TRANSACTION, ETH_SIGN_TRANSACTION];
+const isWalletConnectTransaction = method => transactionType.includes(method);
+function parseSolanaSignTransaction(txData) {
+  // Default values for summary properties
+  let sender = 'N/A';
+  let data = 'N/A';
+
+  try {
+    if (!txData || typeof txData !== 'object') {
+      throw new Error('Invalid transaction data provided');
+    }
+    // Modern Solana requests carry no feePayer/pubkey (signAllTransactions
+    // sends only `transactions`), so read the fee payer from the tx itself.
+    const firstTx = txData.transaction ?? txData.transactions?.[0];
+    sender =
+      txData.feePayer || txData.pubkey || getSolanaFeePayer(firstTx) || sender;
+    data = txData?.transaction
+      ? txData?.transaction
+      : Array.isArray(txData?.transactions)
+        ? `${txData.transactions.length} transaction(s): ${JSON.stringify(
+            txData.transactions,
+          )}`
+        : data;
+  } catch (error) {
+    console.error('Error parsing transaction:', error);
+  }
+  return {
+    sender,
+    data,
+  };
+}
+const getMessageData = (method, message) => {
   switch (method) {
-    case PERSONAL_SIGN:
-    case ETH_SIGN: {
-      return convertHexToUtf8IfPossible(message);
-    }
-    case SOLANA_SIGN_MESSAGE: {
-      return decodeSolMessage(message);
-    }
-    case SOLANA_SIGN_TRANSACTION:
-    case SOLANA_SIGN_AND_SEND_TRANSACTION: {
-      return safelyJsonStringify(parseSolanaSignTransaction(message));
-    }
-    default: {
-      return safelyJsonStringify(message);
-    }
+    case 'personal_sign':
+    case 'eth_sign':
+      return {type: 'text', value: convertHexToUtf8IfPossible(message)};
+    case 'solana_signMessage':
+      return {type: 'text', value: decodeSolMessage(message)};
+    case 'solana_signTransaction':
+    case 'solana_signAndSendTransaction':
+    case 'solana_signAllTransactions':
+      return {type: 'json', value: parseSolanaSignTransaction(message)};
+    case 'xrpl_signMessage':
+      return {type: 'text', value: convertHexToUtf8IfPossible(message)};
+    case 'polkadot_signMessage':
+      return {
+        type: 'text',
+        value: convertHexToUtf8IfPossible(message?.message ?? message),
+      };
+    case 'stellar_signMessage':
+      return {type: 'text', value: message};
+    case 'hedera_signMessage':
+      return {type: 'text', value: message?.message ?? ''};
+    case 'hedera_signTransaction':
+    case 'hedera_signAndExecuteTransaction':
+    case 'hedera_executeTransaction':
+    case 'hedera_signAndExecuteQuery':
+      // Base64 protobuf is opaque; show the decoded transaction instead.
+      return {type: 'json', value: describeHederaRequest(method, message)};
+    default:
+      return {
+        type: 'json',
+        value: typeof message === 'string' ? safelyJsonParse(message) : message,
+      };
   }
 };
+
+const COPIED_TITLE = 'Copied to clipboard';
+
+const DetailRow = ({label, value}) => (
+  <div className={styles.transferItemView}>
+    <p className={styles.transferTitle}>{label}</p>
+    <p className={styles.boxBalance}>{value}</p>
+  </div>
+);
 
 const WalletConnectTransactionModal = props => {
   const transactionData = useSelector(selectWalletConnectTransactionData);
   const dispatch = useDispatch();
-  const image = transactionData?.peerMeta?.icons[0] || null;
+  const image = transactionData?.peerMeta?.icons?.[0] || null;
   const title = transactionData?.peerMeta?.name || '';
   const url = transactionData?.peerMeta?.url || '';
   const id = transactionData?.id || '';
@@ -94,40 +149,38 @@ const WalletConnectTransactionModal = props => {
   }, [chainId, sessionId, walletConnectData]);
 
   const getTransactionRequestData = useMemo(() => {
-    if (
-      transactionData?.chainId?.includes('tron') ||
-      transactionData?.chainId?.includes('solana')
-    ) {
-      if (
-        transactionData?.method === TRON_SIGN_MESSAGE ||
-        transactionData?.method === SOLANA_SIGN_MESSAGE
-      ) {
-        return {
-          signTypeData: transactionData?.params?.message,
-        };
-      }
-      if (transactionData?.method === TRON_SIGN_TRANSACTION) {
-        return {
-          finaltransactionData:
-            transactionData?.params?.transaction?.transaction,
-          signTypeData: transactionData?.params?.transaction?.transaction,
-        };
-      }
-      if (
-        transactionData?.method === SOLANA_SIGN_TRANSACTION ||
-        transactionData?.method === SOLANA_SIGN_AND_SEND_TRANSACTION
-      ) {
-        return {
-          finaltransactionData: transactionData?.params,
-          signTypeData: transactionData?.params,
-        };
-      }
+    if (isNonEVMChain(transactionData?.chainId)) {
+      // Unmapped methods fall through with raw params so the request renders
+      // and the thunk rejects it as unsupported instead of crashing here.
+      const handler =
+        NON_EVM_METHOD_HANDLERS[transactionData?.method] ||
+        (params => ({finaltransactionData: params, signTypeData: params}));
+      const {finaltransactionData, signTypeData, expectedSignerAddress} =
+        handler(transactionData?.params);
+      return {finaltransactionData, signTypeData, expectedSignerAddress};
     } else {
-      const finaltransactionData = transactionData?.params[0] || {};
-      const signTypeData =
-        transactionData?.method === PERSONAL_SIGN
-          ? transactionData?.params[0]
-          : transactionData?.params[1];
+      if (transactionData?.method?.includes('wallet_sendCalls')) {
+        const batchCalls = (transactionData?.params?.[0]?.calls || []).map(
+          call => ({
+            ...call,
+            etherValue: call?.value ? parseBalance(call.value, 18) : '',
+          }),
+        );
+        return {
+          finaltransactionData: {
+            batchCalls,
+            from: transactionData?.from,
+          },
+          expectedSignerAddress: transactionData?.params?.[0]?.from,
+        };
+      }
+      const finaltransactionData = transactionData?.params?.[0] || {};
+      const {signTypeData, expectedSignerAddress} = EVM_SIGN_REQUEST_HANDLERS[
+        transactionData?.method
+      ]?.(transactionData?.params) || {
+        signTypeData: transactionData?.params?.[1],
+        expectedSignerAddress: undefined,
+      };
       if (finaltransactionData?.value) {
         const etherAmount = finaltransactionData?.value
           ? parseBalance(finaltransactionData?.value, 18)
@@ -148,6 +201,7 @@ const WalletConnectTransactionModal = props => {
           finaltransactionData,
           etherAmount,
           signTypeData,
+          expectedSignerAddress,
           transactionFees,
           fiatTransactionFees,
           toAddress,
@@ -156,6 +210,7 @@ const WalletConnectTransactionModal = props => {
       return {
         finaltransactionData,
         signTypeData,
+        expectedSignerAddress,
       };
     }
   }, [transactionData, walletData]);
@@ -164,16 +219,26 @@ const WalletConnectTransactionModal = props => {
     try {
       props?.onClose?.();
       dispatch(
-        createWalletConnectTransaction({
-          transactionData: getTransactionRequestData?.finaltransactionData,
+        walletConnect({
+          transactionData: {
+            ...getTransactionRequestData?.finaltransactionData,
+            batchCalls: transactionData?.params?.[0]?.calls,
+            from: transactionData?.from,
+          },
+          isBatchTransaction: transactionData?.isBatchTransaction,
           chain_name: walletData?.chain_name?.toLowerCase(),
+          // CAIP-2 id of the request; picks the executor for chains that
+          // serve more than one namespace (Hedera native vs eip155).
+          chainId,
           privateKey: walletData?.privateKey,
-          requestId: transactionData?.id,
-          sessionId,
+          walletAddress: walletData?.address,
+          expectedSignerAddress:
+            getTransactionRequestData?.expectedSignerAddress,
           id,
           topic,
           method,
           signTypeData: getTransactionRequestData?.signTypeData,
+          domain: transactionData?.peerMeta?.url,
         }),
       );
     } catch (e) {
@@ -197,15 +262,78 @@ const WalletConnectTransactionModal = props => {
     }
   }, [id, props, topic]);
 
+  const BatchCallsView = () => {
+    const calls =
+      getTransactionRequestData?.finaltransactionData?.batchCalls || [];
+    return (
+      <div className={styles.contentContainerStyle}>
+        <p className={styles.chainTitle}>{`Batch Calls (${calls.length})`}</p>
+        <div className={styles.scrollView}>
+          {calls.map((call, index) => (
+            <div key={index} className={styles.batchCallBox}>
+              <DetailRow label={'Call'} value={`#${index + 1}`} />
+              <DetailRow
+                label={'To'}
+                value={getCustomizePublicAddress(call?.to)}
+              />
+              {!!call?.etherValue && (
+                <DetailRow
+                  label={'Value'}
+                  value={`${call.etherValue} ${walletData?.symbol || ''}`}
+                />
+              )}
+              <BatchCallDataView
+                call={call}
+                rowClassName={styles.transferItemView}
+                labelClassName={styles.transferTitle}
+                valueClassName={styles.boxBalance}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const MessageView = () => {
     const signTypeData = getTransactionRequestData?.signTypeData;
-    const message = displayMessage(method, signTypeData);
+    const messageData = getMessageData(method, signTypeData);
+    const isStructured =
+      messageData.type === 'json' &&
+      messageData.value !== null &&
+      typeof messageData.value === 'object';
+
+    const onCopyAll = () => {
+      const text = isStructured
+        ? safelyJsonStringify(messageData.value)
+        : stringifyPrimitive(messageData.value);
+      copyToClipboard(text || '', COPIED_TITLE);
+    };
 
     return (
       <div className={styles.contentContainerStyle}>
-        <p className={styles.chainTitle}>{'Message'}</p>
+        <div className={styles.msgHeaderRow}>
+          <p className={styles.chainTitle} style={{marginTop: 0}}>
+            {'Message'}
+          </p>
+          <button
+            type='button'
+            className={styles.msgCopyAllBtn}
+            onClick={onCopyAll}>
+            <ContentCopyIcon sx={{fontSize: 14, color: 'var(--gray)'}} />
+            <span className={styles.msgCopyAllText}>{'Copy'}</span>
+          </button>
+        </div>
         <div className={styles.scrollView}>
-          <p style={styles.messageStyle}>{message}</p>
+          {isStructured ? (
+            <MessageNode value={messageData.value} depth={0} />
+          ) : (
+            <p className={styles.messageStyle}>
+              {messageData.type === 'text'
+                ? messageData.value
+                : stringifyPrimitive(messageData.value)}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -236,28 +364,10 @@ const WalletConnectTransactionModal = props => {
       aria-describedby='modal-modal-description'>
       <Box sx={style}>
         <div className={styles.container}>
-          <Image
-            src={WalletConnect}
-            alt='connect'
-            className={styles.mainImageStyle}
-          />
-          <div className={styles.mainView}>
-            {image && (
-              <Image
-                src={image}
-                className={styles.imageStyle}
-                alt={'image'}
-                width={80}
-                height={80}
-              />
-            )}
-            <div className={styles.box}>
-              <p className={styles.title}>{title}</p>
-              <p className={styles.url}>{url}</p>
-            </div>
-          </div>
-          <div className={styles.borderView} />
-          {isWalletConnectTransaction(method) ? (
+          <WalletConnectModalHeader image={image} title={title} url={url} />
+          {method?.includes('wallet_sendCalls') ? (
+            BatchCallsView()
+          ) : isWalletConnectTransaction(method) ? (
             <div className={styles.formInput}>
               <p className={styles.amountTitle}>{`-${amount || 0} ${
                 walletData?.symbol || ''
@@ -268,52 +378,36 @@ const WalletConnectTransactionModal = props => {
               </div>
 
               <div className={styles.box2Balance}>
-                <div className={styles.transferItemView}>
-                  <p className={styles.transferTitle}>{'Chain'}</p>
-                  <p
-                    className={
-                      styles.boxBalance
-                    }>{`${walletData?.chain_display_name}`}</p>
-                </div>
-                <div className={styles.transferItemView}>
-                  <p className={styles.transferTitle}>{'Asset'}</p>
-                  <p
-                    className={
-                      styles.boxBalance
-                    }>{`${walletData?.name} (${walletData?.symbol})`}</p>
-                </div>
-                <div className={styles.transferItemView}>
-                  <p className={styles.transferTitle}>{'From'}</p>
-                  <p
-                    className={styles.boxBalance}>{`${getCustomizePublicAddress(
-                    walletData?.address,
-                  )}`}</p>
-                </div>
-                <div className={styles.transferItemView}>
-                  <p className={styles.transferTitle}>{'To'}</p>
-                  <p className={styles.boxBalance}>
-                    {`${getCustomizePublicAddress(
-                      getTransactionRequestData?.toAddress,
-                    )}`}
-                  </p>
-                </div>
+                <DetailRow
+                  label={'Chain'}
+                  value={`${walletData?.chain_display_name}`}
+                />
+                <DetailRow
+                  label={'Asset'}
+                  value={`${walletData?.name} (${walletData?.symbol})`}
+                />
+                <DetailRow
+                  label={'From'}
+                  value={getCustomizePublicAddress(walletData?.address)}
+                />
+                <DetailRow
+                  label={'To'}
+                  value={getCustomizePublicAddress(
+                    getTransactionRequestData?.toAddress,
+                  )}
+                />
               </div>
               <div className={styles.box}>
                 {!!finalTransactionFee && (
-                  <div className={styles.transferItemView}>
-                    <p className={styles.transferTitle}>{'Network Fee'}</p>
-                    <p
-                      className={
-                        styles.boxBalance
-                      }>{`${finalTransactionFee} ${walletData?.chain_symbol}`}</p>
-                  </div>
+                  <DetailRow
+                    label={'Network Fee'}
+                    value={`${finalTransactionFee} ${walletData?.chain_symbol}`}
+                  />
                 )}
-                <div className={styles.transferItemView}>
-                  <p className={styles.transferTitle}>{'Max Total'}&nbsp;</p>
-                  <p className={styles.boxBalance}>{`${
-                    currencySymbol[localCurrency]
-                  }${totalValue || 0}`}</p>
-                </div>
+                <DetailRow
+                  label={'Max Total'}
+                  value={`${currencySymbol[localCurrency]}${totalValue || 0}`}
+                />
               </div>
             </div>
           ) : (
@@ -322,24 +416,13 @@ const WalletConnectTransactionModal = props => {
           <div className={styles.bottomView}>
             <div className={styles.rowView}>
               <button className={styles.button} onClick={onPressReject}>
-                <p className={styles.buttonTitle}>{'Reject'}</p>
+                {'Reject'}
               </button>
-              <button
-                // disabled={!isValidChain}
-                className={styles.button}
-                // style={
-                //   {
-                //     // backgroundColor: !isValidChain
-                //     //   ? 'var(--gray)'
-                //     //   : 'var(--background)',
-                //   }
-                // }
-                onClick={onPressApprove}>
+              <button className={styles.button} onClick={onPressApprove}>
                 {'Approve'}
               </button>
             </div>
           </div>
-          {/* </div> */}
         </div>
       </Box>
     </Modal>

@@ -18,6 +18,7 @@ import {
   getCustomizePublicAddress,
   isBitcoinChain,
 } from 'dok-wallet-blockchain-networks/helper';
+import {formatDeriveAddressBalance} from 'dok-wallet-blockchain-networks/helper/deriveAddressBalance';
 import s from './AddressSelectorSheet.module.css';
 
 const modalStyle = {
@@ -131,6 +132,9 @@ const AddressSelectorSheet = forwardRef(({onSelect}, ref) => {
                       aria-pressed={isSelected}
                       disabled={!!applyingAddress}
                       onClick={() => onPressItem(item)}>
+                      {/* Line 1: the shortened address never shrinks; line 2
+                          carries the path and the balance so nothing competes
+                          with it and no element has to ellipsize. */}
                       <div className={s.optionLabelBox}>
                         <p className={s.addressRow}>
                           <span className={s.addressText} title={item?.address}>
@@ -141,50 +145,60 @@ const AddressSelectorSheet = forwardRef(({onSelect}, ref) => {
                             item={item}
                           />
                         </p>
-                        {!!item?.derivePath && (
-                          <p className={s.derivePathText}>{item.derivePath}</p>
+                        {(!!item?.derivePath || showBalance) && (
+                          <p className={s.metaRow}>
+                            <span className={s.derivePathText}>
+                              {item?.derivePath || ''}
+                            </span>
+                            {showBalance && (
+                              <span className={s.balanceText}>
+                                {formatDeriveAddressBalance({
+                                  balance: item?.balance,
+                                  decimal: payload?.decimal,
+                                  symbol: payload?.symbol,
+                                })}
+                              </span>
+                            )}
+                          </p>
                         )}
                       </div>
-                      {showBalance && (
-                        <p className={s.balanceText}>
-                          {`${item?.balance || 0} ${payload?.symbol || ''}`}
-                        </p>
-                      )}
                     </button>
-                    <IconButton
-                      size='small'
-                      aria-label='Copy address'
-                      disabled={!!applyingAddress}
-                      className={s.iconButton}
-                      sx={{color: 'var(--gray)'}}
-                      onClick={() => onPressCopy(item)}>
-                      <ContentCopyIcon sx={{fontSize: 20}} />
-                    </IconButton>
-                    <IconButton
-                      size='small'
-                      aria-label='Show address QR code'
-                      disabled={!!applyingAddress}
-                      className={s.iconButton}
-                      sx={{color: 'var(--gray)'}}
-                      onClick={() => onPressQR(item)}>
-                      <QrCode2Icon sx={{fontSize: 20}} />
-                    </IconButton>
-                    {isApplying ? (
-                      <CircularProgress
-                        size={18}
-                        sx={{color: 'var(--background)', marginLeft: '8px'}}
-                      />
-                    ) : (
-                      isSelected && (
-                        <CheckCircleIcon
-                          sx={{
-                            fontSize: 22,
-                            color: 'var(--background)',
-                            marginLeft: '8px',
-                          }}
+                    <div className={s.actions}>
+                      <IconButton
+                        size='small'
+                        aria-label='Copy address'
+                        disabled={!!applyingAddress}
+                        className={s.iconButton}
+                        sx={{color: 'var(--gray)'}}
+                        onClick={() => onPressCopy(item)}>
+                        <ContentCopyIcon sx={{fontSize: 20}} />
+                      </IconButton>
+                      <IconButton
+                        size='small'
+                        aria-label='Show address QR code'
+                        disabled={!!applyingAddress}
+                        className={s.iconButton}
+                        sx={{color: 'var(--gray)'}}
+                        onClick={() => onPressQR(item)}>
+                        <QrCode2Icon sx={{fontSize: 20}} />
+                      </IconButton>
+                      {isApplying ? (
+                        <CircularProgress
+                          size={18}
+                          sx={{color: 'var(--background)', marginLeft: '8px'}}
                         />
-                      )
-                    )}
+                      ) : (
+                        isSelected && (
+                          <CheckCircleIcon
+                            sx={{
+                              fontSize: 22,
+                              color: 'var(--background)',
+                              marginLeft: '8px',
+                            }}
+                          />
+                        )
+                      )}
+                    </div>
                   </div>
                 );
               })
