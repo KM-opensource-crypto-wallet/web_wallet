@@ -12,6 +12,8 @@ import QRCode from 'react-qr-code';
 import {copyToClipboard} from 'utils/copyToClipboard';
 import s from './AddressQRSheet.module.css';
 
+const TITLE_ID = 'address-qr-sheet-title';
+
 const modalStyle = {
   position: 'absolute',
   top: '50%',
@@ -51,10 +53,15 @@ const AddressQRSheet = forwardRef((_props, ref) => {
   }, [payload?.address]);
 
   return (
-    <Modal open={isOpen} onClose={() => setIsOpen(false)}>
+    <Modal
+      open={isOpen}
+      onClose={() => setIsOpen(false)}
+      aria-labelledby={TITLE_ID}>
       <Box sx={modalStyle}>
         <div className={s.container}>
-          <p className={s.headerTitle}>Address QR</p>
+          <p id={TITLE_ID} className={s.headerTitle}>
+            Address QR
+          </p>
           {/* Explicit white so the QR stays scannable in dark theme. */}
           {!!payload?.address && (
             <div className={s.qrContainer}>

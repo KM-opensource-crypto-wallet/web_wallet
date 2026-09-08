@@ -41,7 +41,9 @@ const FeeInput = ({
   <div className={s.inputFieldContainer}>
     <div className={s.inputLabelWithIcon}>
       <span className={s.inputIcon}>{icon}</span>
-      <span className={s.inputLabelText}>{label}</span>
+      <label htmlFor={id} className={s.inputLabelText}>
+        {label}
+      </label>
     </div>
     <FormControl variant='outlined' fullWidth>
       <OutlinedInput

@@ -70,8 +70,10 @@ export const useHederaAccountId = ({coin, phrase}) => {
   const [liveIds, setLiveIds] = useState(null);
 
   useEffect(() => {
+    // Clear before the lookup so a previous coin's ids are never shown while
+    // this request is pending or after it fails.
+    setLiveIds(null);
     if (!isHedera || storedAccountId) {
-      setLiveIds(null);
       return;
     }
     let cancelled = false;

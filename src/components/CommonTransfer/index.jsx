@@ -729,7 +729,9 @@ const CommonTransfer = () => {
                 value={
                   hederaRecipientStatus === 'resolving'
                     ? 'Resolving…'
-                    : hederaRecipient?.accountId || 'New account'
+                    : hederaRecipientStatus === 'error'
+                      ? 'Unavailable'
+                      : hederaRecipient?.accountId || 'New account'
                 }
               />
             </>

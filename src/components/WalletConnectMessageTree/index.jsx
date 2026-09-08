@@ -38,6 +38,24 @@ export const stringifyPrimitive = value => {
 
 const COPIED_TITLE = 'Copied to clipboard';
 
+// Bounds on what a dApp payload can make us render. Beyond these the UI shows
+// a summary instead of creating React elements for every leaf, so a hostile or
+// runaway request can't freeze the approval modal.
+export const MESSAGE_TREE_LIMITS = {maxDepth: 8, maxEntries: 100};
+
+export const limitEntries = (
+  entries,
+  maxEntries = MESSAGE_TREE_LIMITS.maxEntries,
+) => {
+  if (!Array.isArray(entries) || entries.length <= maxEntries) {
+    return {shown: entries || [], hiddenCount: 0};
+  }
+  return {
+    shown: entries.slice(0, maxEntries),
+    hiddenCount: entries.length - maxEntries,
+  };
+};
+
 export const MessageValueRow = ({label, value}) => {
   const stringValue = stringifyPrimitive(value);
   const isCopyable = typeof value === 'string' && value.length > 0;
@@ -85,9 +103,20 @@ export const MessageNode = ({label, value, depth = 0}) => {
     : `${count} field${count === 1 ? '' : 's'}`;
   const isRoot = label == null;
 
+  if (depth >= MESSAGE_TREE_LIMITS.maxDepth) {
+    return (
+      <MessageValueRow
+        label={label}
+        value={`${countLabel} (nested too deeply to display)`}
+      />
+    );
+  }
+
+  const {shown, hiddenCount} = limitEntries(entries);
+
   const children = (
     <div className={isRoot ? undefined : s.msgNestedContainer}>
-      {entries.map(([key, val], index) => (
+      {shown.map(([key, val], index) => (
         <React.Fragment key={key}>
           {index > 0 && <div className={s.msgDivider} />}
           <MessageNode
@@ -97,6 +126,9 @@ export const MessageNode = ({label, value, depth = 0}) => {
           />
         </React.Fragment>
       ))}
+      {hiddenCount > 0 && (
+        <p className={s.msgEmptyText}>{`…${hiddenCount} more not shown`}</p>
+      )}
       {count === 0 && <p className={s.msgEmptyText}>{'Empty'}</p>}
     </div>
   );

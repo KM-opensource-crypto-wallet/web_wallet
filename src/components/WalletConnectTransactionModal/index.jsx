@@ -3,6 +3,7 @@ import styles from './WalletConnectTransactionModal.module.css';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {currencySymbol} from 'data/currency';
 import {
   convertHexToUtf8IfPossible,
@@ -119,6 +120,8 @@ const getMessageData = (method, message) => {
 };
 
 const COPIED_TITLE = 'Copied to clipboard';
+// Upper bound on wallet_sendCalls entries we render and allow approving.
+const MAX_BATCH_CALLS = 50;
 
 const DetailRow = ({label, value}) => (
   <div className={styles.transferItemView}>
@@ -160,15 +163,19 @@ const WalletConnectTransactionModal = props => {
       return {finaltransactionData, signTypeData, expectedSignerAddress};
     } else {
       if (transactionData?.method?.includes('wallet_sendCalls')) {
-        const batchCalls = (transactionData?.params?.[0]?.calls || []).map(
-          call => ({
-            ...call,
-            etherValue: call?.value ? parseBalance(call.value, 18) : '',
-          }),
-        );
+        const rawCalls = Array.isArray(transactionData?.params?.[0]?.calls)
+          ? transactionData.params[0].calls
+          : [];
+        // Only the first MAX_BATCH_CALLS are mapped and rendered; approval is
+        // blocked above the cap so the user never signs calls they can't see.
+        const batchCalls = rawCalls.slice(0, MAX_BATCH_CALLS).map(call => ({
+          ...call,
+          etherValue: call?.value ? parseBalance(call.value, 18) : '',
+        }));
         return {
           finaltransactionData: {
             batchCalls,
+            batchCallsTotal: rawCalls.length,
             from: transactionData?.from,
           },
           expectedSignerAddress: transactionData?.params?.[0]?.from,
@@ -262,12 +269,25 @@ const WalletConnectTransactionModal = props => {
     }
   }, [id, props, topic]);
 
+  const batchCallsTotal =
+    getTransactionRequestData?.finaltransactionData?.batchCallsTotal || 0;
+  const isBatchTooLarge = batchCallsTotal > MAX_BATCH_CALLS;
+
   const BatchCallsView = () => {
     const calls =
       getTransactionRequestData?.finaltransactionData?.batchCalls || [];
     return (
       <div className={styles.contentContainerStyle}>
-        <p className={styles.chainTitle}>{`Batch Calls (${calls.length})`}</p>
+        <p
+          className={styles.chainTitle}>{`Batch Calls (${batchCallsTotal})`}</p>
+        {isBatchTooLarge && (
+          <div className={styles.batchLimitWarning}>
+            <WarningAmberIcon sx={{fontSize: 16, color: 'var(--warning)'}} />
+            <p className={styles.batchLimitWarningText}>
+              {`This request contains ${batchCallsTotal} calls. Only the first ${MAX_BATCH_CALLS} are shown and the batch cannot be approved here.`}
+            </p>
+          </div>
+        )}
         <div className={styles.scrollView}>
           {calls.map((call, index) => (
             <div key={index} className={styles.batchCallBox}>
@@ -418,7 +438,10 @@ const WalletConnectTransactionModal = props => {
               <button className={styles.button} onClick={onPressReject}>
                 {'Reject'}
               </button>
-              <button className={styles.button} onClick={onPressApprove}>
+              <button
+                className={styles.button}
+                onClick={onPressApprove}
+                disabled={isBatchTooLarge}>
                 {'Approve'}
               </button>
             </div>

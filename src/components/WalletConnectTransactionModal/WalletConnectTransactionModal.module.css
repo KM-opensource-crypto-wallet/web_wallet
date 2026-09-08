@@ -169,3 +169,26 @@
   font-size: 13px;
   color: var(--gray);
 }
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.batchLimitWarning {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--warning);
+}
+
+.batchLimitWarningText {
+  flex: 1;
+  font-size: 12px;
+  color: var(--warning);
+  font-weight: 500;
+}
