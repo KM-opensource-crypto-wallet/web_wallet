@@ -14,7 +14,6 @@ import {sendFunds} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSli
 import {
   getTransferData,
   getTransferDataCustomError,
-  getTransferDataFeesOptions,
   getTransferDataFeeSuccess,
   getTransferDataLoading,
   getTransferDataSubmitting,
@@ -27,13 +26,11 @@ import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import Loading from 'components/Loading';
 import {
   delay,
-  GAS_CURRENCY,
   getCustomizePublicAddress,
   isBalanceNotAvailable,
   isCustomAddressNotSupportedChain,
   isEVMChain,
   isFeesOptionChain,
-  validateNumberInInput,
 } from 'dok-wallet-blockchain-networks/helper';
 import {
   getBalanceForNativeCoin,
@@ -55,18 +52,61 @@ import {
   selectSelectedExchangeChain,
 } from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
 import PageTitle from 'components/PageTitle';
-import {
-  calculateEstimateFee,
-  updateFees,
-} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
+import {calculateEstimateFee} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import icons from 'assets/images/icons';
 import ValidatorItem from 'components/ValidatorItem';
-import FormControl from '@mui/material/FormControl';
-import OutlinedInput from '@mui/material/OutlinedInput';
 import {getSellCryptoRequestDetails} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
 import BatchTransactionItem from 'components/BatchTransactionItem';
 import dayjs from 'dayjs';
 import DuplicateTransactionModal from 'components/DuplicateTransactionModal';
+import AdvancedFeesSheet from 'components/AdvancedFeesSheet';
+import useAdvancedFees from 'src/hooks/useAdvancedFees';
+import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
+import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
+
+// One label/value line of a details or fee box.
+const InfoRow = ({label, value}) => (
+  <div className={s.itemView}>
+    <p className={s.title}>{label}</p>
+    <p className={s.boxBalance}>{value}</p>
+  </div>
+);
+
+// On EIP-1559 chains `fee` is the reserved maximum (gasLimit * maxFeePerGas);
+// what the sender actually pays is `estimatedFee` (gasLimit * (baseFee + tip)).
+// Non-1559 chains pay `fee` in full, so only that single row is shown. The
+// per-gas parameters (max fee, priority fee) are edited in AdvancedFeesSheet.
+const FeeSummaryBox = ({
+  isRefreshing,
+  fee,
+  feeSymbol,
+  maxTotalDisplay,
+  isEip1559,
+  estimatedFee,
+  children,
+}) => {
+  const formatFee = value =>
+    isRefreshing ? 'Refreshing' : `${value || '0'} ${feeSymbol}`;
+  return (
+    <div className={s.box}>
+      {children}
+      {isEip1559 ? (
+        <>
+          <InfoRow
+            label={'Estimated Fee'}
+            value={formatFee(estimatedFee ?? fee)}
+          />
+          <InfoRow label={'Max Fee'} value={formatFee(fee)} />
+        </>
+      ) : (
+        <InfoRow label={'Network Fee'} value={formatFee(fee)} />
+      )}
+      {maxTotalDisplay != null && (
+        <InfoRow label={'Max Total'} value={maxTotalDisplay} />
+      )}
+    </div>
+  );
+};
 
 const CommonTransfer = () => {
   const localCurrency = useSelector(getLocalCurrency);
@@ -77,16 +117,27 @@ const CommonTransfer = () => {
   const customError = useSelector(getTransferDataCustomError);
   const balance = useSelector(getBalanceForNativeCoin);
   const phrase = useSelector(getCurrentWalletPhrase);
+  // Hedera: the recipient's ledger account id; a missing id means the
+  // transfer will auto-create the account (sender pays).
+  const hederaToAddress =
+    transferData?.currentCoin?.chain_name === 'hedera'
+      ? transferData?.toAddress
+      : null;
+  const getHederaChain = useCallback(
+    () => getChain('hedera', phrase),
+    [phrase],
+  );
+  const {status: hederaRecipientStatus, result: hederaRecipient} =
+    useHederaRecipientLookup({
+      address: hederaToAddress,
+      getHederaChain,
+    });
   const failedTransaction = useSelector(getFailedTransaction);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isFetchingFeesAgain, setIsFetchingFeesAgain] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
-  const [selectedFeesType, setSelectedFeesType] = useState('recommended');
   const [isAdvancedOptionsOpen, setIsAdvancedOptionsOpen] = useState(false);
-  const [customNonce, setCustomNonce] = useState('');
   const sellCryptoRequestDetails = useSelector(getSellCryptoRequestDetails);
-  const [customFees, setCustomFees] = useState('');
-  const selectedFeesTypeRef = useRef('recommended');
   const isFetchingRef = useRef(false);
   const isPauseCalculateFees = useRef(false);
   const titleRef = useRef('Transfer');
@@ -183,7 +234,14 @@ const CommonTransfer = () => {
 
   const convertedChainName = isEVMChain(chainName) ? 'ethereum' : chainName;
 
-  const feesOptions = useSelector(getTransferDataFeesOptions);
+  const {
+    sheetProps: advancedFeesSheetProps,
+    feesOptions,
+    isEip1559,
+    selectedFeesTypeRef,
+    finalNonce,
+    isCustomFeesValid,
+  } = useAdvancedFees({chainName, convertedChainName, isPauseCalculateFees});
 
   const nativeBalanceForBatchTransactions = useMemo(() => {
     if (isBatchTransaction && transferData?.transactionsData?.length) {
@@ -197,26 +255,6 @@ const CommonTransfer = () => {
     }
     return null;
   }, [isBatchTransaction, transferData?.transactionsData]);
-
-  useEffect(() => {
-    if (feesOptions?.[0]?.gasPrice) {
-      setCustomFees(feesOptions?.[0]?.gasPrice);
-    }
-  }, [feesOptions]);
-
-  useEffect(() => {
-    if (transferData?.nonce !== undefined && transferData?.nonce !== null) {
-      setCustomNonce(String(transferData.nonce));
-    }
-  }, [transferData?.nonce]);
-
-  // customNonce is a string and is '' until the estimated nonce arrives, which
-  // would defeat the `?? transferData.nonce` fallbacks in the send thunks.
-  // Normalise once here so every branch receives a number or undefined.
-  const finalNonce = useMemo(() => {
-    const parsed = Number(customNonce);
-    return customNonce === '' || isNaN(parsed) ? undefined : parsed;
-  }, [customNonce]);
 
   useLayoutEffect(() => {
     titleRef.current = isSendFundScreen
@@ -570,6 +608,10 @@ const CommonTransfer = () => {
   }, [submitTransferData, quoteExpiresAt]);
 
   const handleSubmitForm = () => {
+    // The panel can be collapsed with an invalid tip, so re-check here.
+    if (!isCustomFeesValid) {
+      return;
+    }
     if (quoteExpiresAt && Date.now() >= quoteExpiresAt) {
       isQuoteExpiredRef.current = true;
       setIsQuoteExpired(true);
@@ -577,22 +619,6 @@ const CommonTransfer = () => {
     }
     setShowConfirmModal(true);
     isPauseCalculateFees.current = true;
-  };
-
-  const onChangeCustomFees = e => {
-    const text = e?.target?.value;
-    const tempValues = validateNumberInInput(
-      text,
-      transferData?.currentCoin?.decimal,
-    );
-    setCustomFees(tempValues || '0');
-    dispatch(updateFees({gasPrice: tempValues || '0', convertedChainName}));
-  };
-
-  const onChangeNonce = e => {
-    const text = e?.target?.value;
-    const numericValue = text.replace(/[^0-9]/g, '');
-    setCustomNonce(numericValue);
   };
 
   const toggleAdvancedOptions = () => {
@@ -608,6 +634,14 @@ const CommonTransfer = () => {
         ? nativeBalanceForBatchTransactions
         : null,
   );
+
+  const feeSummaryProps = {
+    isRefreshing: isFetchingFeesAgain,
+    fee: transferData?.transactionFee,
+    feeSymbol: transferData?.currentCoin?.chain_symbol,
+    isEip1559,
+    estimatedFee: transferData?.estimatedFee,
+  };
 
   const currencyRate =
     (isSendFundScreen || isSellCryptoScreen || isStakingScreen
@@ -682,25 +716,31 @@ const CommonTransfer = () => {
               <p className={s.boxBalance}>{transferData?.memo}</p>
             </div>
           )}
+          {chainName === 'hedera' && (
+            <>
+              {!!transferData?.currentCoin?.accountId && (
+                <InfoRow
+                  label={'Account ID'}
+                  value={transferData.currentCoin.accountId}
+                />
+              )}
+              <InfoRow
+                label={'To account ID'}
+                value={
+                  hederaRecipientStatus === 'resolving'
+                    ? 'Resolving…'
+                    : hederaRecipientStatus === 'error'
+                      ? 'Unavailable'
+                      : hederaRecipient?.accountId || 'New account'
+                }
+              />
+            </>
+          )}
         </div>
-        <div className={s.box}>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Network Fee'}</p>
-            <p className={s.boxBalance}>
-              {isFetchingFeesAgain
-                ? 'Refreshing'
-                : `${transferData?.transactionFee || '0'} ${
-                    transferData?.currentCoin?.chain_symbol
-                  }`}
-            </p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Max Total'}</p>
-            <p className={s.boxBalance}>{`${currencySymbol[localCurrency]}${
-              totalValue || 0
-            }`}</p>
-          </div>
-        </div>
+        <FeeSummaryBox
+          {...feeSummaryProps}
+          maxTotalDisplay={`${currencySymbol[localCurrency]}${totalValue || 0}`}
+        />
       </div>
     );
   };
@@ -765,24 +805,10 @@ const CommonTransfer = () => {
             </p>
           </div>
         </div>
-        <div className={s.box}>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Network Fee'}</p>
-            <p className={s.boxBalance}>
-              {isFetchingFeesAgain
-                ? 'Refreshing'
-                : `${transferData?.transactionFee || '0'} ${
-                    transferData?.currentCoin?.chain_symbol
-                  }`}
-            </p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Max Total'}</p>
-            <p className={s.boxBalance}>{`${currencySymbol[localCurrency]}${
-              totalValue || 0
-            }`}</p>
-          </div>
-        </div>
+        <FeeSummaryBox
+          {...feeSummaryProps}
+          maxTotalDisplay={`${currencySymbol[localCurrency]}${totalValue || 0}`}
+        />
       </div>
     );
   };
@@ -854,7 +880,10 @@ const CommonTransfer = () => {
               }>{`${amountTo} ${selectedToAsset?.symbol}`}</p>
           </div>
         </div>
-        <div className={s.box}>
+        <FeeSummaryBox
+          {...feeSummaryProps}
+          feeSymbol={selectedFromAsset?.chain_symbol}
+          maxTotalDisplay={`${currencySymbol[localCurrency]}${totalValue || 0}`}>
           {!!selectedExchangeChain?.providerName && (
             <div className={s.itemView}>
               <p className={s.title}>{'Exchange Provider'}</p>
@@ -863,24 +892,7 @@ const CommonTransfer = () => {
               </p>
             </div>
           )}
-          <div className={s.itemView}>
-            <p className={s.title}>{'Network Fee'}</p>
-            <p className={s.boxBalance}>
-              {isFetchingFeesAgain
-                ? 'Refreshing'
-                : `${transferData?.transactionFee || '0'} ${
-                    selectedFromAsset?.chain_symbol
-                  }`}
-            </p>
-          </div>
-
-          <div className={s.itemView}>
-            <p className={s.title}>{'Max Total'}</p>
-            <p className={s.boxBalance}>{`${
-              currencySymbol[localCurrency]
-            }${totalValue || 0}`}</p>
-          </div>
-        </div>
+        </FeeSummaryBox>
       </div>
     );
   };
@@ -935,24 +947,10 @@ const CommonTransfer = () => {
             </div>
           )}
         </div>
-        <div className={s.box}>
-          <div className={s.itemView}>
-            <div className={s.title}>{'Network Fee'}</div>
-            <div className={s.boxBalance}>
-              {isFetchingFeesAgain
-                ? 'Refreshing'
-                : `${transferData?.transactionFee || '0'} ${
-                    transferData?.currentCoin?.chain_symbol
-                  }`}
-            </div>
-          </div>
-          <div className={s.itemView}>
-            <div className={s.title}>{'Max Total'}</div>
-            <div className={s.boxBalance}>{`${
-              currencySymbol[localCurrency]
-            }${totalValue || 0}`}</div>
-          </div>
-        </div>
+        <FeeSummaryBox
+          {...feeSummaryProps}
+          maxTotalDisplay={`${currencySymbol[localCurrency]}${totalValue || 0}`}
+        />
       </div>
     );
   };
@@ -975,18 +973,7 @@ const CommonTransfer = () => {
             }}
           />
         ))}
-        <div className={s.box}>
-          <div className={s.itemView}>
-            <div className={s.title}>{'Network Fee'}</div>
-            <div className={s.boxBalance}>
-              {isFetchingFeesAgain
-                ? 'Refreshing'
-                : `${transferData?.transactionFee || '0'} ${
-                    transferData?.currentCoin?.chain_symbol
-                  }`}
-            </div>
-          </div>
-        </div>
+        <FeeSummaryBox {...feeSummaryProps} />
       </div>
     );
   };
@@ -1006,18 +993,7 @@ const CommonTransfer = () => {
             localCurrency={localCurrency}
           />
         ))}
-        <div className={s.box}>
-          <div className={s.itemView}>
-            <div className={s.title}>{'Network Fee'}</div>
-            <div className={s.boxBalance}>
-              {isFetchingFeesAgain
-                ? 'Refreshing'
-                : `${transferData?.transactionFee || '0'} ${
-                    transferData?.currentCoin?.chain_symbol
-                  }`}
-            </div>
-          </div>
-        </div>
+        <FeeSummaryBox {...feeSummaryProps} />
       </div>
     );
   };
@@ -1063,157 +1039,7 @@ const CommonTransfer = () => {
               </button>
               {isAdvancedOptionsOpen && (
                 <div className={s.advancedOptionsContent}>
-                  <div className={s.feesMainContainer}>
-                    <div className={s.feesOptionContainer}>
-                      <button
-                        onClick={() => {
-                          isPauseCalculateFees.current = false;
-                          setSelectedFeesType('recommended');
-                          selectedFeesTypeRef.current = 'recommended';
-                          dispatch(
-                            updateFees({
-                              gasPrice: feesOptions?.[0].gasPrice,
-                              convertedChainName,
-                            }),
-                          );
-                        }}
-                        style={
-                          selectedFeesType?.toLowerCase() ===
-                          feesOptions?.[0]?.title?.toLowerCase()
-                            ? {
-                                borderColor: 'var(--background)',
-                                borderWidth: '3px',
-                              }
-                            : {}
-                        }
-                        className={s.feesOptionsItem}>
-                        <p
-                          className={
-                            s.feesOptionTitle
-                          }>{`${feesOptions?.[0].title}`}</p>
-                        <p className={s.feesOptionDescription}>
-                          {`${feesOptions?.[0].gasPrice} ${GAS_CURRENCY[convertedChainName]}`}
-                        </p>
-                      </button>
-                      <button
-                        className={s.feesOptionsItem}
-                        style={
-                          selectedFeesType?.toLowerCase() ===
-                          feesOptions?.[1]?.title?.toLowerCase()
-                            ? {
-                                borderColor: 'var(--background)',
-                                borderWidth: '3px',
-                              }
-                            : {}
-                        }
-                        onClick={() => {
-                          isPauseCalculateFees.current = false;
-                          setSelectedFeesType('normal');
-                          selectedFeesTypeRef.current = 'normal';
-                          dispatch(
-                            updateFees({
-                              gasPrice: feesOptions?.[1].gasPrice,
-                              convertedChainName,
-                            }),
-                          );
-                        }}>
-                        <p
-                          className={
-                            s.feesOptionTitle
-                          }>{`${feesOptions?.[1].title}`}</p>
-                        <p className={s.feesOptionDescription}>
-                          {`${feesOptions?.[1].gasPrice} ${GAS_CURRENCY[convertedChainName]}`}
-                        </p>
-                      </button>
-                      <button
-                        className={s.feesOptionsItem}
-                        style={
-                          selectedFeesType?.toLowerCase() === 'custom'
-                            ? {
-                                borderColor: 'var(--background)',
-                                borderWidth: '3px',
-                              }
-                            : {}
-                        }
-                        onClick={() => {
-                          isPauseCalculateFees.current = true;
-                          setSelectedFeesType('custom');
-                          selectedFeesTypeRef.current = 'custom';
-                        }}>
-                        <p className={s.feesOptionTitle}>{`Custom`}</p>
-                      </button>
-                    </div>
-                    {selectedFeesType === 'custom' && (
-                      <div className={s.inputFieldContainer}>
-                        <div className={s.inputLabelWithIcon}>
-                          <span className={s.inputIcon}>{icons.gasPump}</span>
-                          <span className={s.inputLabelText}>
-                            Gas Fee (Gwei)
-                          </span>
-                        </div>
-                        <FormControl variant='outlined' fullWidth>
-                          <OutlinedInput
-                            fullWidth
-                            autoFocus={true}
-                            id='customText'
-                            type={'text'}
-                            name='Gas Price'
-                            onChange={onChangeCustomFees}
-                            value={customFees}
-                            placeholder='Enter Gas fee in Gwei'
-                            sx={{
-                              '& .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'var(--sidebarIcon)',
-                              },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline':
-                                {
-                                  borderColor: 'var(--borderActiveColor)',
-                                },
-                              '& .MuiInputLabel-outlined': {
-                                color: 'var(--sidebarIcon)',
-                              },
-                              '&:hover fieldset': {
-                                borderColor: 'var(--sidebarIcon) !important',
-                              },
-                            }}
-                          />
-                        </FormControl>
-                      </div>
-                    )}
-                  </div>
-                  {isEVMChain(convertedChainName) && (
-                    <div className={s.inputFieldContainer}>
-                      <div className={s.inputLabelWithIcon}>
-                        <span className={s.inputIcon}>{icons.hashNumber}</span>
-                        <span className={s.inputLabelText}>Nonce</span>
-                      </div>
-                      <FormControl variant='outlined' fullWidth>
-                        <OutlinedInput
-                          fullWidth
-                          id='nonceInput'
-                          type={'text'}
-                          name='Nonce'
-                          onChange={onChangeNonce}
-                          value={customNonce}
-                          placeholder='Enter custom nonce'
-                          sx={{
-                            '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'var(--sidebarIcon)',
-                            },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'var(--borderActiveColor)',
-                            },
-                            '& .MuiInputLabel-outlined': {
-                              color: 'var(--sidebarIcon)',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: 'var(--sidebarIcon) !important',
-                            },
-                          }}
-                        />
-                      </FormControl>
-                    </div>
-                  )}
+                  <AdvancedFeesSheet {...advancedFeesSheetProps} />
                 </div>
               )}
             </div>
@@ -1229,12 +1055,20 @@ const CommonTransfer = () => {
               {'Quote expired — go back and refresh the quote.'}
             </p>
           )}
+          {!isCustomFeesValid && (
+            <p className={s.errorText}>
+              {
+                'Priority fee cannot be higher than max fee — fix it in Advanced Options.'
+              }
+            </p>
+          )}
           <button
             disabled={
               isDisabled ||
               isSubmitting ||
               isFetchingFeesAgain ||
-              isQuoteExpired
+              isQuoteExpired ||
+              !isCustomFeesValid
             }
             className={s.button}
             style={{
@@ -1242,7 +1076,8 @@ const CommonTransfer = () => {
                 isDisabled ||
                 isSubmitting ||
                 isFetchingFeesAgain ||
-                isQuoteExpired
+                isQuoteExpired ||
+                !isCustomFeesValid
                   ? 'var(--disabledButton)'
                   : 'var(--background)',
             }}

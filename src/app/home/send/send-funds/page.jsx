@@ -49,6 +49,39 @@ import {findLookalikeAddress} from 'dok-wallet-blockchain-networks/helper/addres
 import {getBolt11InvoiceAmount} from 'dok-wallet-blockchain-networks/helper/bolt11';
 import {getSentAddressHistory} from 'dok-wallet-blockchain-networks/redux/sentAddressHistory/sentAddressHistorySelectors';
 import ModalAddressPoisoningWarning from 'components/ModalAddressPoisoningWarning';
+import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
+
+const HEDERA_LOOKUP_DEBOUNCE_MS = 400;
+
+// Hedera recipients can be typed as an EVM address or a `0.0.N` account id;
+// show the other identifier, or warn that a brand-new address will be
+// auto-created at the sender's expense.
+const HederaRecipientHint = ({address, getHederaChain}) => {
+  const {status, result: info} = useHederaRecipientLookup({
+    address,
+    getHederaChain,
+    debounceMs: HEDERA_LOOKUP_DEBOUNCE_MS,
+  });
+  if (status !== 'done' || !info) {
+    return null;
+  }
+  let text = null;
+  if (info.inputType === 'accountId') {
+    text = !info.exists
+      ? 'Account not found'
+      : info.evmAddress
+        ? `EVM address: ${info.evmAddress}`
+        : null;
+  } else if (info.inputType === 'evmAddress') {
+    text = info.exists
+      ? `Account ID: ${info.accountId}`
+      : 'New account. A one-time account creation fee is added to the network fee.';
+  }
+  if (!text) {
+    return null;
+  }
+  return <p className={s.infoText}>{text}</p>;
+};
 
 const SendFunds = () => {
   const currentCoin = useSelector(selectCurrentCoin);
@@ -59,10 +92,29 @@ const SendFunds = () => {
   const transferData = useSelector(getTransferData);
   const isBitcoin = isBitcoinChain(currentCoin?.chain_name);
   const isLightning = currentCoin?.chain_name === 'bitcoin_lightning';
+  const isHedera = currentCoin?.chain_name === 'hedera';
   const allCustomRPC = useSelector(selectAllCustomRpc);
   const currentWallet = useSelector(selectCurrentWallet);
   const sentAddressHistory = useSelector(getSentAddressHistory);
   const [poisonWarning, setPoisonWarning] = useState(null);
+  const getHederaChain = useCallback(
+    () =>
+      getChain(
+        currentCoin?.chain_name,
+        currentWallet?.phrase,
+        getCustomRPCWithData(
+          allCustomRPC,
+          currentCoin?.chain_name,
+          currentWallet?.clientId,
+        ),
+      ),
+    [
+      allCustomRPC,
+      currentCoin?.chain_name,
+      currentWallet?.clientId,
+      currentWallet?.phrase,
+    ],
+  );
   const [modal, setModal] = useState(false);
   const [maxAmount, setMaxAmount] = useState('0.00000');
 
@@ -411,6 +463,17 @@ const SendFunds = () => {
                         value={values.send}
                         onSubmit={handleSubmit}
                       />
+                      {isHedera && !errors.send && (
+                        <HederaRecipientHint
+                          address={values.send}
+                          getHederaChain={getHederaChain}
+                        />
+                      )}
+                      {isHedera && !!currentCoin?.accountId && (
+                        <p className={s.infoText}>
+                          {`Your account ID: ${currentCoin.accountId}`}
+                        </p>
+                      )}
                       {errors.send && (
                         <p className={s.textConfirm}>{errors.send}</p>
                       )}

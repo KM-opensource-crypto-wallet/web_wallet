@@ -103,6 +103,7 @@ const TransactionDetails = () => {
           : initialTransaction?.date,
         status: recentTx.status,
         link: recentTx.link,
+        url: recentTx.url || initialTransaction?.url,
         totalCourse: recentTx.totalCourse,
         blockNumber: recentTx.blockNumber,
         confirmations: recentTx.confirmations,

@@ -1,0 +1,106 @@
+.msgSection {
+  width: 100%;
+}
+
+.msgSectionHeader,
+.msgRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.msgRow:disabled {
+  cursor: default;
+}
+
+.msgRow:not(:disabled):hover {
+  opacity: 0.7;
+}
+
+.msgRowLabel {
+  font-size: 14px;
+  color: var(--gray);
+  flex-shrink: 0;
+  max-width: 40%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msgRowValueWrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.msgRowValue {
+  font-size: 14px;
+  color: var(--font);
+  text-align: right;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: break-all;
+}
+
+.msgCopyIcon {
+  flex-shrink: 0;
+  color: var(--gray);
+}
+
+.msgSectionCount {
+  font-size: 12px;
+  color: var(--gray);
+}
+
+.msgNestedContainer {
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background-color: var(--backgroundColor);
+}
+
+.msgDivider {
+  height: 1px;
+  background-color: var(--backgroundColor);
+}
+
+.msgEmptyText {
+  font-size: 13px;
+  color: var(--gray);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.calldataWarning {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--warning);
+}
+
+.calldataWarningText {
+  flex: 1;
+  font-size: 12px;
+  color: var(--warning);
+  font-weight: 500;
+}

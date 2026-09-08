@@ -272,7 +272,7 @@ const SendScreen = () => {
               </Link>
             </div>
             {(isBitcoin || isDeriveAddressChain) &&
-              deriveAddresses?.length > 0 && (
+              deriveAddresses?.length > 1 && (
                 <div>
                   <p className={s.addresTitle}>Select Address:</p>
                   <div className={s.addressSelector}>
@@ -280,11 +280,13 @@ const SendScreen = () => {
                       chain_name={currentCoin?.chain_name}
                       item={selectedDeriveAddressItem}
                       symbol={currentCoin?.symbol}
+                      decimal={currentCoin?.decimal}
                       fallbackAddress={currentCoin?.address}
                       onPress={() =>
                         addressSheetRef.current?.present({
                           chain_name: currentCoin?.chain_name,
                           symbol: currentCoin?.symbol,
+                          decimal: currentCoin?.decimal,
                           items: deriveAddresses,
                           selectedAddress: currentCoin?.address,
                         })
