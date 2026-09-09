@@ -1,3 +1,4 @@
+import {captureError} from 'services/logger';
 import * as bip39 from 'bip39';
 import {ethers} from 'ethers';
 import {BIP32Factory} from 'bip32';
@@ -399,11 +400,11 @@ const createEVMDeriveAddress = (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
-      console.error(
-        'Error in creating derive Addresses for ether',
-        event.error,
-      );
-      reject(event.error);
+      // Workers run outside the Sentry client; `event.error` is often absent
+      // for worker ErrorEvents. Never attach the posted mnemonic payload.
+      const error = event.error ?? new Error(event.message || 'worker error');
+      captureError(error, {tags: {area: 'wallet', op: 'derive_evm'}});
+      reject(error);
     };
     worker.postMessage({mnemonic, startingIndex});
   });
@@ -420,11 +421,11 @@ const createSolanaDeriveAddresses = async (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
-      console.error(
-        'Error in creating solana derive wallet address',
-        event.error,
-      );
-      reject(event.error);
+      // Workers run outside the Sentry client; `event.error` is often absent
+      // for worker ErrorEvents. Never attach the posted mnemonic payload.
+      const error = event.error ?? new Error(event.message || 'worker error');
+      captureError(error, {tags: {area: 'wallet', op: 'derive_solana'}});
+      reject(error);
     };
     worker.postMessage({mnemonic, startingIndex});
   });
@@ -441,11 +442,11 @@ const createTronDeriveAddress = async (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
-      console.error(
-        'Error in creating tron derive wallet address',
-        event.error,
-      );
-      reject(event.error);
+      // Workers run outside the Sentry client; `event.error` is often absent
+      // for worker ErrorEvents. Never attach the posted mnemonic payload.
+      const error = event.error ?? new Error(event.message || 'worker error');
+      captureError(error, {tags: {area: 'wallet', op: 'derive_tron'}});
+      reject(error);
     };
     worker.postMessage({mnemonic, startingIndex});
   });

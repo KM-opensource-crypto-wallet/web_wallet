@@ -3,6 +3,8 @@ import {
   isKnownElectrumOp,
   runElectrumQueryOnServer,
 } from 'utils/electrumServer';
+import {logger} from 'services/logger';
+import {tagRequestScope} from 'whitelabel/serverWhiteLabel';
 
 // Bitcoin data for the web wallet: browsers cannot open raw TCP sockets, so the
 // browser posts here and utils/electrumServer runs the Electrum client over
@@ -12,6 +14,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
+  tagRequestScope(req);
   let op;
   try {
     const body = await req.json();
@@ -25,6 +28,9 @@ export async function POST(req) {
     const result = await runElectrumQueryOnServer(op, body?.payload || {});
     return NextResponse.json({ok: true, result});
   } catch (e) {
+    // The browser falls back to the backend providers, so this is a warning
+    // log rather than an issue.
+    logger.warn('electrum.server_failed', {op, message: e?.message});
     // The message is passed through verbatim: the browser's broadcast
     // idempotency check matches on the server's own wording.
     return NextResponse.json(

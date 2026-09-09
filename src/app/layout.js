@@ -11,6 +11,13 @@ import {getWhiteLabelInfo} from 'dok-wallet-blockchain-networks/service/dokApi';
 import {headers} from 'next/headers';
 import {isLocaleSet} from 'utils/updateLocale';
 import AuthProvider from 'components/AuthProvider';
+import {captureError, setWhiteLabelContext} from 'services/logger';
+import {rememberWhiteLabelForHost} from 'whitelabel/serverWhiteLabel';
+
+// Next signals "this route must render per request" by throwing from
+// headers()/cookies() during static prerender (digest DYNAMIC_SERVER_USAGE).
+const isNextDynamicUsageError = error =>
+  error?.digest === 'DYNAMIC_SERVER_USAGE';
 
 const roboto = Roboto({
   weight: ['400', '500', '700'],
@@ -24,16 +31,26 @@ export default async function RootLayout({children}) {
   let locale;
   let messages;
   let wlData;
+  let firstHost = '';
 
   try {
     const headersList = await headers();
     const host = headersList.get('x-forwarded-host') ?? headersList.get('host');
-    const firstHost = host.split(':')[0];
+    firstHost = host.split(':')[0];
     const resp = await getWhiteLabelInfo(firstHost);
     wlData = resp?.data;
   } catch (error) {
-    console.error('Error in getting white label:', error);
+    // `headers()` throws Next's internal bail-out while a page is being
+    // prerendered at build time; that is not a defect to report.
+    if (!isNextDynamicUsageError(error)) {
+      captureError(error, {tags: {area: 'layout', op: 'whitelabel_fetch'}});
+    }
   }
+
+  // Server-side events/logs for this request carry the whitelabel too, and
+  // route handlers / onRequestError reuse what the backend said for this host.
+  rememberWhiteLabelForHost(firstHost, wlData);
+  setWhiteLabelContext({host: firstHost, name: wlData?.name, id: wlData?._id});
 
   try {
     const isLocalExist = await isLocaleSet();
@@ -44,7 +61,9 @@ export default async function RootLayout({children}) {
     }
     messages = await getMessages({locale});
   } catch (error) {
-    console.error('Error loading locale or messages:', error);
+    if (!isNextDynamicUsageError(error)) {
+      captureError(error, {tags: {area: 'layout', op: 'locale'}});
+    }
     locale = 'en';
     messages = {};
   }

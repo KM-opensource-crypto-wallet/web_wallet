@@ -1,30 +1,49 @@
 import {logWalletConnectEvent} from './logger';
+import {addBreadcrumb, logger} from 'services/logger';
+
+jest.mock('services/logger', () => ({
+  addBreadcrumb: jest.fn(),
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
+beforeEach(() => jest.clearAllMocks());
 
 describe('logWalletConnectEvent', () => {
-  afterEach(() => jest.restoreAllMocks());
-
-  it('writes a tagged message and a JSON payload at the given level', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    logWalletConnectEvent('warn', 'session_request.unsupported_method', {
-      method: 'eth_foo',
-      chainId: 'eip155:1',
-    });
-    expect(warn).toHaveBeenCalledTimes(1);
-    const [tag, json] = warn.mock.calls[0];
-    expect(tag).toBe('[WalletConnect] session_request.unsupported_method');
-    const payload = JSON.parse(json);
-    expect(payload).toMatchObject({
-      event: 'session_request.unsupported_method',
-      method: 'eth_foo',
-      chainId: 'eip155:1',
-    });
-    expect(new Date(payload.ts).toString()).not.toBe('Invalid Date');
+  it('forwards a structured log and a breadcrumb at the given level', () => {
+    const details = {method: 'eth_foo', chainId: 'eip155:1'};
+    logWalletConnectEvent(
+      'warn',
+      'session_request.unsupported_method',
+      details,
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      'walletconnect.session_request.unsupported_method',
+      details,
+    );
+    expect(addBreadcrumb).toHaveBeenCalledWith(
+      'walletconnect',
+      'session_request.unsupported_method',
+      details,
+      'warning',
+    );
   });
 
-  it('falls back to console.log for an unknown level', () => {
-    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
-    logWalletConnectEvent('verbose', 'x');
-    expect(log).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(log.mock.calls[0][1])).toMatchObject({event: 'x'});
+  it('maps console-style levels onto logger levels', () => {
+    logWalletConnectEvent('log', 'a');
+    logWalletConnectEvent('error', 'b');
+    logWalletConnectEvent('verbose', 'c');
+    expect(logger.info).toHaveBeenCalledWith('walletconnect.a', {});
+    expect(logger.error).toHaveBeenCalledWith('walletconnect.b', {});
+    expect(logger.info).toHaveBeenCalledWith('walletconnect.c', {});
+    expect(addBreadcrumb.mock.calls.map(call => call[3])).toEqual([
+      'info',
+      'error',
+      'info',
+    ]);
   });
 });
