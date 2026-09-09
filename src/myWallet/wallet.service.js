@@ -315,7 +315,7 @@ const createAptosWallet = async mnemonic => {
 
 const createCardanoWallet = async mnemonic => {
   try {
-    const provider = new BlockfrostProvider(config.BLOCKFROST_API_KEY);
+    const provider = new BlockfrostProvider('');
     const wallet = new MeshWallet({
       networkId: 1,
       fetcher: provider,
