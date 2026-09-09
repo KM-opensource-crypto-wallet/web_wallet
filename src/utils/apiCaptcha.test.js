@@ -147,6 +147,15 @@ describe('response interceptor', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it('ignores a 403 on a request that carried no captcha token', async () => {
+    // Nothing was sent for Google to reject, so this is an ordinary 403
+    // (auth, permissions), not a captcha rejection.
+    const err = make403('/x', {config: {url: '/x', headers: {}}});
+    await expect(lastResponseErrorHandler()(err)).rejects.toBe(err);
+    expect(warn).not.toHaveBeenCalled();
+    expect(describeCaptchaFailure(make403()).stats.rejected).toBe(0);
+  });
+
   it('throttles to one log per window, and resets on demand', async () => {
     const handler = lastResponseErrorHandler();
     await handler(make403('/a')).catch(() => {});

@@ -278,7 +278,10 @@ export const setupWebCaptchaInterceptor = appName => {
     error => {
       const status = error?.response?.status;
       const url = error?.config?.url;
-      if (status === 403 && url !== BOOTSTRAP_URL) {
+      // Only a 403 on a request that actually carried a token can be Google
+      // rejecting it; a tokenless 403 is an ordinary auth/permission error.
+      const tokenSent = Boolean(error?.config?.headers?.['x-captcha-token']);
+      if (status === 403 && tokenSent && url !== BOOTSTRAP_URL) {
         _stats.rejected += 1;
         if (shouldLog(TAG_REJECTED)) {
           console.warn(

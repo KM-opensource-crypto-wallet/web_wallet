@@ -402,10 +402,9 @@ const createEVMDeriveAddress = (mnemonic, startingIndex) => {
       worker.terminate();
       // Workers run outside the Sentry client; `event.error` is often absent
       // for worker ErrorEvents. Never attach the posted mnemonic payload.
-      captureError(event.error ?? new Error(event.message || 'worker error'), {
-        tags: {area: 'wallet', op: 'derive_evm'},
-      });
-      reject(event.error);
+      const error = event.error ?? new Error(event.message || 'worker error');
+      captureError(error, {tags: {area: 'wallet', op: 'derive_evm'}});
+      reject(error);
     };
     worker.postMessage({mnemonic, startingIndex});
   });
@@ -424,10 +423,9 @@ const createSolanaDeriveAddresses = async (mnemonic, startingIndex) => {
       worker.terminate();
       // Workers run outside the Sentry client; `event.error` is often absent
       // for worker ErrorEvents. Never attach the posted mnemonic payload.
-      captureError(event.error ?? new Error(event.message || 'worker error'), {
-        tags: {area: 'wallet', op: 'derive_solana'},
-      });
-      reject(event.error);
+      const error = event.error ?? new Error(event.message || 'worker error');
+      captureError(error, {tags: {area: 'wallet', op: 'derive_solana'}});
+      reject(error);
     };
     worker.postMessage({mnemonic, startingIndex});
   });
@@ -446,10 +444,9 @@ const createTronDeriveAddress = async (mnemonic, startingIndex) => {
       worker.terminate();
       // Workers run outside the Sentry client; `event.error` is often absent
       // for worker ErrorEvents. Never attach the posted mnemonic payload.
-      captureError(event.error ?? new Error(event.message || 'worker error'), {
-        tags: {area: 'wallet', op: 'derive_tron'},
-      });
-      reject(event.error);
+      const error = event.error ?? new Error(event.message || 'worker error');
+      captureError(error, {tags: {area: 'wallet', op: 'derive_tron'}});
+      reject(error);
     };
     worker.postMessage({mnemonic, startingIndex});
   });
