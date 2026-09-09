@@ -1,3 +1,4 @@
+import {captureError} from 'services/logger';
 import * as bip39 from 'bip39';
 import {ethers} from 'ethers';
 import {BIP32Factory} from 'bip32';
@@ -399,10 +400,11 @@ const createEVMDeriveAddress = (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
-      console.error(
-        'Error in creating derive Addresses for ether',
-        event.error,
-      );
+      // Workers run outside the Sentry client; `event.error` is often absent
+      // for worker ErrorEvents. Never attach the posted mnemonic payload.
+      captureError(event.error ?? new Error(event.message || 'worker error'), {
+        tags: {area: 'wallet', op: 'derive_evm'},
+      });
       reject(event.error);
     };
     worker.postMessage({mnemonic, startingIndex});
@@ -420,10 +422,11 @@ const createSolanaDeriveAddresses = async (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
-      console.error(
-        'Error in creating solana derive wallet address',
-        event.error,
-      );
+      // Workers run outside the Sentry client; `event.error` is often absent
+      // for worker ErrorEvents. Never attach the posted mnemonic payload.
+      captureError(event.error ?? new Error(event.message || 'worker error'), {
+        tags: {area: 'wallet', op: 'derive_solana'},
+      });
       reject(event.error);
     };
     worker.postMessage({mnemonic, startingIndex});
@@ -441,10 +444,11 @@ const createTronDeriveAddress = async (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
-      console.error(
-        'Error in creating tron derive wallet address',
-        event.error,
-      );
+      // Workers run outside the Sentry client; `event.error` is often absent
+      // for worker ErrorEvents. Never attach the posted mnemonic payload.
+      captureError(event.error ?? new Error(event.message || 'worker error'), {
+        tags: {area: 'wallet', op: 'derive_tron'},
+      });
       reject(event.error);
     };
     worker.postMessage({mnemonic, startingIndex});

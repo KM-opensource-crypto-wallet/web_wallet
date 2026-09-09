@@ -30,6 +30,8 @@ const {
   setupWebCaptchaInterceptor,
   describeCaptchaFailure,
   resetCaptchaLogThrottle,
+  resetCaptchaStats,
+  captchaRef,
 } = require('./apiCaptcha');
 
 const TOKEN = 'HFODdpK05IaWpsOSFcFh1NF1tqPHsPKnINTmcmfkIyO08dXTcgeRd6aUh';
@@ -47,6 +49,14 @@ const make403 = (url = '/get-currency-rate', overrides = {}) => ({
 const lastResponseErrorHandler = () => {
   const list = fakeDokApi._handlers.response;
   return list[list.length - 1].onRejected;
+};
+const lastResponseOkHandler = () => {
+  const list = fakeDokApi._handlers.response;
+  return list[list.length - 1].onFulfilled;
+};
+const lastRequestHandler = () => {
+  const list = fakeDokApi._handlers.request;
+  return list[list.length - 1].onFulfilled;
 };
 
 describe('describeCaptchaFailure', () => {
@@ -79,12 +89,26 @@ describe('describeCaptchaFailure', () => {
   it('does not throw when browser globals are absent', () => {
     expect(() => describeCaptchaFailure({})).not.toThrow();
   });
+
+  it('always carries the diagnostic sections, even without a DOM', () => {
+    const payload = describeCaptchaFailure(make403());
+    expect(payload).toHaveProperty('recaptcha');
+    expect(payload.thirdPartyScripts).toEqual([]);
+    expect(payload.stats).toEqual({
+      executes: 0,
+      inFlight: 0,
+      maxInFlight: 0,
+      ok: 0,
+      rejected: 0,
+    });
+  });
 });
 
 describe('response interceptor', () => {
   let warn;
   beforeEach(() => {
     resetCaptchaLogThrottle();
+    resetCaptchaStats();
     fakeDokApi.interceptors.request.use.mockClear();
     fakeDokApi.interceptors.response.use.mockClear();
     fakeDokApi.interceptors.request.eject.mockClear();
@@ -142,5 +166,57 @@ describe('response interceptor', () => {
     expect(fakeDokApi.interceptors.response.eject).toHaveBeenCalledWith(resId);
     expect(fakeDokApi._handlers.request).toHaveLength(1);
     expect(fakeDokApi._handlers.response).toHaveLength(1);
+  });
+});
+
+describe('session counters', () => {
+  let warn;
+  beforeEach(() => {
+    resetCaptchaLogThrottle();
+    resetCaptchaStats();
+    warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    // The request interceptor is a no-op server-side; pretend to be a browser.
+    global.window = {};
+    setupWebCaptchaInterceptor('dokwallet');
+  });
+  afterEach(() => {
+    delete global.window;
+    captchaRef.execute = null;
+    jest.restoreAllMocks();
+  });
+
+  it('counts executes, peak concurrency, successes and rejections', async () => {
+    let release;
+    const gate = new Promise(r => (release = r));
+    captchaRef.execute = jest.fn(async () => {
+      await gate;
+      return 'tok';
+    });
+    const req = lastRequestHandler();
+    const a = req({url: '/a', headers: {}});
+    const b = req({url: '/b', headers: {}});
+    release();
+    const [ca, cb] = await Promise.all([a, b]);
+    expect(ca.headers['x-captcha-token']).toBe('tok');
+    expect(cb.headers['x-captcha-token']).toBe('tok');
+
+    lastResponseOkHandler()({config: ca});
+    await lastResponseErrorHandler()(make403('/b')).catch(() => {});
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(warn.mock.calls[0][1]);
+    expect(payload.stats).toEqual({
+      executes: 2,
+      inFlight: 0,
+      maxInFlight: 2,
+      ok: 1,
+      rejected: 1,
+    });
+  });
+
+  it('does not count untokened successes such as the bootstrap call', () => {
+    lastResponseOkHandler()({config: {url: '/get-white-label', headers: {}}});
+    const payload = describeCaptchaFailure(make403());
+    expect(payload.stats.ok).toBe(0);
   });
 });
