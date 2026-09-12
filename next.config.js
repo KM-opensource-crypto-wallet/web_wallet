@@ -84,6 +84,135 @@ const nextConfig = {
     });
     return config;
   },
+  async redirects() {
+    return [
+      {
+        source: '/buy-crypto',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/buy-crypto/otc2',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/coin-sync',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/confirm-batch',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/confirm-staking',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/create-staking',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/send/custom-derivation',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/send/receive-funds',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/send/select-UTXOs',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/send/send-funds/transfer',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/staking-list',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/transactions',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/transactions/update-transaction',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/vote-staking',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/home/withdraw-staking',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/manage-coins',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/sell-crypto',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/sell-crypto/confirm',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/swap',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/swap/confirm',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/swap/history',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/verify/verify-create',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/verify/verify-screen',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/wallet-connect',
+        destination: '/home',
+        permanent: false,
+      },
+      {
+        source: '/wallets/hide-wallet',
+        destination: '/home',
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     return [
       // Your existing rewrites...

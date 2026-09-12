@@ -32,13 +32,14 @@ import {
   calculateEstimateFee,
   updateCurrentTransferData,
 } from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import {useRouter} from 'next/navigation';
+import {useParams, useRouter} from 'next/navigation';
 import Loading from 'components/Loading';
 import styles from './BatchTransactionModal.module.css';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 
 const BatchTransactionModal = ({isVisible, onDismiss, transactions}) => {
   const router = useRouter();
+  const {clientId} = useParams();
   const dispatch = useDispatch();
   const [isClosing, setIsClosing] = useState(false);
   const [shouldRender, setShouldRender] = useState(isVisible);
@@ -158,8 +159,8 @@ const BatchTransactionModal = ({isVisible, onDismiss, transactions}) => {
         },
       }),
     );
-    router.push('/home/confirm-batch');
-  }, [dispatch, filteredTransactions, router, onDismiss]);
+    router.push(`/wallet/${clientId}/home/confirm-batch`);
+  }, [dispatch, filteredTransactions, router, onDismiss, clientId]);
 
   const handleChainChange = useCallback(
     event => {

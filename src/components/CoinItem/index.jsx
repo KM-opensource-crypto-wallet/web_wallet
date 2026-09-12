@@ -1,11 +1,13 @@
 'use client';
 import React, {memo, useCallback} from 'react';
+import {useSelector} from 'react-redux';
 import {
   checkValidChainForWalletImportWithPrivateKey,
   isBitcoinChain,
   validateSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
-import {isValidBrowser} from 'utils/common';
+import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {getCoinSlug, isValidBrowser} from 'utils/common';
 import Image from 'next/image';
 import {
   addOrToggleCoinInWallet,
@@ -41,7 +43,7 @@ const CoinItem = ({
   const isCoinInWallet = item?.isInWallet;
   const isToken = item?.type === 'token';
   const isAddCoin = number === 3;
-
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const isDisabledItem =
     isAddCoin &&
     !checkValidChainForWalletImportWithPrivateKey({
@@ -57,8 +59,12 @@ const CoinItem = ({
 
   const onPressItem = useCallback(() => {
     dispatch(setCurrentCoin(item?._id));
-    router.push(`/home/send`);
-  }, [dispatch, item?._id, router]);
+    router.push(
+      currentWalletClientId
+        ? `/wallet/${currentWalletClientId}/home/send/${getCoinSlug(item)}`
+        : `/home/send`,
+    );
+  }, [dispatch, item, currentWalletClientId, router]);
 
   const onChangeValue = useCallback(() => {
     dispatch(addOrToggleCoinInWallet(item));

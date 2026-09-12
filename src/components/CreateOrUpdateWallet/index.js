@@ -184,13 +184,13 @@ const CreateOrUpdateWallet = () => {
 
   const onPressYes = useCallback(() => {
     setShowDeleteModal(false);
-    router.push('/home');
+    router.push(`/wallet/${currentWalletClientId}/home`);
     setTimeout(() => {
       if (walletClientId) {
         dispatch(deleteWallet(walletClientId));
       }
     }, 1000);
-  }, [dispatch, router, walletClientId]);
+  }, [dispatch, router, walletClientId, currentWalletClientId]);
 
   const onPressNo = useCallback(() => {
     setShowDeleteModal(false);
@@ -334,7 +334,9 @@ const CreateOrUpdateWallet = () => {
                           key={index}
                           onClick={() => {
                             if (item.title === 'Manual Backup') {
-                              router.push('/verify/verify-create');
+                              router.push(
+                                `/wallet/${walletClientId}/verify/verify-create`,
+                              );
                               // navigation.push("VerifyLogin");
                             }
                           }}>
@@ -368,7 +370,7 @@ const CreateOrUpdateWallet = () => {
                         style={{marginTop: 20}}
                         onClick={() =>
                           router.push(
-                            `/wallets/hide-wallet?walletClientId=${walletClientId}`,
+                            `/wallet/${walletClientId}/wallets/hide-wallet`,
                           )
                         }>
                         <div className={s.itemIcon}>
@@ -397,7 +399,7 @@ const CreateOrUpdateWallet = () => {
                         disabled={!isScanRowEnabled}
                         onClick={() =>
                           router.push(
-                            `/home/coin-sync?walletClientId=${scanTargetClientId}`,
+                            `/wallet/${scanTargetClientId}/home/coin-sync`,
                           )
                         }>
                         <div

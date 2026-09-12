@@ -1,8 +1,11 @@
 const icons = require(`assets/images/sidebarIcons`).default;
 
-const sidebarList = [
+// Wallet-scoped entries need the active wallet's id in the URL, so the list
+// is built per-render rather than exported as static data.
+const sidebarList = currentWalletClientId => [
   {
-    href: '/home',
+    key: 'home',
+    href: `/wallet/${currentWalletClientId}/home`,
     item: t => (
       <>
         {icons.home} <span>{t('home')}</span>
@@ -10,7 +13,8 @@ const sidebarList = [
     ),
   },
   {
-    href: '/buy-crypto',
+    key: 'buyCrypto',
+    href: `/wallet/${currentWalletClientId}/buy-crypto`,
     item: t => (
       <>
         {icons.buy}
@@ -19,7 +23,8 @@ const sidebarList = [
     ),
   },
   {
-    href: '/swap',
+    key: 'swap',
+    href: `/wallet/${currentWalletClientId}/swap`,
     item: t => (
       <>
         {icons.exchange}
@@ -28,7 +33,8 @@ const sidebarList = [
     ),
   },
   {
-    href: '/sell-crypto',
+    key: 'sellCrypto',
+    href: `/wallet/${currentWalletClientId}/sell-crypto`,
     item: t => (
       <>
         {icons.buy}
@@ -37,6 +43,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'wallets',
     href: '/wallets',
     item: t => (
       <>
@@ -46,7 +53,8 @@ const sidebarList = [
     ),
   },
   {
-    href: '/wallet-connect',
+    key: 'walletConnect',
+    href: `/wallet/${currentWalletClientId}/wallet-connect`,
     item: t => (
       <>
         {icons.walletConnect}
@@ -55,6 +63,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'about',
     href: '/about',
     item: t => (
       <>
@@ -64,6 +73,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'contactUs',
     href: '/contact-us',
     item: t => (
       <>
@@ -73,6 +83,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'settings',
     href: '/settings',
     item: t => (
       <>
@@ -82,7 +93,8 @@ const sidebarList = [
     ),
   },
   {
-    href: '/receive-payment-url',
+    key: 'receivePaymentUrl',
+    href: `/wallet/${currentWalletClientId}/receive-payment-url`,
     item: t => (
       <>
         {icons.url}
@@ -91,6 +103,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'resetWallet',
     href: '/reset-wallet',
     item: t => (
       <>
@@ -100,6 +113,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'logout',
     href: '/logout',
     item: t => (
       <>

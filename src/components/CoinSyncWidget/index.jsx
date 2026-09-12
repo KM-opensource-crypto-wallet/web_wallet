@@ -9,6 +9,7 @@ import {
   selectWidgetData,
 } from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSelectors';
 import {syncAllCoins} from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSlice';
+import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import styles from './CoinSyncWidget.module.css';
 
 const CoinSyncWidget = () => {
@@ -17,12 +18,14 @@ const CoinSyncWidget = () => {
 
   const shouldShowWidget = useSelector(selectShouldShowWidget);
   const widgetData = useSelector(selectWidgetData);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
 
   const handlePress = useCallback(() => {
-    router.push('/home/coin-sync');
-  }, [router]);
+    router.push(`/wallet/${currentWalletClientId}/home/coin-sync`);
+  }, [router, currentWalletClientId]);
 
-  if (!shouldShowWidget || pathname === '/home/coin-sync') {
+  // next.config.js sets trailingSlash: true, so pathname ends in '/'
+  if (!shouldShowWidget || pathname?.endsWith('/home/coin-sync/')) {
     return null;
   }
 

@@ -4,10 +4,14 @@
       "details": [
            {
              "appID": "N9US926Q47.com.kimlwallet",
-             "paths": ["/home/send/send-funds/*"],
+             "paths": ["/home/send/send-funds/*", "/wallet/*/home/send/send-funds/*"],
               "components": [
                      {
                          "/": "/home/send/send-funds/*",
+                         "?": "*"
+                     },
+                     {
+                         "/": "/wallet/*/home/send/send-funds/*",
                          "?": "*"
                      }
                 ]
