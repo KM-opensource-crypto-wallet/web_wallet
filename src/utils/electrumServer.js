@@ -24,7 +24,7 @@ import {
 // arbitrary high ports is not the same constraint a phone has, so this list is
 // deliberately shorter than mobile's.
 const SERVERS = IS_SANDBOX
-  ? [ELECTRUM_SERVER.testnetBlockstream, ELECTRUM_SERVER.testnetAranguren]
+  ? [ELECTRUM_SERVER.testnetAranguren, ELECTRUM_SERVER.testnetBlockstream]
   : [ELECTRUM_SERVER.own, ELECTRUM_SERVER.bluewallet];
 
 // Electrum servers use self-signed certificates (BlueWallet, Electrum desktop
@@ -37,13 +37,28 @@ const socketFactory = ({host, port}, onConnect) =>
 // chunk splitting can otherwise evaluate this module twice and leave two live
 // sockets. Lazy, so importing the module never opens a connection.
 const CLIENT_KEY = '__dokElectrumServerClient';
+
+const serverSignature = servers =>
+  (Array.isArray(servers) ? servers : [])
+    .map(server => `${server.host}:${server.port}`)
+    .join(',');
+
+// The pinned client is only reusable while it was built from the SAME server
+// list. A dev HMR re-evaluates this module with new inputs (an IS_SANDBOX
+// flip, an edited server list) but globalThis survives, so without this check
+// a testnet wallet keeps talking to the mainnet socket the process started
+// with -- every scripthash then reads as unused / zero balance.
 const getClient = () => {
-  if (!globalThis[CLIENT_KEY]) {
-    globalThis[CLIENT_KEY] = new ElectrumClient({
-      servers: SERVERS,
-      socketFactory,
-    });
+  const cached = globalThis[CLIENT_KEY];
+  if (cached && serverSignature(cached.servers) === serverSignature(SERVERS)) {
+    return cached;
   }
+  // Drop the stale socket; its 'close' event runs the client's own teardown.
+  cached?.socket?.destroy?.();
+  globalThis[CLIENT_KEY] = new ElectrumClient({
+    servers: SERVERS,
+    socketFactory,
+  });
   return globalThis[CLIENT_KEY];
 };
 

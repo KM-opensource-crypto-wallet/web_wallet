@@ -6,60 +6,9 @@
   max-height: var(--app-height);
 }
 
-.imageStyle {
-  object-fit: contain;
-  margin-right: 8px;
-  border-radius: 8px;
-  height: 30px;
-  width: 30px;
-}
-
-.borderView {
-  height: 1.5px;
-  background-color: var(--whiteOutline);
-  width: 100%;
-}
-
-.mainImageStyle {
-  width: 80%;
-  height: 120px;
-  object-fit: contain;
-  margin: 0 auto;
-}
-
-@media (min-width: 769px) {
-  .mainImageStyle {
-    height: 150px;
-  }
-}
-
-.mainView {
-  display: flex;
-  align-items: center;
-  padding: 5px 10px;
-}
-
-@media (min-width: 769px) {
-  .mainView {
-    padding: 10px 20px;
-  }
-}
-
 .box {
   display: flex;
   flex-direction: column;
-}
-
-.title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--primary);
-}
-
-.url {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--primary);
 }
 
 .bottomView {
@@ -93,15 +42,6 @@
   font-weight: bold;
 }
 
-.errorText {
-  margin-top: 2px;
-  margin-bottom: 10px;
-  color: red;
-  font-size: 12px;
-  font-weight: 500;
-  text-align: center;
-}
-
 .formInput {
   width: 100%;
   padding: 5px 10px;
@@ -118,7 +58,6 @@
   color: var(--font);
   font-size: 32px;
   text-align: left;
-
   width: 100%;
   margin: 0 auto;
 }
@@ -128,17 +67,22 @@
   font-size: 16px;
   text-align: left;
   align-self: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .transferItemView {
-  height: 40px;
+  min-height: 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .box2Balance {
-  background-color: var(--white-outline);
+  background-color: var(--whiteOutline);
   border-radius: 8px;
   overflow: hidden;
   margin-top: 24px;
@@ -148,6 +92,7 @@
   color: var(--font);
   font-size: 16px;
   text-align: left;
+  flex-shrink: 0;
 }
 
 .contentContainerStyle {
@@ -161,12 +106,26 @@
 }
 
 .scrollView {
-  background-color: var(--backgroundColor);
+  background-color: var(--whiteOutline);
   margin-top: 12px;
-  border-radius: 8px;
-  padding: 16px
+  border-radius: 12px;
+  padding: 12px;
+  max-height: 40vh;
+  overflow-y: auto;
 }
 
+.batchCallBox {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background-color: var(--backgroundColor);
+}
+
+.batchCallBox + .batchCallBox {
+  margin-top: 12px;
+}
 
 .chainTitle {
   font-size: 16px;
@@ -175,4 +134,61 @@
   text-align: left;
   margin-top: 12px;
   align-self: flex-start;
+}
+
+.messageStyle {
+  color: var(--font);
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.msgHeaderRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.msgCopyAllBtn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.msgCopyAllText {
+  font-size: 13px;
+  color: var(--gray);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.batchLimitWarning {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--warning);
+}
+
+.batchLimitWarningText {
+  flex: 1;
+  font-size: 12px;
+  color: var(--warning);
+  font-weight: 500;
 }

@@ -29,6 +29,7 @@ import {batchTransactionSlice} from 'dok-wallet-blockchain-networks/redux/batchT
 import {customRpcSlice} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSlice';
 import {coinSyncSlice} from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSlice';
 import {sentAddressHistorySlice} from 'dok-wallet-blockchain-networks/redux/sentAddressHistory/sentAddressHistorySlice';
+import {rejectedActionBreadcrumb} from './sentryMiddleware';
 
 const encryptor = encryptTransform({
   secretKey: process.env.REDUX_WEB_KEY, // Replace with your secret key
@@ -117,7 +118,7 @@ const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: false,
       immutableCheck: false,
-    }),
+    }).concat(rejectedActionBreadcrumb),
   devTools: true,
 });
 

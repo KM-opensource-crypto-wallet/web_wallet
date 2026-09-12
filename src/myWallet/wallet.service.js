@@ -1,3 +1,4 @@
+import {captureError} from 'services/logger';
 import * as bip39 from 'bip39';
 import {ethers} from 'ethers';
 import {BIP32Factory} from 'bip32';
@@ -24,6 +25,7 @@ import {
   CHANGE_CHAIN,
   GAP_LIMIT,
   RECEIVE_CHAIN,
+  buildAddressByChain,
   deriveAddressRange,
   getAccountBasePath,
   getNetworkByChainName,
@@ -61,24 +63,6 @@ const getBitcoinAccount = (chain_name, mnemonic) => {
     extendedPublicKey: accountNode.neutered().toBase58(),
     extendedPrivateKey: accountNode.toBase58(),
   };
-};
-
-// Address for one public key, by chain: BIP84 native segwit, BIP49
-// p2sh-wrapped segwit, BIP44 legacy. Mirrors buildAddress in
-// dok-wallet-blockchain-networks/service/bitcoinHdAddress.js, which keeps it
-// private; only the arbitrary-path custom derivations below need it, since the
-// standard windows come from deriveAddressRange.
-const buildBitcoinAddress = (chain_name, pubkey, network) => {
-  if (chain_name === 'bitcoin_legacy') {
-    return bitcoin.payments.p2pkh({pubkey, network}).address;
-  }
-  if (chain_name === 'bitcoin_segwit') {
-    return bitcoin.payments.p2sh({
-      redeem: bitcoin.payments.p2wpkh({pubkey, network}),
-      network,
-    }).address;
-  }
-  return bitcoin.payments.p2wpkh({pubkey, network}).address;
 };
 
 // BIP44 standard account layout: 20 external/receive (.../0/i) + 20
@@ -331,7 +315,7 @@ const createAptosWallet = async mnemonic => {
 
 const createCardanoWallet = async mnemonic => {
   try {
-    const provider = new BlockfrostProvider(config.BLOCKFROST_API_KEY);
+    const provider = new BlockfrostProvider('');
     const wallet = new MeshWallet({
       networkId: 1,
       fetcher: provider,
@@ -388,6 +372,7 @@ const createWalletObj = {
   bitcoin: createBitcoinChainWallet('bitcoin'),
   bitcoin_segwit: createBitcoinChainWallet('bitcoin_segwit'),
   bitcoin_legacy: createBitcoinChainWallet('bitcoin_legacy'),
+  bitcoin_taproot: createBitcoinChainWallet('bitcoin_taproot'),
   litecoin: createLitecoinWallet,
   bitcoin_cash: createBitcoinCashWallet,
   solana: createSolanaWallet,
@@ -415,11 +400,11 @@ const createEVMDeriveAddress = (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
-      console.error(
-        'Error in creating derive Addresses for ether',
-        event.error,
-      );
-      reject(event.error);
+      // Workers run outside the Sentry client; `event.error` is often absent
+      // for worker ErrorEvents. Never attach the posted mnemonic payload.
+      const error = event.error ?? new Error(event.message || 'worker error');
+      captureError(error, {tags: {area: 'wallet', op: 'derive_evm'}});
+      reject(error);
     };
     worker.postMessage({mnemonic, startingIndex});
   });
@@ -436,11 +421,11 @@ const createSolanaDeriveAddresses = async (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
-      console.error(
-        'Error in creating solana derive wallet address',
-        event.error,
-      );
-      reject(event.error);
+      // Workers run outside the Sentry client; `event.error` is often absent
+      // for worker ErrorEvents. Never attach the posted mnemonic payload.
+      const error = event.error ?? new Error(event.message || 'worker error');
+      captureError(error, {tags: {area: 'wallet', op: 'derive_solana'}});
+      reject(error);
     };
     worker.postMessage({mnemonic, startingIndex});
   });
@@ -457,11 +442,11 @@ const createTronDeriveAddress = async (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
-      console.error(
-        'Error in creating tron derive wallet address',
-        event.error,
-      );
-      reject(event.error);
+      // Workers run outside the Sentry client; `event.error` is often absent
+      // for worker ErrorEvents. Never attach the posted mnemonic payload.
+      const error = event.error ?? new Error(event.message || 'worker error');
+      captureError(error, {tags: {area: 'wallet', op: 'derive_tron'}});
+      reject(error);
     };
     worker.postMessage({mnemonic, startingIndex});
   });
@@ -549,7 +534,9 @@ const addCustomBitcoinDeriveAddress =
       const child = root.derivePath(customDerivePath);
       return {
         privateKey: child.toWIF(),
-        address: buildBitcoinAddress(
+        // Shared with the standard windows (deriveAddressRange) so every
+        // address type, taproot included, is built in exactly one place.
+        address: buildAddressByChain(
           chain_name,
           // eslint-disable-next-line no-undef
           Buffer.from(child.publicKey),
@@ -570,6 +557,7 @@ const addCustomDerivePath = {
   bitcoin: addCustomBitcoinDeriveAddress('bitcoin'),
   bitcoin_segwit: addCustomBitcoinDeriveAddress('bitcoin_segwit'),
   bitcoin_legacy: addCustomBitcoinDeriveAddress('bitcoin_legacy'),
+  bitcoin_taproot: addCustomBitcoinDeriveAddress('bitcoin_taproot'),
 };
 export const addCustomDeriveAddressToWallet = async (
   chain_name,

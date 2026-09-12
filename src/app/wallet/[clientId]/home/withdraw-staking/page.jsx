@@ -428,31 +428,33 @@ const WithdrawStaking = () => {
                     />
                   </div>
                 )}
-                {isResourceSupport && resourceData?.length && !hideResource && (
-                  <div className={styles.boxInput}>
-                    <div className={styles.listTitle}>Resource Type</div>
-                    <div className={styles.addressView}>
-                      <SelectInput
-                        className={styles.selectInput}
-                        placeholder={'Select Resource Type'}
-                        listData={resourceData}
-                        onValueChange={value => {
-                          const selected = resourceData?.find(
-                            item => item?.value === value,
-                          );
-                          setState({...state, resourceType: selected});
-                        }}
-                        value={resourceType?.value}
-                        renderValue={value => {
-                          const selected = resourceData?.find(
-                            item => item?.value === value,
-                          );
-                          return selected?.label || value;
-                        }}
-                      />
+                {isResourceSupport &&
+                  !!resourceData?.length &&
+                  !hideResource && (
+                    <div className={styles.boxInput}>
+                      <div className={styles.listTitle}>Resource Type</div>
+                      <div className={styles.addressView}>
+                        <SelectInput
+                          className={styles.selectInput}
+                          placeholder={'Select Resource Type'}
+                          listData={resourceData}
+                          onValueChange={value => {
+                            const selected = resourceData?.find(
+                              item => item?.value === value,
+                            );
+                            setState({...state, resourceType: selected});
+                          }}
+                          value={resourceType?.value}
+                          renderValue={value => {
+                            const selected = resourceData?.find(
+                              item => item?.value === value,
+                            );
+                            return selected?.label || value;
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
             <div className={styles.nextContainer}>

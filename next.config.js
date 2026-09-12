@@ -4,6 +4,7 @@ const {version, name} = require('./package.json');
 const createNextIntlPlugin = require('next-intl/plugin');
 const path = require('path');
 const {loadEnvConfig} = require('@next/env');
+const {withSentryConfig} = require('@sentry/nextjs/config');
 
 const projectDir = process.cwd();
 loadEnvConfig(projectDir);
@@ -22,29 +23,17 @@ const nextConfig = {
   env: {
     APP_VERSION: version,
     APP_NAME: name,
-    ETHERSCAN_API_KEY_1: process.env.ETHERSCAN_API_KEY_1,
-    ETHERSCAN_API_KEY_2: process.env.ETHERSCAN_API_KEY_2,
-    TRON_API_KEY_1: process.env.TRON_API_KEY_1,
-    TRON_API_KEY_2: process.env.TRON_API_KEY_2,
-    TRON_SCAN_API_KEY: process.env.TRON_SCAN_API_KEY,
-    BLOCK_CYPHER_API_KEY: process.env.BLOCK_CYPHER_API_KEY,
     DOK_WALLET_BASE_URL: process.env.DOK_WALLET_BASE_URL,
-    COIN_MARKET_CAP_API_KEY_1: process.env.COIN_MARKET_CAP_API_KEY_1,
-    COIN_MARKET_CAP_API_KEY_2: process.env.COIN_MARKET_CAP_API_KEY_2,
-    COIN_MARKET_CAP_API_KEY_3: process.env.COIN_MARKET_CAP_API_KEY_3,
-    COIN_MARKET_CAP_API_KEY_4: process.env.COIN_MARKET_CAP_API_KEY_4,
-    MORALIS_API_KEY: process.env.MORALIS_API_KEY,
-    TON_SCAN_API_KEY: process.env.TON_SCAN_API_KEY,
-    ETHEREUM_POW_SCAN_API_KEY: process.env.ETHEREUM_POW_SCAN_API_KEY,
-    POLKADOT_SCAN_API_KEY: process.env.POLKADOT_SCAN_API_KEY,
-    COSMOS_API_KEY: process.env.COSMOS_API_KEY,
-    SOLANA_RPC_KEY: process.env.SOLANA_RPC_KEY,
     REDUX_WEB_KEY: process.env.REDUX_WEB_KEY,
-    BLOCKDAEMON_API_KEY: process.env.BLOCKDAEMON_API_KEY,
     WALLET_CONNECT_ID: process.env.WALLET_CONNECT_ID,
-    BLOCKFROST_API_KEY: process.env.BLOCKFROST_API_KEY,
     BREEZ_API_KEY: process.env.BREEZ_API_KEY,
-    NEXT_PUBLIC_BUGFENDER_APP_KEY: process.env.NEXT_PUBLIC_BUGFENDER_APP_KEY,
+    // Sentry (src/services/logger). Next inlines NEXT_PUBLIC_* on its own, but
+    // every client-visible variable is listed here so this block stays the one
+    // place to look. The dev switches need it (no prefix), like ENV_MODE.
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    SENTRY_ENABLE_IN_DEV: process.env.SENTRY_ENABLE_IN_DEV,
+    SENTRY_DEV_TOOLS: process.env.SENTRY_DEV_TOOLS,
+    SENTRY_DEBUG: process.env.SENTRY_DEBUG,
     ENV_MODE: process.env.ENV_MODE,
   },
   trailingSlash: true,
@@ -290,4 +279,28 @@ const nextConfig = {
   },
 };
 
-module.exports = withNextIntl(nextConfig);
+// Sentry wraps last so it sees the final webpack config (next-intl included).
+// org/project/authToken are read from SENTRY_ORG / SENTRY_PROJECT /
+// SENTRY_AUTH_TOKEN; without the token no source maps or releases are
+// uploaded and the build stays silent about it.
+module.exports = withSentryConfig(withNextIntl(nextConfig), {
+  silent: !process.env.CI,
+  telemetry: false,
+  widenClientFileUpload: true,
+  webpack: {
+    // Strip the SDK's own debug logging from the bundles, unless a developer
+    // asked for it (SENTRY_DEBUG=true also flips `debug` in Sentry.init).
+    treeshake: {removeDebugLogging: process.env.SENTRY_DEBUG !== 'true'},
+    automaticVercelMonitors: false,
+  },
+  // Events go through our own origin so ad blockers cannot drop them. The
+  // trailing slash matches `trailingSlash: true`, so the POST is served
+  // directly instead of bouncing through Next's 308 redirect.
+  tunnelRoute: '/monitoring/',
+  sourcemaps: {disable: !process.env.SENTRY_AUTH_TOKEN},
+  release: {
+    create: Boolean(process.env.SENTRY_AUTH_TOKEN),
+    // Must equal `releaseName()` in src/services/logger/sentryOptions.js.
+    name: `${name}@${version}`,
+  },
+});

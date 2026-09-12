@@ -20,26 +20,43 @@
   min-height: 200px;
 }
 
+/* Two text lines on the left, a fixed action column on the right. The
+   shortened address owns line 1; the path and balance share line 2, so no
+   element ever has to ellipsize. */
 .optionRow {
   display: flex;
   flex-direction: row;
   align-items: center;
   width: 100%;
   min-height: 60px;
-  padding: 8px 12px;
-  border: none;
-  background-color: transparent;
-  cursor: pointer;
+  padding: 10px 12px;
   border-radius: 10px;
-  text-align: left;
 }
 
-.optionRow:hover:not(:disabled) {
+.optionRow:hover {
   background-color: var(--lightBackground);
 }
 
-.optionRow:disabled {
+/* The select target. Copy / QR are sibling buttons, never nested inside it. */
+.optionMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.optionMain:disabled {
   cursor: default;
+}
+
+.iconButton {
+  margin-left: 4px;
 }
 
 .optionLabelBox {
@@ -58,24 +75,42 @@
   color: var(--font);
   font-size: 15px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.metaRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 3px;
+  min-width: 0;
 }
 
 .derivePathText {
   color: var(--gray);
   font-size: 12px;
-  margin-top: 2px;
+  flex-shrink: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .balanceText {
+  flex: 1;
+  text-align: right;
   color: var(--gray);
-  font-size: 13px;
+  font-size: 12px;
   margin-left: 8px;
   white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .emptyText {

@@ -1,0 +1,59 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px 20px 20px;
+}
+
+.headerTitle {
+  color: var(--font);
+  font-size: 16px;
+  font-weight: 700;
+  padding-bottom: 12px;
+}
+
+/* Explicit white so the QR stays scannable in dark theme. */
+.qrContainer {
+  align-self: center;
+  display: flex;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.addressText {
+  color: var(--font);
+  font-size: 15px;
+  text-align: center;
+  margin-top: 16px;
+  word-break: break-all;
+}
+
+.derivePathText {
+  color: var(--gray);
+  font-size: 12px;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.copyButton {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 16px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--walletItemColor);
+  color: var(--font);
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.copyButton:hover {
+  opacity: 0.85;
+}

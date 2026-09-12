@@ -1,5 +1,9 @@
-import {setWhiteLabelIdToDokApi} from 'dok-wallet-blockchain-networks/config/dokApi';
+import {
+  DokApi,
+  setWhiteLabelIdToDokApi,
+} from 'dok-wallet-blockchain-networks/config/dokApi';
 import {setupWebCaptchaInterceptor} from 'utils/apiCaptcha';
+import {attachDokApiLogging} from 'services/logger';
 
 let whiteLabelInfo = {};
 
@@ -18,11 +22,19 @@ const dokwalletWalletConnectDetails = {
 export const DOK_WALLET_ID = '656d95510a58ec43999a0f77';
 export const KIML_WALLET_ID = '65efefca5f95b9f06cc8f9eb';
 
+// Response interceptors stack, so attach the failure logger only once per
+// module instance (setWhiteLabelInfo re-runs on HMR and wlData changes).
+let dokApiLoggingAttached = false;
+
 export const setWhiteLabelInfo = info => {
   whiteLabelInfo = info;
   setWhiteLabelIdToDokApi(getWhiteLabelId());
   const isKimlWallet = whiteLabelInfo?._id === KIML_WALLET_ID;
   setupWebCaptchaInterceptor(getAppName());
+  if (!dokApiLoggingAttached) {
+    attachDokApiLogging(DokApi);
+    dokApiLoggingAttached = true;
+  }
 
   if (isKimlWallet) {
     document.documentElement.style.setProperty('--background', '#4F8DD8');
