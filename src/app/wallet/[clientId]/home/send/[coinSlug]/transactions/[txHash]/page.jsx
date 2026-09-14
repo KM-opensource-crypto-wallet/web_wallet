@@ -58,6 +58,26 @@ const CopyRow = ({value}) => {
   );
 };
 
+const StatusBadge = ({statusConfig, badgeBgColor}) => (
+  <div className={s.statusBadge} style={{backgroundColor: badgeBgColor}}>
+    <div
+      className={s.statusDot}
+      style={{backgroundColor: statusConfig.color}}
+    />
+    <span className={s.statusText} style={{color: statusConfig.color}}>
+      {statusConfig.label}
+    </span>
+  </div>
+);
+
+const ExplorerButton = ({url, onViewExplorer}) =>
+  !!url ? (
+    <button className={s.explorerBtn} onClick={onViewExplorer}>
+      <ExternalLinkIcon />
+      View on Explorer
+    </button>
+  ) : null;
+
 const TransactionDetails = () => {
   const params = useParams();
   const txHash = decodeURIComponent(params.txHash);
@@ -139,7 +159,11 @@ const TransactionDetails = () => {
   }, [dispatch, txHash]);
 
   useEffect(() => {
-    fetchTransaction();
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      fetchTransaction();
+    })();
     const interval = setInterval(() => {
       const upperStatus = statusRef.current?.toUpperCase();
       if (upperStatus === 'SUCCESS' || upperStatus === 'FAILED') {
@@ -226,19 +250,7 @@ const TransactionDetails = () => {
     }
   };
 
-  // ── Shared sub-components ───────────────────────────────────────────────────
-
-  const StatusBadge = () => (
-    <div className={s.statusBadge} style={{backgroundColor: badgeBgColor}}>
-      <div
-        className={s.statusDot}
-        style={{backgroundColor: statusConfig.color}}
-      />
-      <span className={s.statusText} style={{color: statusConfig.color}}>
-        {statusConfig.label}
-      </span>
-    </div>
-  );
+  // ── Shared rows ─────────────────────────────────────────────────────────────
 
   const renderCommonRows = () => (
     <>
@@ -283,14 +295,6 @@ const TransactionDetails = () => {
     </>
   );
 
-  const ExplorerButton = () =>
-    !!transaction.url ? (
-      <button className={s.explorerBtn} onClick={onViewExplorer}>
-        <ExternalLinkIcon />
-        View on Explorer
-      </button>
-    ) : null;
-
   // ── NFT ─────────────────────────────────────────────────────────────────────
 
   if (isNFT) {
@@ -323,7 +327,10 @@ const TransactionDetails = () => {
             )}
             <span className={s.txType}>NFT Transfer</span>
             <span className={s.amount}>{nftLabel}</span>
-            <StatusBadge />
+            <StatusBadge
+              statusConfig={statusConfig}
+              badgeBgColor={badgeBgColor}
+            />
           </div>
 
           <div className={s.card}>
@@ -360,7 +367,10 @@ const TransactionDetails = () => {
             {renderCommonRows()}
           </div>
 
-          <ExplorerButton />
+          <ExplorerButton
+            url={transaction.url}
+            onViewExplorer={onViewExplorer}
+          />
         </div>
       </>
     );
@@ -381,7 +391,10 @@ const TransactionDetails = () => {
               <ImageOutlinedIcon style={{fontSize: 32}} />
             </div>
             <span className={s.txType}>NFT Transfer</span>
-            <StatusBadge />
+            <StatusBadge
+              statusConfig={statusConfig}
+              badgeBgColor={badgeBgColor}
+            />
           </div>
 
           <div className={s.card}>
@@ -418,7 +431,10 @@ const TransactionDetails = () => {
             {renderCommonRows()}
           </div>
 
-          <ExplorerButton />
+          <ExplorerButton
+            url={transaction.url}
+            onViewExplorer={onViewExplorer}
+          />
         </div>
       </>
     );
@@ -447,7 +463,10 @@ const TransactionDetails = () => {
               {batchItems.length} transaction
               {batchItems.length !== 1 ? 's' : ''}
             </span>
-            <StatusBadge />
+            <StatusBadge
+              statusConfig={statusConfig}
+              badgeBgColor={badgeBgColor}
+            />
           </div>
 
           {batchItems.length > 0 && (
@@ -487,7 +506,10 @@ const TransactionDetails = () => {
             {renderCommonRows()}
           </div>
 
-          <ExplorerButton />
+          <ExplorerButton
+            url={transaction.url}
+            onViewExplorer={onViewExplorer}
+          />
         </div>
       </>
     );
@@ -532,7 +554,10 @@ const TransactionDetails = () => {
                 {transaction.totalCourse}
               </span>
             )}
-            <StatusBadge />
+            <StatusBadge
+              statusConfig={statusConfig}
+              badgeBgColor={badgeBgColor}
+            />
           </div>
 
           <div className={s.card}>
@@ -600,7 +625,10 @@ const TransactionDetails = () => {
             {renderCommonRows()}
           </div>
 
-          <ExplorerButton />
+          <ExplorerButton
+            url={transaction.url}
+            onViewExplorer={onViewExplorer}
+          />
         </div>
       </>
     );
@@ -631,7 +659,10 @@ const TransactionDetails = () => {
                 {displayValidators.length !== 1 ? 's' : ''}
               </span>
             )}
-            <StatusBadge />
+            <StatusBadge
+              statusConfig={statusConfig}
+              badgeBgColor={badgeBgColor}
+            />
           </div>
 
           {displayValidators.length > 0 && (
@@ -670,7 +701,10 @@ const TransactionDetails = () => {
             {renderCommonRows()}
           </div>
 
-          <ExplorerButton />
+          <ExplorerButton
+            url={transaction.url}
+            onViewExplorer={onViewExplorer}
+          />
         </div>
       </>
     );
@@ -691,7 +725,10 @@ const TransactionDetails = () => {
               <ContractCall />
             </div>
             <span className={s.txType}>Contract Call</span>
-            <StatusBadge />
+            <StatusBadge
+              statusConfig={statusConfig}
+              badgeBgColor={badgeBgColor}
+            />
           </div>
 
           <div className={s.card}>
@@ -728,7 +765,10 @@ const TransactionDetails = () => {
             {renderCommonRows()}
           </div>
 
-          <ExplorerButton />
+          <ExplorerButton
+            url={transaction.url}
+            onViewExplorer={onViewExplorer}
+          />
         </div>
       </>
     );
@@ -754,7 +794,10 @@ const TransactionDetails = () => {
               {isRevoke ? 'Delegation Revoked' : 'Delegation Change'}
             </span>
             <span className={s.heroSubLabel}>EIP-7702</span>
-            <StatusBadge />
+            <StatusBadge
+              statusConfig={statusConfig}
+              badgeBgColor={badgeBgColor}
+            />
           </div>
 
           <div className={s.card}>
@@ -782,7 +825,10 @@ const TransactionDetails = () => {
             {renderCommonRows()}
           </div>
 
-          <ExplorerButton />
+          <ExplorerButton
+            url={transaction.url}
+            onViewExplorer={onViewExplorer}
+          />
         </div>
       </>
     );
@@ -816,7 +862,10 @@ const TransactionDetails = () => {
               {transaction.totalCourse}
             </span>
           )}
-          <StatusBadge />
+          <StatusBadge
+            statusConfig={statusConfig}
+            badgeBgColor={badgeBgColor}
+          />
         </div>
 
         <div className={s.card}>
@@ -842,7 +891,7 @@ const TransactionDetails = () => {
           {renderCommonRows()}
         </div>
 
-        <ExplorerButton />
+        <ExplorerButton url={transaction.url} onViewExplorer={onViewExplorer} />
       </div>
     </>
   );

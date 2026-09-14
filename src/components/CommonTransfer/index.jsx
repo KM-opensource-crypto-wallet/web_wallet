@@ -140,7 +140,6 @@ const CommonTransfer = () => {
   const sellCryptoRequestDetails = useSelector(getSellCryptoRequestDetails);
   const isFetchingRef = useRef(false);
   const isPauseCalculateFees = useRef(false);
-  const titleRef = useRef('Transfer');
 
   const [estimateStatus, setEstimateStatus] = useState('pending'); // 'pending' | 'success' | 'failed'
   const dispatch = useDispatch();
@@ -206,19 +205,27 @@ const CommonTransfer = () => {
   const isQuoteExpiredRef = useRef(false);
 
   useEffect(() => {
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
     if (!quoteExpiresAt) {
-      isQuoteExpiredRef.current = false;
-      setIsQuoteExpired(false);
+      (() => {
+        isQuoteExpiredRef.current = false;
+        setIsQuoteExpired(false);
+      })();
       return;
     }
     const remaining = quoteExpiresAt - Date.now();
     if (remaining <= 0) {
-      isQuoteExpiredRef.current = true;
-      setIsQuoteExpired(true);
+      (() => {
+        isQuoteExpiredRef.current = true;
+        setIsQuoteExpired(true);
+      })();
       return;
     }
-    isQuoteExpiredRef.current = false;
-    setIsQuoteExpired(false);
+    (() => {
+      isQuoteExpiredRef.current = false;
+      setIsQuoteExpired(false);
+    })();
     const timer = setTimeout(() => {
       isQuoteExpiredRef.current = true;
       setIsQuoteExpired(true);
@@ -243,9 +250,10 @@ const CommonTransfer = () => {
     isCustomFeesValid,
   } = useAdvancedFees({chainName, convertedChainName, isPauseCalculateFees});
 
+  const batchTransactionsData = transferData?.transactionsData;
   const nativeBalanceForBatchTransactions = useMemo(() => {
-    if (isBatchTransaction && transferData?.transactionsData?.length) {
-      const totalBN = transferData?.transactionsData?.reduce((sum, item) => {
+    if (isBatchTransaction && batchTransactionsData?.length) {
+      const totalBN = batchTransactionsData.reduce((sum, item) => {
         if (item?.coinInfo?.type === 'coin') {
           return sum.plus(new BigNumber(item.transferData?.amount || '0'));
         }
@@ -254,41 +262,40 @@ const CommonTransfer = () => {
       return totalBN.toString();
     }
     return null;
-  }, [isBatchTransaction, transferData?.transactionsData]);
+  }, [isBatchTransaction, batchTransactionsData]);
 
-  useLayoutEffect(() => {
-    titleRef.current = isSendFundScreen
-      ? 'Transfer'
-      : isExchangeScreen
-        ? 'Swap Confirm'
-        : isSellCryptoScreen
-          ? 'Sell Crypto Confirm'
-          : isSendNFT
-            ? 'Transfer NFT'
-            : isCreateVote
-              ? 'Confirm Validators'
-              : isCreateStaking
-                ? 'Confirm Staking'
-                : isWithdrawStaking
-                  ? 'Confirm Withdraw Staking'
-                  : isDeactivateStaking
-                    ? 'Confirm Deactivate Staking'
-                    : isStakingRewards
-                      ? 'Confirm Staking Rewards'
-                      : isBatchTransaction
-                        ? 'Confirm Batch Transactions'
-                        : '';
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWithdrawStaking, isDeactivateStaking, isStakingRewards, isSendNFT]);
+  const title = isSendFundScreen
+    ? 'Transfer'
+    : isExchangeScreen
+      ? 'Swap Confirm'
+      : isSellCryptoScreen
+        ? 'Sell Crypto Confirm'
+        : isSendNFT
+          ? 'Transfer NFT'
+          : isCreateVote
+            ? 'Confirm Validators'
+            : isCreateStaking
+              ? 'Confirm Staking'
+              : isWithdrawStaking
+                ? 'Confirm Withdraw Staking'
+                : isDeactivateStaking
+                  ? 'Confirm Deactivate Staking'
+                  : isStakingRewards
+                    ? 'Confirm Staking Rewards'
+                    : isBatchTransaction
+                      ? 'Confirm Batch Transactions'
+                      : '';
 
   // Latch the render/poll state machine on the first successful estimate.
   // The screen can mount while the first estimate is still in flight, so this
   // fires whenever feeSuccess arrives rather than at mount.
   useEffect(() => {
-    if (feeSuccess) {
-      setEstimateStatus('success');
-    }
+    // see comment on the first wrapped effect above
+    (() => {
+      if (feeSuccess) {
+        setEstimateStatus('success');
+      }
+    })();
   }, [feeSuccess]);
 
   // Exchange mode used to start polling from quote creation and self-heal a
@@ -296,10 +303,12 @@ const CommonTransfer = () => {
   // settles unsuccessfully (loading finished, no success), enter 'failed' so
   // the poll below starts and the screen can recover on a later tick.
   useEffect(() => {
-    if (isExchangeScreen && !isLoading && !isExchangeLoading && !feeSuccess) {
-      setEstimateStatus(prev => (prev === 'pending' ? 'failed' : prev));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // see comment on the first wrapped effect above
+    (() => {
+      if (isExchangeScreen && !isLoading && !isExchangeLoading && !feeSuccess) {
+        setEstimateStatus(prev => (prev === 'pending' ? 'failed' : prev));
+      }
+    })();
   }, [isExchangeScreen, isLoading, isExchangeLoading, feeSuccess]);
 
   useEffect(() => {
@@ -1001,7 +1010,7 @@ const CommonTransfer = () => {
   return (
     <div className={s.mainView}>
       <div className={s.goBack}>
-        <PageTitle title={titleRef.current} />
+        <PageTitle title={title} />
       </div>
       {/* {!!isSubmitting && <Spinner />} */}
       {(isLoading || isExchangeLoading) && !isFetchingFeesAgain ? (

@@ -59,8 +59,7 @@ const VoteStaking = () => {
     }
     return 0;
   }, [currentCoin]);
-  const isMountedRef = useRef(false);
-  const initialSelectedVotes = useRef(null);
+  const [initialSelectedVotes, setInitialSelectedVotes] = useState(null);
   const router = useRouter();
   const routes = useAppRoutes();
 
@@ -78,20 +77,11 @@ const VoteStaking = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
-  useEffect(() => {
-    isMountedRef.current = true;
-  }, []);
-
-  useEffect(() => {
-    if (
-      !isLoading &&
-      isMountedRef.current &&
-      !initialSelectedVotes.current &&
-      selectedVotes
-    ) {
-      initialSelectedVotes.current = selectedVotes;
-    }
-  }, [isLoading, selectedVotes]);
+  // Snapshot the votes as first seen once loading is done, so Next only
+  // enables after the user changes something.
+  if (!isLoading && !initialSelectedVotes && selectedVotes) {
+    setInitialSelectedVotes(selectedVotes);
+  }
 
   const handleSubmitForm = async values => {
     const selectedValidators = Object.keys(selectedVotes);
@@ -210,8 +200,7 @@ const VoteStaking = () => {
   }
   const isValid =
     availableAmount >= selectedTotal &&
-    JSON.stringify(initialSelectedVotes.current) !==
-      JSON.stringify(selectedVotes) &&
+    JSON.stringify(initialSelectedVotes) !== JSON.stringify(selectedVotes) &&
     selectedTotal > 0;
 
   return (

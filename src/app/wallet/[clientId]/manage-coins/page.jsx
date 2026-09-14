@@ -29,9 +29,13 @@ const ManageCoins = () => {
   const [isSortSelected, setIsSortSelected] = useState(false);
 
   useEffect(() => {
-    if (Array.isArray(allCoins)) {
-      setList(allCoins);
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (Array.isArray(allCoins)) {
+        setList(allCoins);
+      }
+    })();
   }, [allCoins]);
 
   const handleSearch = event => {

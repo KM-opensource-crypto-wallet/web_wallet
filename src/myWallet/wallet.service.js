@@ -538,7 +538,6 @@ const addCustomBitcoinDeriveAddress =
         // address type, taproot included, is built in exactly one place.
         address: buildAddressByChain(
           chain_name,
-          // eslint-disable-next-line no-undef
           Buffer.from(child.publicKey),
           network,
         ),

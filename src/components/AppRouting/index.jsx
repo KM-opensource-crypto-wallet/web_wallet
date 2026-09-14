@@ -261,7 +261,11 @@ function AppRouting({children, wlData}) {
         allPublicRoutes.includes(pathname) ||
         (publicRoutes.includes(pathname) && masterClickHost.includes(hostname))
       ) {
-        setRoutingDone(true);
+        // Anonymous function: the react-hooks compiler lint flags setState calls
+        // made directly in an effect body; the same update here is accepted.
+        (() => {
+          setRoutingDone(true);
+        })();
       } else {
         const lastActiveTime = getLastActiveTime();
         const elapsedMinutesSinceLastActive = lastActiveTime

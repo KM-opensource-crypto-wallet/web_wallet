@@ -12,19 +12,21 @@ const ValidatorItem = ({
   hideInput,
   containerStyle,
 }) => {
+  const validatorAddress = item?.validatorAddress;
+
   const onLocalPressAdd = useCallback(() => {
-    onPressAdd(item?.validatorAddress);
-  }, [item?.validatorAddress, onPressAdd]);
+    onPressAdd(validatorAddress);
+  }, [validatorAddress, onPressAdd]);
 
   const onLocalPressMinus = useCallback(() => {
-    onPressMinus(item?.validatorAddress);
-  }, [item?.validatorAddress, onPressMinus]);
+    onPressMinus(validatorAddress);
+  }, [validatorAddress, onPressMinus]);
 
   const onLocalChangeText = useCallback(
     event => {
-      onChangeText(item?.validatorAddress, event?.target.value);
+      onChangeText(validatorAddress, event?.target.value);
     },
-    [item?.validatorAddress, onChangeText],
+    [validatorAddress, onChangeText],
   );
 
   const isHaveVote = validateNumber(selectedVotes?.[item?.validatorAddress]);

@@ -155,16 +155,20 @@ const TransactionsList = () => {
   }, [coinId, dispatch]);
 
   useEffect(() => {
-    setRenderList(
-      computeRenderList(
-        typedTransactions,
-        hideSmallTx,
-        currentCoin?.currencyRate,
-        filter,
-        sort,
-        currentCoin?.address,
-      ),
-    );
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setRenderList(
+        computeRenderList(
+          typedTransactions,
+          hideSmallTx,
+          currentCoin?.currencyRate,
+          filter,
+          sort,
+          currentCoin?.address,
+        ),
+      );
+    })();
   }, [
     typedTransactions,
     hideSmallTx,

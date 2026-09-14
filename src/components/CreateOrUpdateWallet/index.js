@@ -93,7 +93,9 @@ const CreateOrUpdateWallet = () => {
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const allWalletName = useSelector(selectAllWalletName, shallowEqual);
   const allWallets = useSelector(selectAllWallets);
-  const finalAllWallets = useRef(
+  // The other wallets' names, captured once at mount (the schema below is
+  // rebuilt every render, so this must not be a ref read during render).
+  const [finalAllWallets] = useState(() =>
     allWalletName.filter(subItem => subItem !== walletName),
   );
 
@@ -277,7 +279,7 @@ const CreateOrUpdateWallet = () => {
   const validationSchema = Yup.object().shape({
     name: Yup.string()
       .required('* Name cannot be empty')
-      .notOneOf(finalAllWallets.current, 'The name of wallet already existed'),
+      .notOneOf(finalAllWallets, 'The name of wallet already existed'),
   });
 
   return (

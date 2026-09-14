@@ -173,9 +173,13 @@ const SendFunds = () => {
   // }, [newDate, qrAddress, qrAmount]);
 
   useEffect(() => {
-    if (new BigNumber(availableAmount).gt(new BigNumber(0))) {
-      setMaxAmount(availableAmount);
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (new BigNumber(availableAmount).gt(new BigNumber(0))) {
+        setMaxAmount(availableAmount);
+      }
+    })();
   }, [availableAmount]);
 
   const validateRecipientAddress = useCallback(

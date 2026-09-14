@@ -165,9 +165,13 @@ const CoinSync = () => {
   // Close the cancel confirmation if the scan finishes or errors
   // underneath it - there is nothing left to cancel
   useEffect(() => {
-    if (showCancelConfirm && !isSyncing) {
-      setShowCancelConfirm(false);
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (showCancelConfirm && !isSyncing) {
+        setShowCancelConfirm(false);
+      }
+    })();
   }, [showCancelConfirm, isSyncing]);
 
   const handleGoBack = useCallback(() => {

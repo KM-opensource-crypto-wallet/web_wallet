@@ -59,7 +59,7 @@ const CryptoProviders = () => {
   const [modalInfoVisible, setModalInfoVisible] = useState(false);
   const [buyCryptoUrl, setBuyCryptoUrl] = useState(null);
   const [loadingIndex, setLoadingIndex] = useState(null);
-  const selectedProviderRef = useRef(null);
+  const [selectedProvider, setSelectedProvider] = useState(null);
 
   const finalCoinOptions = useMemo(() => {
     if (isUsdtNotSupportedWL()) {
@@ -119,7 +119,7 @@ const CryptoProviders = () => {
       }
 
       const url = item?.extraData?.url;
-      selectedProviderRef.current = item;
+      setSelectedProvider(item);
       if (item.title?.toLowerCase() === 'castor24') {
         return window.open('https://www.castor24.com/login', '_blank');
       }
@@ -207,7 +207,7 @@ const CryptoProviders = () => {
         <ModalRedirect
           visible={modalInfoVisible}
           handleClose={handleNewTabClose}
-          title={`Redirect to the ${selectedProviderRef?.current?.title || 'provider'}`}
+          title={`Redirect to the ${selectedProvider?.title || 'provider'}`}
           message={'You will be automatically redirect in'}
           onOkay={handleNewTabLaunch}
         />

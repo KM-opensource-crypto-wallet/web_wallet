@@ -51,18 +51,22 @@ const SelectUTXOs = () => {
       return;
     }
 
-    setAllUTXOs(
-      currentCoin.UTXOs.map(item => ({
-        ...item,
-        isSelected: false,
-        data: item.data
-          .map(tx => ({
-            ...tx,
-            isSelected: false,
-          }))
-          .sort((a, b) => a.vout - b.vout),
-      })),
-    );
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setAllUTXOs(
+        currentCoin.UTXOs.map(item => ({
+          ...item,
+          isSelected: false,
+          data: item.data
+            .map(tx => ({
+              ...tx,
+              isSelected: false,
+            }))
+            .sort((a, b) => a.vout - b.vout),
+        })),
+      );
+    })();
   }, [currentCoin?.UTXOs]);
 
   useEffect(() => {

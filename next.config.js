@@ -40,6 +40,12 @@ const nextConfig = {
   },
   trailingSlash: true,
   reactStrictMode: false,
+  // Next 16 bundles with Turbopack by default and refuses `next build` when a
+  // custom webpack() is present, so the dev/build scripts pass `--webpack`.
+  // Moving off webpack means translating this block: the alias map below to
+  // `turbopack.resolveAlias` (with the `browser` condition for the fs /
+  // sodium-native stubs), the svgr rule to `turbopack.rules`, and dropping
+  // `externals` (optional deps are left unresolved by Turbopack anyway).
   webpack: (config, {isServer}) => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
     config.resolve.alias = {

@@ -6,7 +6,8 @@ import {TABS_INFO} from 'dok-wallet-blockchain-networks/helper';
 
 const MessageInfoPopOver = () => {
   const popoverRef = useRef('');
-  const selectedInfoRef = useRef();
+  // Rendered into ModalInfo, so it is state rather than a ref.
+  const [selectedInfo, setSelectedInfo] = useState();
   const [modalInfoPopupVisible, setModalInfoPopupVisible] = useState(false);
 
   return (
@@ -21,7 +22,7 @@ const MessageInfoPopOver = () => {
           <button
             className={s.popoverItemView}
             onClick={() => {
-              selectedInfoRef.current = 'MESSAGES';
+              setSelectedInfo('MESSAGES');
               setModalInfoPopupVisible(true);
             }}>
             <p className={s.popoverItemText}>{'What is Messages?'}</p>
@@ -29,7 +30,7 @@ const MessageInfoPopOver = () => {
           <button
             className={s.popoverItemView}
             onClick={() => {
-              selectedInfoRef.current = 'REQUESTS';
+              setSelectedInfo('REQUESTS');
               setModalInfoPopupVisible(true);
             }}>
             <p className={s.popoverItemText}>{'What is Requests?'}</p>
@@ -41,8 +42,8 @@ const MessageInfoPopOver = () => {
         handleClose={() => {
           setModalInfoPopupVisible(false);
         }}
-        title={TABS_INFO[selectedInfoRef?.current]?.title}
-        message={TABS_INFO[selectedInfoRef?.current]?.message}
+        title={TABS_INFO[selectedInfo]?.title}
+        message={TABS_INFO[selectedInfo]?.message}
       />
     </>
   );

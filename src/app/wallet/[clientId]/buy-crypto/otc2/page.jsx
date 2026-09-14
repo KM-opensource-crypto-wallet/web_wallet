@@ -114,6 +114,12 @@ const OTC2Screen = () => {
     }));
   }, []);
 
+  const {isBuy, risk, selectedAmount, selectedCryptoCoin, sourceOfFund, terms} =
+    state;
+  const selectedChainName = selectedCryptoCoin?.options?.chain_name;
+  const selectedSymbol = selectedCryptoCoin?.options?.symbol;
+  const selectedWalletAddress = selectedCryptoCoin?.options?.walletAddress;
+
   const onSubmit = useCallback(async () => {
     const toastId = toast.loading('OTC Request Submitting', {
       autoClose: false,
@@ -130,12 +136,12 @@ const OTC2Screen = () => {
           city: previousOTCData?.city,
           postCode: postCode,
           country: previousOTCData?.country,
-          fundSource: state?.sourceOfFund?.toLowerCase(),
-          chain: state?.selectedCryptoCoin?.options?.chain_name,
-          asset: state?.selectedCryptoCoin?.options?.symbol,
-          type: state.isBuy ? 'buy' : 'sell',
-          amount: `${state?.selectedAmount} ${localCurrency}`,
-          walletAddress: state?.selectedCryptoCoin?.options?.walletAddress,
+          fundSource: sourceOfFund?.toLowerCase(),
+          chain: selectedChainName,
+          asset: selectedSymbol,
+          type: isBuy ? 'buy' : 'sell',
+          amount: `${selectedAmount} ${localCurrency}`,
+          walletAddress: selectedWalletAddress,
         };
         if (previousOTCData?.address2) {
           payload.address2 = previousOTCData?.address2;
@@ -159,19 +165,17 @@ const OTC2Screen = () => {
     }
   }, [
     otcData,
-    state?.sourceOfFund,
-    state?.selectedCryptoCoin?.options?.chain_name,
-    state?.selectedCryptoCoin?.options?.symbol,
-    state?.selectedCryptoCoin?.options?.walletAddress,
-    state.isBuy,
-    state?.selectedAmount,
+    sourceOfFund,
+    selectedChainName,
+    selectedSymbol,
+    selectedWalletAddress,
+    isBuy,
+    selectedAmount,
     localCurrency,
     router,
     clientId,
   ]);
 
-  const {isBuy, risk, selectedAmount, selectedCryptoCoin, sourceOfFund, terms} =
-    state;
   const isDisabled =
     !risk ||
     !selectedAmount ||

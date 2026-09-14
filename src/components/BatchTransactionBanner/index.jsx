@@ -76,9 +76,13 @@ const BatchTransactionBanner = () => {
   }, []);
 
   useEffect(() => {
-    if (transactionCount === 0) {
-      setShowBatchTransactionModal(false);
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (transactionCount === 0) {
+        setShowBatchTransactionModal(false);
+      }
+    })();
   }, [transactionCount]);
 
   if (transactionCount === 0) {

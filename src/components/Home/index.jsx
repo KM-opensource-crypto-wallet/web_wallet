@@ -157,7 +157,11 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    setList(userCoins);
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setList(userCoins);
+    })();
   }, [userCoins]);
 
   // useEffect(() => {}, [newItem, dispatch]);

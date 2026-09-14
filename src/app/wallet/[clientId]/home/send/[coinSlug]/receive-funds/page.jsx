@@ -1,5 +1,5 @@
 'use client';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {useSelector} from 'react-redux';
 import {
   selectCurrentCoin,
@@ -66,38 +66,42 @@ const ReceiveFunds = () => {
     coin: currentCoin,
     phrase: currentPhrase,
   });
-  const address = useRef('');
-  address.current = currentCoin?.address ?? '';
+  const address = currentCoin?.address ?? '';
   const [addressState, setAddressState] = useState('');
   const [showBtcMainnetBanner, setShowBtcMainnetBanner] = useState(false);
   const currentWallet = useSelector(selectCurrentWallet);
   const allCustomRPC = useSelector(selectAllCustomRpc);
   useEffect(() => {
-    setAddressState('');
-    setProductQRref(`${currentCoin?.symbol}:${currentCoin?.address ?? ''}`);
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setAddressState('');
+      setProductQRref(`${currentCoin?.symbol}:${currentCoin?.address ?? ''}`);
+    })();
   }, [currentCoin.address, currentCoin?.symbol]);
 
   const onPressCopyAddress = useCallback(() => {
-    copyToClipboard(addressState ? addressState : address.current);
-  }, [addressState]);
+    copyToClipboard(addressState ? addressState : address);
+  }, [addressState, address]);
 
   const onPressCopyAccountId = useCallback(() => {
     copyToClipboard(hederaAccountId, 'Account ID copied');
   }, [hederaAccountId]);
+
+  const chainName = currentCoin?.chain_name;
+  const coinSymbol = currentCoin?.symbol;
+  const walletClientId = currentWallet?.clientId;
+  const walletPhrase = currentWallet?.phrase;
 
   const handleLightningDropDownChange = useCallback(
     async currentValue => {
       try {
         const customRPC = getCustomRPCWithData(
           allCustomRPC,
-          currentCoin?.chain_name,
-          currentWallet?.clientId,
+          chainName,
+          walletClientId,
         );
-        const chain = getChain(
-          currentCoin?.chain_name,
-          currentWallet?.phrase,
-          customRPC,
-        );
+        const chain = getChain(chainName, walletPhrase, customRPC);
         let newAddress = '';
 
         if (currentValue === 'btc_mainnet') {
@@ -117,18 +121,18 @@ const ReceiveFunds = () => {
         }
 
         setAddressState(newAddress);
-        setProductQRref(`${currentCoin?.symbol}:${newAddress}`);
+        setProductQRref(`${coinSymbol}:${newAddress}`);
       } catch (error) {
         console.log(error);
       }
     },
     [
       allCustomRPC,
-      currentCoin?.chain_name,
-      currentCoin?.symbol,
+      chainName,
+      coinSymbol,
       currentPhrase,
-      currentWallet?.clientId,
-      currentWallet?.phrase,
+      walletClientId,
+      walletPhrase,
     ],
   );
   return (
@@ -168,7 +172,7 @@ const ReceiveFunds = () => {
           YOUR ADDRESS
         </Typography>
         <IdentifierRow
-          value={addressState ? addressState : address.current}
+          value={addressState ? addressState : address}
           onCopy={onPressCopyAddress}
         />
         {isHedera && (

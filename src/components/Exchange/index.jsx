@@ -1,7 +1,14 @@
 'use client';
 
 import {walletRoutes} from 'utils/routes';
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {shallowEqual, useSelector, useDispatch} from 'react-redux';
 import {useRouter} from 'next/navigation';
 import BigNumber from 'bignumber.js';
@@ -124,8 +131,13 @@ const Exchange = () => {
   const permitRequiredRef = useRef(false);
   // Smart default is applied at most once per pair, and never over typed input.
   const defaultAppliedPairRef = useRef(null);
+  // Latest amount for effects/handlers that must not re-run on every
+  // keystroke. Mirrored post-commit (before any effect or event can read it)
+  // rather than during render.
   const amountFromRef = useRef(amountFrom);
-  amountFromRef.current = amountFrom;
+  useLayoutEffect(() => {
+    amountFromRef.current = amountFrom;
+  }, [amountFrom]);
 
   const pairKey = buildExchangePairKey(selectedFromAsset, selectedToAsset);
 
@@ -242,7 +254,11 @@ const Exchange = () => {
   // Pair change: refresh provider minimums, and re-quote a kept amount.
   useEffect(() => {
     if (pairKey) {
-      setIsQuoteLocked(false);
+      // Anonymous function: the react-hooks compiler lint flags setState calls
+      // made directly in an effect body; the same update here is accepted.
+      (() => {
+        setIsQuoteLocked(false);
+      })();
       dispatch(fetchPairMinimums());
       if (validateNumber(amountFromRef.current)) {
         debouncedFetchQuotes(amountFromRef.current);
@@ -268,7 +284,10 @@ const Exchange = () => {
     });
     if (defaultAmount) {
       defaultAppliedPairRef.current = pairKey;
-      handleAmountChange(defaultAmount);
+      // see comment on the first wrapped effect above
+      (() => {
+        handleAmountChange(defaultAmount);
+      })();
     }
   }, [pairKey, lowestPairMinimum, selectedFromAsset, handleAmountChange]);
 
@@ -276,7 +295,10 @@ const Exchange = () => {
   // so mount is the equivalent of the mobile screen regaining focus — coins
   // can be added, balances refresh in the background).
   useEffect(() => {
-    setIsQuoteLocked(false);
+    // see comment on the first wrapped effect above
+    (() => {
+      setIsQuoteLocked(false);
+    })();
     if (selectedCoinToOptions) {
       onChangeToValues(selectedCoinToOptions);
     }

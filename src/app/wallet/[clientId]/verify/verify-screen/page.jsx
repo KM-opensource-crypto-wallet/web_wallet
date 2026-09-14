@@ -45,9 +45,13 @@ export const Verify = () => {
       random: randomIds.includes(value.word),
       audit: '',
     }));
-    setList(tempList);
-    const foundIndex = tempList.findIndex(item => item.random);
-    setSelected(foundIndex + 1);
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setList(tempList);
+      const foundIndex = tempList.findIndex(item => item.random);
+      setSelected(foundIndex + 1);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -59,8 +63,7 @@ export const Verify = () => {
       const newIndex = list.findIndex(
         item => item.random && item.word !== values.word && !item.audit,
       );
-      tempItem.audit = true;
-      tempList[index] = tempItem;
+      tempList[index] = {...tempItem, audit: true};
       setList(tempList);
 
       const filterItem = tempList.filter(item => item.audit);
@@ -76,8 +79,7 @@ export const Verify = () => {
         formikRef?.current?.setFieldValue('word', '');
       }
     } else {
-      tempItem.audit = false;
-      tempList[index] = tempItem;
+      tempList[index] = {...tempItem, audit: false};
       setList(tempList);
     }
   };

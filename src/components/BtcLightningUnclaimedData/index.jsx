@@ -31,6 +31,7 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
   const unClaimedData = useMemo(() => {
     return currentCoin?.listOfUnClaimedDeposits || [];
   }, [currentCoin]);
+  const unClaimedDataLength = unClaimedData.length;
   const dispatch = useDispatch();
 
   const handleApprove = useCallback(
@@ -38,7 +39,6 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
       try {
         setConfirmationIndex(null);
         setLoadingIndex(index);
-        const unClaimedDataLength = unClaimedData?.length;
         await dispatch(
           handleUnclaimedData({
             action: 'approve',
@@ -64,7 +64,7 @@ export const BtcLightningUnclaimedData = ({hideModal}) => {
         });
       }
     },
-    [currentCoin, dispatch, hideModal, unClaimedData?.length],
+    [currentCoin, dispatch, hideModal, unClaimedDataLength],
   );
 
   const handleReject = useCallback(index => {

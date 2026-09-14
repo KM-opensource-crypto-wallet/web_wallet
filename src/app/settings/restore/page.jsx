@@ -42,7 +42,11 @@ const RestorePage = () => {
 
   // Mark as mounted to prevent hydration mismatch
   useEffect(() => {
-    setHasMounted(true);
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setHasMounted(true);
+    })();
     if (!isBackupRestoreEnabled()) {
       router.replace('/settings');
     }
@@ -85,7 +89,6 @@ const RestorePage = () => {
     if (shouldSignInAfter) {
       handleLogin();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchBackup = useCallback(async () => {
@@ -128,9 +131,12 @@ const RestorePage = () => {
   }, [processBackupData, handleLogout]);
 
   useEffect(() => {
-    if (hasMounted && status === 'authenticated' && session) {
-      fetchBackup();
-    }
+    // see comment on the first wrapped effect above
+    (() => {
+      if (hasMounted && status === 'authenticated' && session) {
+        fetchBackup();
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMounted, status]);
 

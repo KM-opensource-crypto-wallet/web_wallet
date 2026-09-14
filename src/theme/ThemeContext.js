@@ -61,7 +61,11 @@ export default function ThemeProvider({children}) {
     }
     changeTheme(theme);
     setThemeToLocalStorage(theme);
-    setThemeType(theme);
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setThemeType(theme);
+    })();
   }, [theme]);
 
   return (

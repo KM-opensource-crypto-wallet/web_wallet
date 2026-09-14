@@ -1,6 +1,6 @@
 'use client';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
-import React, {useState, useRef, useMemo, useLayoutEffect} from 'react';
+import React, {useState, useMemo} from 'react';
 import styles from './WithdrawStaking.module.css';
 import {useSelector, useDispatch} from 'react-redux';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
@@ -38,7 +38,6 @@ const isDisableTextInput = chain_name =>
 const WithdrawStaking = () => {
   const router = useRouter();
   const routes = useAppRoutes();
-  const titleRef = useRef('Withdraw Staking');
   const routeData = useSelector(getRouteStateData);
   const currentRouteData = routeData?.withdrawStaking;
   const selectedStake = currentRouteData?.selectedStake;
@@ -63,24 +62,20 @@ const WithdrawStaking = () => {
   const isEVMStaking =
     isDeactivateStaking && isEVMChain(currentCoin?.chain_name);
 
+  const coinStaking = currentCoin?.staking;
+  const currencyRate = currentCoin?.currencyRate;
   const stakingProviderList = useMemo(() => {
     if (!isEVMStaking) {
       return [];
     }
-    const staking = Array.isArray(currentCoin?.staking)
-      ? currentCoin.staking
-      : [];
+    const staking = Array.isArray(coinStaking) ? coinStaking : [];
     return staking.map(item => ({
       label: item?.validatorInfo?.name,
       value: item?.validatorInfo?.name,
       stakedAmount: item?.stakedAmount,
-      fiatAmount: multiplyBNWithFixed(
-        item?.stakedAmount,
-        currentCoin?.currencyRate,
-        2,
-      ),
+      fiatAmount: multiplyBNWithFixed(item?.stakedAmount, currencyRate, 2),
     }));
-  }, [isEVMStaking, currentCoin?.staking, currentCoin?.currencyRate]);
+  }, [isEVMStaking, coinStaking, currencyRate]);
 
   const [selectedProvider] = useState(
     stakingProviderList.find(
@@ -164,17 +159,13 @@ const WithdrawStaking = () => {
 
   const dispatch = useDispatch();
 
-  useLayoutEffect(() => {
-    if (isWithdrawStaking) {
-      titleRef.current = 'Withdraw Staking';
-    } else if (isDeactivateStaking) {
-      titleRef.current = 'Deactivate Staking';
-    } else if (isStakingRewards) {
-      titleRef.current = 'Claim Staking Rewards';
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWithdrawStaking, isDeactivateStaking, isStakingRewards]);
+  const title = isWithdrawStaking
+    ? 'Withdraw Staking'
+    : isDeactivateStaking
+      ? 'Deactivate Staking'
+      : isStakingRewards
+        ? 'Claim Staking Rewards'
+        : 'Withdraw Staking';
 
   const handleSubmitForm = async () => {
     const localErrors =
@@ -275,7 +266,7 @@ const WithdrawStaking = () => {
   return (
     <div className={styles.contentContainerStyle}>
       <div>
-        <PageTitle title={titleRef.current} />
+        <PageTitle title={title} />
         <div style={{flex: 1}}>
           <div
             className={styles.container}

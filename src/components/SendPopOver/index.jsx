@@ -8,7 +8,6 @@ import DokPopover from 'components/DokPopover';
 import {isCustomDerivedChecked} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {useSelector} from 'react-redux';
 
-// eslint-disable-next-line react/display-name
 const SendPopOver = ({isBitcoin, isDeriveAddressChain}) => {
   const [showCustomDerivationModal, setShowCustomDerivationModal] =
     useState(false);

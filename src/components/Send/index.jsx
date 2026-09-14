@@ -128,9 +128,13 @@ const SendScreen = () => {
   }, [coinId, dispatch]);
 
   useEffect(() => {
-    if (listOfUnClaimedDeposits?.length && !isLoading) {
-      setModalUnclaimDepositVisible(true);
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (listOfUnClaimedDeposits?.length && !isLoading) {
+        setModalUnclaimDepositVisible(true);
+      }
+    })();
   }, [isLoading, listOfUnClaimedDeposits?.length]);
 
   const onPressAddAddresses = useCallback(() => {

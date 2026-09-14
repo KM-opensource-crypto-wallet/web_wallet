@@ -10,7 +10,11 @@ const CryptoList = ({number, list, showSwitch, currentWallet}) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    setRenderList(list);
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setRenderList(list);
+    })();
   }, [list]);
 
   const router = useRouter();

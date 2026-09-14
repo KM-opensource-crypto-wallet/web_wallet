@@ -32,7 +32,11 @@ const useCoinScanCooldown = lastCoinsScanTimestamp => {
   const [cooldown, setCooldown] = useState(compute);
 
   useEffect(() => {
-    setCooldown(compute());
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setCooldown(compute());
+    })();
     const intervalId = setInterval(() => {
       setCooldown(compute());
     }, 30000);

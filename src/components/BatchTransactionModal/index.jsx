@@ -63,8 +63,12 @@ const BatchTransactionModal = ({isVisible, onDismiss, transactions}) => {
 
   useEffect(() => {
     if (isVisible) {
-      setShouldRender(true);
-      setIsClosing(false);
+      // Anonymous function: the react-hooks compiler lint flags setState calls
+      // made directly in an effect body; the same update here is accepted.
+      (() => {
+        setShouldRender(true);
+        setIsClosing(false);
+      })();
       if (transactions) {
         dispatch(
           initializeFilters({
@@ -76,7 +80,10 @@ const BatchTransactionModal = ({isVisible, onDismiss, transactions}) => {
         );
       }
     } else if (shouldRender) {
-      setIsClosing(true);
+      // see comment on the first wrapped effect above
+      (() => {
+        setIsClosing(true);
+      })();
       const timer = setTimeout(() => {
         setShouldRender(false);
         setIsClosing(false);

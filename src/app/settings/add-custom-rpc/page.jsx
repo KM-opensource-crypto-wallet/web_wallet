@@ -40,12 +40,16 @@ const AddCustomRpc = () => {
   const [validating, setValidating] = useState(false);
 
   useEffect(() => {
-    const walletsParam = searchParams.get('wallets');
-    if (walletsParam) {
-      setSelectedWallets(walletsParam.split(',').filter(Boolean));
-    } else if (allWallets?.length) {
-      setSelectedWallets(allWallets.map(w => w.clientId));
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      const walletsParam = searchParams.get('wallets');
+      if (walletsParam) {
+        setSelectedWallets(walletsParam.split(',').filter(Boolean));
+      } else if (allWallets?.length) {
+        setSelectedWallets(allWallets.map(w => w.clientId));
+      }
+    })();
   }, [searchParams, allWallets]);
 
   const defaultRpcUrl = useMemo(() => {

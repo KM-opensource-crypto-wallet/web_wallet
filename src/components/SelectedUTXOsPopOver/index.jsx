@@ -4,7 +4,6 @@ import {useRouter} from 'next/navigation';
 import {useCallback, useRef} from 'react';
 import s from './SelectedUTXOsPopOver.module.css';
 
-// eslint-disable-next-line react/display-name
 const SelectedUTXOsPopOver = () => {
   const router = useRouter();
   const routes = useAppRoutes();

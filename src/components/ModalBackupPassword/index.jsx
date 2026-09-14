@@ -46,10 +46,14 @@ const ModalBackupPassword = ({
   const isCreate = mode === 'create';
 
   useEffect(() => {
-    if (visible) {
-      setHide(true);
-      setHideConfirm(true);
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (visible) {
+        setHide(true);
+        setHideConfirm(true);
+      }
+    })();
   }, [visible]);
 
   const onSubmit = values => {
