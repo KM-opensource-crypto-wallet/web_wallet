@@ -4,14 +4,14 @@
       "details": [
            {
              "appID": "9HJ6G8C9BU.com.dok.wallet",
-             "paths": ["/home/send/send-funds/*", "/wallet/*/home/send/send-funds/*"],
+             "paths": ["/home/send/*", "/wallet/*/home/send/*"],
               "components": [
                      {
-                         "/": "/home/send/send-funds/*",
+                         "/": "/home/send/*",
                          "?": "*"
                      },
                      {
-                         "/": "/wallet/*/home/send/send-funds/*",
+                         "/": "/wallet/*/home/send/*",
                          "?": "*"
                      }
                 ]

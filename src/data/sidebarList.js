@@ -1,3 +1,5 @@
+import {walletRoutes} from 'utils/routes';
+
 const icons = require(`assets/images/sidebarIcons`).default;
 
 // Wallet-scoped entries need the active wallet's id in the URL, so the list
@@ -5,7 +7,7 @@ const icons = require(`assets/images/sidebarIcons`).default;
 const sidebarList = currentWalletClientId => [
   {
     key: 'home',
-    href: `/wallet/${currentWalletClientId}/home`,
+    href: walletRoutes.home(currentWalletClientId),
     item: t => (
       <>
         {icons.home} <span>{t('home')}</span>
@@ -14,7 +16,7 @@ const sidebarList = currentWalletClientId => [
   },
   {
     key: 'buyCrypto',
-    href: `/wallet/${currentWalletClientId}/buy-crypto`,
+    href: walletRoutes.buyCrypto(currentWalletClientId),
     item: t => (
       <>
         {icons.buy}
@@ -24,7 +26,7 @@ const sidebarList = currentWalletClientId => [
   },
   {
     key: 'swap',
-    href: `/wallet/${currentWalletClientId}/swap`,
+    href: walletRoutes.swap(currentWalletClientId),
     item: t => (
       <>
         {icons.exchange}
@@ -34,7 +36,7 @@ const sidebarList = currentWalletClientId => [
   },
   {
     key: 'sellCrypto',
-    href: `/wallet/${currentWalletClientId}/sell-crypto`,
+    href: walletRoutes.sellCrypto(currentWalletClientId),
     item: t => (
       <>
         {icons.buy}
@@ -54,7 +56,7 @@ const sidebarList = currentWalletClientId => [
   },
   {
     key: 'walletConnect',
-    href: `/wallet/${currentWalletClientId}/wallet-connect`,
+    href: walletRoutes.walletConnect(currentWalletClientId),
     item: t => (
       <>
         {icons.walletConnect}
@@ -94,7 +96,7 @@ const sidebarList = currentWalletClientId => [
   },
   {
     key: 'receivePaymentUrl',
-    href: `/wallet/${currentWalletClientId}/receive-payment-url`,
+    href: walletRoutes.receivePaymentUrl(currentWalletClientId),
     item: t => (
       <>
         {icons.url}

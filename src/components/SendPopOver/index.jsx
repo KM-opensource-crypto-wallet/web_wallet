@@ -1,8 +1,9 @@
+import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import React, {useCallback, useRef, useState} from 'react';
 import s from './SendPopOver.module.css';
 import ModalCustomDerivation from 'components/ModalCustomDerivation';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
-import {useParams, useRouter} from 'next/navigation';
+import {useRouter} from 'next/navigation';
 import DokPopover from 'components/DokPopover';
 import {isCustomDerivedChecked} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {useSelector} from 'react-redux';
@@ -14,13 +15,13 @@ const SendPopOver = ({isBitcoin, isDeriveAddressChain}) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const isCheckedStored = useSelector(isCustomDerivedChecked);
   const router = useRouter();
-  const {clientId} = useParams();
+  const routes = useAppRoutes();
   const popoverRef = useRef(null);
 
   const onSuccessOfPasswordModal = useCallback(() => {
     setShowConfirmModal(false);
-    router.push(`/wallet/${clientId}/home/send/custom-derivation`);
-  }, [router, clientId]);
+    router.push(routes.coin.customDerivation());
+  }, [router, routes]);
 
   const handleCustomDerivation = useCallback(() => {
     popoverRef.current?.close();
@@ -33,8 +34,8 @@ const SendPopOver = ({isBitcoin, isDeriveAddressChain}) => {
 
   const handleSelectUTXOs = useCallback(() => {
     popoverRef.current?.close();
-    router.push(`/wallet/${clientId}/home/send/select-UTXOs`);
-  }, [router, clientId]);
+    router.push(routes.coin.selectUtxos());
+  }, [router, routes]);
 
   const handleHideModal = useCallback(isPressYes => {
     setShowCustomDerivationModal(false);

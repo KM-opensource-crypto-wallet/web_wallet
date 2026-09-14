@@ -1,4 +1,5 @@
 'use client';
+import {getRouteNameFromPathname} from 'utils/routes';
 import React, {useCallback, useContext, useEffect, useState} from 'react';
 import s from './AppRouting.module.css';
 import {usePathname, useSearchParams} from 'next/navigation';
@@ -21,10 +22,14 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
   captureError,
+  logger,
   setUserContext,
   setWhiteLabelContext,
 } from 'services/logger';
 import {initWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
+import {setIsWalletConnectInitialized} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
+import {hasLocaleCookie} from 'utils/localeCookie';
+import {clearSkipLockScreen, shouldSkipLockScreen} from 'utils/lockScreen';
 import {
   clearWalletConnectStorageCache,
   createAIDIfNotExists,
@@ -108,13 +113,8 @@ function AppRouting({children, wlData}) {
   }, [masterClientId]);
 
   useEffect(() => {
-    let routeName = pathname;
-    if (pathname === '/home/transactions') {
-      routeName = 'TransactionList';
-    } else if (pathname?.startsWith('/home/transactions/')) {
-      routeName = 'TransactionDetails';
-    }
-    MainNavigation.setCurrentRouteName(routeName);
+    // The submodule's refreshCoinData keys off these names after a send.
+    MainNavigation.setCurrentRouteName(getRouteNameFromPathname(pathname));
   }, [pathname]);
 
   useEffect(() => {
@@ -173,8 +173,8 @@ function AppRouting({children, wlData}) {
   const redirectToLoginOnTimeout = useCallback(() => {
     const currentSearchString = searchParams?.toString();
     const searchString = currentSearchString
-      ? `${currentSearchString}&redirectRoute=${pathname}`
-      : `redirectRoute=${pathname}`;
+      ? `${currentSearchString}&redirectRoute=${encodeURIComponent(pathname)}`
+      : `redirectRoute=${encodeURIComponent(pathname)}`;
     routing.replace(`/auth/login?${searchString}`);
   }, [pathname, searchParams, routing]);
 
@@ -214,7 +214,9 @@ function AppRouting({children, wlData}) {
         pathname !== '/' &&
         !publicRoutes.includes(pathname)
       ) {
-        let redirectRoute = pathname;
+        // Encoded: transaction-details paths embed a percent-encoded URL
+        // that must survive the login round-trip intact.
+        const redirectRoute = encodeURIComponent(pathname);
         searchString = searchString
           ? `${searchString}&redirectRoute=${redirectRoute}`
           : `redirectRoute=${redirectRoute}`;
@@ -238,15 +240,18 @@ function AppRouting({children, wlData}) {
         },
         1000 * 60 * 10,
       );
-      const walletConnectData = getWalletConnectDetails();
-      const onWalletConnectInitError = e =>
-        captureError(e, {tags: {area: 'walletconnect', op: 'init'}});
+      // WalletKit.init takes a relay handshake; screens that need the client
+      // (WalletConnectStatus) wait on this flag instead of racing it.
+      const startWalletConnect = () =>
+        initWalletConnect(getWalletConnectDetails())
+          .then(() => dispatch(setIsWalletConnectInitialized(true)))
+          .catch(e =>
+            captureError(e, {tags: {area: 'walletconnect', op: 'init'}}),
+          );
       if (!Object.keys(walletConnectSessions).length) {
-        clearWalletConnectStorageCache().then(() => {
-          initWalletConnect(walletConnectData).catch(onWalletConnectInitError);
-        });
+        clearWalletConnectStorageCache().then(startWalletConnect);
       } else {
-        initWalletConnect(walletConnectData).catch(onWalletConnectInitError);
+        startWalletConnect();
       }
       let hostname = '';
       if (typeof window !== 'undefined') {
@@ -264,26 +269,22 @@ function AppRouting({children, wlData}) {
           : Infinity;
         const isWithinAutoLockWindow =
           lockTime > 0 && elapsedMinutesSinceLastActive < lockTime;
-        const shouldSkipLock =
-          typeof window !== 'undefined' &&
-          (sessionStorage.getItem('skip_lock_screen') === 'true' ||
-            isWithinAutoLockWindow);
+        const shouldSkipLock = shouldSkipLockScreen() || isWithinAutoLockWindow;
 
         if (!password) {
           if (pathname !== '/auth/registration') {
             routing.replace(searchString ? `/?${searchString}` : '/');
           }
-          if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('skip_lock_screen');
-          }
-        } else if (!shouldSkipLock) {
+          clearSkipLockScreen();
+        } else if (!shouldSkipLock || pathname === '/') {
+          // The onboarding carousel at '/' is for new users only. With a
+          // wallet present it always hands over to login, which itself skips
+          // the password while the auto-lock window is open.
           routing.replace(
             searchString ? `/auth/login?${searchString}` : `/auth/login`,
           );
         } else {
-          if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('skip_lock_screen');
-          }
+          clearSkipLockScreen();
         }
         setTimeout(() => {
           setRoutingDone(true);
@@ -304,14 +305,21 @@ function AppRouting({children, wlData}) {
       host:
         typeof window !== 'undefined' ? window.location.hostname : undefined,
     });
+    // Persist the whitelabel default locale once. The cookie check avoids a
+    // server-action round trip on every load for returning users; the action
+    // is awaited so its failure stays inside this try. Losing it is harmless
+    // (getUserLocale falls back to the default), so it is a log, not an error.
     (async () => {
+      if (hasLocaleCookie()) {
+        return;
+      }
       try {
         const localeSetCheck = await isLocaleSet();
         if (!localeSetCheck) {
-          setUserLocale(wlData.defaultLocale || 'en');
+          await setUserLocale(wlData.defaultLocale || 'en');
         }
       } catch (e) {
-        captureError(e, {tags: {area: 'locale', op: 'set_default'}});
+        logger.warn('locale.set_default_failed', {reason: e?.message});
       }
     })();
   }, [wlData]);

@@ -1,5 +1,6 @@
 'use client';
 
+import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
 import {Formik} from 'formik';
 import {useSelector, useDispatch} from 'react-redux';
@@ -15,15 +16,10 @@ import {
   selectCurrentCoin,
   selectCurrentWallet,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {useSearchParams} from 'next/navigation';
-import {useParams} from 'next/navigation';
-import {useRouter} from 'next/navigation';
+import {useRouter, useSearchParams} from 'next/navigation';
 import ModalSend from 'components/ModalSend';
 import ModalDelegation from 'components/ModalDelegation';
-import {
-  searchCoinFromCurrency,
-  revokeDelegation,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {revokeDelegation} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 import {
   isNameSupportChain,
@@ -86,7 +82,7 @@ const HederaRecipientHint = ({address, getHederaChain}) => {
 
 const SendFunds = () => {
   const currentCoin = useSelector(selectCurrentCoin);
-  const {clientId} = useParams();
+  const routes = useAppRoutes();
   const searchParams = useSearchParams();
   const qrAddress = searchParams.get('address');
   const qrAmount = searchParams.get('amount');
@@ -160,14 +156,6 @@ const SendFunds = () => {
   const isMemoSupported = useMemo(() => {
     return isMemoSupportChain(currentCoin?.chain_name);
   }, [currentCoin?.chain_name]);
-
-  useEffect(() => {
-    const currency = searchParams?.get('currency');
-    if (currency) {
-      dispatch(searchCoinFromCurrency({currency}));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // useEffect(() => {
   //   if (qrAddress) {
@@ -328,7 +316,7 @@ const SendFunds = () => {
             },
           }),
         );
-        router.push(`/wallet/${clientId}/home/send/send-funds/transfer`);
+        router.push(routes.coin.transfer());
       });
     } else {
       formikRef?.current?.setFieldError('send', 'address is not valid');

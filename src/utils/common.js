@@ -243,11 +243,37 @@ export const downloadCsv = arrayData => {
   document.body.removeChild(link);
 };
 
+// URL identifier for a coin: `${chain_name}-${symbol}`, lower-cased, e.g.
+// `ethereum-usdt`. Returns null for a missing coin so callers can test for
+// "no coin" instead of matching the string "undefined-undefined".
 export const getCoinSlug = coin =>
-  `${coin?.chain_name}-${coin?.symbol}`.toLowerCase();
+  coin ? `${coin?.chain_name}-${coin?.symbol}`.toLowerCase() : null;
 
 export const findCoinBySlug = (coins, slug) =>
-  coins?.find(coin => getCoinSlug(coin) === slug) || null;
+  (slug && coins?.find(coin => getCoinSlug(coin) === slug)) || null;
+
+// Resolves the legacy `currency=` deep-link value. Accepts every form ever
+// emitted: `chain_name:symbol` (ethereum:ETH), the older `chain_symbol:symbol`
+// (ETH:USDT), and the current slug form (ethereum-usdt). Case-insensitive.
+// Mirrors the matching in the submodule's searchCoinFromCurrency thunk.
+export const findCoinByCurrency = (coins, currency) => {
+  const value = currency?.trim().toLowerCase();
+  if (!value) {
+    return null;
+  }
+  return (
+    coins?.find(coin => {
+      const byChainName = `${coin?.chain_name}:${coin?.symbol}`.toLowerCase();
+      const byChainSymbol =
+        `${coin?.chain_symbol}:${coin?.symbol}`.toLowerCase();
+      return (
+        value === byChainName ||
+        value === byChainSymbol ||
+        value === getCoinSlug(coin)
+      );
+    }) || null
+  );
+};
 
 export const getActiveNavSegment = pathname => {
   const segments = pathname?.split('/') || [];

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import s from './ProviderCard.module.css';
 
 // One provider row: logo, name and minimum on the left; the amount you'd
@@ -26,7 +27,16 @@ const ProviderCard = ({row, fromSymbol, toSymbol, fiatSymbol, onPress}) => {
       onClick={() => onPress?.(row)}
       aria-pressed={row.isSelected}>
       <div className={s.logoBox}>
-        {!!row.src && <img src={row.src} alt='' className={s.logo} />}
+        {!!row.src && (
+          <Image
+            src={row.src}
+            alt=''
+            width={34}
+            height={34}
+            unoptimized
+            className={s.logo}
+          />
+        )}
       </div>
       <div className={s.infoBox}>
         <div className={s.titleRow}>

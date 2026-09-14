@@ -7,6 +7,7 @@
 // beforeSendLog, and call sites must still not pass addresses or amounts.
 import {scrubObject, scrubString} from './scrub';
 import {ignoreErrors} from './ignoreErrors';
+import {shouldDropEvent} from './eventFilters';
 
 // Support wants `tx_hash` searchable; it is public chain data.
 export const EVENT_ALLOW_KEYS = ['tx_hash'];
@@ -35,6 +36,11 @@ export const releaseName = () =>
   `${process.env.APP_NAME}@${process.env.APP_VERSION}`;
 
 export const beforeSend = event => {
+  // Browsers below the bundle's syntax baseline and non-browser runtimes
+  // (headless scrapers) cannot run the app; their errors are not ours.
+  if (shouldDropEvent(event)) {
+    return null;
+  }
   if (event.message) {
     event.message = scrubString(event.message);
   }

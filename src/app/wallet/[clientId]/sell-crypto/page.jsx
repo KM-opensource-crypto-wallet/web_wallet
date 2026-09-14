@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import {FormControl, InputLabel, OutlinedInput} from '@mui/material';
 import styles from './SellCrypto.module.css';
 import {
@@ -110,7 +111,7 @@ const SellCrypto = () => {
               },
             }),
           );
-          router.push(`/wallet/${clientId}/sell-crypto/confirm`);
+          router.push(walletRoutes.sellCryptoConfirm(clientId));
         } else {
           await dispatch(fetchSellCryptoPaymentDetails());
           handlePageLoadingClose();
@@ -124,7 +125,7 @@ const SellCrypto = () => {
                 },
               }),
             );
-            router.push(`/wallet/${clientId}/sell-crypto/confirm`);
+            router.push(walletRoutes.sellCryptoConfirm(clientId));
           } else {
             toast.error('Some error occurred. Please retry');
           }

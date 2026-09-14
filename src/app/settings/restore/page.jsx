@@ -1,4 +1,5 @@
 'use client';
+import {skipLockOnNextLoad} from 'utils/lockScreen';
 import React, {useState, useEffect, useCallback} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -63,9 +64,7 @@ const RestorePage = () => {
   }, []);
 
   const handleLogin = async () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('skip_lock_screen', 'true');
-    }
+    skipLockOnNextLoad();
     const result = await signIn('google', {
       redirect: false,
       callbackUrl: window.location.href,

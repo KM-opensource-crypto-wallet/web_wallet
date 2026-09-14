@@ -1,9 +1,12 @@
 import {HEDERA_KEY_MISMATCH_MESSAGE} from 'dok-wallet-blockchain-networks/helper';
 import {ignoreErrors} from './ignoreErrors';
 
+// Mirrors @sentry/core: regexes are tested, strings are substring matches.
 const matches = message =>
   ignoreErrors.some(pattern =>
-    pattern instanceof RegExp ? pattern.test(message) : pattern === message,
+    pattern instanceof RegExp
+      ? pattern.test(message)
+      : message.includes(pattern),
   );
 
 describe('ignoreErrors', () => {
@@ -18,6 +21,14 @@ describe('ignoreErrors', () => {
     expect(matches('Network Error')).toBe(true);
     expect(matches('timeout of 30000ms exceeded')).toBe(true);
     expect(matches('Request failed with status code 502')).toBe(true);
+    expect(matches('Failed to fetch')).toBe(true);
+    expect(matches('Load failed')).toBe(true);
+    expect(matches('NetworkError when attempting to fetch resource.')).toBe(
+      true,
+    );
+    expect(matches('Connection interrupted while trying to subscribe')).toBe(
+      true,
+    );
   });
 
   it('ignores browser chunk-loading and layout noise', () => {
@@ -28,11 +39,19 @@ describe('ignoreErrors', () => {
     expect(matches('Failed to fetch dynamically imported module: /x.js')).toBe(
       true,
     );
+    expect(
+      matches('Event `Event` (type=error) captured as promise rejection'),
+    ).toBe(true);
   });
 
   it('does not ignore ordinary defects', () => {
     expect(
       matches("Cannot read properties of undefined (reading 'chain_name')"),
     ).toBe(false);
+    // Starts like the ignored fetch failure but is a real app error.
+    expect(matches('Failed to fetch backup secret. Please sign in.')).toBe(
+      false,
+    );
+    expect(matches("Unexpected token '<' in JSON at position 0")).toBe(false);
   });
 });

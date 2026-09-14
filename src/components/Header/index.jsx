@@ -10,11 +10,20 @@ import {ThemeContext} from 'theme/ThemeContext';
 import {usePathname} from 'next/navigation';
 import Image from 'next/image';
 import {publicRoutes} from 'utils/common';
+import {useSelector} from 'react-redux';
+import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {walletRoutes} from 'utils/routes';
 
 const Header = () => {
   const {themeType} = useContext(ThemeContext);
   const path = usePathname();
   const pathname = `/${path.split('/')[1]}`;
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
+  // Logo goes to the active wallet's Home; before a wallet exists the legacy
+  // /home forwarder resolves it once one does.
+  const homeHref = currentWalletClientId
+    ? walletRoutes.home(currentWalletClientId)
+    : '/home';
 
   if (publicRoutes.includes(pathname)) {
     return null;
@@ -22,7 +31,7 @@ const Header = () => {
 
   return (
     <div className={s.container}>
-      <Link href={pathname !== '/auth' && pathname !== '/' ? '/home' : '/'}>
+      <Link href={pathname !== '/auth' && pathname !== '/' ? homeHref : '/'}>
         {getAppLogo()?.[themeType] ? (
           <Image
             src={getAppLogo()?.[themeType]}

@@ -1,7 +1,6 @@
 'use client';
 import styles from './ReceivePaymentUrl.module.css';
 import React, {useCallback, useRef} from 'react';
-import {useParams} from 'next/navigation';
 import SelectInputExchange from 'components/SelectInputExchange';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
 import {getUserCoinsOptions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -17,9 +16,10 @@ import {
   getPaymentUrlCoin,
   getPaymentUrlCurrencyAmount,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import s from '../home/send/receive-funds/RecieveFunds.module.css';
 import CopyIcon from '@mui/icons-material/FileCopyOutlined';
 import {getDesktopWalletUrl} from 'whitelabel/whiteLabelInfo';
+import {getCoinSlug} from 'utils/common';
+import {paymentLinkPath} from 'utils/routes';
 import {
   multiplyBNWithFixed,
   validateNumberInInput,
@@ -31,7 +31,6 @@ const ReceivePaymentUrl = () => {
   const paymentUrlCoin = useSelector(getPaymentUrlCoin);
   const paymentUrlAmount = useSelector(getPaymentUrlAmount);
   const paymentUrlCurrencyAmount = useSelector(getPaymentUrlCurrencyAmount);
-  const {clientId: currentWalletClientId} = useParams();
   const dispatch = useDispatch();
   const formikRef = useRef();
   const localCurrency = useSelector(getLocalCurrency);
@@ -61,11 +60,13 @@ const ReceivePaymentUrl = () => {
         innerRef={formikRef}
         onSubmit={() => {}}>
         {({handleBlur, values, errors, setFieldValue}) => {
-          const url = `${getDesktopWalletUrl()}/wallet/${currentWalletClientId}/home/send/send-funds?address=${
-            values?.coin?.options?.walletAddress
-          }&amount=${values?.amount}&currency=${
-            values?.coin?.options?.chain_name
-          }:${values?.coin?.options?.symbol}`;
+          // Wallet-agnostic on purpose: the payer opens this on their own
+          // wallet, and the legacy forwarder resolves the coin from the slug.
+          const url = `${getDesktopWalletUrl()}${paymentLinkPath(
+            getCoinSlug(values?.coin?.options),
+          )}?address=${values?.coin?.options?.walletAddress}&amount=${
+            values?.amount
+          }`;
           return (
             <>
               <p className={styles.listTitle}>{'Select Crypto'}</p>
@@ -107,7 +108,7 @@ const ReceivePaymentUrl = () => {
                   type='number'
                 />
                 {errors.amount && (
-                  <p className={s.textConfirm}>{errors.amount}</p>
+                  <p className={styles.textConfirm}>{errors.amount}</p>
                 )}
               </div>
               <div className={styles.boxInput}>
@@ -137,7 +138,7 @@ const ReceivePaymentUrl = () => {
                   type='number'
                 />
                 {errors.currencyAmount && (
-                  <p className={s.textConfirm}>{errors.currencyAmount}</p>
+                  <p className={styles.textConfirm}>{errors.currencyAmount}</p>
                 )}
               </div>
               {values?.amount && values?.coin?.options?.chain_name && (
@@ -147,7 +148,7 @@ const ReceivePaymentUrl = () => {
                   </div>
                   <button
                     // variant="contained"
-                    className={s.copyButton}
+                    className={styles.copyButton}
                     // color="primary"
                     // startIcon={<CopyIcon />}
                     onClick={() => navigator.clipboard.writeText(url)}>

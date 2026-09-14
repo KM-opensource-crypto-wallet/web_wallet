@@ -8,6 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import Loading from 'components/Loading';
+import {reportThunkRejection} from 'utils/thunkErrors';
 import {selectCurrentWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 
 import {useSelector, useDispatch} from 'react-redux';
@@ -79,7 +80,9 @@ const TabAddCoins = () => {
         ...queryPayload.current,
         page: queryPayload.current.page + 1,
       };
-      await dispatch(fetchAllCoins(queryPayload.current)).unwrap();
+      await dispatch(fetchAllCoins(queryPayload.current))
+        .unwrap()
+        .catch(reportThunkRejection({area: 'coins', op: 'fetch_all'}));
       isFetching.current = false;
     } else if (
       !isSearchFetching.current &&
@@ -92,7 +95,9 @@ const TabAddCoins = () => {
         page: searchQueryPayload.current.page + 1,
         search: searchQuery.trim(),
       };
-      await dispatch(fetchAllSearchCoins(searchQueryPayload.current)).unwrap();
+      await dispatch(fetchAllSearchCoins(searchQueryPayload.current))
+        .unwrap()
+        .catch(reportThunkRejection({area: 'coins', op: 'search'}));
       isSearchFetching.current = false;
     }
   }, [dispatch, isAvailable, isSearchCoinsAvailable, searchQuery]);

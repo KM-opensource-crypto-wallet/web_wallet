@@ -66,9 +66,11 @@ const MadalWalletConnect = ({visible, onClose}) => {
     } catch (e) {
       console.error('WalletConnect pairing failed:', e);
       setErrorMessage(
-        e?.message?.includes('Pairing already exists')
-          ? 'This URI was already used. Get a fresh connection link from the dApp.'
-          : 'Failed to connect. Get a fresh connection link from the dApp and try again.',
+        e?.message?.includes('not initialised')
+          ? 'WalletConnect is still starting. Try again in a moment.'
+          : e?.message?.includes('Pairing already exists')
+            ? 'This URI was already used. Get a fresh connection link from the dApp.'
+            : 'Failed to connect. Get a fresh connection link from the dApp and try again.',
       );
     } finally {
       setIsConnecting(false);

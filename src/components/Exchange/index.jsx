@@ -1,5 +1,6 @@
 'use client';
 
+import {walletRoutes} from 'utils/routes';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {shallowEqual, useSelector, useDispatch} from 'react-redux';
 import {useRouter} from 'next/navigation';
@@ -551,7 +552,7 @@ const Exchange = () => {
         },
       }),
     );
-    router.push(`/wallet/${currentWalletClientId}/swap/confirm`);
+    router.push(walletRoutes.swapConfirm(currentWalletClientId));
   }, [dispatch, router, currentWalletClientId]);
 
   // After the ERC20-level allowance is confirmed (already approved, or just
@@ -677,7 +678,7 @@ const Exchange = () => {
           type='button'
           className={s.historyButton}
           onClick={() =>
-            router.push(`/wallet/${currentWalletClientId}/swap/history`)
+            router.push(walletRoutes.swapHistory(currentWalletClientId))
           }
           aria-label='Swap history'>
           <AccessTimeIcon

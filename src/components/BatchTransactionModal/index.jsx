@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import React, {useCallback, useMemo, useEffect, useState} from 'react';
 import {Close, Delete} from '@mui/icons-material';
 import DokDropdown from 'components/DokDropdown';
@@ -159,7 +160,7 @@ const BatchTransactionModal = ({isVisible, onDismiss, transactions}) => {
         },
       }),
     );
-    router.push(`/wallet/${clientId}/home/confirm-batch`);
+    router.push(walletRoutes.confirmBatch(clientId));
   }, [dispatch, filteredTransactions, router, onDismiss, clientId]);
 
   const handleChainChange = useCallback(

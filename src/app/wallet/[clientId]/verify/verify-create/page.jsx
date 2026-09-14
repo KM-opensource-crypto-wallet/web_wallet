@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import styles from './VerifyCreate.module.css';
 import {useParams, useRouter, useSearchParams} from 'next/navigation';
 import React from 'react';
@@ -49,7 +50,7 @@ const VerifyCreate = () => {
           <button
             className={styles.btn}
             onClick={() => {
-              router.push(`/wallet/${clientId}/verify/verify-screen`);
+              router.push(walletRoutes.verifyScreen(clientId));
             }}>
             I`ve written it down
           </button>

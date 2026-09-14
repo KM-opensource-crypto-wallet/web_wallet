@@ -1,4 +1,5 @@
 'use client';
+import {coinRoutes} from 'utils/routes';
 import React, {memo, useCallback} from 'react';
 import {useSelector} from 'react-redux';
 import {
@@ -59,10 +60,11 @@ const CoinItem = ({
 
   const onPressItem = useCallback(() => {
     dispatch(setCurrentCoin(item?._id));
+    // Without an active wallet id the legacy forwarder resolves /home/send.
     router.push(
       currentWalletClientId
-        ? `/wallet/${currentWalletClientId}/home/send/${getCoinSlug(item)}`
-        : `/home/send`,
+        ? coinRoutes.send(currentWalletClientId, getCoinSlug(item))
+        : '/home/send',
     );
   }, [dispatch, item, currentWalletClientId, router]);
 

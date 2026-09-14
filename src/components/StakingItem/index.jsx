@@ -1,8 +1,9 @@
 'use client';
+import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import React from 'react';
 import {currencySymbol} from 'data/currency';
 import Icons from '../../assets/images/icons';
-import {useParams, useRouter} from 'next/navigation';
+import {useRouter} from 'next/navigation';
 import {useDispatch, useSelector} from 'react-redux';
 import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
@@ -21,7 +22,7 @@ const StakingItem = ({
 }) => {
   const dispatch = useDispatch();
   const router = useRouter();
-  const {clientId} = useParams();
+  const routes = useAppRoutes();
   const currentCoin = useSelector(selectCurrentCoin);
   const localCurrency = useSelector(getLocalCurrency);
 
@@ -50,7 +51,7 @@ const StakingItem = ({
             },
           };
           dispatch(setRouteStateData(payload));
-          router.push(`/wallet/${clientId}/home/withdraw-staking`);
+          router.push(routes.coin.withdrawStaking());
         } else if (isEvmChain) {
           const payload = {
             withdrawStaking: {
@@ -61,7 +62,7 @@ const StakingItem = ({
             },
           };
           dispatch(setRouteStateData(payload));
-          router.push(`/wallet/${clientId}/home/withdraw-staking`);
+          router.push(routes.coin.withdrawStaking());
         }
       }}>
       <div

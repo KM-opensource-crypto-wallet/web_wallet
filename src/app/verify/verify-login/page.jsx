@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import React, {
   useState,
   useEffect,
@@ -125,7 +126,7 @@ const VerifyLoginScreen = () => {
     values => {
       if (storePassword === values.password) {
         router.push(
-          `/wallet/${currentWalletClientId}/verify/verify-create?showSeedPhrase=true`,
+          `${walletRoutes.verifyCreate(currentWalletClientId)}?showSeedPhrase=true`,
         );
       } else {
         setWrong(true);

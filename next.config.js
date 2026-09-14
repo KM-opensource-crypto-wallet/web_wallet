@@ -1,5 +1,4 @@
 /** @type {import('next').NextConfig} */
-const CopyPlugin = require('copy-webpack-plugin');
 const {version, name} = require('./package.json');
 const createNextIntlPlugin = require('next-intl/plugin');
 const path = require('path');
@@ -11,7 +10,10 @@ loadEnvConfig(projectDir);
 
 const withNextIntl = createNextIntlPlugin();
 const nextConfig = {
-  serverExternalPackages: ['bitcore-lib'],
+  // Loaded with Node's own require() instead of being bundled. sodium-native
+  // is @stellar/stellar-base's optional native signer; bundling it drags in
+  // require-addon's dynamic require() and a "critical dependency" warning.
+  serverExternalPackages: ['bitcore-lib', 'sodium-native'],
   images: {
     remotePatterns: [
       {
@@ -38,7 +40,7 @@ const nextConfig = {
   },
   trailingSlash: true,
   reactStrictMode: false,
-  webpack: (config, {isServer, dev}) => {
+  webpack: (config, {isServer}) => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
     config.resolve.alias = {
       ...config.resolve.alias,
@@ -47,171 +49,26 @@ const nextConfig = {
       http2: path.resolve('./node_modules/http-browserify'),
       http: path.resolve('./node_modules/http-browserify'),
       dns: path.resolve('./node_modules/@i2labs/dns'),
-      fs: path.resolve('./node_modules/bare-fs'),
     };
-    if (isServer) {
-      if (!dev) {
-        config.plugins.push(
-          new CopyPlugin({
-            patterns: [
-              {
-                context: '.next/server',
-                to: './chunks/[name][ext]',
-                from: '../../node_modules/@xmtp/user-preferences-bindings-wasm/dist/node',
-                filter: resourcePath => resourcePath.endsWith('.wasm'),
-              },
-            ],
-          }),
-        );
-      } else {
-        config.plugins.push(
-          new CopyPlugin({
-            patterns: [
-              {
-                context: '.next/server',
-                to: './vendor-chunks/[name][ext]',
-                from: '../../node_modules/@xmtp/user-preferences-bindings-wasm/dist/node',
-                filter: resourcePath => resourcePath.endsWith('.wasm'),
-              },
-            ],
-          }),
-        );
-      }
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        // Node-only modules that browser code never executes but still
+        // references statically (libsodium's `if (isNode) require('fs')`,
+        // stellar-base's optional `require('sodium-native')`). `false`
+        // gives webpack an empty module, which is what stellar-base's own
+        // "browser" field asks for. The former bare-fs alias could never run
+        // in a browser (it needs the Bare runtime global) and pulled in
+        // bare-os's dynamic native require().
+        fs: false,
+        'sodium-native': false,
+      };
     }
     config.module.rules.push({
       test: /\.svg$/,
       use: ['@svgr/webpack'],
     });
     return config;
-  },
-  async redirects() {
-    return [
-      {
-        source: '/buy-crypto',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/buy-crypto/otc2',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/coin-sync',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/confirm-batch',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/confirm-staking',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/create-staking',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/send/custom-derivation',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/send/receive-funds',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/send/select-UTXOs',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/send/send-funds/transfer',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/staking-list',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/transactions',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/transactions/update-transaction',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/vote-staking',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/home/withdraw-staking',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/manage-coins',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/sell-crypto',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/sell-crypto/confirm',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/swap',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/swap/confirm',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/swap/history',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/verify/verify-create',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/verify/verify-screen',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/wallet-connect',
-        destination: '/home',
-        permanent: false,
-      },
-      {
-        source: '/wallets/hide-wallet',
-        destination: '/home',
-        permanent: false,
-      },
-    ];
   },
   async rewrites() {
     return [

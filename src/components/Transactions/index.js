@@ -1,3 +1,4 @@
+import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import React, {useState, useRef, useCallback, useMemo} from 'react';
 import {currencySymbol} from 'data/currency';
 import s from './Transactions.module.css';
@@ -86,7 +87,7 @@ const getTxTypeConfig = (item, walletAddress) => {
       }
     : {icon: icons.send, bg: '#fdecea', color: '#FF4444', label: 'Sent'};
 };
-import {useParams, useRouter} from 'next/navigation';
+import {useRouter} from 'next/navigation';
 import {useDispatch, useSelector} from 'react-redux';
 import {getPendingTransferData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSelector';
 import Spinner from 'components/Spinner';
@@ -103,7 +104,7 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
   const selectedTransactionRef = useRef(null);
   const isCancelTransactionRef = useRef(null);
   const router = useRouter();
-  const {clientId} = useParams();
+  const routes = useAppRoutes();
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   const isTransactionNotSupported = useMemo(
@@ -184,9 +185,7 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
                   className={s.section}
                   onClick={() => {
                     if (item?.link) {
-                      router.push(
-                        `/wallet/${clientId}/home/transactions/${encodeURIComponent(item.link)}`,
-                      );
+                      router.push(routes.coin.transactionDetails(item.link));
                     }
                   }}
                   key={index}>

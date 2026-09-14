@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import styles from './OTC2Screen.module.css';
 import React, {useContext, useState, useCallback, useMemo} from 'react';
 import SelectInputExchange from 'components/SelectInputExchange';
@@ -144,7 +145,7 @@ const OTC2Screen = () => {
         if (resp?.status === 200) {
           toast.dismiss(toastId);
           toast.success('OTC Request submitted successfully');
-          router.push(`/wallet/${clientId}/home`);
+          router.push(walletRoutes.home(clientId));
         } else {
           toast.dismiss(toastId);
           toast.error('Something went wrong');

@@ -1,3 +1,5 @@
+import {walletRoutes} from 'utils/routes';
+import {skipLockOnNextLoad} from 'utils/lockScreen';
 import React, {
   useState,
   useEffect,
@@ -184,7 +186,7 @@ const CreateOrUpdateWallet = () => {
 
   const onPressYes = useCallback(() => {
     setShowDeleteModal(false);
-    router.push(`/wallet/${currentWalletClientId}/home`);
+    router.push(walletRoutes.home(currentWalletClientId));
     setTimeout(() => {
       if (walletClientId) {
         dispatch(deleteWallet(walletClientId));
@@ -219,7 +221,7 @@ const CreateOrUpdateWallet = () => {
           toast.success('Wallet updated successfully');
         } else {
           dispatch(resetPaymentUrl());
-          await dispatch(
+          const created = await dispatch(
             createWallet({
               walletName: values.name || 'Main Wallet',
               phrase,
@@ -227,6 +229,10 @@ const CreateOrUpdateWallet = () => {
               chain_name,
             }),
           ).unwrap();
+          // The reducer makes the new wallet current, but this closure still
+          // holds the previous id; land on the wallet that was just created.
+          const newWalletClientId =
+            created?.newStoreWallet?.clientId || currentWalletClientId;
           const redirectRoute = searchParams?.get('redirectRoute');
           let searchParamsString = '';
           for (const key of searchParams.keys()) {
@@ -234,12 +240,18 @@ const CreateOrUpdateWallet = () => {
               searchParamsString += `${key}=${searchParams.get(key)}&`;
             }
           }
+          if (redirectRoute) {
+            // Same as login: an unknown deep link reloads into the 404 page.
+            skipLockOnNextLoad({ttlMs: 10000});
+          }
           router.replace(
             redirectRoute
               ? `${redirectRoute}${
                   searchParamsString ? '?' + searchParamsString : ''
                 }`
-              : `/home${searchParamsString ? '?' + searchParamsString : ''}`,
+              : `${walletRoutes.home(newWalletClientId)}${
+                  searchParamsString ? '?' + searchParamsString : ''
+                }`,
           );
           dispatch(refreshCoins());
           setTimeout(() => {
@@ -335,7 +347,7 @@ const CreateOrUpdateWallet = () => {
                           onClick={() => {
                             if (item.title === 'Manual Backup') {
                               router.push(
-                                `/wallet/${walletClientId}/verify/verify-create`,
+                                walletRoutes.verifyCreate(walletClientId),
                               );
                               // navigation.push("VerifyLogin");
                             }
@@ -369,9 +381,7 @@ const CreateOrUpdateWallet = () => {
                         className={s.item}
                         style={{marginTop: 20}}
                         onClick={() =>
-                          router.push(
-                            `/wallet/${walletClientId}/wallets/hide-wallet`,
-                          )
+                          router.push(walletRoutes.hideWallet(walletClientId))
                         }>
                         <div className={s.itemIcon}>
                           <VisibilityOffOutlined
@@ -398,9 +408,7 @@ const CreateOrUpdateWallet = () => {
                         style={{opacity: isScanRowEnabled ? 1 : 0.5}}
                         disabled={!isScanRowEnabled}
                         onClick={() =>
-                          router.push(
-                            `/wallet/${scanTargetClientId}/home/coin-sync`,
-                          )
+                          router.push(walletRoutes.coinSync(scanTargetClientId))
                         }>
                         <div
                           className={`${s.scanIconBubble} ${

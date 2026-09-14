@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import React, {useState, useEffect, useCallback, useMemo, useRef} from 'react';
 import {currencySymbol} from 'data/currency';
 import CryptoList from 'components/CryptoList';
@@ -29,7 +30,6 @@ import {
   selectIsBackedUp,
   selectUserCoins,
   isImportWalletWithPrivateKey,
-  getEthereumCoin,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
   refreshCoins,
@@ -37,10 +37,7 @@ import {
   setCurrentCoin,
   syncCoinsWithServer,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {
-  getLocalCurrency,
-  isChatOptions,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {toast} from 'react-toastify';
 import {
   setWalletConnectRequestModal,
@@ -112,13 +109,11 @@ const Home = () => {
   // const [modalVisible, setmodalVisible] = useState(false);
   const [backupModalVisible, setBackupModalVisible] = useState(false);
   // const [number, setNumber] = useState(1);
-  const ethereumCoin = useSelector(getEthereumCoin, shallowEqual);
   const userCoins = useSelector(selectUserCoins, shallowEqual);
   const localCurrency = useSelector(getLocalCurrency);
   const totalAssets = useSelector(countTotalAssets);
   const allNewCoins = useSelector(selectAllNewCoins);
   const isBackup = useSelector(selectIsBackedUp);
-  const isChatOptionsEnabled = useSelector(isChatOptions);
   const currentWallet = useSelector(selectCurrentWallet);
   const isAskedBackup = useSelector(isAskedBackedUpModal);
   const isImportWithPrivateKey = useSelector(isImportWalletWithPrivateKey);
@@ -360,21 +355,12 @@ const Home = () => {
         <WalletConnectStatus />
         <div className={classNames.btnBox}>
           <Link
-            href={`/wallet/${clientId}/manage-coins`}
+            href={walletRoutes.manageCoins(clientId)}
             className={classNames.btn}>
             {icons.addCircle}
             <p className={classNames.btnText}>More Coins</p>
           </Link>
         </div>
-        {!!ethereumCoin?.address && isChatOptionsEnabled && (
-          <Link
-            href='/chats'
-            className={classNames.chatBtnContainer}
-            aria-label='Open chat'>
-            {icons.chatIcon}
-            <p className={classNames.btnText}>Chats</p>
-          </Link>
-        )}
       </main>
       {/* <ModalQR
               visible={modalVisible}

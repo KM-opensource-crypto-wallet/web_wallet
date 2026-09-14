@@ -1,3 +1,4 @@
+import {walletRoutes} from 'utils/routes';
 import React, {useState, useContext} from 'react';
 import {useSelector} from 'react-redux';
 
@@ -89,9 +90,7 @@ export const VerifyInfoModal = ({visible, onClose}) => {
                 }}
                 onClick={() => {
                   onClose();
-                  router.push(
-                    `/wallet/${currentWalletClientId}/verify/verify-create`,
-                  );
+                  router.push(walletRoutes.verifyCreate(currentWalletClientId));
                 }}>
                 Verify seed phrase
               </button>
@@ -103,7 +102,7 @@ export const VerifyInfoModal = ({visible, onClose}) => {
                   color: infoCheck ? 'var(--background)' : '#708090',
                 }}
                 onClick={() => {
-                  router.push(`/wallet/${currentWalletClientId}/home`);
+                  router.push(walletRoutes.home(currentWalletClientId));
                   onClose();
                 }}>
                 Do it later

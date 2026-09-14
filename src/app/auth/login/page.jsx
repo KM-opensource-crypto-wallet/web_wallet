@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import React, {useState, useCallback, useRef} from 'react';
 import {Formik} from 'formik';
 import styles from './LoginScreen.module.css';
@@ -37,6 +38,11 @@ import {isWalletReset} from 'dok-wallet-blockchain-networks/redux/settings/setti
 import ModalInfo from 'src/components/ModalInfo';
 import {Constants} from 'src/utils/common';
 import {setLastActiveTime} from 'utils/localStorageData';
+import {skipLockOnNextLoad} from 'utils/lockScreen';
+
+// Long enough for the replayed navigation to settle (or hard-reload), short
+// enough that a later manual reload still locks.
+const REPLAY_SKIP_LOCK_TTL_MS = 10000;
 
 const LoginScreen = () => {
   const [hide, setHide] = useState(true);
@@ -80,12 +86,17 @@ const LoginScreen = () => {
               searchParamsString += `${key}=${searchParams.get(key)}&`;
             }
           }
+          if (redirectRoute) {
+            // An unknown deep link loads the 404 page as a new document, which
+            // would lock again immediately and loop back here.
+            skipLockOnNextLoad({ttlMs: REPLAY_SKIP_LOCK_TTL_MS});
+          }
           router.replace(
             redirectRoute
               ? `${redirectRoute}${
                   searchParamsString ? '?' + searchParamsString : ''
                 }`
-              : `/wallet/${currentWalletClientId}/home${
+              : `${walletRoutes.home(currentWalletClientId)}${
                   searchParamsString ? '?' + searchParamsString : ''
                 }`,
           );

@@ -1,5 +1,10 @@
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
-import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  selectCurrentCoin,
+  selectCurrentWalletClientId,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {getCoinSlug} from 'utils/common';
+import {coinRoutes, walletRoutes} from 'utils/routes';
 
 let currentRouteName = '';
 let navigatorRef = null;
@@ -23,7 +28,7 @@ export const MainNavigation = {
       const transactionId = params?.transactionId;
       if (transactionId) {
         navigatorRef(
-          `/wallet/${currentWalletClientId}/swap/history/${encodeURIComponent(transactionId)}`,
+          walletRoutes.swapHistoryDetails(currentWalletClientId, transactionId),
         );
       }
       return;
@@ -34,8 +39,9 @@ export const MainNavigation = {
         if (params) {
           store.dispatch(setRouteStateData({[name]: params}));
         }
+        const coinSlug = getCoinSlug(selectCurrentCoin(store.getState()));
         navigatorRef(
-          `/wallet/${currentWalletClientId}/home/transactions/${encodeURIComponent(link)}`,
+          coinRoutes.transactionDetails(currentWalletClientId, coinSlug, link),
         );
       }
     }

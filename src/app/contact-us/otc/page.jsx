@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import React, {useEffect, useCallback, useRef} from 'react';
 import {Formik} from 'formik';
 import {validationSchemaOTC} from 'utils/validationSchema';
@@ -27,7 +28,7 @@ const OTCScreen = () => {
 
   const onSubmit = useCallback(
     values => {
-      router.push(`/wallet/${currentWalletClientId}/buy-crypto/otc2`);
+      router.push(walletRoutes.buyCryptoOtc2(currentWalletClientId));
       dispatch(setOTCData(values));
     },
     [dispatch, router, currentWalletClientId],

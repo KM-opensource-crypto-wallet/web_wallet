@@ -9,6 +9,7 @@
 // const WIDTH = Dimensions.get('window').width;
 // const HEIGHT = Dimensions.get('window').height;
 
+import {walletRoutes} from 'utils/routes';
 import {Box, Modal} from '@mui/material';
 import s from './ModaSend.module.css';
 import {useParams, useRouter} from 'next/navigation';
@@ -58,12 +59,12 @@ const ModalSend = ({visible, hideModal, currentCoin}) => {
           <div className={s.listbtn}>
             <button
               className={`${s.button} ${s.shadow}`}
-              onClick={() => router.push(`/wallet/${clientId}/buy-crypto`)}>
+              onClick={() => router.push(walletRoutes.buyCrypto(clientId))}>
               <p className={s.btnBuy}>Buy {currentCoin?.title}</p>
             </button>
             <button
               className={`${s.button} ${s.shadow}`}
-              onClick={() => router.push(`/wallet/${clientId}/swap`)}>
+              onClick={() => router.push(walletRoutes.swap(clientId))}>
               <p className={s.btnEx}>Exchange</p>
             </button>
           </div>

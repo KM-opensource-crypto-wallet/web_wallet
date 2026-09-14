@@ -64,9 +64,23 @@
   flex:1
 }
 .copyButton {
+  display: flex;
+  align-items: center;
   background-color: var(--background);
+  padding: 5px 10px;
   border-radius: 4px;
-  padding-top: 6px;
+}
+.copyButton > span {
+  margin-left: 5px;
+  color: var(--backgroundColor);
+}
+.copyButton > svg {
+  fill: var(--backgroundColor);
+}
+.textConfirm {
+  color: red;
+  font-size: 13px;
+  margin-top: 4px;
 }
 .flexView {
   flex: 1;

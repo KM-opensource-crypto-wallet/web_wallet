@@ -1,4 +1,5 @@
 'use client';
+import {skipLockOnNextLoad} from 'utils/lockScreen';
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {useSelector} from 'react-redux';
 import {
@@ -139,8 +140,8 @@ const BackupPage = () => {
   };
 
   const handleLogin = async () => {
+    skipLockOnNextLoad();
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('skip_lock_screen', 'true');
       sessionStorage.setItem('backup_pending', 'true');
       sessionStorage.setItem(
         'backup_selected_wallet_ids',

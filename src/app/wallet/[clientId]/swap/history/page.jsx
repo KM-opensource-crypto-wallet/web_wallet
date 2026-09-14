@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import {useCallback, useEffect, useRef} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useParams, useRouter} from 'next/navigation';
@@ -58,7 +59,7 @@ const SwapHistory = () => {
 
   const onPressItem = useCallback(
     transaction => {
-      router.push(`/wallet/${clientId}/swap/history/${transaction?._id}`);
+      router.push(walletRoutes.swapHistoryDetails(clientId, transaction?._id));
     },
     [router, clientId],
   );
@@ -100,7 +101,7 @@ const SwapHistory = () => {
                 onClick={
                   error
                     ? onRefresh
-                    : () => router.push(`/wallet/${clientId}/swap`)
+                    : () => router.push(walletRoutes.swap(clientId))
                 }>
                 {error ? 'Retry' : 'Make a swap'}
               </button>

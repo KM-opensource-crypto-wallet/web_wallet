@@ -1,27 +1,22 @@
 'use client';
-import React, {useState} from 'react';
+import {walletRoutes} from 'utils/routes';
+import React from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
   getLocalCurrency,
   getLockTimeDisplay,
-  isChatOptions,
   isWalletReset,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {getTutorialVideos} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
-import {
-  setResetWallet,
-  updateChatOptions,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
+import {setResetWallet} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import s from './Settings.module.css';
 
 const icons = require(`assets/images/settings`).default;
-const AllIcons = require(`assets/images/icons`).default;
 import Link from 'next/link';
 import {getPrivacyUrl, getTermsUrl} from 'whitelabel/whiteLabelInfo';
 import {FormControlLabel, Radio, RadioGroup, Switch} from '@mui/material';
 import {Password, Security} from '@mui/icons-material';
-import ModalConfirmEnableChatModal from 'components/ModalConfirmEnableChatModal';
 import {useLocale, useTranslations} from 'next-intl';
 import {setUserLocale} from 'src/utils/updateLocale';
 import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
@@ -34,12 +29,10 @@ const SHOW_SENTRY_DEV_TOOLS =
   process.env.ENV_MODE === 'DEV' || process.env.SENTRY_DEV_TOOLS === 'true';
 
 const Settings = ({navigation}) => {
-  const [isChatModalVisible, setIsChatModalVisible] = useState(false);
   const dispatch = useDispatch();
   // const [isFingerprintEnabled, setIsFingerprintEnabled] = useState(false);
   const localCurrency = useSelector(getLocalCurrency);
   const lockTimeDisplay = useSelector(getLockTimeDisplay);
-  const chatOptions = useSelector(isChatOptions);
   const rateLimitCheck = useSelector(isWalletReset);
   const tutorialVideos = useSelector(getTutorialVideos);
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
@@ -57,16 +50,11 @@ const Settings = ({navigation}) => {
     },
   ];
 
-  const onChangeLocale = e => {
-    setUserLocale(e.target.value);
-  };
-
-  const onChangeChatOptions = e => {
-    const value = e?.target.checked;
-    if (value) {
-      setIsChatModalVisible(true);
-    } else {
-      dispatch(updateChatOptions(value));
+  const onChangeLocale = async e => {
+    try {
+      await setUserLocale(e.target.value);
+    } catch (e) {
+      showToast({type: 'errorToast', title: 'Failed to change language'});
     }
   };
   const onChangeApplyRateLimit = e => {
@@ -111,7 +99,7 @@ const Settings = ({navigation}) => {
           </div>
         </Link>
         <Link
-          href={`/wallet/${currentWalletClientId}/manage-coins`}
+          href={walletRoutes.manageCoins(currentWalletClientId)}
           className={s.btn}>
           {icons.setCurrency}
           <div className={s.box}>
@@ -251,23 +239,6 @@ const Settings = ({navigation}) => {
           </div>
         </Link>
         <div className={s.btn}>
-          {AllIcons.chatIcon}
-          <div className={s.box}>
-            <div className={s.subBox}>
-              <p className={s.btnTitle}>{'Blockchain Chat'}</p>
-              <p className={s.btnText}>
-                {'Messaging services with ethereum address'}
-              </p>
-            </div>
-            <Switch
-              checked={chatOptions}
-              defaultChecked={chatOptions}
-              onChange={onChangeChatOptions}
-              color='warning'
-            />
-          </div>
-        </div>
-        <div className={s.btn}>
           <Security />
           <div className={s.box}>
             <div className={s.subBox}>
@@ -286,15 +257,6 @@ const Settings = ({navigation}) => {
             />
           </div>
         </div>
-        <Link href='/settings/chat-blocked' className={s.btn}>
-          {AllIcons.blockedIcon}
-          <div className={s.box}>
-            <p className={s.btnTitle}>{'Blockchain Chat Blocked'}</p>
-            <p className={s.btnText}>
-              {' Manage blocked addresses for blockchain chat'}
-            </p>
-          </div>
-        </Link>
         <Link href={'/settings/privacy-mode'} className={s.btn}>
           <Security />
           <div className={s.box}>
@@ -305,13 +267,6 @@ const Settings = ({navigation}) => {
           </div>
         </Link>
       </div>
-      <ModalConfirmEnableChatModal
-        visible={isChatModalVisible}
-        hideModal={isYesClicked => {
-          setIsChatModalVisible(false);
-          dispatch(updateChatOptions(!!isYesClicked));
-        }}
-      />
       {/* <ModalFingerprint
         visible={showModalVarify}
         hideModal={setShowModalVarify}

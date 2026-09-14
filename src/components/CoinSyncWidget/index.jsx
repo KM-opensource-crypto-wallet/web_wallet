@@ -1,4 +1,5 @@
 'use client';
+import {stripTrailingSlash, walletRoutes} from 'utils/routes';
 import React, {memo, useCallback} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useRouter, usePathname} from 'next/navigation';
@@ -21,11 +22,15 @@ const CoinSyncWidget = () => {
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
 
   const handlePress = useCallback(() => {
-    router.push(`/wallet/${currentWalletClientId}/home/coin-sync`);
+    router.push(walletRoutes.coinSync(currentWalletClientId));
   }, [router, currentWalletClientId]);
 
-  // next.config.js sets trailingSlash: true, so pathname ends in '/'
-  if (!shouldShowWidget || pathname?.endsWith('/home/coin-sync/')) {
+  // Hidden on the coin-sync screen itself (pathname carries a trailing slash).
+  if (
+    !shouldShowWidget ||
+    stripTrailingSlash(pathname) ===
+      walletRoutes.coinSync(currentWalletClientId)
+  ) {
     return null;
   }
 
