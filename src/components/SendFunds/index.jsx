@@ -335,6 +335,16 @@ const SendFunds = () => {
       values?.send,
     );
     if (isValid || validAddress) {
+      // The button shares the Next button's `isValid` gate, but Next runs the
+      // schema through handleSubmit and this path does not: until validation
+      // has run once `errors` is empty, so `isValid` is true on an untouched
+      // form. An empty amount would reach validateBigNumberStr, which turns it
+      // into '0' and silently queues a zero-value call. SET_ERRORS from
+      // validateForm surfaces the message and disables the button.
+      const formErrors = await formikRef.current.validateForm();
+      if (formErrors?.amount) {
+        return;
+      }
       const resolvedToAddress = validAddress || values?.send?.trim();
       checkPoisoningThenProceed(resolvedToAddress, () => {
         dispatch(

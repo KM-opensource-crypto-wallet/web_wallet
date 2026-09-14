@@ -36,6 +36,12 @@ const Settings = ({navigation}) => {
   const rateLimitCheck = useSelector(isWalletReset);
   const tutorialVideos = useSelector(getTutorialVideos);
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
+  // Before a wallet exists (password set, wallets reset or all deleted) the
+  // legacy /manage-coins forwarder resolves this once one does, instead of
+  // linking at /wallet/undefined/manage-coins.
+  const manageCoinsHref = currentWalletClientId
+    ? walletRoutes.manageCoins(currentWalletClientId)
+    : '/manage-coins';
   const currentLocale = useLocale();
   const t = useTranslations('settings');
 
@@ -98,9 +104,7 @@ const Settings = ({navigation}) => {
             <p className={s.btnText}>{localCurrency}</p>
           </div>
         </Link>
-        <Link
-          href={walletRoutes.manageCoins(currentWalletClientId)}
-          className={s.btn}>
+        <Link href={manageCoinsHref} className={s.btn}>
           {icons.setCurrency}
           <div className={s.box}>
             <p className={s.btnTitle}>{t('coinList')}</p>
