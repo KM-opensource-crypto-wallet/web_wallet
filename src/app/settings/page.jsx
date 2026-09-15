@@ -24,6 +24,13 @@ import ModalConfirmEnableChatModal from 'components/ModalConfirmEnableChatModal'
 import {useLocale, useTranslations} from 'next-intl';
 import {setUserLocale} from 'src/utils/updateLocale';
 import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
+import {addBreadcrumb, captureError, logger} from 'services/logger';
+import {showToast} from 'utils/toast';
+
+// Debug-only row for verifying the Sentry pipeline end to end (event, log,
+// breadcrumb, scrubbing). Hidden in release unless SENTRY_DEV_TOOLS is set.
+const SHOW_SENTRY_DEV_TOOLS =
+  process.env.ENV_MODE === 'DEV' || process.env.SENTRY_DEV_TOOLS === 'true';
 
 const Settings = ({navigation}) => {
   const [isChatModalVisible, setIsChatModalVisible] = useState(false);
@@ -63,6 +70,32 @@ const Settings = ({navigation}) => {
   const onChangeApplyRateLimit = e => {
     const value = e?.target.checked;
     dispatch(setResetWallet(value));
+  };
+
+  const onPressSentryTest = () => {
+    // Everything below must show up redacted in Sentry: the breadcrumb
+    // mnemonic, the privateKey attribute, and the phrase/body extras.
+    addBreadcrumb(
+      'test',
+      'abandon ability able about above absent absorb abstract absurd abuse access accident',
+    );
+    logger.info('sentry.test_log', {
+      tx_hash: 'a'.repeat(64),
+      privateKey: 'b'.repeat(64),
+    });
+    captureError(new Error('Sentry test event'), {
+      tags: {test: 'true'},
+      extra: {
+        phrase: 'zoo '.repeat(11) + 'wrong',
+        body: {secret: 'should-not-appear'},
+        note: 'sent from Settings > Send Sentry test event',
+      },
+    });
+    showToast({
+      type: 'successToast',
+      title: 'Sentry test sent',
+      message: 'Check the dashboard for the event and log',
+    });
   };
   return (
     <div className={s.container}>
@@ -131,6 +164,23 @@ const Settings = ({navigation}) => {
             </div>
           </div>
         </div>
+        {SHOW_SENTRY_DEV_TOOLS && (
+          <div
+            role='button'
+            tabIndex={0}
+            onClick={onPressSentryTest}
+            onKeyDown={e => e.key === 'Enter' && onPressSentryTest()}
+            className={s.btn}
+            style={{cursor: 'pointer'}}>
+            {icons.change}
+            <div className={s.box}>
+              <p className={s.btnTitle}>Send Sentry test event</p>
+              <p className={s.btnText}>
+                Debug only: verifies error, log and redaction
+              </p>
+            </div>
+          </div>
+        )}
         {tutorialVideos?.length > 0 && (
           <Link href='/settings/tutorial-videos' className={s.btn}>
             {icons.tutorialVideos}

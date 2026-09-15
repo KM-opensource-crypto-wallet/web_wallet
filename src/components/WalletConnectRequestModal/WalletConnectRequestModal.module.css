@@ -3,69 +3,13 @@
   flex-direction: column;
   justify-content: space-between;
   overflow-y: auto;
-  max-height: 80vh;
-}
-
-.mainView {
-  display: flex;
-  align-items: center;
-  padding: 5px 10px;
-}
-
-@media (min-width: 769px) {
-  .mainView {
-    padding: 10px 20px;
-  }
-}
-
-.imageStyle {
-  object-fit: contain;
-  margin-right: 8px;
-  border-radius: 8px;
-  height: 30px;
-  width: 30px;
-}
-
-.borderView {
-  height: 1.5px;
-  background-color: var(--whiteOutline);
-  width: 100%;
-}
-
-.mainImageStyle {
-  width: 80%;
-  height: 120px;
-  object-fit: contain;
-  margin: 0 auto;
-}
-
-@media (min-width: 769px) {
-  .mainImageStyle {
-    height: 150px;
-  }
-}
-
-.box {
-  display: flex;
-  flex-direction: column;
-}
-
-.title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-.url {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--primary-color);
+  max-height: 85vh;
 }
 
 .chainTitle {
   font-size: 16px;
   font-weight: 700;
-  color: var(--font-color);
+  color: var(--font);
   text-align: left;
   margin-top: 12px;
   margin-left: 10px;
@@ -75,6 +19,86 @@
   .chainTitle {
     margin-left: 20px;
   }
+}
+
+.itemView {
+  display: flex;
+  align-items: center;
+  width: 93%;
+  border: 1px solid var(--gray);
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 8px 12px;
+  margin: 20px auto 0 auto;
+}
+
+.addressTypeView {
+  width: 93%;
+  margin: 0 auto;
+}
+
+.addressTypeGrid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  row-gap: 12px;
+  margin-top: 12px;
+}
+
+.addressTypeCard {
+  display: flex;
+  flex-direction: column;
+  width: 48%;
+  border: 1px solid var(--gray);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background-color: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.addressTypeCardSelected {
+  border-color: var(--background);
+  background-color: var(--walletItemColor);
+}
+
+.addressTypeCardHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.addressTypeLabel {
+  flex: 1;
+  color: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Fixed slot so the label does not shift when the check appears. */
+.addressTypeCheckSlot {
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.addressTypeAddress {
+  margin-top: 4px;
+  color: var(--gray);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bottomView {
@@ -97,49 +121,14 @@
   justify-content: space-between;
 }
 
-.itemTitle {
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--primary-color);
-}
-
-.iconBox {
-  width: 39px;
-  height: 39px;
-  background-color: var(--font);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 10px;
-}
-
-.iconBox > svg {
-  height: 30px;
-  width: 30px;
-  fill: var(--backgroundColor);
-}
-
-.itemView {
-  display: flex;
-  align-items: center;
-  width: 93%;
-  border: 1px solid var(--gray);
-  margin-bottom: 8px;
-  border-radius: 8px;
-  overflow: hidden;
-  padding: 8px 12px;
-  margin: 20px auto 0 auto;
-}
-
 .button {
-  background-color: var(--background-color);
+  background-color: var(--background);
   height: 60px;
   border-radius: 10px;
   align-items: center;
   justify-content: center;
   width: 48%;
-  color: var(--title-color);
+  color: var(--title);
   font-size: 16px;
   font-weight: 700;
   border: 1px solid var(--background);

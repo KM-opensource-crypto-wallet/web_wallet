@@ -13,10 +13,17 @@ import {
   fetchCurrencies,
 } from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
 import {ToastContainer} from 'react-toastify';
-import {Bugfender} from '@bugfender/sdk';
 import {ThemeContext} from 'theme/ThemeContext';
 import {isReduxStoreLoaded} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
-import {selectWalletConnectSessions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  getMasterClientId,
+  selectWalletConnectSessions,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  captureError,
+  setUserContext,
+  setWhiteLabelContext,
+} from 'services/logger';
 import {initWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
 import {
   clearWalletConnectStorageCache,
@@ -82,6 +89,7 @@ function AppRouting({children, wlData}) {
 
   const disableMessage = useSelector(getDisableMessage);
   const googleAnalyticsKey = useSelector(getGoogleAnalyticsKey);
+  const masterClientId = useSelector(getMasterClientId);
 
   useEffect(() => {
     if (googleAnalyticsKey) {
@@ -89,21 +97,11 @@ function AppRouting({children, wlData}) {
     }
   }, [googleAnalyticsKey]);
 
+  // Attribute every event/log to this browser profile. The id is created after
+  // rehydrate (createIfNotExistsMasterClientId) and cleared on wallet reset.
   useEffect(() => {
-    const appKey = process.env.NEXT_PUBLIC_BUGFENDER_APP_KEY;
-    if (!appKey || process.env.ENV_MODE === 'DEV') {
-      return;
-    }
-    Bugfender.init({
-      appKey,
-      version: process.env.APP_VERSION,
-      logUIEvents: false,
-      logBrowserEvents: false,
-      printToConsole: false,
-    }).catch(error => {
-      console.warn('Bugfender init failed:', error);
-    });
-  }, []);
+    setUserContext(masterClientId);
+  }, [masterClientId]);
 
   useEffect(() => {
     let routeName = pathname;
@@ -172,12 +170,14 @@ function AppRouting({children, wlData}) {
         1000 * 60 * 10,
       );
       const walletConnectData = getWalletConnectDetails();
+      const onWalletConnectInitError = e =>
+        captureError(e, {tags: {area: 'walletconnect', op: 'init'}});
       if (!Object.keys(walletConnectSessions).length) {
         clearWalletConnectStorageCache().then(() => {
-          initWalletConnect(walletConnectData).then();
+          initWalletConnect(walletConnectData).catch(onWalletConnectInitError);
         });
       } else {
-        initWalletConnect(walletConnectData).then();
+        initWalletConnect(walletConnectData).catch(onWalletConnectInitError);
       }
       let hostname = '';
       if (typeof window !== 'undefined') {
@@ -220,14 +220,22 @@ function AppRouting({children, wlData}) {
   useEffect(() => {
     setWhiteLabelInfo(wlData);
     setWLAppName(wlData?.name);
+    // All whitelabels share one Sentry project; the domain was tagged at init,
+    // the brand name/id become known here.
+    setWhiteLabelContext({
+      name: wlData?.name,
+      id: wlData?._id,
+      host:
+        typeof window !== 'undefined' ? window.location.hostname : undefined,
+    });
     (async () => {
       try {
         const localeSetCheck = await isLocaleSet();
         if (!localeSetCheck) {
           setUserLocale(wlData.defaultLocale || 'en');
         }
-      } catch {
-        console.error('error in set local', e);
+      } catch (e) {
+        captureError(e, {tags: {area: 'locale', op: 'set_default'}});
       }
     })();
   }, [wlData]);

@@ -21,23 +21,6 @@
   padding: 8px 12px;
 }
 
-.iconBox {
-  width: 39px;
-  height: 39px;
-  background-color: var(--font);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 10px;
-}
-
-.iconBox > svg {
-  height: 30px;
-  width: 30px;
-  fill: var(--backgroundColor);
-}
-
 .rowImageStyle {
   object-fit: contain;
   margin-right: 8px;
@@ -64,12 +47,6 @@
   font-size: 16px;
   color: white;
   margin: 24px auto 0 auto;
-}
-
-.itemTitle {
-  font-weight: bold;
-  font-size: 14px;
-  color: var(--primary);
 }
 
 .url {

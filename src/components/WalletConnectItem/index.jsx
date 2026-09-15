@@ -14,6 +14,7 @@ import {
   selectWalletConnectSessions,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {clearWalletConnectStorageCache} from 'utils/localStorageData';
+import WalletConnectChainRow from 'components/WalletConnectChainRow';
 
 /////////////////////////////////////////
 
@@ -93,21 +94,12 @@ const WalletConnectItem = ({onClose}) => {
         <p className={styles.title}>{'Chains'}</p>
         {chainData?.map((chain, i) => (
           <div className={styles.chainRowView} key={'' + chain?._id + i}>
-            <div className={styles.iconBox}>
-              <Image
-                src={chain?.icon}
-                height={39}
-                width={39}
-                alt={'chain_icon'}
-              />
-            </div>
-            <div className={styles.centerItemView}>
-              <p
-                className={
-                  styles.itemTitle
-                }>{`${chain?.chain_display_name}`}</p>
-              <p className={styles.url}>{chain?.address}</p>
-            </div>
+            <WalletConnectChainRow
+              icon={chain?.icon}
+              chain_name={chain?.chain_name}
+              title={chain?.chain_display_name}
+              subtitle={chain?.address}
+            />
           </div>
         ))}
         <button

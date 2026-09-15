@@ -20,6 +20,9 @@ const config = {
     '<rootDir>/dok-wallet-blockchain-networks/service',
     '<rootDir>/dok-wallet-blockchain-networks/helper',
   ],
+  // services/logger imports @sentry/nextjs, which needs a browser/Node runtime
+  // the tests do not have; jest.setup.js stubs the SDK surface.
+  setupFiles: ['<rootDir>/jest.setup.js'],
   // Mirrors the "paths" map in jsconfig.json.
   moduleNameMapper: {
     '^src/(.*)$': '<rootDir>/src/$1',
@@ -31,6 +34,7 @@ const config = {
     '^data/(.*)$': '<rootDir>/src/data/$1',
     '^pages/(.*)$': '<rootDir>/src/pages/$1',
     '^redux/(.*)$': '<rootDir>/src/redux/$1',
+    '^services/(.*)$': '<rootDir>/src/services/$1',
     '^whitelabel/(.*)$': '<rootDir>/src/whitelabel/$1',
     '^utils/(.*)$': '<rootDir>/src/utils/$1',
     '^myWallet/(.*)$': '<rootDir>/src/myWallet/$1',

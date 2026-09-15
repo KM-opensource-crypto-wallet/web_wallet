@@ -14,7 +14,6 @@ import {sendFunds} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSli
 import {
   getTransferData,
   getTransferDataCustomError,
-  getTransferDataCustomErrorCode,
   getTransferDataFeeSuccess,
   getTransferDataLoading,
   getTransferDataSubmitting,
@@ -32,9 +31,6 @@ import {
   isCustomAddressNotSupportedChain,
   isEVMChain,
   isFeesOptionChain,
-  isSponsoredGasChain,
-  getSponsoredGasTokenSymbol,
-  SPONSOR_EMPTY_CODE,
 } from 'dok-wallet-blockchain-networks/helper';
 import {
   getBalanceForNativeCoin,
@@ -56,11 +52,7 @@ import {
   selectSelectedExchangeChain,
 } from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
 import PageTitle from 'components/PageTitle';
-import {
-  calculateEstimateFee,
-  setCurrentTransferData,
-} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import SponsoredGasToggle from 'components/SponsoredGasToggle';
+import {calculateEstimateFee} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import icons from 'assets/images/icons';
 import ValidatorItem from 'components/ValidatorItem';
 import {getSellCryptoRequestDetails} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
@@ -69,8 +61,11 @@ import dayjs from 'dayjs';
 import DuplicateTransactionModal from 'components/DuplicateTransactionModal';
 import AdvancedFeesSheet from 'components/AdvancedFeesSheet';
 import useAdvancedFees from 'src/hooks/useAdvancedFees';
+import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
+import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 
-const FeeRow = ({label, value}) => (
+// One label/value line of a details or fee box.
+const InfoRow = ({label, value}) => (
   <div className={s.itemView}>
     <p className={s.title}>{label}</p>
     <p className={s.boxBalance}>{value}</p>
@@ -123,6 +118,21 @@ const CommonTransfer = () => {
   const customErrorCode = useSelector(getTransferDataCustomErrorCode);
   const balance = useSelector(getBalanceForNativeCoin);
   const phrase = useSelector(getCurrentWalletPhrase);
+  // Hedera: the recipient's ledger account id; a missing id means the
+  // transfer will auto-create the account (sender pays).
+  const hederaToAddress =
+    transferData?.currentCoin?.chain_name === 'hedera'
+      ? transferData?.toAddress
+      : null;
+  const getHederaChain = useCallback(
+    () => getChain('hedera', phrase),
+    [phrase],
+  );
+  const {status: hederaRecipientStatus, result: hederaRecipient} =
+    useHederaRecipientLookup({
+      address: hederaToAddress,
+      getHederaChain,
+    });
   const failedTransaction = useSelector(getFailedTransaction);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isFetchingFeesAgain, setIsFetchingFeesAgain] = useState(false);
@@ -739,6 +749,14 @@ const CommonTransfer = () => {
     estimatedFee: transferData?.estimatedFee,
   };
 
+  const feeSummaryProps = {
+    isRefreshing: isFetchingFeesAgain,
+    fee: transferData?.transactionFee,
+    feeSymbol: transferData?.currentCoin?.chain_symbol,
+    isEip1559,
+    estimatedFee: transferData?.estimatedFee,
+  };
+
   const currencyRate =
     (isSendFundScreen || isSellCryptoScreen || isStakingScreen
       ? transferData?.currentCoin?.currencyRate
@@ -811,6 +829,26 @@ const CommonTransfer = () => {
               <p className={s.title}>{'Memo'}</p>
               <p className={s.boxBalance}>{transferData?.memo}</p>
             </div>
+          )}
+          {chainName === 'hedera' && (
+            <>
+              {!!transferData?.currentCoin?.accountId && (
+                <InfoRow
+                  label={'Account ID'}
+                  value={transferData.currentCoin.accountId}
+                />
+              )}
+              <InfoRow
+                label={'To account ID'}
+                value={
+                  hederaRecipientStatus === 'resolving'
+                    ? 'Resolving…'
+                    : hederaRecipientStatus === 'error'
+                      ? 'Unavailable'
+                      : hederaRecipient?.accountId || 'New account'
+                }
+              />
+            </>
           )}
         </div>
         <FeeSummaryBox
@@ -1141,6 +1179,13 @@ const CommonTransfer = () => {
               {payGasWithToken
                 ? 'Gas quote expired — fetching a new one.'
                 : 'Quote expired — go back and refresh the quote.'}
+            </p>
+          )}
+          {!isCustomFeesValid && (
+            <p className={s.errorText}>
+              {
+                'Priority fee cannot be higher than max fee — fix it in Advanced Options.'
+              }
             </p>
           )}
           {!isCustomFeesValid && (

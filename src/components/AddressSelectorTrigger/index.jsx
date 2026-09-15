@@ -7,17 +7,20 @@ import {
   getCustomizePublicAddress,
   isBitcoinChain,
 } from 'dok-wallet-blockchain-networks/helper';
+import {formatDeriveAddressBalance} from 'dok-wallet-blockchain-networks/helper/deriveAddressBalance';
 import s from './AddressSelectorTrigger.module.css';
 
 // Closed state of the address picker: a field sized like the SelectInput box
-// it replaces, showing the selected address with its type badge (and balance
-// for bitcoin chains). Clicking it should present an AddressSelectorSheet.
+// it replaces (50px tall with one line; it only grows when a bitcoin balance
+// adds a second line), showing the selected address with its type badge.
+// Clicking it should present an AddressSelectorSheet.
 const AddressSelectorTrigger = ({
   title,
   titleClassName,
   chain_name,
   item,
   symbol,
+  decimal,
   fallbackAddress,
   onPress,
 }) => {
@@ -33,17 +36,25 @@ const AddressSelectorTrigger = ({
         className={s.field}
         onClick={onPress}
         aria-label={address ? `Change address, ${address}` : 'Select address'}>
-        <span className={s.leftRow}>
-          <span className={s.addressText} title={address}>
-            {getCustomizePublicAddress(address) || 'Select address'}
+        {/* Address + type on line 1, balance on line 2: the shortened
+            address is never clipped by its neighbours. */}
+        <span className={s.leftColumn}>
+          <span className={s.leftRow}>
+            <span className={s.addressText} title={address}>
+              {getCustomizePublicAddress(address) || 'Select address'}
+            </span>
+            <AddressTypeBadge chain_name={chain_name} item={item} />
           </span>
-          <AddressTypeBadge chain_name={chain_name} item={item} />
+          {showBalance && (
+            <span className={s.balanceText}>
+              {formatDeriveAddressBalance({
+                balance: item?.balance,
+                decimal,
+                symbol,
+              })}
+            </span>
+          )}
         </span>
-        {showBalance && (
-          <span className={s.balanceText}>
-            {`${item?.balance || 0} ${symbol || ''}`}
-          </span>
-        )}
         <KeyboardArrowDownIcon sx={{fontSize: 22, color: 'var(--gray)'}} />
       </button>
     </div>

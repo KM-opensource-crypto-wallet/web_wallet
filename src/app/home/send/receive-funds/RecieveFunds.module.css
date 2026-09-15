@@ -48,6 +48,13 @@
   /* width: calc(100% * 0.9); */
 }
 
+.hederaNote {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--gray);
+}
+
 .inputContainer {
   display: flex;
   flex-direction: row;

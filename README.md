@@ -90,6 +90,56 @@ NEXTAUTH_SECRET=
 Backups are encrypted client-side with AES-256-GCM (`v2-gcm` format, identical to the
 mobile app) and stored as `wallet_backup_encrypted.json` in the Drive `appDataFolder`.
 
+## Error reporting and logs (Sentry)
+
+Bugfender was replaced by `@sentry/nextjs`, mirroring the mobile app. All
+observability goes through `src/services/logger` (`logger.{debug,info,warn,error}`,
+`captureError(err, {tags, extra, level})`, `addBreadcrumb`, `setUserContext`,
+`setWhiteLabelContext`); never import `@sentry/*` elsewhere. The shared submodule
+imports the same `services/logger` alias, so its API must stay identical to mobile.
+
+- **One Sentry project for every whitelabel.** Each event and log is tagged with
+  `whitelabel` (brand name, lowercased), `white_label_id` and `host` (domain).
+  The browser tags the domain at init and the brand once `wlData` arrives
+  (`AppRouting`); the server tags per request from `app/layout.js` (backend
+  lookup by host), and route handlers / `onRequestError` reuse what the layout
+  learned for that host (`whitelabel/serverWhiteLabel.js`). No host table:
+  adding a whitelabel needs no frontend change.
+- **Captured:** uncaught errors and unhandled rejections, the App Router error
+  boundaries (`app/error.jsx`, `app/global-error.jsx`), server errors, every
+  `console.*` as a Sentry Log (Bugfender parity), structured logs at the same
+  chokepoints as mobile (send, wallet create/import, WalletConnect,
+  `dokapi.failed`, `*/rejected` thunks, toasts). `user.id` is the persisted
+  `masterClientId`. No tracing, replay or profiling.
+- **Redaction:** `scrub.js` removes mnemonics, hex/WIF/xprv keys, sensitive JSON
+  keys and axios bodies in `beforeSend` / `beforeBreadcrumb` / `beforeSendLog`.
+  Call sites must still not pass addresses or amounts (`tx_hash` is allow-listed).
+- **Browser and OS:** detected in the client (`clientDevice.js`, Client Hints
+  with a user-agent fallback) and attached as `browser.*` / `os.*` attributes on
+  logs and as `browser` / `os` contexts on errors. Sentry could infer them from
+  the User-Agent, but only together with IP-address collection, so
+  `sendDefaultPii` stays off.
+- **Delivery:** events are tunnelled through `/monitoring/` on our own origin so
+  ad blockers cannot drop them (`tunnelRoute` in `next.config.js`).
+
+```bash
+# Shared by every whitelabel (client and server).
+NEXT_PUBLIC_SENTRY_DSN=
+# Dev only: send events from `next dev` (default off), show the
+# "Send Sentry test event" row in Settings, print SDK internals.
+SENTRY_ENABLE_IN_DEV=
+SENTRY_DEV_TOOLS=
+SENTRY_DEBUG=
+# Build only: source-map and release upload. Skipped when the token is absent.
+SENTRY_ORG=
+SENTRY_PROJECT=
+SENTRY_AUTH_TOKEN=
+```
+
+To verify the pipeline locally run `SENTRY_ENABLE_IN_DEV=true yarn dev`, open
+Settings → "Send Sentry test event" and check that the issue and the log arrive
+with the whitelabel tags and every secret in the payload shows as `[REDACTED…]`.
+
 ## Getting Started
 
 First, run the development server:

@@ -1,4 +1,11 @@
 import {toast} from 'react-toastify';
+import {addBreadcrumb} from 'services/logger';
+
+const TOAST_BREADCRUMB_LEVEL = {
+  errorToast: 'error',
+  warningToast: 'warning',
+  rpcError: 'error',
+};
 
 export const Msg = ({title, message, onClick}) => {
   return (
@@ -78,6 +85,12 @@ const RpcErrorMsg = ({chain_name, toastId}) => {
 };
 
 export const showToast = ({type, title, message, props, ...options}) => {
+  // Every error/warning the user sees becomes context on the next report.
+  // Title only: messages can carry addresses or amounts.
+  const breadcrumbLevel = TOAST_BREADCRUMB_LEVEL[type];
+  if (breadcrumbLevel) {
+    addBreadcrumb('ui.toast', title || type, undefined, breadcrumbLevel);
+  }
   if (options?.toastId) {
     toast.dismiss(options?.toastId);
   }

@@ -11,13 +11,45 @@ import CopyIcon from '@mui/icons-material/FileCopyOutlined';
 import s from './RecieveFunds.module.css';
 import GoBackButton from 'components/GoBackButton';
 import QRCode from 'react-qr-code';
-import {showToast} from 'utils/toast';
+import {copyToClipboard} from 'utils/copyToClipboard';
 import LightningDropDown from 'src/components/LightningDropDown';
+import {useHederaAccountId} from 'src/hooks/useHederaAccount';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 import {
   getCustomRPCWithData,
   selectAllCustomRpc,
 } from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
+
+// Read-only identifier with a copy button; used for the address and, on
+// Hedera, the ledger account id.
+const IdentifierRow = ({value, onCopy}) => (
+  <Grid container spacing={1} alignItems='center'>
+    <Grid size='grow'>
+      <TextField
+        value={value}
+        className={s.address}
+        fullWidth
+        sx={{
+          '& fieldset': {
+            borderColor: 'var(--whiteOutline) !important',
+          },
+        }}
+        slotProps={{
+          input: {
+            readOnly: true,
+            style: {color: 'var(--sidebarIcon)'},
+          },
+        }}
+      />
+    </Grid>
+    <Grid>
+      <button className={s.copyButton} onClick={onCopy}>
+        <CopyIcon />
+        <span>Copy</span>
+      </button>
+    </Grid>
+  </Grid>
+);
 
 const ReceiveFunds = () => {
   const currentCoin = useSelector(selectCurrentCoin);
@@ -26,6 +58,14 @@ const ReceiveFunds = () => {
     `${currentCoin?.symbol}:${currentCoin.address}`,
   );
   const isLightning = currentCoin?.chain_name === 'bitcoin_lightning';
+  const isHedera = currentCoin?.chain_name === 'hedera';
+  // The Hedera address is always the EVM address; the ledger account id
+  // (`0.0.N`) is assigned by the first deposit and stored on the coin. A live
+  // lookup covers a wallet funded since the last coin refresh.
+  const hederaAccountId = useHederaAccountId({
+    coin: currentCoin,
+    phrase: currentPhrase,
+  });
   const address = useRef('');
   address.current = currentCoin?.address ?? '';
   const [addressState, setAddressState] = useState('');
@@ -38,14 +78,12 @@ const ReceiveFunds = () => {
   }, [currentCoin.address, currentCoin?.symbol]);
 
   const onPressCopyAddress = useCallback(() => {
-    navigator.clipboard.writeText(
-      addressState ? addressState : address.current,
-    );
-    showToast({
-      type: 'successToast',
-      title: 'Address copied',
-    });
+    copyToClipboard(addressState ? addressState : address.current);
   }, [addressState]);
+
+  const onPressCopyAccountId = useCallback(() => {
+    copyToClipboard(hederaAccountId, 'Account ID copied');
+  }, [hederaAccountId]);
 
   const handleLightningDropDownChange = useCallback(
     async currentValue => {
@@ -129,33 +167,29 @@ const ReceiveFunds = () => {
         <Typography variant='h6' className={s.addressTitle}>
           YOUR ADDRESS
         </Typography>
-        <Grid container spacing={1} alignItems='center'>
-          <Grid size='grow'>
-            <TextField
-              value={addressState ? addressState : address.current}
-              className={s.address}
-              // variant="outlined"
-              fullWidth
-              sx={{
-                '& fieldset': {
-                  borderColor: 'var(--whiteOutline) !important',
-                },
-              }}
-              slotProps={{
-                input: {
-                  readOnly: true,
-                  style: {color: 'var(--sidebarIcon)'},
-                },
-              }}
-            />
-          </Grid>
-          <Grid>
-            <button className={s.copyButton} onClick={onPressCopyAddress}>
-              <CopyIcon />
-              <span>Copy</span>
-            </button>
-          </Grid>
-        </Grid>
+        <IdentifierRow
+          value={addressState ? addressState : address.current}
+          onCopy={onPressCopyAddress}
+        />
+        {isHedera && (
+          <>
+            <Typography variant='h6' className={s.addressTitle}>
+              ACCOUNT ID
+            </Typography>
+            {hederaAccountId ? (
+              <IdentifierRow
+                value={hederaAccountId}
+                onCopy={onPressCopyAccountId}
+              />
+            ) : (
+              <p className={s.hederaNote}>
+                Assigned automatically after your first HBAR deposit. Anyone can
+                send HBAR to the address above; the sender covers the one-time
+                account creation fee.
+              </p>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

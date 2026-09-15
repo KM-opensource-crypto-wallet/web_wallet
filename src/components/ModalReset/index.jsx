@@ -6,6 +6,7 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {useDispatch} from 'react-redux';
 import {resetWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {addBreadcrumb} from 'services/logger';
 import styles from './ModalReset.module.css';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
@@ -53,6 +54,9 @@ const ModalReset = ({visible, hideModal, page, link}) => {
   };
 
   const handlerYes = () => {
+    // The masterClientId is discarded with the store, so user attribution
+    // ends here (AppRouting clears it when the selector goes empty).
+    addBreadcrumb('wallet', 'reset', {reason: list});
     if (list === 'Reset Wallet') {
       dispatch(resetWallet());
       hideModal(false);

@@ -1,0 +1,43 @@
+.row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.iconBox {
+  width: 39px;
+  height: 39px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.iconBox img {
+  border-radius: 20px;
+  object-fit: contain;
+}
+
+.centerItemView {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.itemTitle {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--primary);
+}
+
+.subtitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
