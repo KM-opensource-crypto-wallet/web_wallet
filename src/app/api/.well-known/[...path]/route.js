@@ -8,6 +8,8 @@ const DOMAIN_MAPPING = {
   'localhost:3000': 'kimlwallet',
   'dokwallet.app': 'dokwallet',
   'www.dokwallet.app': 'dokwallet',
+  'app.dokwallet.com': 'dokwallet',
+  'www.app.dokwallet.com': 'dokwallet',
   'kimlview.xyz': 'kimlwallet',
   'www.kimlview.xyz': 'kimlwallet',
   'app.kimlwallet.com': 'kimlwallet',

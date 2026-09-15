@@ -1,21 +1,44 @@
 {
   "applinks": {
-      "apps": [],
-      "details": [
-           {
-             "appID": "9HJ6G8C9BU.com.dok.wallet",
-             "paths": ["/home/send/*", "/wallet/*/home/send/*"],
-              "components": [
-                     {
-                         "/": "/home/send/*",
-                         "?": "*"
-                     },
-                     {
-                         "/": "/wallet/*/home/send/*",
-                         "?": "*"
-                     }
-                ]
-           }
-       ]
-   }
+    "apps": [],
+    "details": [
+      {
+        "appID": "9HJ6G8C9BU.com.dok.wallet",
+        "paths": [
+          "/wallet/home/send/*/send-funds",
+          "/wallet/home/send/*/send-funds/",
+          "/wallet/*/home/send/*/send-funds",
+          "/wallet/*/home/send/*/send-funds/",
+          "/home/send/send-funds",
+          "/home/send/send-funds/"
+        ],
+        "components": [
+          {
+            "/": "/wallet/home/send/*/send-funds",
+            "?": "*"
+          },
+          {
+            "/": "/wallet/home/send/*/send-funds/",
+            "?": "*"
+          },
+          {
+            "/": "/wallet/*/home/send/*/send-funds",
+            "?": "*"
+          },
+          {
+            "/": "/wallet/*/home/send/*/send-funds/",
+            "?": "*"
+          },
+          {
+            "/": "/home/send/send-funds",
+            "?": "*"
+          },
+          {
+            "/": "/home/send/send-funds/",
+            "?": "*"
+          }
+        ]
+      }
+    ]
+  }
 }

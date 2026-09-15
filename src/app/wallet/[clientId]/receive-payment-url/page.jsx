@@ -61,12 +61,14 @@ const ReceivePaymentUrl = () => {
         onSubmit={() => {}}>
         {({handleBlur, values, errors, setFieldValue}) => {
           // Wallet-agnostic on purpose: the payer opens this on their own
-          // wallet, and the legacy forwarder resolves the coin from the slug.
+          // wallet, and the /wallet/home forwarder resolves the coin from the
+          // slug in the path.
+          const selectedCoin = values?.coin?.options;
           const url = `${getDesktopWalletUrl()}${paymentLinkPath(
-            getCoinSlug(values?.coin?.options),
-          )}?address=${values?.coin?.options?.walletAddress}&amount=${
-            values?.amount
-          }`;
+            getCoinSlug(selectedCoin),
+          )}?address=${encodeURIComponent(
+            selectedCoin?.walletAddress ?? '',
+          )}&amount=${encodeURIComponent(values?.amount ?? '')}`;
           return (
             <>
               <p className={styles.listTitle}>{'Select Crypto'}</p>
@@ -124,7 +126,6 @@ const ReceivePaymentUrl = () => {
                     const tempValues = validateNumberInInput(e.target.value, 2);
                     setFieldValue('currencyAmount', tempValues);
                     dispatch(setPaymentUrlCurrencyAmount(tempValues));
-                    console.log('valoues', values?.coin);
                     const tempAmount = new BigNumber(tempValues)
                       .dividedBy(
                         new BigNumber(values?.coin?.options?.currencyRate),

@@ -76,10 +76,12 @@ export const coinRoutes = {
     `${coinBase(clientId, coinSlug)}/confirm-staking`,
 };
 
-// The link handed to a payer. It deliberately carries no wallet id: the
-// payer opens it on their own wallet, and the legacy forwarder
-// (components/LegacyRouteRedirect) resolves it to that wallet's coin page.
-export const paymentLinkPath = coinSlug => `/home/send/${coinSlug}/send-funds`;
+// The link handed to a payer. It deliberately carries no wallet id: the payer
+// opens it on their own wallet, and the wallet-agnostic forwarder
+// (app/wallet/home/[[...segments]] -> components/LegacyRouteRedirect) resolves
+// it to that wallet's coin page.
+export const paymentLinkPath = coinSlug =>
+  `/wallet/home/send/${coinSlug}/send-funds`;
 
 // Route names consumed by the shared submodule (walletsSlice refreshCoinData)
 // to decide what to refresh after a send. Anything else returns the pathname.

@@ -103,7 +103,7 @@ describe('coinRoutes', () => {
 describe('paymentLinkPath', () => {
   it('is wallet-agnostic so a payer can open it on their own wallet', () => {
     expect(paymentLinkPath('ethereum-eth')).toBe(
-      '/home/send/ethereum-eth/send-funds',
+      '/wallet/home/send/ethereum-eth/send-funds',
     );
   });
 });

@@ -1,4 +1,4 @@
-import {findCoinByCurrency, getCoinSlug} from 'utils/common';
+import {findCoinByCurrency, findCoinBySlug, getCoinSlug} from 'utils/common';
 import {coinRoutes, stripTrailingSlash, walletRoutes} from 'utils/routes';
 
 // Maps every pre-/wallet/{clientId} URL (and the wallet-agnostic payment link)
@@ -99,7 +99,6 @@ const resolveHome = ({
       if (!coin) {
         return {
           path: walletRoutes.home(clientId),
-          query: strippedQuery,
           toast: CURRENCY_NOT_FOUND_TOAST,
         };
       }
@@ -115,10 +114,17 @@ const resolveHome = ({
         : home;
     }
 
-    // New wallet-agnostic shape: /home/send/<slug>/<rest>. The coin guard
-    // layout validates the slug once we land there; an unknown page under
-    // the slug would 404, so it falls back to the coin's Send screen.
+    // New wallet-agnostic shape: /home/send/<slug>/<rest>. An unknown page
+    // under the slug would 404, so it falls back to the coin's Send screen.
     const [slug, ...slugRest] = rest;
+    // The coin guard layout would bounce an unknown slug to Home silently.
+    // Payment links land here, so say why - same as the `currency=` branch.
+    if (coins?.length && !findCoinBySlug(coins, slug)) {
+      return {
+        path: walletRoutes.home(clientId),
+        toast: CURRENCY_NOT_FOUND_TOAST,
+      };
+    }
     const knownRest = !slugRest.length || COIN_PAGE_SEGMENTS.has(slugRest[0]);
     return {
       path: joinRest(
@@ -166,8 +172,15 @@ export const resolveLegacyRoute = ({
     return null;
   }
 
-  if (path === '/home' || path.startsWith('/home/')) {
-    const segments = path.split('/').slice(2).filter(Boolean);
+  // The payment link is namespaced under /wallet but carries no wallet id, so
+  // /wallet/home/... is the same wallet-agnostic shape as /home/... .
+  const walletAgnostic =
+    path === '/wallet/home' || path.startsWith('/wallet/home/')
+      ? path.slice('/wallet'.length)
+      : path;
+
+  if (walletAgnostic === '/home' || walletAgnostic.startsWith('/home/')) {
+    const segments = walletAgnostic.split('/').slice(2).filter(Boolean);
     return resolveHome({
       segments,
       searchParams,

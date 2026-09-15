@@ -155,7 +155,6 @@ describe('resolveLegacyRoute: payment links', () => {
       resolve('/home/send/send-funds', 'currency=tron:TRX&address=T1'),
     ).toEqual({
       path: '/wallet/w1/home',
-      query: 'address=T1',
       toast: 'Currency not found in the selected wallet',
     });
   });
@@ -167,10 +166,76 @@ describe('resolveLegacyRoute: payment links', () => {
       path: '/wallet/w1/home/send/ethereum-usdt/send-funds',
       query: 'address=0xF8&amount=1',
     });
-    expect(resolve('/home/send/tron-trx/staking-list')).toEqual({
-      path: '/wallet/w1/home/send/tron-trx/staking-list',
+    expect(resolve('/home/send/ethereum-usdt/staking-list')).toEqual({
+      path: '/wallet/w1/home/send/ethereum-usdt/staking-list',
       query: '',
     });
+  });
+
+  it('forwards the /wallet/home/{slug} payment link to the active wallet', () => {
+    expect(
+      resolve(
+        '/wallet/home/send/ethereum-usdt/send-funds',
+        'address=0xF8&amount=0.01',
+      ),
+    ).toEqual({
+      path: '/wallet/w1/home/send/ethereum-usdt/send-funds',
+      query: 'address=0xF8&amount=0.01',
+    });
+  });
+
+  it('absorbs the trailing slash next.config adds to the payment link', () => {
+    expect(
+      resolve(
+        '/wallet/home/send/ethereum-eth/send-funds/',
+        'address=0xF8&amount=0.01',
+      ),
+    ).toEqual({
+      path: '/wallet/w1/home/send/ethereum-eth/send-funds',
+      query: 'address=0xF8&amount=0.01',
+    });
+  });
+
+  it('survives the post-login replay of a /wallet/home payment link', () => {
+    expect(
+      resolve(
+        '/wallet/home/send/ethereum-eth/send-funds/',
+        'address=A&amount=0.01&',
+      ),
+    ).toEqual({
+      path: '/wallet/w1/home/send/ethereum-eth/send-funds',
+      query: 'address=A&amount=0.01',
+    });
+  });
+
+  it('sends a slug the wallet does not hold to wallet home with a toast', () => {
+    expect(
+      resolve('/wallet/home/send/tron-trx/send-funds', 'address=T1&amount=1'),
+    ).toEqual({
+      path: '/wallet/w1/home',
+      toast: 'Currency not found in the selected wallet',
+    });
+    expect(resolve('/home/send/tron-trx/staking-list')).toEqual({
+      path: '/wallet/w1/home',
+      toast: 'Currency not found in the selected wallet',
+    });
+  });
+
+  it('still forwards a slug when the wallet has not loaded its coins yet', () => {
+    expect(
+      resolve('/wallet/home/send/tron-trx/send-funds', 'amount=1', {
+        coins: [],
+      }),
+    ).toEqual({
+      path: '/wallet/w1/home/send/tron-trx/send-funds',
+      query: 'amount=1',
+    });
+  });
+
+  it('leaves /wallet/{clientId}/... alone (not a legacy route)', () => {
+    expect(
+      resolve('/wallet/w1/home/send/ethereum-eth/send-funds', 'amount=1'),
+    ).toBeNull();
   });
 });
 
