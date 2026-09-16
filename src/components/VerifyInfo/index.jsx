@@ -1,4 +1,6 @@
+import {walletRoutes} from 'utils/routes';
 import React, {useState, useContext} from 'react';
+import {useSelector} from 'react-redux';
 
 const icons = require(`assets/images/verify`).default;
 // import {ThemeContext} from '../../../ThemeContext';
@@ -11,6 +13,7 @@ import Box from '@mui/material/Box';
 import CryptoCheckbox from 'components/CheckBox';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
+import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 
 const style = {
   position: 'absolute',
@@ -29,6 +32,7 @@ const style = {
 export const VerifyInfoModal = ({visible, onClose}) => {
   const [infoCheck, setInfoCheck] = useState(false);
   const router = useRouter();
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
 
   return (
     <div>
@@ -86,7 +90,7 @@ export const VerifyInfoModal = ({visible, onClose}) => {
                 }}
                 onClick={() => {
                   onClose();
-                  router.push('/verify/verify-create');
+                  router.push(walletRoutes.verifyCreate(currentWalletClientId));
                 }}>
                 Verify seed phrase
               </button>
@@ -98,7 +102,7 @@ export const VerifyInfoModal = ({visible, onClose}) => {
                   color: infoCheck ? 'var(--background)' : '#708090',
                 }}
                 onClick={() => {
-                  router.push('/home');
+                  router.push(walletRoutes.home(currentWalletClientId));
                   onClose();
                 }}>
                 Do it later

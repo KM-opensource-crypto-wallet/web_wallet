@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import React, {useEffect, useCallback, useRef} from 'react';
 import {Formik} from 'formik';
 import {validationSchemaOTC} from 'utils/validationSchema';
@@ -10,8 +11,9 @@ import {useState} from 'react';
 import DokCountryPicker from 'components/DokCountryPicker';
 import {useRouter} from 'next/navigation';
 import GoBackButton from 'components/GoBackButton';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {setOTCData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
+import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 
 const OTCScreen = () => {
   const emailInputRef = useRef(null);
@@ -22,13 +24,14 @@ const OTCScreen = () => {
   const [countries, setCountries] = useState([]);
   const router = useRouter();
   const dispatch = useDispatch();
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
 
   const onSubmit = useCallback(
     values => {
-      router.push('/buy-crypto/otc2');
+      router.push(walletRoutes.buyCryptoOtc2(currentWalletClientId));
       dispatch(setOTCData(values));
     },
-    [dispatch, router],
+    [dispatch, router, currentWalletClientId],
   );
   ////////////////////////////
   useEffect(() => {

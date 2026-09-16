@@ -1,8 +1,13 @@
+import {walletRoutes} from 'utils/routes';
+
 const icons = require(`assets/images/sidebarIcons`).default;
 
-const sidebarList = [
+// Wallet-scoped entries need the active wallet's id in the URL, so the list
+// is built per-render rather than exported as static data.
+const sidebarList = currentWalletClientId => [
   {
-    href: '/home',
+    key: 'home',
+    href: walletRoutes.home(currentWalletClientId),
     item: t => (
       <>
         {icons.home} <span>{t('home')}</span>
@@ -10,7 +15,8 @@ const sidebarList = [
     ),
   },
   {
-    href: '/buy-crypto',
+    key: 'buyCrypto',
+    href: walletRoutes.buyCrypto(currentWalletClientId),
     item: t => (
       <>
         {icons.buy}
@@ -19,7 +25,8 @@ const sidebarList = [
     ),
   },
   {
-    href: '/swap',
+    key: 'swap',
+    href: walletRoutes.swap(currentWalletClientId),
     item: t => (
       <>
         {icons.exchange}
@@ -28,7 +35,8 @@ const sidebarList = [
     ),
   },
   {
-    href: '/sell-crypto',
+    key: 'sellCrypto',
+    href: walletRoutes.sellCrypto(currentWalletClientId),
     item: t => (
       <>
         {icons.buy}
@@ -37,6 +45,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'wallets',
     href: '/wallets',
     item: t => (
       <>
@@ -46,7 +55,8 @@ const sidebarList = [
     ),
   },
   {
-    href: '/wallet-connect',
+    key: 'walletConnect',
+    href: walletRoutes.walletConnect(currentWalletClientId),
     item: t => (
       <>
         {icons.walletConnect}
@@ -55,6 +65,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'about',
     href: '/about',
     item: t => (
       <>
@@ -64,6 +75,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'contactUs',
     href: '/contact-us',
     item: t => (
       <>
@@ -73,6 +85,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'settings',
     href: '/settings',
     item: t => (
       <>
@@ -82,7 +95,8 @@ const sidebarList = [
     ),
   },
   {
-    href: '/receive-payment-url',
+    key: 'receivePaymentUrl',
+    href: walletRoutes.receivePaymentUrl(currentWalletClientId),
     item: t => (
       <>
         {icons.url}
@@ -91,6 +105,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'resetWallet',
     href: '/reset-wallet',
     item: t => (
       <>
@@ -100,6 +115,7 @@ const sidebarList = [
     ),
   },
   {
+    key: 'logout',
     href: '/logout',
     item: t => (
       <>

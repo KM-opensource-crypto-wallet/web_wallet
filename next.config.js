@@ -1,5 +1,4 @@
 /** @type {import('next').NextConfig} */
-const CopyPlugin = require('copy-webpack-plugin');
 const {version, name} = require('./package.json');
 const createNextIntlPlugin = require('next-intl/plugin');
 const path = require('path');
@@ -11,7 +10,10 @@ loadEnvConfig(projectDir);
 
 const withNextIntl = createNextIntlPlugin();
 const nextConfig = {
-  serverExternalPackages: ['bitcore-lib'],
+  // Loaded with Node's own require() instead of being bundled. sodium-native
+  // is @stellar/stellar-base's optional native signer; bundling it drags in
+  // require-addon's dynamic require() and a "critical dependency" warning.
+  serverExternalPackages: ['bitcore-lib', 'sodium-native'],
   images: {
     remotePatterns: [
       {
@@ -38,7 +40,13 @@ const nextConfig = {
   },
   trailingSlash: true,
   reactStrictMode: false,
-  webpack: (config, {isServer, dev}) => {
+  // Next 16 bundles with Turbopack by default and refuses `next build` when a
+  // custom webpack() is present, so the dev/build scripts pass `--webpack`.
+  // Moving off webpack means translating this block: the alias map below to
+  // `turbopack.resolveAlias` (with the `browser` condition for the fs /
+  // sodium-native stubs), the svgr rule to `turbopack.rules`, and dropping
+  // `externals` (optional deps are left unresolved by Turbopack anyway).
+  webpack: (config, {isServer}) => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
     config.resolve.alias = {
       ...config.resolve.alias,
@@ -47,36 +55,20 @@ const nextConfig = {
       http2: path.resolve('./node_modules/http-browserify'),
       http: path.resolve('./node_modules/http-browserify'),
       dns: path.resolve('./node_modules/@i2labs/dns'),
-      fs: path.resolve('./node_modules/bare-fs'),
     };
-    if (isServer) {
-      if (!dev) {
-        config.plugins.push(
-          new CopyPlugin({
-            patterns: [
-              {
-                context: '.next/server',
-                to: './chunks/[name][ext]',
-                from: '../../node_modules/@xmtp/user-preferences-bindings-wasm/dist/node',
-                filter: resourcePath => resourcePath.endsWith('.wasm'),
-              },
-            ],
-          }),
-        );
-      } else {
-        config.plugins.push(
-          new CopyPlugin({
-            patterns: [
-              {
-                context: '.next/server',
-                to: './vendor-chunks/[name][ext]',
-                from: '../../node_modules/@xmtp/user-preferences-bindings-wasm/dist/node',
-                filter: resourcePath => resourcePath.endsWith('.wasm'),
-              },
-            ],
-          }),
-        );
-      }
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        // Node-only modules that browser code never executes but still
+        // references statically (libsodium's `if (isNode) require('fs')`,
+        // stellar-base's optional `require('sodium-native')`). `false`
+        // gives webpack an empty module, which is what stellar-base's own
+        // "browser" field asks for. The former bare-fs alias could never run
+        // in a browser (it needs the Bare runtime global) and pulled in
+        // bare-os's dynamic native require().
+        fs: false,
+        'sodium-native': false,
+      };
     }
     config.module.rules.push({
       test: /\.svg$/,

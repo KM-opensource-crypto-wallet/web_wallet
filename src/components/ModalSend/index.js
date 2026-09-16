@@ -9,11 +9,13 @@
 // const WIDTH = Dimensions.get('window').width;
 // const HEIGHT = Dimensions.get('window').height;
 
+import {walletRoutes} from 'utils/routes';
 import {Box, Modal} from '@mui/material';
 import s from './ModaSend.module.css';
-import {useRouter} from 'next/navigation';
+import {useParams, useRouter} from 'next/navigation';
 
 const ModalSend = ({visible, hideModal, currentCoin}) => {
+  const {clientId} = useParams();
   // const {theme} = useContext(ThemeContext);
   // const styles = myStyles(theme);
   // const currentCoin = useSelector(selectCurrentCoin);
@@ -57,12 +59,12 @@ const ModalSend = ({visible, hideModal, currentCoin}) => {
           <div className={s.listbtn}>
             <button
               className={`${s.button} ${s.shadow}`}
-              onClick={() => router.push('/buy-crypto')}>
+              onClick={() => router.push(walletRoutes.buyCrypto(clientId))}>
               <p className={s.btnBuy}>Buy {currentCoin?.title}</p>
             </button>
             <button
               className={`${s.button} ${s.shadow}`}
-              onClick={() => router.push('/swap')}>
+              onClick={() => router.push(walletRoutes.swap(clientId))}>
               <p className={s.btnEx}>Exchange</p>
             </button>
           </div>

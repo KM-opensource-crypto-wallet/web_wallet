@@ -73,8 +73,21 @@ export const getTermsUrl = () => {
   return whiteLabelInfo.termsUrl || 'https://dokwallet.com/terms.html';
 };
 
+// WalletConnect compares metadata.url with the page origin and, when they
+// differ, warns and overrides it anyway. Every host other than the hardcoded
+// default (whitelabels, staging, localhost) would warn on each session, so
+// the origin is used directly. A copy is returned: `whiteLabelInfo` is the
+// backend payload and must not be mutated. SSR keeps the configured value.
 export const getWalletConnectDetails = () => {
-  return whiteLabelInfo?.walletConnect || dokwalletWalletConnectDetails;
+  const details =
+    whiteLabelInfo?.walletConnect || dokwalletWalletConnectDetails;
+  if (typeof window === 'undefined' || !details?.metadata) {
+    return details;
+  }
+  return {
+    ...details,
+    metadata: {...details.metadata, url: window.location.origin},
+  };
 };
 
 export const getShownOTC = () => {

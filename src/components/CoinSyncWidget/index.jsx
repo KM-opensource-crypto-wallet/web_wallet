@@ -1,4 +1,5 @@
 'use client';
+import {stripTrailingSlash, walletRoutes} from 'utils/routes';
 import React, {memo, useCallback} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useRouter, usePathname} from 'next/navigation';
@@ -9,6 +10,7 @@ import {
   selectWidgetData,
 } from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSelectors';
 import {syncAllCoins} from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSlice';
+import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import styles from './CoinSyncWidget.module.css';
 
 const CoinSyncWidget = () => {
@@ -17,12 +19,18 @@ const CoinSyncWidget = () => {
 
   const shouldShowWidget = useSelector(selectShouldShowWidget);
   const widgetData = useSelector(selectWidgetData);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
 
   const handlePress = useCallback(() => {
-    router.push('/home/coin-sync');
-  }, [router]);
+    router.push(walletRoutes.coinSync(currentWalletClientId));
+  }, [router, currentWalletClientId]);
 
-  if (!shouldShowWidget || pathname === '/home/coin-sync') {
+  // Hidden on the coin-sync screen itself (pathname carries a trailing slash).
+  if (
+    !shouldShowWidget ||
+    stripTrailingSlash(pathname) ===
+      walletRoutes.coinSync(currentWalletClientId)
+  ) {
     return null;
   }
 

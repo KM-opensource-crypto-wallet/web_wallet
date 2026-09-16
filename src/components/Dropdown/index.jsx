@@ -106,7 +106,11 @@ const Dropdown = ({
             },
           }}
           PopperComponent={CustomPopper}
-          renderOption={(props, option) => <li {...props}>{option.option}</li>}
+          renderOption={({key, ...optionProps}, option) => (
+            <li key={key} {...optionProps}>
+              {option.option}
+            </li>
+          )}
           ListboxProps={{
             sx: {
               width: '100%',

@@ -1,4 +1,5 @@
 'use client';
+import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import React from 'react';
 import {currencySymbol} from 'data/currency';
 import Icons from '../../assets/images/icons';
@@ -21,6 +22,7 @@ const StakingItem = ({
 }) => {
   const dispatch = useDispatch();
   const router = useRouter();
+  const routes = useAppRoutes();
   const currentCoin = useSelector(selectCurrentCoin);
   const localCurrency = useSelector(getLocalCurrency);
 
@@ -49,7 +51,7 @@ const StakingItem = ({
             },
           };
           dispatch(setRouteStateData(payload));
-          router.push('/home/withdraw-staking');
+          router.push(routes.coin.withdrawStaking());
         } else if (isEvmChain) {
           const payload = {
             withdrawStaking: {
@@ -60,7 +62,7 @@ const StakingItem = ({
             },
           };
           dispatch(setRouteStateData(payload));
-          router.push('/home/withdraw-staking');
+          router.push(routes.coin.withdrawStaking());
         }
       }}>
       <div

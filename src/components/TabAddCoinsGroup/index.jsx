@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import styles from './TabAddCoinsGroup.module.css';
+import {reportThunkRejection} from 'utils/thunkErrors';
 import {TextField, IconButton} from '@mui/material';
 import {Search as SearchIcon, Clear as ClearIcon} from '@mui/icons-material';
 import {
@@ -80,7 +81,9 @@ const TabAddCoinsGroup = () => {
         ...queryPayload.current,
         page: queryPayload.current.page + 1,
       };
-      await dispatch(fetchGroupCoins(queryPayload.current)).unwrap();
+      await dispatch(fetchGroupCoins(queryPayload.current))
+        .unwrap()
+        .catch(reportThunkRejection({area: 'coins', op: 'fetch_groups'}));
       isFetching.current = false;
     } else if (
       !isSearchFetching.current &&
@@ -93,9 +96,9 @@ const TabAddCoinsGroup = () => {
         page: searchQueryPayload.current.page + 1,
         search: searchQuery.trim(),
       };
-      await dispatch(
-        fetchAllSearchCoinsGroup(searchQueryPayload.current),
-      ).unwrap();
+      await dispatch(fetchAllSearchCoinsGroup(searchQueryPayload.current))
+        .unwrap()
+        .catch(reportThunkRejection({area: 'coins', op: 'search_groups'}));
       isSearchFetching.current = false;
     }
   }, [dispatch, isAvailable, isSearchGroupCoinsAvailable, searchQuery]);

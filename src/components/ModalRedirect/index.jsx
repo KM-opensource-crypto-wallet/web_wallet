@@ -24,7 +24,9 @@ const style = {
 const ModalRedirect = ({visible, handleClose, title, message, onOkay}) => {
   const [counter, setCounter] = React.useState(5);
   const counterRef = useRef(5);
-  counterRef.current = counter;
+  useEffect(() => {
+    counterRef.current = counter;
+  }, [counter]);
   useEffect(() => {
     const interval = setInterval(() => {
       setCounter(prevState => prevState - 1);

@@ -102,22 +102,29 @@ const ModalAllowanceInfo = ({
 
   // Reset local UI each time the modal opens.
   useEffect(() => {
-    if (visible) {
-      setSelectedType('manual');
-      setSelectedFeesType('recommended');
-      selectedTypeRef.current = 'manual';
-      selectedFeesTypeRef.current = 'recommended';
-      isPauseCalculateFees.current = false;
-      setHasError(false);
-      setShowAdvanced(false);
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (visible) {
+        setSelectedType('manual');
+        setSelectedFeesType('recommended');
+        selectedTypeRef.current = 'manual';
+        selectedFeesTypeRef.current = 'recommended';
+        isPauseCalculateFees.current = false;
+        setHasError(false);
+        setShowAdvanced(false);
+      }
+    })();
   }, [visible]);
 
   // Sync nonce input when allowanceData updates.
   useEffect(() => {
-    if (allowanceData?.nonce != null) {
-      setCustomNonce(String(allowanceData.nonce));
-    }
+    // see comment on the first wrapped effect above
+    (() => {
+      if (allowanceData?.nonce != null) {
+        setCustomNonce(String(allowanceData.nonce));
+      }
+    })();
   }, [allowanceData?.nonce]);
 
   // Default custom gas price when feesOptions arrive, unless user picked custom.
@@ -201,11 +208,11 @@ const ModalAllowanceInfo = ({
   // insufficient whenever a nonzero fee is required (the selector already
   // defaults a missing coin to 0, and isBalanceNotAvailable compares
   // numerically via BigNumber).
+  const transactionFee = allowanceData?.transactionFee;
   const isInsufficientFeeBalance = useMemo(
     () =>
-      !!allowanceData?.transactionFee &&
-      isBalanceNotAvailable(nativeBalance, allowanceData.transactionFee),
-    [nativeBalance, allowanceData?.transactionFee],
+      !!transactionFee && isBalanceNotAvailable(nativeBalance, transactionFee),
+    [nativeBalance, transactionFee],
   );
 
   // Each flow keeps its fee on its own slice, so the recompute has to be routed

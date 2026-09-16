@@ -8,6 +8,8 @@
 export const HOST_TO_BRAND = {
   'dokwallet.app': 'dokwallet',
   'www.dokwallet.app': 'dokwallet',
+  'app.dokwallet.com': 'dokwallet',
+  'www.app.dokwallet.com': 'dokwallet',
   'kimlview.xyz': 'kimlwallet',
   'www.kimlview.xyz': 'kimlwallet',
   'app.kimlwallet.com': 'kimlwallet',

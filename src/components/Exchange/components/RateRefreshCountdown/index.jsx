@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import s from './RateRefreshCountdown.module.css';
 
 export const QUOTE_REFRESH_INTERVAL_MS = 60 * 1000;
@@ -11,8 +11,13 @@ export const QUOTE_REFRESH_INTERVAL_MS = 60 * 1000;
 // timer.
 const RateRefreshCountdown = ({fetchedAt, paused = false, onRefresh}) => {
   const [secondsLeft, setSecondsLeft] = useState(null);
+  // Latest onRefresh for the interval closure and the click handler. Mirrored
+  // post-commit (before any effect or event can read it) rather than during
+  // render.
   const onRefreshRef = useRef(onRefresh);
-  onRefreshRef.current = onRefresh;
+  useLayoutEffect(() => {
+    onRefreshRef.current = onRefresh;
+  }, [onRefresh]);
   // fetchedAt value the expiry callback already fired for — keeps a stale
   // quote (e.g. after a failed refresh) from re-firing onRefresh every tick.
   const expiredForRef = useRef(null);

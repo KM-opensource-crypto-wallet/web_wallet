@@ -40,6 +40,9 @@ const WalletConnectItem = ({onClose}) => {
       try {
         setDeletingSession(prevState => [...prevState, sessionId]);
         const walletConnect = getWalletConnect();
+        if (!walletConnect) {
+          throw new Error('WalletConnect is not initialised yet');
+        }
         await walletConnect.disconnectSession({
           topic,
           reason: getSdkError('USER_DISCONNECTED'),

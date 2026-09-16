@@ -1,3 +1,4 @@
+import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import React, {useState, useRef, useCallback, useMemo} from 'react';
 import {currencySymbol} from 'data/currency';
 import s from './Transactions.module.css';
@@ -101,9 +102,11 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
   const dispatch = useDispatch();
   const pendingTransferData = useSelector(getPendingTransferData);
   const selectedTransactionRef = useRef(null);
-  const isCancelTransactionRef = useRef(null);
   const router = useRouter();
+  const routes = useAppRoutes();
   const [showCancelModal, setShowCancelModal] = useState(false);
+  // Rendered (passed to the modal), so it is state rather than a ref.
+  const [isCancelTransaction, setIsCancelTransaction] = useState(null);
 
   const isTransactionNotSupported = useMemo(
     () =>
@@ -132,14 +135,14 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
   const onPressSpeedUp = useCallback(
     tx => {
       calculatePendingTransaction(tx);
-      isCancelTransactionRef.current = false;
+      setIsCancelTransaction(false);
     },
     [calculatePendingTransaction],
   );
   const onPressCancel = useCallback(
     tx => {
       calculatePendingTransaction(tx);
-      isCancelTransactionRef.current = true;
+      setIsCancelTransaction(true);
     },
     [calculatePendingTransaction],
   );
@@ -155,11 +158,11 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
         data: tx?.extraPendingTransactionData?.data,
         pendingTxHash: tx?.extraPendingTransactionData?.txHash,
         nonce: tx?.extraPendingTransactionData?.nonce,
-        isCancelTransaction: isCancelTransactionRef.current,
+        isCancelTransaction,
         router,
       }),
     );
-  }, [dispatch, router]);
+  }, [dispatch, router, isCancelTransaction]);
 
   return (
     <>
@@ -183,9 +186,7 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
                   className={s.section}
                   onClick={() => {
                     if (item?.link) {
-                      router.push(
-                        `/home/transactions/${encodeURIComponent(item.link)}`,
-                      );
+                      router.push(routes.coin.transactionDetails(item.link));
                     }
                   }}
                   key={index}>
@@ -260,7 +261,7 @@ const Transactions = ({renderList, currentCoin, localCurrency}) => {
         pendingTransferData={pendingTransferData}
         currentCoin={currentCoin}
         localCurrency={localCurrency}
-        isCancelTransaction={isCancelTransactionRef.current}
+        isCancelTransaction={isCancelTransaction}
       />
     </>
   );

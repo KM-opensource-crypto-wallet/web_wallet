@@ -1,3 +1,5 @@
+import {walletRoutes} from 'utils/routes';
+import {skipLockOnNextLoad} from 'utils/lockScreen';
 import React, {
   useState,
   useEffect,
@@ -91,7 +93,9 @@ const CreateOrUpdateWallet = () => {
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const allWalletName = useSelector(selectAllWalletName, shallowEqual);
   const allWallets = useSelector(selectAllWallets);
-  const finalAllWallets = useRef(
+  // The other wallets' names, captured once at mount (the schema below is
+  // rebuilt every render, so this must not be a ref read during render).
+  const [finalAllWallets] = useState(() =>
     allWalletName.filter(subItem => subItem !== walletName),
   );
 
@@ -184,13 +188,13 @@ const CreateOrUpdateWallet = () => {
 
   const onPressYes = useCallback(() => {
     setShowDeleteModal(false);
-    router.push('/home');
+    router.push(walletRoutes.home(currentWalletClientId));
     setTimeout(() => {
       if (walletClientId) {
         dispatch(deleteWallet(walletClientId));
       }
     }, 1000);
-  }, [dispatch, router, walletClientId]);
+  }, [dispatch, router, walletClientId, currentWalletClientId]);
 
   const onPressNo = useCallback(() => {
     setShowDeleteModal(false);
@@ -219,7 +223,7 @@ const CreateOrUpdateWallet = () => {
           toast.success('Wallet updated successfully');
         } else {
           dispatch(resetPaymentUrl());
-          await dispatch(
+          const created = await dispatch(
             createWallet({
               walletName: values.name || 'Main Wallet',
               phrase,
@@ -227,6 +231,10 @@ const CreateOrUpdateWallet = () => {
               chain_name,
             }),
           ).unwrap();
+          // The reducer makes the new wallet current, but this closure still
+          // holds the previous id; land on the wallet that was just created.
+          const newWalletClientId =
+            created?.newStoreWallet?.clientId || currentWalletClientId;
           const redirectRoute = searchParams?.get('redirectRoute');
           let searchParamsString = '';
           for (const key of searchParams.keys()) {
@@ -234,12 +242,18 @@ const CreateOrUpdateWallet = () => {
               searchParamsString += `${key}=${searchParams.get(key)}&`;
             }
           }
+          if (redirectRoute) {
+            // Same as login: an unknown deep link reloads into the 404 page.
+            skipLockOnNextLoad({ttlMs: 10000});
+          }
           router.replace(
             redirectRoute
               ? `${redirectRoute}${
                   searchParamsString ? '?' + searchParamsString : ''
                 }`
-              : `/home${searchParamsString ? '?' + searchParamsString : ''}`,
+              : `${walletRoutes.home(newWalletClientId)}${
+                  searchParamsString ? '?' + searchParamsString : ''
+                }`,
           );
           dispatch(refreshCoins());
           setTimeout(() => {
@@ -265,7 +279,7 @@ const CreateOrUpdateWallet = () => {
   const validationSchema = Yup.object().shape({
     name: Yup.string()
       .required('* Name cannot be empty')
-      .notOneOf(finalAllWallets.current, 'The name of wallet already existed'),
+      .notOneOf(finalAllWallets, 'The name of wallet already existed'),
   });
 
   return (
@@ -334,7 +348,9 @@ const CreateOrUpdateWallet = () => {
                           key={index}
                           onClick={() => {
                             if (item.title === 'Manual Backup') {
-                              router.push('/verify/verify-create');
+                              router.push(
+                                walletRoutes.verifyCreate(walletClientId),
+                              );
                               // navigation.push("VerifyLogin");
                             }
                           }}>
@@ -367,9 +383,7 @@ const CreateOrUpdateWallet = () => {
                         className={s.item}
                         style={{marginTop: 20}}
                         onClick={() =>
-                          router.push(
-                            `/wallets/hide-wallet?walletClientId=${walletClientId}`,
-                          )
+                          router.push(walletRoutes.hideWallet(walletClientId))
                         }>
                         <div className={s.itemIcon}>
                           <VisibilityOffOutlined
@@ -396,9 +410,7 @@ const CreateOrUpdateWallet = () => {
                         style={{opacity: isScanRowEnabled ? 1 : 0.5}}
                         disabled={!isScanRowEnabled}
                         onClick={() =>
-                          router.push(
-                            `/home/coin-sync?walletClientId=${scanTargetClientId}`,
-                          )
+                          router.push(walletRoutes.coinSync(scanTargetClientId))
                         }>
                         <div
                           className={`${s.scanIconBubble} ${

@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import React, {
   useState,
   useEffect,
@@ -36,7 +37,10 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {useDispatch, useSelector} from 'react-redux';
 import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
-import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  selectAllWallets,
+  selectCurrentWalletClientId,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import GoBackButton from 'components/GoBackButton';
 import {getAppSubTitle} from 'whitelabel/whiteLabelInfo';
 import {ThemeContext} from 'theme/ThemeContext';
@@ -52,6 +56,7 @@ const VerifyLoginScreen = () => {
   const dispatch = useDispatch();
   //   const [wrong, setWrong] = useState(false);
   const storePassword = useSelector(getUserPassword);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const buttonRef = useRef();
   //   const fingerprint = useSelector(isFingerprint);
   //   const isFinger = useSelector(getFingerprintAuth);
@@ -120,13 +125,15 @@ const VerifyLoginScreen = () => {
   const onClickLogin = useCallback(
     values => {
       if (storePassword === values.password) {
-        router.push('/verify/verify-create?showSeedPhrase=true');
+        router.push(
+          `${walletRoutes.verifyCreate(currentWalletClientId)}?showSeedPhrase=true`,
+        );
       } else {
         setWrong(true);
         dispatch(loadingOff());
       }
     },
-    [dispatch, router, storePassword],
+    [dispatch, router, storePassword, currentWalletClientId],
   );
 
   const onKeyDown = useCallback(e => {

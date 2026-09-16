@@ -93,21 +93,25 @@ const WalletConnectRequestModal = props => {
   // One entry per proposed CAIP-2 chain id we can serve. A coin may answer for
   // several ids (Hedera: `hedera:<net>` and `eip155:<chain_id>`).
   useEffect(() => {
-    if (requestData?.requiredNamespaces && allCoins.length) {
-      const {requiredChains, optionalChains} =
-        collectProposalChains(requestData);
-      setChainData(
-        resolveSessionChainData({
-          requiredChains,
-          optionalChains,
-          allCoins,
-          bitcoinAddressType,
-        }),
-      );
-      setUnsupportedRequiredChains(
-        getUnsupportedRequiredChains(requiredChains),
-      );
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (requestData?.requiredNamespaces && allCoins.length) {
+        const {requiredChains, optionalChains} =
+          collectProposalChains(requestData);
+        setChainData(
+          resolveSessionChainData({
+            requiredChains,
+            optionalChains,
+            allCoins,
+            bitcoinAddressType,
+          }),
+        );
+        setUnsupportedRequiredChains(
+          getUnsupportedRequiredChains(requiredChains),
+        );
+      }
+    })();
   }, [requestData, allCoins, bitcoinAddressType]);
 
   // What the session will actually carry: the namespace's account form

@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import Image from 'next/image';
 import {Menu, MenuItem, Divider, IconButton} from '@mui/material';
 import {Logout, AccountCircle, Delete} from '@mui/icons-material';
 import s from './UserMenu.module.css';
@@ -54,7 +55,14 @@ const UserMenu = ({user, onLogout, onDeleteBackup}) => {
         anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}>
         <div className={s.userInfoSection}>
           {user?.image ? (
-            <img src={user.image} alt='Profile' className={s.userAvatar} />
+            <Image
+              src={user.image}
+              alt='Profile'
+              width={40}
+              height={40}
+              unoptimized
+              className={s.userAvatar}
+            />
           ) : (
             <AccountCircle
               sx={{width: 40, height: 40, color: 'var(--font-color)'}}

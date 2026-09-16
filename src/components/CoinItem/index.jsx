@@ -1,11 +1,14 @@
 'use client';
+import {coinRoutes} from 'utils/routes';
 import React, {memo, useCallback} from 'react';
+import {useSelector} from 'react-redux';
 import {
   checkValidChainForWalletImportWithPrivateKey,
   isBitcoinChain,
   validateSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
-import {isValidBrowser} from 'utils/common';
+import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {getCoinSlug, isValidBrowser} from 'utils/common';
 import Image from 'next/image';
 import {
   addOrToggleCoinInWallet,
@@ -41,7 +44,7 @@ const CoinItem = ({
   const isCoinInWallet = item?.isInWallet;
   const isToken = item?.type === 'token';
   const isAddCoin = number === 3;
-
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const isDisabledItem =
     isAddCoin &&
     !checkValidChainForWalletImportWithPrivateKey({
@@ -57,8 +60,13 @@ const CoinItem = ({
 
   const onPressItem = useCallback(() => {
     dispatch(setCurrentCoin(item?._id));
-    router.push(`/home/send`);
-  }, [dispatch, item?._id, router]);
+    // Without an active wallet id the legacy forwarder resolves /home/send.
+    router.push(
+      currentWalletClientId
+        ? coinRoutes.send(currentWalletClientId, getCoinSlug(item))
+        : '/home/send',
+    );
+  }, [dispatch, item, currentWalletClientId, router]);
 
   const onChangeValue = useCallback(() => {
     dispatch(addOrToggleCoinInWallet(item));
