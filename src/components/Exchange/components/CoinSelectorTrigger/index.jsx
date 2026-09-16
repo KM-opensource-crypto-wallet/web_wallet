@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import s from './CoinSelectorTrigger.module.css';
 
@@ -19,7 +20,14 @@ const CoinSelectorTrigger = ({option, onPress}) => {
       aria-label={symbol ? `Change coin, ${symbol}` : 'Select coin'}>
       {!!icon && (
         <div className={s.iconBox}>
-          <img src={icon} alt='' className={s.icon} />
+          <Image
+            src={icon}
+            alt=''
+            width={30}
+            height={30}
+            unoptimized
+            className={s.icon}
+          />
         </div>
       )}
       <div className={s.labelBox}>

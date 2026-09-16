@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import React, {useCallback} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useRouter} from 'next/navigation';
@@ -73,8 +74,8 @@ const CoinSyncBanner = () => {
   };
 
   const handleBannerClick = useCallback(() => {
-    router.push('/home/coin-sync');
-  }, [router]);
+    router.push(walletRoutes.coinSync(currentWalletClientId));
+  }, [router, currentWalletClientId]);
 
   const handleClose = useCallback(
     e => {

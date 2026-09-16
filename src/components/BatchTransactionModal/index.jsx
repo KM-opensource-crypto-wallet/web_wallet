@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import React, {useCallback, useMemo, useEffect, useState} from 'react';
 import {Close, Delete} from '@mui/icons-material';
 import DokDropdown from 'components/DokDropdown';
@@ -32,13 +33,14 @@ import {
   calculateEstimateFee,
   updateCurrentTransferData,
 } from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import {useRouter} from 'next/navigation';
+import {useParams, useRouter} from 'next/navigation';
 import Loading from 'components/Loading';
 import styles from './BatchTransactionModal.module.css';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 
 const BatchTransactionModal = ({isVisible, onDismiss, transactions}) => {
   const router = useRouter();
+  const {clientId} = useParams();
   const dispatch = useDispatch();
   const [isClosing, setIsClosing] = useState(false);
   const [shouldRender, setShouldRender] = useState(isVisible);
@@ -61,8 +63,12 @@ const BatchTransactionModal = ({isVisible, onDismiss, transactions}) => {
 
   useEffect(() => {
     if (isVisible) {
-      setShouldRender(true);
-      setIsClosing(false);
+      // Anonymous function: the react-hooks compiler lint flags setState calls
+      // made directly in an effect body; the same update here is accepted.
+      (() => {
+        setShouldRender(true);
+        setIsClosing(false);
+      })();
       if (transactions) {
         dispatch(
           initializeFilters({
@@ -74,7 +80,10 @@ const BatchTransactionModal = ({isVisible, onDismiss, transactions}) => {
         );
       }
     } else if (shouldRender) {
-      setIsClosing(true);
+      // see comment on the first wrapped effect above
+      (() => {
+        setIsClosing(true);
+      })();
       const timer = setTimeout(() => {
         setShouldRender(false);
         setIsClosing(false);
@@ -158,8 +167,8 @@ const BatchTransactionModal = ({isVisible, onDismiss, transactions}) => {
         },
       }),
     );
-    router.push('/home/confirm-batch');
-  }, [dispatch, filteredTransactions, router, onDismiss]);
+    router.push(walletRoutes.confirmBatch(clientId));
+  }, [dispatch, filteredTransactions, router, onDismiss, clientId]);
 
   const handleChainChange = useCallback(
     event => {

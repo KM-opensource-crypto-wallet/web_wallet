@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import React, {
   forwardRef,
   useCallback,
@@ -97,9 +98,12 @@ const CoinSelectorSheet = forwardRef(({options, onSelect}, ref) => {
                   onClick={() => onPressItem(item)}>
                   <div className={s.optionIconBox}>
                     {!!item?.options?.icon && (
-                      <img
+                      <Image
                         src={item.options.icon}
                         alt=''
+                        width={34}
+                        height={34}
+                        unoptimized
                         className={s.optionIcon}
                       />
                     )}

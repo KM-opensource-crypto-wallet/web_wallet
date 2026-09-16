@@ -164,3 +164,41 @@ describe('beforeSendLog', () => {
     expect(log.attributes).toEqual({tx_hash: HEX64, chain: 'solana'});
   });
 });
+
+describe('beforeSend', () => {
+  it('drops events from browsers below the syntax baseline', () => {
+    expect(
+      beforeSend({
+        message: 'x',
+        contexts: {browser: {name: 'Chrome', version: '79'}},
+      }),
+    ).toBeNull();
+  });
+
+  it('drops events with non-browser (Deno) runtime frames', () => {
+    expect(
+      beforeSend({
+        exception: {
+          values: [
+            {
+              type: 'TypeError',
+              value: 'x',
+              stacktrace: {frames: [{filename: 'ext:core/01_core.js'}]},
+            },
+          ],
+        },
+      }),
+    ).toBeNull();
+  });
+
+  it('keeps and scrubs an ordinary event', () => {
+    const event = beforeSend({
+      message: `key ${HEX64}`,
+      contexts: {browser: {name: 'Chrome', version: '153.0.1.2'}},
+      request: {url: 'https://x/?a=1'},
+    });
+    expect(event).not.toBeNull();
+    expect(event.message).not.toContain(HEX64);
+    expect(event.request).toBeUndefined();
+  });
+});

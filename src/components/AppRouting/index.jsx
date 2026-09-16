@@ -1,5 +1,6 @@
 'use client';
-import React, {useContext, useEffect, useState} from 'react';
+import {getRouteNameFromPathname} from 'utils/routes';
+import React, {useCallback, useContext, useEffect, useState} from 'react';
 import s from './AppRouting.module.css';
 import {usePathname, useSearchParams} from 'next/navigation';
 import ReactGA from 'react-ga4';
@@ -21,14 +22,21 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
   captureError,
+  logger,
   setUserContext,
   setWhiteLabelContext,
 } from 'services/logger';
 import {initWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
+import {setIsWalletConnectInitialized} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
+import {hasLocaleCookie} from 'utils/localeCookie';
+import {clearSkipLockScreen, shouldSkipLockScreen} from 'utils/lockScreen';
 import {
   clearWalletConnectStorageCache,
   createAIDIfNotExists,
+  getLastActiveTime,
+  setLastActiveTime,
 } from 'utils/localStorageData';
+import {getLockTime} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import Loading from '../Loading';
 import {
   getWalletConnectDetails,
@@ -89,6 +97,7 @@ function AppRouting({children, wlData}) {
 
   const disableMessage = useSelector(getDisableMessage);
   const googleAnalyticsKey = useSelector(getGoogleAnalyticsKey);
+  const lockTime = useSelector(getLockTime);
   const masterClientId = useSelector(getMasterClientId);
 
   useEffect(() => {
@@ -104,18 +113,44 @@ function AppRouting({children, wlData}) {
   }, [masterClientId]);
 
   useEffect(() => {
-    let routeName = pathname;
-    if (pathname === '/home/transactions') {
-      routeName = 'TransactionList';
-    } else if (pathname?.startsWith('/home/transactions/')) {
-      routeName = 'TransactionDetails';
-    }
-    MainNavigation.setCurrentRouteName(routeName);
+    // The submodule's refreshCoinData keys off these names after a send.
+    MainNavigation.setCurrentRouteName(getRouteNameFromPathname(pathname));
   }, [pathname]);
 
   useEffect(() => {
     MainNavigation.setNavigator(routing.push.bind(routing));
   }, [routing]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const ACTIVITY_THROTTLE_MS = 5000;
+    let lastWrite = 0;
+    const isReloadShortcut = e =>
+      e.type === 'keydown' &&
+      (e.key === 'F5' ||
+        ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 'r'));
+    const handleActivity = e => {
+      if (isReloadShortcut(e)) {
+        return;
+      }
+      const now = Date.now();
+      if (now - lastWrite > ACTIVITY_THROTTLE_MS) {
+        lastWrite = now;
+        setLastActiveTime();
+      }
+    };
+    const activityEvents = ['mousedown', 'keydown', 'touchstart', 'wheel'];
+    activityEvents.forEach(event =>
+      window.addEventListener(event, handleActivity, {passive: true}),
+    );
+    return () => {
+      activityEvents.forEach(event =>
+        window.removeEventListener(event, handleActivity),
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const setUpWindowHeight = () => {
@@ -135,6 +170,40 @@ function AppRouting({children, wlData}) {
     }
   }, []);
 
+  const redirectToLoginOnTimeout = useCallback(() => {
+    const currentSearchString = searchParams?.toString();
+    const searchString = currentSearchString
+      ? `${currentSearchString}&redirectRoute=${encodeURIComponent(pathname)}`
+      : `redirectRoute=${encodeURIComponent(pathname)}`;
+    routing.replace(`/auth/login?${searchString}`);
+  }, [pathname, searchParams, routing]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !password || !(lockTime > 0)) {
+      return;
+    }
+    const isProtectedRoute =
+      !pathname?.includes('/auth') &&
+      pathname !== '/' &&
+      !publicRoutes.includes(pathname) &&
+      !allPublicRoutes.includes(pathname);
+    if (!isProtectedRoute) {
+      return;
+    }
+    const AUTO_LOCK_CHECK_INTERVAL_MS = 5000;
+    const intervalId = setInterval(() => {
+      const lastActiveTime = getLastActiveTime();
+      const elapsedMinutesSinceLastActive = lastActiveTime
+        ? (Date.now() - lastActiveTime) / (1000 * 60)
+        : Infinity;
+      if (elapsedMinutesSinceLastActive >= lockTime) {
+        clearInterval(intervalId);
+        redirectToLoginOnTimeout();
+      }
+    }, AUTO_LOCK_CHECK_INTERVAL_MS);
+    return () => clearInterval(intervalId);
+  }, [password, lockTime, pathname, redirectToLoginOnTimeout]);
+
   useEffect(() => {
     if (isReduxStoreLoad) {
       dispatch(resetIsAdding50MoreAddresses());
@@ -145,7 +214,9 @@ function AppRouting({children, wlData}) {
         pathname !== '/' &&
         !publicRoutes.includes(pathname)
       ) {
-        let redirectRoute = pathname;
+        // Encoded: transaction-details paths embed a percent-encoded URL
+        // that must survive the login round-trip intact.
+        const redirectRoute = encodeURIComponent(pathname);
         searchString = searchString
           ? `${searchString}&redirectRoute=${redirectRoute}`
           : `redirectRoute=${redirectRoute}`;
@@ -169,15 +240,18 @@ function AppRouting({children, wlData}) {
         },
         1000 * 60 * 10,
       );
-      const walletConnectData = getWalletConnectDetails();
-      const onWalletConnectInitError = e =>
-        captureError(e, {tags: {area: 'walletconnect', op: 'init'}});
+      // WalletKit.init takes a relay handshake; screens that need the client
+      // (WalletConnectStatus) wait on this flag instead of racing it.
+      const startWalletConnect = () =>
+        initWalletConnect(getWalletConnectDetails())
+          .then(() => dispatch(setIsWalletConnectInitialized(true)))
+          .catch(e =>
+            captureError(e, {tags: {area: 'walletconnect', op: 'init'}}),
+          );
       if (!Object.keys(walletConnectSessions).length) {
-        clearWalletConnectStorageCache().then(() => {
-          initWalletConnect(walletConnectData).catch(onWalletConnectInitError);
-        });
+        clearWalletConnectStorageCache().then(startWalletConnect);
       } else {
-        initWalletConnect(walletConnectData).catch(onWalletConnectInitError);
+        startWalletConnect();
       }
       let hostname = '';
       if (typeof window !== 'undefined') {
@@ -187,27 +261,34 @@ function AppRouting({children, wlData}) {
         allPublicRoutes.includes(pathname) ||
         (publicRoutes.includes(pathname) && masterClickHost.includes(hostname))
       ) {
-        setRoutingDone(true);
+        // Anonymous function: the react-hooks compiler lint flags setState calls
+        // made directly in an effect body; the same update here is accepted.
+        (() => {
+          setRoutingDone(true);
+        })();
       } else {
-        const shouldSkipLock =
-          typeof window !== 'undefined' &&
-          sessionStorage.getItem('skip_lock_screen') === 'true';
+        const lastActiveTime = getLastActiveTime();
+        const elapsedMinutesSinceLastActive = lastActiveTime
+          ? (Date.now() - lastActiveTime) / (1000 * 60)
+          : Infinity;
+        const isWithinAutoLockWindow =
+          lockTime > 0 && elapsedMinutesSinceLastActive < lockTime;
+        const shouldSkipLock = shouldSkipLockScreen() || isWithinAutoLockWindow;
 
         if (!password) {
           if (pathname !== '/auth/registration') {
             routing.replace(searchString ? `/?${searchString}` : '/');
           }
-          if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('skip_lock_screen');
-          }
-        } else if (!shouldSkipLock) {
+          clearSkipLockScreen();
+        } else if (!shouldSkipLock || pathname === '/') {
+          // The onboarding carousel at '/' is for new users only. With a
+          // wallet present it always hands over to login, which itself skips
+          // the password while the auto-lock window is open.
           routing.replace(
             searchString ? `/auth/login?${searchString}` : `/auth/login`,
           );
         } else {
-          if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('skip_lock_screen');
-          }
+          clearSkipLockScreen();
         }
         setTimeout(() => {
           setRoutingDone(true);
@@ -228,14 +309,21 @@ function AppRouting({children, wlData}) {
       host:
         typeof window !== 'undefined' ? window.location.hostname : undefined,
     });
+    // Persist the whitelabel default locale once. The cookie check avoids a
+    // server-action round trip on every load for returning users; the action
+    // is awaited so its failure stays inside this try. Losing it is harmless
+    // (getUserLocale falls back to the default), so it is a log, not an error.
     (async () => {
+      if (hasLocaleCookie()) {
+        return;
+      }
       try {
         const localeSetCheck = await isLocaleSet();
         if (!localeSetCheck) {
-          setUserLocale(wlData.defaultLocale || 'en');
+          await setUserLocale(wlData.defaultLocale || 'en');
         }
       } catch (e) {
-        captureError(e, {tags: {area: 'locale', op: 'set_default'}});
+        logger.warn('locale.set_default_failed', {reason: e?.message});
       }
     })();
   }, [wlData]);

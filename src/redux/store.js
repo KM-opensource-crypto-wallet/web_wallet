@@ -23,7 +23,6 @@ import {exchangeSlice} from 'dok-wallet-blockchain-networks/redux/exchange/excha
 import {exchangeHistorySlice} from 'dok-wallet-blockchain-networks/redux/exchangeHistory/exchangeHistorySlice';
 import {cryptoProviderSlice} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
 import {stakingSlice} from 'dok-wallet-blockchain-networks/redux/staking/stakingSlice';
-import {messageSlice} from 'dok-wallet-blockchain-networks/redux/messages/messageSlice';
 import {sellCryptoSlice} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSlice';
 import {batchTransactionSlice} from 'dok-wallet-blockchain-networks/redux/batchTransaction/batchTransactionSlice';
 import {customRpcSlice} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSlice';
@@ -104,7 +103,6 @@ const rootReducer = persistCombineReducers(persistConfig, {
   [exchangeHistorySlice.name]: exchangeHistorySlice.reducer,
   [cryptoProviderSlice.name]: cryptoProviderSlice.reducer,
   [stakingSlice.name]: stakingSlice.reducer,
-  [messageSlice.name]: messageSlice.reducer,
   [sellCryptoSlice.name]: sellCryptoSlice.reducer,
   [batchTransactionSlice.name]: batchTransactionSlice.reducer,
   [customRpcSlice.name]: customRpcSlice.reducer,

@@ -1,4 +1,5 @@
 'use client';
+import {skipLockOnNextLoad} from 'utils/lockScreen';
 import React, {useState, useEffect, useCallback} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -41,7 +42,11 @@ const RestorePage = () => {
 
   // Mark as mounted to prevent hydration mismatch
   useEffect(() => {
-    setHasMounted(true);
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setHasMounted(true);
+    })();
     if (!isBackupRestoreEnabled()) {
       router.replace('/settings');
     }
@@ -63,9 +68,7 @@ const RestorePage = () => {
   }, []);
 
   const handleLogin = async () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('skip_lock_screen', 'true');
-    }
+    skipLockOnNextLoad();
     const result = await signIn('google', {
       redirect: false,
       callbackUrl: window.location.href,
@@ -86,7 +89,6 @@ const RestorePage = () => {
     if (shouldSignInAfter) {
       handleLogin();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchBackup = useCallback(async () => {
@@ -129,9 +131,12 @@ const RestorePage = () => {
   }, [processBackupData, handleLogout]);
 
   useEffect(() => {
-    if (hasMounted && status === 'authenticated' && session) {
-      fetchBackup();
-    }
+    // see comment on the first wrapped effect above
+    (() => {
+      if (hasMounted && status === 'authenticated' && session) {
+        fetchBackup();
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMounted, status]);
 

@@ -1,4 +1,5 @@
 'use client';
+import {walletRoutes} from 'utils/routes';
 import React, {useState, useCallback, useRef} from 'react';
 import {Formik} from 'formik';
 import styles from './LoginScreen.module.css';
@@ -27,12 +28,21 @@ import {
   getMaxAttempt,
   getUserPassword,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
-import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  selectAllWallets,
+  selectCurrentWalletClientId,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {refreshCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {getAppSubTitle} from 'whitelabel/whiteLabelInfo';
 import {isWalletReset} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import ModalInfo from 'src/components/ModalInfo';
 import {Constants} from 'src/utils/common';
+import {setLastActiveTime} from 'utils/localStorageData';
+import {skipLockOnNextLoad} from 'utils/lockScreen';
+
+// Long enough for the replayed navigation to settle (or hard-reload), short
+// enough that a later manual reload still locks.
+const REPLAY_SKIP_LOCK_TTL_MS = 10000;
 
 const LoginScreen = () => {
   const [hide, setHide] = useState(true);
@@ -43,6 +53,7 @@ const LoginScreen = () => {
   const dispatch = useDispatch();
   const storePassword = useSelector(getUserPassword);
   const allWallets = useSelector(selectAllWallets);
+  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const rateLimitCheck = useSelector(isWalletReset);
   const lastAttempt = useSelector(getLastAttempt);
   const searchParams = useSearchParams();
@@ -63,6 +74,7 @@ const LoginScreen = () => {
     async values => {
       if (storePassword === values.password) {
         dispatch(logInSuccess(values.password));
+        setLastActiveTime();
         if (rateLimitCheck) {
           dispatch(resetAttempts());
         }
@@ -74,12 +86,19 @@ const LoginScreen = () => {
               searchParamsString += `${key}=${searchParams.get(key)}&`;
             }
           }
+          if (redirectRoute) {
+            // An unknown deep link loads the 404 page as a new document, which
+            // would lock again immediately and loop back here.
+            skipLockOnNextLoad({ttlMs: REPLAY_SKIP_LOCK_TTL_MS});
+          }
           router.replace(
             redirectRoute
               ? `${redirectRoute}${
                   searchParamsString ? '?' + searchParamsString : ''
                 }`
-              : `/home${searchParamsString ? '?' + searchParamsString : ''}`,
+              : `${walletRoutes.home(currentWalletClientId)}${
+                  searchParamsString ? '?' + searchParamsString : ''
+                }`,
           );
           dispatch(refreshCoins());
         } else {
@@ -94,7 +113,15 @@ const LoginScreen = () => {
         dispatch(loadingOff());
       }
     },
-    [dispatch, hasWallet, rateLimitCheck, router, searchParams, storePassword],
+    [
+      dispatch,
+      hasWallet,
+      rateLimitCheck,
+      router,
+      searchParams,
+      storePassword,
+      currentWalletClientId,
+    ],
   );
 
   const onKeyDown = useCallback(e => {

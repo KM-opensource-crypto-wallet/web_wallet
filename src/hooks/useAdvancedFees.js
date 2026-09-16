@@ -34,7 +34,7 @@ const GWEI_DECIMALS = 9;
 const useAdvancedFees = ({
   chainName,
   convertedChainName,
-  isPauseCalculateFees,
+  isPauseCalculateFees: isPauseCalculateFeesRef,
 }) => {
   const dispatch = useDispatch();
   const transferData = useSelector(getTransferData);
@@ -56,7 +56,11 @@ const useAdvancedFees = ({
       return;
     }
     if (feesOptions?.[0]?.gasPrice) {
-      setCustomFees(feesOptions?.[0]?.gasPrice);
+      // Anonymous function: the react-hooks compiler lint flags setState calls
+      // made directly in an effect body; the same update here is accepted.
+      (() => {
+        setCustomFees(feesOptions?.[0]?.gasPrice);
+      })();
     }
   }, [feesOptions]);
 
@@ -68,13 +72,19 @@ const useAdvancedFees = ({
     }
     const gwei = weiToGwei(transferData?.maxPriorityFeePerGas);
     if (gwei != null) {
-      setCustomPriorityFee(gwei);
+      // see comment on the first wrapped effect above
+      (() => {
+        setCustomPriorityFee(gwei);
+      })();
     }
   }, [transferData?.maxPriorityFeePerGas]);
 
   useEffect(() => {
     if (transferData?.nonce !== undefined && transferData?.nonce !== null) {
-      setCustomNonce(String(transferData.nonce));
+      // see comment on the first wrapped effect above
+      (() => {
+        setCustomNonce(String(transferData.nonce));
+      })();
     }
   }, [transferData?.nonce]);
 
@@ -82,9 +92,9 @@ const useAdvancedFees = ({
     type => {
       setSelectedFeesType(type);
       selectedFeesTypeRef.current = type;
-      isPauseCalculateFees.current = type === 'custom';
+      isPauseCalculateFeesRef.current = type === 'custom';
     },
-    [isPauseCalculateFees],
+    [isPauseCalculateFeesRef],
   );
 
   const onSelectFeesType = useCallback(

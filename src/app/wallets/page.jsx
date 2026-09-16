@@ -1,11 +1,13 @@
 'use client';
 
+import {walletRoutes} from 'utils/routes';
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   isWalletHiddenAndLocked,
   selectAllWallets,
   selectCurrentWallet,
+  selectRefreshingWalletClientId,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
   findHiddenWalletByCode,
@@ -28,6 +30,8 @@ import Image from 'next/image';
 import s from './Wallets.module.css';
 import {useRouter} from 'next/navigation';
 import ModalCreateWallet from 'components/ModalCreateWallet';
+import RefreshWalletsButton from 'components/RefreshWalletsButton';
+import CircularProgress from '@mui/material/CircularProgress';
 import {getPngIcons} from 'assets/images/icons/pngIcon';
 import {ThemeContext} from 'theme/ThemeContext';
 import icons from 'src/assets/images/icons';
@@ -97,6 +101,9 @@ const Wallets = () => {
   const filterButtonRef = useRef(null);
   const walletsSortOption = useSelector(getWalletsSortOption);
   const localCurrency = useSelector(getLocalCurrency);
+  // Set by refreshAllWalletsCoins while it works through the wallets, so the
+  // card being updated shows a spinner next to its balance (as on mobile).
+  const refreshingWalletClientId = useSelector(selectRefreshingWalletClientId);
 
   const handleSortSelect = useCallback(
     option => {
@@ -248,51 +255,54 @@ const Wallets = () => {
         />
       </div>
       <div className={s.container}>
-        <TextField
-          placeholder='Search'
-          variant='outlined'
-          id='search-bar'
-          fullWidth
-          value={searchQuery}
-          onChange={handleSearch}
-          sx={{
-            '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
-              {
-                borderColor: 'var(--gray)',
+        <div className={s.searchRow}>
+          <TextField
+            placeholder='Search'
+            variant='outlined'
+            id='search-bar'
+            fullWidth
+            value={searchQuery}
+            onChange={handleSearch}
+            sx={{
+              '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
+                {
+                  borderColor: 'var(--gray)',
+                },
+              '& .MuiOutlinedInput-root': {
+                border: '1px solid var(--gray)',
+                borderRadius: '10px',
+                marginBottom: '10px',
+                fontSize: '18px',
+                marginTop: '20px',
               },
-            '& .MuiOutlinedInput-root': {
-              border: '1px solid var(--gray)',
-              borderRadius: '10px',
-              marginBottom: '10px',
-              fontSize: '18px',
-              marginTop: '20px',
-            },
-          }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <IconButton type='submit' aria-label='search'>
-                  <SearchIcon
+            }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <IconButton type='submit' aria-label='search'>
+                    <SearchIcon
+                      sx={{
+                        color: 'gray',
+                        marginRight: '10px',
+                      }}
+                    />
+                  </IconButton>
+                ),
+                endAdornment: searchQuery && (
+                  <IconButton
+                    onClick={() => handleSearch({target: {value: ''}})}
+                    size='small'
                     sx={{
                       color: 'gray',
-                      marginRight: '10px',
-                    }}
-                  />
-                </IconButton>
-              ),
-              endAdornment: searchQuery && (
-                <IconButton
-                  onClick={() => handleSearch({target: {value: ''}})}
-                  size='small'
-                  sx={{
-                    color: 'gray',
-                  }}>
-                  <ClearIcon />
-                </IconButton>
-              ),
-            },
-          }}
-        />
+                    }}>
+                    <ClearIcon />
+                  </IconButton>
+                ),
+              },
+            }}
+          />
+          <RefreshWalletsButton className={s.searchRefreshButton} />
+        </div>
         <div className={s.walletSection}>
           <DndContext
             collisionDetection={closestCenter}
@@ -342,7 +352,7 @@ const Wallets = () => {
                                 dispatch(
                                   setCurrentWalletClientId(item?.clientId),
                                 );
-                                router.push('/home');
+                                router.push(walletRoutes.home(item.clientId));
                               }}>
                               <div
                                 className={s.dragHandle}
@@ -456,6 +466,14 @@ const Wallets = () => {
                               <span className={s.balanceValue}>
                                 {currencySymbol[localCurrency]}
                                 {totalBalance.toFixed(2)}
+                                {item?.clientId ===
+                                  refreshingWalletClientId && (
+                                  <CircularProgress
+                                    size={14}
+                                    className={s.balanceRefreshIndicator}
+                                    sx={{color: 'var(--font)'}}
+                                  />
+                                )}
                               </span>
                             </div>
 

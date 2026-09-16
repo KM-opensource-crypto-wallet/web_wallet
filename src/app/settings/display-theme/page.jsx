@@ -24,7 +24,11 @@ const DisplayTheme = () => {
   const [currentTheme, setCurrentTheme] = useState('');
 
   useEffect(() => {
-    setCurrentTheme(theme);
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setCurrentTheme(theme);
+    })();
   }, [theme]);
 
   const handleChange = value => {

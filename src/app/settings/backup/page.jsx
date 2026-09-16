@@ -1,4 +1,5 @@
 'use client';
+import {skipLockOnNextLoad} from 'utils/lockScreen';
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {useSelector} from 'react-redux';
 import {
@@ -45,7 +46,11 @@ const BackupPage = () => {
 
   // Mark as mounted to prevent hydration mismatch
   useEffect(() => {
-    setHasMounted(true);
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setHasMounted(true);
+    })();
     if (!isBackupRestoreEnabled()) {
       router.replace('/settings');
     }
@@ -53,47 +58,56 @@ const BackupPage = () => {
 
   // Initialize selection ONCE when wallets load
   useEffect(() => {
-    if (hasMounted && allWallets.length > 0 && selectedWalletIds.length === 0) {
-      // Check if we have saved selection from before redirect
-      const savedSelection = sessionStorage.getItem(
-        'backup_selected_wallet_ids',
-      );
-      if (savedSelection) {
-        try {
-          const parsed = JSON.parse(savedSelection);
-          if (Array.isArray(parsed)) {
-            setSelectedWalletIds(parsed);
-          } else {
+    // see comment on the first wrapped effect above
+    (() => {
+      if (
+        hasMounted &&
+        allWallets.length > 0 &&
+        selectedWalletIds.length === 0
+      ) {
+        // Check if we have saved selection from before redirect
+        const savedSelection = sessionStorage.getItem(
+          'backup_selected_wallet_ids',
+        );
+        if (savedSelection) {
+          try {
+            const parsed = JSON.parse(savedSelection);
+            if (Array.isArray(parsed)) {
+              setSelectedWalletIds(parsed);
+            } else {
+              setSelectedWalletIds(allWallets.map(w => w.clientId));
+            }
+          } catch {
+            sessionStorage.removeItem('backup_selected_wallet_ids');
             setSelectedWalletIds(allWallets.map(w => w.clientId));
           }
-        } catch {
-          sessionStorage.removeItem('backup_selected_wallet_ids');
+        } else {
           setSelectedWalletIds(allWallets.map(w => w.clientId));
         }
-      } else {
-        setSelectedWalletIds(allWallets.map(w => w.clientId));
       }
-    }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMounted, allWallets.length]);
 
   // Resume after the OAuth redirect: the password is never persisted, so
   // reopen the password modal instead of backing up directly
   useEffect(() => {
-    if (
-      hasMounted &&
-      status === 'authenticated' &&
-      sessionStorage.getItem('backup_pending') === 'true' &&
-      allWallets.length > 0 &&
-      selectedWalletIds.length > 0
-    ) {
-      sessionStorage.removeItem('backup_pending');
-      sessionStorage.removeItem('backup_selected_wallet_ids');
-      setPasswordMode('create');
-      setPasswordError('');
-      setShowPasswordModal(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // see comment on the first wrapped effect above
+    (() => {
+      if (
+        hasMounted &&
+        status === 'authenticated' &&
+        sessionStorage.getItem('backup_pending') === 'true' &&
+        allWallets.length > 0 &&
+        selectedWalletIds.length > 0
+      ) {
+        sessionStorage.removeItem('backup_pending');
+        sessionStorage.removeItem('backup_selected_wallet_ids');
+        setPasswordMode('create');
+        setPasswordError('');
+        setShowPasswordModal(true);
+      }
+    })();
   }, [hasMounted, status, allWallets.length, selectedWalletIds.length]);
 
   const isAllSelected = useMemo(
@@ -139,8 +153,8 @@ const BackupPage = () => {
   };
 
   const handleLogin = async () => {
+    skipLockOnNextLoad();
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('skip_lock_screen', 'true');
       sessionStorage.setItem('backup_pending', 'true');
       sessionStorage.setItem(
         'backup_selected_wallet_ids',

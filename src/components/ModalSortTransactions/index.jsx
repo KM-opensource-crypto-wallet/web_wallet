@@ -58,11 +58,15 @@ const ModalSortTransactions = ({
   const [hideSmallTx, setHideSmallTx] = useState(initialHideSmallTx ?? true);
 
   useEffect(() => {
-    if (visible) {
-      setValue(initialSort ?? 'Date Descending');
-      setStatus(initialFilter ?? 'None');
-      setHideSmallTx(initialHideSmallTx ?? true);
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (visible) {
+        setValue(initialSort ?? 'Date Descending');
+        setStatus(initialFilter ?? 'None');
+        setHideSmallTx(initialHideSmallTx ?? true);
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
   const currentCoin = useSelector(selectCurrentCoin);

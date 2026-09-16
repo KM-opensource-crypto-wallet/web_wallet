@@ -9,6 +9,7 @@ import {
   setSelectedDeriveAddress,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {showToast} from 'utils/toast';
+import {reportThunkRejection} from 'utils/thunkErrors';
 import DokPopover from 'components/DokPopover';
 
 const CustomDerivationPopOver = ({selectedItem}) => {
@@ -63,7 +64,9 @@ const CustomDerivationPopOver = ({selectedItem}) => {
           privateKey: selectedItem?.privateKey,
         },
       }),
-    ).unwrap();
+    )
+      .unwrap()
+      .catch(reportThunkRejection({area: 'coin', op: 'refresh_address'}));
   }, [currentCoin, dispatch, selectedItem?.address, selectedItem?.privateKey]);
 
   const onPressCopyAddress = useCallback(() => {

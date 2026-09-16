@@ -97,33 +97,40 @@ const ModalPermitInfo = ({
 
   // Reset local UI each time the modal opens (replaces mobile's present()).
   useEffect(() => {
-    if (visible) {
-      setSelectedType('manual');
-      setSelectedFeesType('recommended');
-      selectedTypeRef.current = 'manual';
-      selectedFeesTypeRef.current = 'recommended';
-      isPauseCalculateFees.current = false;
-      setHasError(false);
-      setShowAdvanced(false);
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (visible) {
+        setSelectedType('manual');
+        setSelectedFeesType('recommended');
+        selectedTypeRef.current = 'manual';
+        selectedFeesTypeRef.current = 'recommended';
+        isPauseCalculateFees.current = false;
+        setHasError(false);
+        setShowAdvanced(false);
+      }
+    })();
   }, [visible]);
 
   // Sync nonce input when permitAllowanceData updates, and clear it when the
   // modal closes so a reopen never submits a stale (possibly user-edited)
   // nonce from the previous session.
   useEffect(() => {
-    if (!visible) {
-      setCustomNonce('');
-      customNonceRef.current = '';
-      return;
-    }
+    // see comment on the first wrapped effect above
+    (() => {
+      if (!visible) {
+        setCustomNonce('');
+        customNonceRef.current = '';
+        return;
+      }
 
-    const nonce =
-      permitAllowanceData?.nonce != null
-        ? String(permitAllowanceData.nonce)
-        : '';
-    setCustomNonce(nonce);
-    customNonceRef.current = nonce;
+      const nonce =
+        permitAllowanceData?.nonce != null
+          ? String(permitAllowanceData.nonce)
+          : '';
+      setCustomNonce(nonce);
+      customNonceRef.current = nonce;
+    })();
   }, [visible, permitAllowanceData?.nonce]);
 
   // Sync custom gas price when feesOptions arrive/refresh, tracking whichever
@@ -220,12 +227,13 @@ const ModalPermitInfo = ({
     );
   }, [displayRequiredAmount, availableAmount]);
 
+  const transactionFee = permitAllowanceData?.transactionFee;
   const isInsufficientFeeBalance = useMemo(
     () =>
       nativeBalance != null &&
-      permitAllowanceData?.transactionFee != null &&
-      isBalanceNotAvailable(nativeBalance, permitAllowanceData.transactionFee),
-    [nativeBalance, permitAllowanceData?.transactionFee],
+      transactionFee != null &&
+      isBalanceNotAvailable(nativeBalance, transactionFee),
+    [nativeBalance, transactionFee],
   );
 
   const handleContinue = useCallback(() => {

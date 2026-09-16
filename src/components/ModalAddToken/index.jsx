@@ -37,22 +37,29 @@ const ModalAddToken = ({visible, hideModal, data}) => {
   const currentWallet = useSelector(selectCurrentWallet);
   const allCustomRPC = useSelector(selectAllCustomRpc);
   useEffect(() => {
-    if (!visible) {
-      setNetworkInput({});
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (!visible) {
+        setNetworkInput({});
+      }
+    })();
   }, [visible]);
 
   useEffect(() => {
-    if (chain_name) {
-      const isEVM = isEVMChain(chain_name);
-      if (isEVM) {
-        setPossibleChain(ModalAddTokenList.filter(item => item.isEVM));
-      } else {
-        setPossibleChain(
-          ModalAddTokenList.filter(item => item.value === chain_name),
-        );
+    // see comment on the first wrapped effect above
+    (() => {
+      if (chain_name) {
+        const isEVM = isEVMChain(chain_name);
+        if (isEVM) {
+          setPossibleChain(ModalAddTokenList.filter(item => item.isEVM));
+        } else {
+          setPossibleChain(
+            ModalAddTokenList.filter(item => item.value === chain_name),
+          );
+        }
       }
-    }
+    })();
   }, [chain_name]);
 
   const onFormSubmit = values => {

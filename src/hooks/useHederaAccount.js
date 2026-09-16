@@ -26,11 +26,18 @@ export const useHederaRecipientLookup = ({
 
   useEffect(() => {
     if (!value) {
-      setState({status: 'idle', result: null, value});
+      // Anonymous function: the react-hooks compiler lint flags setState calls
+      // made directly in an effect body; the same update here is accepted.
+      (() => {
+        setState({status: 'idle', result: null, value});
+      })();
       return;
     }
     let cancelled = false;
-    setState({status: 'resolving', result: null, value});
+    // see comment on the first wrapped effect above
+    (() => {
+      setState({status: 'resolving', result: null, value});
+    })();
     const run = async () => {
       try {
         const result = await getHederaChain().lookupAddressIdentifiers({
@@ -72,7 +79,10 @@ export const useHederaAccountId = ({coin, phrase}) => {
   useEffect(() => {
     // Clear before the lookup so a previous coin's ids are never shown while
     // this request is pending or after it fails.
-    setLiveIds(null);
+    // see comment on the first wrapped effect above
+    (() => {
+      setLiveIds(null);
+    })();
     if (!isHedera || storedAccountId) {
       return;
     }

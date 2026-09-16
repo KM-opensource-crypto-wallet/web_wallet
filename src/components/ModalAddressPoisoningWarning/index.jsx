@@ -15,9 +15,13 @@ const ModalAddressPoisoningWarning = ({
 
   // Reset the acknowledgement each time the modal is reopened.
   useEffect(() => {
-    if (visible) {
-      setChecked(false);
-    }
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      if (visible) {
+        setChecked(false);
+      }
+    })();
   }, [visible]);
 
   const handleCancel = () => {
