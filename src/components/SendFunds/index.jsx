@@ -29,7 +29,7 @@ import {
   validateNumberInInput,
   isBitcoinChain,
   isEip7702SupportedChain,
-  getSponsoredGasTokenSymbol,
+  getSponsoredGasCoins,
 } from 'dok-wallet-blockchain-networks/helper';
 import PageTitle from 'components/PageTitle';
 import SponsoredGasToggle from 'components/SponsoredGasToggle';
@@ -159,34 +159,20 @@ const SendFunds = () => {
     return isMemoSupportChain(currentCoin?.chain_name);
   }, [currentCoin?.chain_name]);
 
-  const sponsoredGasToken = useMemo(() => {
-    if (!currentCoin?.contractAddress) {
-      return null;
-    }
-    const held = (currentWallet?.coins ?? []).find(
-      item =>
-        item?.chain_name === currentCoin?.chain_name &&
-        Number(item?.totalAmount) > 0 &&
-        getSponsoredGasTokenSymbol(
-          currentCoin?.chain_name,
-          item?.contractAddress,
-        ),
-    );
-    if (!held) {
-      return null;
-    }
-    return {
-      symbol: getSponsoredGasTokenSymbol(
-        currentCoin?.chain_name,
-        held?.contractAddress,
-      ),
-      contractAddress: held?.contractAddress,
-    };
-  }, [
-    currentCoin?.chain_name,
-    currentCoin?.contractAddress,
-    currentWallet?.coins,
-  ]);
+  const sponsoredGasToken = useMemo(
+    () =>
+      currentCoin?.contractAddress
+        ? (getSponsoredGasCoins(
+            currentCoin?.chain_name,
+            currentWallet?.coins,
+          )[0] ?? null)
+        : null,
+    [
+      currentCoin?.chain_name,
+      currentCoin?.contractAddress,
+      currentWallet?.coins,
+    ],
+  );
 
   useEffect(() => {
     const currency = searchParams?.get('currency');

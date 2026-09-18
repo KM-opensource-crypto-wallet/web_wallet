@@ -19,11 +19,18 @@ const modalStyle = {
   outline: 'none',
 };
 
-const SponsoredGasInfoModal = ({visible, tokenSymbol, onClose}) => {
+const SponsoredGasInfoModal = ({
+  visible,
+  tokenSymbol,
+  maxFeeDisplay,
+  onClose,
+}) => {
   const symbol = tokenSymbol || 'stablecoin';
   const bullets = [
-    'You pay the gas cost plus a 0.5% service fee.',
-    'The total shows as the Network Fee before you confirm.',
+    maxFeeDisplay
+      ? `You pay the gas fee up to ${maxFeeDisplay} ${symbol} plus a 10% service fee for this transaction.`
+      : 'You pay the gas fee up to estimated fee plus 10% service fee for this transaction.',
+    'The total shows as the Estimated Fee before you confirm',
     'Your transfer and the fee are sent together, so if one fails neither happens.',
     `Your ${symbol} balance has to cover both the amount you send and the fee.`,
   ];

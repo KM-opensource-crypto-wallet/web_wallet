@@ -5,7 +5,12 @@ import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import SponsoredGasInfoModal from 'components/SponsoredGasInfoModal';
 import s from './SponsoredGasToggle.module.css';
 
-const SponsoredGasToggle = ({tokenSymbol, checked, onToggle}) => {
+const SponsoredGasToggle = ({
+  tokenSymbol,
+  checked,
+  onToggle,
+  maxFeeDisplay,
+}) => {
   const [showInfo, setShowInfo] = useState(false);
 
   return (
@@ -29,6 +34,7 @@ const SponsoredGasToggle = ({tokenSymbol, checked, onToggle}) => {
       <SponsoredGasInfoModal
         visible={showInfo}
         tokenSymbol={tokenSymbol}
+        maxFeeDisplay={maxFeeDisplay}
         onClose={() => setShowInfo(false)}
       />
     </>

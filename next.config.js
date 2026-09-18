@@ -37,7 +37,10 @@ const nextConfig = {
     SENTRY_DEV_TOOLS: process.env.SENTRY_DEV_TOOLS,
     SENTRY_DEBUG: process.env.SENTRY_DEBUG,
     ENV_MODE: process.env.ENV_MODE,
-    SPONSOR_TREASURY_ADDRESS: process.env.SPONSOR_TREASURY_ADDRESS,
+    SPONSOR_TREASURY_ADDRESS_SANDBOX:
+      process.env.SPONSOR_TREASURY_ADDRESS_SANDBOX,
+    SPONSOR_TREASURY_ADDRESS_PRODUCTION:
+      process.env.SPONSOR_TREASURY_ADDRESS_PRODUCTION,
   },
   trailingSlash: true,
   reactStrictMode: false,

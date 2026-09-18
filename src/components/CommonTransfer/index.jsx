@@ -14,6 +14,7 @@ import {sendFunds} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSli
 import {
   getTransferData,
   getTransferDataCustomError,
+  getTransferDataCustomErrorCode,
   getTransferDataFeeSuccess,
   getTransferDataLoading,
   getTransferDataSubmitting,
@@ -27,10 +28,13 @@ import Loading from 'components/Loading';
 import {
   delay,
   getCustomizePublicAddress,
+  getSponsoredGasCoins,
   isBalanceNotAvailable,
   isCustomAddressNotSupportedChain,
   isEVMChain,
   isFeesOptionChain,
+  isSponsoredGasChain,
+  SPONSOR_EMPTY_CODE,
 } from 'dok-wallet-blockchain-networks/helper';
 import {
   getBalanceForNativeCoin,
@@ -52,7 +56,10 @@ import {
   selectSelectedExchangeChain,
 } from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
 import PageTitle from 'components/PageTitle';
-import {calculateEstimateFee} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
+import {
+  calculateEstimateFee,
+  setCurrentTransferData,
+} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import icons from 'assets/images/icons';
 import ValidatorItem from 'components/ValidatorItem';
 import {getSellCryptoRequestDetails} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
@@ -63,6 +70,7 @@ import AdvancedFeesSheet from 'components/AdvancedFeesSheet';
 import useAdvancedFees from 'src/hooks/useAdvancedFees';
 import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
+import SponsoredGasToggle from 'components/SponsoredGasToggle';
 
 // One label/value line of a details or fee box.
 const InfoRow = ({label, value}) => (
@@ -83,26 +91,50 @@ const FeeSummaryBox = ({
   maxTotalDisplay,
   isEip1559,
   estimatedFee,
+  isSponsored,
   children,
 }) => {
   const formatFee = value =>
     isRefreshing ? 'Refreshing' : `${value || '0'} ${feeSymbol}`;
+
+  const formatFeeRange = (low, high) => {
+    if (isRefreshing) {
+      return 'Refreshing';
+    }
+    const lowBn = new BigNumber(low);
+    const highBn = new BigNumber(high);
+    const top5 = new BigNumber(high).decimalPlaces(5, BigNumber.ROUND_UP);
+    if (!lowBn.isFinite() || !highBn.isFinite() || lowBn.gte(highBn)) {
+      return top5.isFinite()
+        ? `${top5.toFixed()} ${feeSymbol}`
+        : formatFee(high);
+    }
+    const bottom = lowBn.decimalPlaces(5, BigNumber.ROUND_DOWN);
+    const top = highBn.decimalPlaces(5, BigNumber.ROUND_UP);
+    const places = Math.max(bottom.decimalPlaces(), top.decimalPlaces());
+    return `${bottom.toFixed(places)} ~ ${top.toFixed(places)} ${feeSymbol}`;
+  };
   return (
     <div className={s.box}>
       {children}
-      {isEip1559 ? (
+      {isSponsored ? (
+        <InfoRow
+          label={'Estimated Fee'}
+          value={formatFeeRange(estimatedFee, fee)}
+        />
+      ) : isEip1559 ? (
         <>
-          <FeeRow
+          <InfoRow
             label={'Estimated Fee'}
             value={formatFee(estimatedFee ?? fee)}
           />
-          <FeeRow label={'Max Fee'} value={formatFee(fee)} />
+          <InfoRow label={'Max Fee'} value={formatFee(fee)} />
         </>
       ) : (
-        <FeeRow label={'Network Fee'} value={formatFee(fee)} />
+        <InfoRow label={'Network Fee'} value={formatFee(fee)} />
       )}
       {maxTotalDisplay != null && (
-        <FeeRow label={'Max Total'} value={maxTotalDisplay} />
+        <InfoRow label={'Max Total'} value={maxTotalDisplay} />
       )}
     </div>
   );
@@ -345,26 +377,13 @@ const CommonTransfer = () => {
   };
 
   const sponsoredGasCoins = useMemo(() => {
-    if (!isSponsoredGasChain(chainName)) {
-      return [];
-    }
     const items = isBatchTransaction
       ? transferData?.transactionsData?.map(item => item?.coinInfo)
       : [transferData?.currentCoin];
     if (!items?.length || items.some(item => !item?.contractAddress)) {
       return [];
     }
-    return (currentWallet?.coins ?? [])
-      .filter(
-        coin =>
-          coin?.chain_name === chainName &&
-          Number(coin?.totalAmount) > 0 &&
-          getSponsoredGasTokenSymbol(chainName, coin?.contractAddress),
-      )
-      .map(coin => ({
-        symbol: getSponsoredGasTokenSymbol(chainName, coin?.contractAddress),
-        contractAddress: coin?.contractAddress,
-      }));
+    return getSponsoredGasCoins(chainName, currentWallet?.coins);
   }, [
     chainName,
     isBatchTransaction,
@@ -375,14 +394,16 @@ const CommonTransfer = () => {
 
   const payGasWithToken = !!transferData?.payGasWithToken;
   const payGasWithTokenRef = useRef(payGasWithToken);
-  payGasWithTokenRef.current = payGasWithToken;
+  useLayoutEffect(() => {
+    payGasWithTokenRef.current = payGasWithToken;
+  }, [payGasWithToken]);
 
+  const gasTokenSymbol = transferData?.gasTokenSymbol;
   const activeGasToken = useMemo(
     () =>
-      sponsoredGasCoins.find(
-        item => item.symbol === transferData?.gasTokenSymbol,
-      ) || sponsoredGasCoins[0],
-    [sponsoredGasCoins, transferData?.gasTokenSymbol],
+      sponsoredGasCoins.find(item => item.symbol === gasTokenSymbol) ||
+      sponsoredGasCoins[0],
+    [sponsoredGasCoins, gasTokenSymbol],
   );
 
   const requoteSponsoredGas = useCallback(() => {
@@ -450,6 +471,11 @@ const CommonTransfer = () => {
       tokenSymbol={activeGasToken.symbol}
       checked={payGasWithToken}
       onToggle={onToggleSponsoredGas}
+      maxFeeDisplay={
+        payGasWithToken && !isFetchingSponsoredQuote
+          ? transferData?.transactionFee
+          : null
+      }
     />
   ) : null;
 
@@ -754,6 +780,7 @@ const CommonTransfer = () => {
     feeSymbol: sponsoredFeeSymbol,
     isEip1559,
     estimatedFee: transferData?.estimatedFee,
+    isSponsored: payGasWithToken,
   };
 
   const currencyRate =
@@ -1178,13 +1205,6 @@ const CommonTransfer = () => {
               {payGasWithToken
                 ? 'Gas quote expired — fetching a new one.'
                 : 'Quote expired — go back and refresh the quote.'}
-            </p>
-          )}
-          {!isCustomFeesValid && (
-            <p className={s.errorText}>
-              {
-                'Priority fee cannot be higher than max fee — fix it in Advanced Options.'
-              }
             </p>
           )}
           {!isCustomFeesValid && (
