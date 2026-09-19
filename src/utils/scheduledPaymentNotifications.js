@@ -35,3 +35,12 @@ export const createScheduledPaymentNotification = async () => ({
   scheduled: false,
   blocked: false,
 });
+
+// Web has no notification tray, so no payment can have a displayed reminder.
+// Returns a Set like mobile so schedulePaymentSlice's prune can spread it into
+// its keep-set unchanged. (Mobile's version reads notifee's displayed
+// notifications and can throw on a read failure; here there is nothing to
+// read, so an empty Set is the honest answer, not a swallowed error.)
+export const getPaymentIdsWithDisplayedReminders = async () => new Set();
+
+export const cancelDisplayedRemindersForPayment = async () => {};
