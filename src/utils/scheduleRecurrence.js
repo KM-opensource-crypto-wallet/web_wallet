@@ -216,6 +216,42 @@ export const getNextOccurrence = (payment, now = Date.now()) => {
 };
 
 // A scheduled payment with no upcoming occurrence has no live reminder and
-// nothing left to show — callers prune it from redux.
+// nothing left to show. NB this is true from the millisecond a one-time
+// reminder fires, so it answers "is another reminder coming?" and NOT "is this
+// safe to delete?" - see isScheduledPaymentStale for the latter.
 export const isScheduledPaymentExpired = (payment, now = Date.now()) =>
   getNextOccurrence(payment, now) === null;
+
+export const getLastOccurrence = payment => {
+  if (!payment) {
+    return null;
+  }
+  const occurrences = computeOccurrences({
+    scheduledAt: payment.scheduledAt,
+    recurrence: payment.recurrence,
+  });
+  return occurrences.length ? occurrences[occurrences.length - 1] : null;
+};
+
+// How long a fired payment is kept around before automatic cleanup may take
+// it. This is a bound on unbounded growth, not a window the user is racing:
+// the payment's real end of life is the user acting on it (the reminder tap
+// prefills a transfer and deletes it, or the user deletes it from the list).
+// A month is far longer than any notification usefully sits in the tray.
+export const SCHEDULED_PAYMENT_STALE_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Safe to delete without the user having acted. Deleting on `expired` alone is
+// what removed a payment in the moments between its reminder firing and the
+// user tapping it, leaving the tap with nothing to prefill.
+export const isScheduledPaymentStale = (payment, now = Date.now()) => {
+  if (!isScheduledPaymentExpired(payment, now)) {
+    return false;
+  }
+  const lastOccurrence = getLastOccurrence(payment);
+  // No computable occurrence at all (missing or malformed scheduledAt): there
+  // is nothing to wait for, so it can go.
+  if (!lastOccurrence) {
+    return true;
+  }
+  return now - lastOccurrence > SCHEDULED_PAYMENT_STALE_AFTER_MS;
+};
