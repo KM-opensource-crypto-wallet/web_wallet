@@ -7,7 +7,12 @@ import ReactGA from 'react-ga4';
 import Header from '../Header';
 import Sidebar from '../Sidebar';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import {
+  getHasAccount,
+  getIsVaultUnlocked,
+} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import {persistor, vaultSync} from 'redux/store';
+import {lockSession} from 'security/unlockFlow';
 import {useRouter} from 'next/navigation';
 import {
   checkNewsAvailable,
@@ -68,12 +73,7 @@ import {
 import DisabledView from 'components/DisabledView';
 import {MainNavigation} from 'utils/navigation';
 
-import {
-  createIfNotExistsMasterClientId,
-  reassignCurrentWalletIfHidden,
-  resetCoinsToDefaultAddressForPrivacyMode,
-  resetIsAdding50MoreAddresses,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {resetIsAdding50MoreAddresses} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {isLocaleSet, setUserLocale} from 'src/utils/updateLocale';
 import {masterClickHost, publicRoutes, allPublicRoutes} from 'utils/common';
 import {setWLAppName} from 'utils/wlData';
@@ -82,7 +82,10 @@ import {createDynamicTheme} from 'src/theme';
 import CoinSyncWidget from 'components/CoinSyncWidget';
 
 function AppRouting({children, wlData}) {
-  const password = useSelector(getUserPassword);
+  // Routing keys off "has an account", never off a stored password (there is
+  // none any more); wallet data is sealed until the vault unlocks.
+  const hasAccount = useSelector(getHasAccount);
+  const isVaultUnlocked = useSelector(getIsVaultUnlocked);
   const routing = useRouter();
   const dispatch = useDispatch();
   const pathname = usePathname();
@@ -171,15 +174,18 @@ function AppRouting({children, wlData}) {
   }, []);
 
   const redirectToLoginOnTimeout = useCallback(() => {
+    // Zeroise before showing the lock screen: keys leave memory, sealed
+    // persistence pauses, and only re-login brings them back.
+    dispatch(lockSession());
     const currentSearchString = searchParams?.toString();
     const searchString = currentSearchString
       ? `${currentSearchString}&redirectRoute=${encodeURIComponent(pathname)}`
       : `redirectRoute=${encodeURIComponent(pathname)}`;
     routing.replace(`/auth/login?${searchString}`);
-  }, [pathname, searchParams, routing]);
+  }, [dispatch, pathname, searchParams, routing]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !password || !(lockTime > 0)) {
+    if (typeof window === 'undefined' || !hasAccount || !(lockTime > 0)) {
       return;
     }
     const isProtectedRoute =
@@ -202,12 +208,11 @@ function AppRouting({children, wlData}) {
       }
     }, AUTO_LOCK_CHECK_INTERVAL_MS);
     return () => clearInterval(intervalId);
-  }, [password, lockTime, pathname, redirectToLoginOnTimeout]);
+  }, [hasAccount, lockTime, pathname, redirectToLoginOnTimeout]);
 
   useEffect(() => {
     if (isReduxStoreLoad) {
       dispatch(resetIsAdding50MoreAddresses());
-      dispatch(createIfNotExistsMasterClientId());
       let searchString = searchParams?.toString();
       if (
         !pathname?.includes('/auth') &&
@@ -226,10 +231,9 @@ function AppRouting({children, wlData}) {
           createAIDIfNotExists(searchParams.get(key));
         }
       }
-      dispatch(resetCoinsToDefaultAddressForPrivacyMode());
-      // On (re)load, RELAUNCH/BACKGROUND wallets are re-hidden by the persist
-      // transform; if the current wallet is now hidden, reassign to a visible one.
-      dispatch(reassignCurrentWalletIfHidden());
+      // Wallet-slice housekeeping (privacy-mode addresses, hidden-wallet
+      // reassignment, master client id) moved to the unlock flow: the sealed
+      // wallets slice is empty until then.
       dispatch(fetchSupportedBuyCryptoCurrency({fromDevice: 'web'}));
       dispatch(checkNewsAvailable({key: 'web'}));
       fetchRPCUrl();
@@ -240,19 +244,6 @@ function AppRouting({children, wlData}) {
         },
         1000 * 60 * 10,
       );
-      // WalletKit.init takes a relay handshake; screens that need the client
-      // (WalletConnectStatus) wait on this flag instead of racing it.
-      const startWalletConnect = () =>
-        initWalletConnect(getWalletConnectDetails())
-          .then(() => dispatch(setIsWalletConnectInitialized(true)))
-          .catch(e =>
-            captureError(e, {tags: {area: 'walletconnect', op: 'init'}}),
-          );
-      if (!Object.keys(walletConnectSessions).length) {
-        clearWalletConnectStorageCache().then(startWalletConnect);
-      } else {
-        startWalletConnect();
-      }
       let hostname = '';
       if (typeof window !== 'undefined') {
         hostname = window?.location?.hostname;
@@ -275,7 +266,7 @@ function AppRouting({children, wlData}) {
           lockTime > 0 && elapsedMinutesSinceLastActive < lockTime;
         const shouldSkipLock = shouldSkipLockScreen() || isWithinAutoLockWindow;
 
-        if (!password) {
+        if (!hasAccount) {
           if (pathname !== '/auth/registration') {
             routing.replace(searchString ? `/?${searchString}` : '/');
           }
@@ -297,6 +288,56 @@ function AppRouting({children, wlData}) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReduxStoreLoad]);
+
+  // WalletConnect needs signing keys: a session_request arriving while the
+  // user sits on Login would open the request modal with no key to sign (spec
+  // §12.2.2). Start it once per page load, after the vault has unlocked.
+  const [walletConnectStarted, setWalletConnectStarted] = useState(false);
+  useEffect(() => {
+    if (!isReduxStoreLoad || !isVaultUnlocked || walletConnectStarted) {
+      return;
+    }
+    (() => {
+      setWalletConnectStarted(true);
+    })();
+    // WalletKit.init takes a relay handshake; screens that need the client
+    // (WalletConnectStatus) wait on this flag instead of racing it.
+    const startWalletConnect = () =>
+      initWalletConnect(getWalletConnectDetails())
+        .then(() => dispatch(setIsWalletConnectInitialized(true)))
+        .catch(e =>
+          captureError(e, {tags: {area: 'walletconnect', op: 'init'}}),
+        );
+    if (!Object.keys(walletConnectSessions).length) {
+      clearWalletConnectStorageCache().then(startWalletConnect);
+    } else {
+      startWalletConnect();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReduxStoreLoad, isVaultUnlocked]);
+
+  // Persist writes are throttled and the vault write debounced; push both out
+  // before the tab is hidden or unloaded.
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const flush = () => {
+      persistor.flush().catch(() => {});
+      vaultSync.flush().catch(() => {});
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        flush();
+      }
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     setWhiteLabelInfo(wlData);

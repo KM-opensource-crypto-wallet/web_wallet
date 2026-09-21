@@ -23,11 +23,15 @@ import {
 import {useDispatch, useSelector} from 'react-redux';
 import {
   getAttempts,
-  getIsLocked,
   getLastAttempt,
   getMaxAttempt,
-  getUserPassword,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import {
+  UNLOCK_ERROR_CODES,
+  isInvalidPassword,
+  unlockWithPassword,
+} from 'security/unlockFlow';
+import {captureError} from 'services/logger';
 import {
   selectAllWallets,
   selectCurrentWalletClientId,
@@ -48,10 +52,12 @@ const LoginScreen = () => {
   const [hide, setHide] = useState(true);
   const [showResetModal, setShowResetModal] = useState(false);
   const [wrong, setWrong] = useState(false);
+  // A problem that must not be dismissed as "wrong password": wallets without
+  // keys in the vault, or secure storage unavailable.
+  const [blocked, setBlocked] = useState(null);
   const router = useRouter();
   const buttonRef = useRef();
   const dispatch = useDispatch();
-  const storePassword = useSelector(getUserPassword);
   const allWallets = useSelector(selectAllWallets);
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const rateLimitCheck = useSelector(isWalletReset);
@@ -59,7 +65,6 @@ const LoginScreen = () => {
   const searchParams = useSearchParams();
 
   const attempts = useSelector(getAttempts);
-  const isLocked = useSelector(getIsLocked);
   const MAX_ATTEMPT = useSelector(getMaxAttempt);
 
   const hasWallet = useCallback(() => {
@@ -72,8 +77,28 @@ const LoginScreen = () => {
 
   const onClickLogin = useCallback(
     async values => {
-      if (storePassword === values.password) {
-        dispatch(logInSuccess(values.password));
+      let unlocked = false;
+      try {
+        // "Correct password" = the vault key unwrapped; nothing is compared.
+        // This also rehydrates the sealed slices and re-enables persistence.
+        await dispatch(unlockWithPassword(values.password));
+        unlocked = true;
+      } catch (error) {
+        if (!isInvalidPassword(error)) {
+          if (error?.code === UNLOCK_ERROR_CODES.MISSING_SECRETS) {
+            setBlocked(error.message);
+          } else {
+            captureError(error, {tags: {area: 'auth', op: 'unlock_password'}});
+            setBlocked(
+              'Your wallet could not be unlocked because its secure storage is unavailable. Please reload the page.',
+            );
+          }
+          dispatch(loadingOff());
+          return;
+        }
+      }
+      if (unlocked) {
+        dispatch(logInSuccess());
         setLastActiveTime();
         if (rateLimitCheck) {
           dispatch(resetAttempts());
@@ -119,7 +144,6 @@ const LoginScreen = () => {
       rateLimitCheck,
       router,
       searchParams,
-      storePassword,
       currentWalletClientId,
     ],
   );
@@ -221,6 +245,7 @@ const LoginScreen = () => {
                   * You have entered an invalid password
                 </p>
               )}
+              {blocked ? <p className={styles.textWarning}>{blocked}</p> : null}
 
               <button className={styles.button} type='submit' ref={buttonRef}>
                 Sign in

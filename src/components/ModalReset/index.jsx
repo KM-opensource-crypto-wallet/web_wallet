@@ -1,9 +1,9 @@
 import React, {useState, useEffect, useContext, useLayoutEffect} from 'react';
-// import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
-import {
-  logOutSuccess,
-  // fingerprintAuthOut,
-} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
+import {logOutSuccess} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
+import {lockSession} from 'security/unlockFlow';
+import {persistor} from 'redux/store';
+import {wipeAllLocalData} from 'redux/storage/wipe';
+import {captureError} from 'services/logger';
 import {useDispatch} from 'react-redux';
 import {resetWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {addBreadcrumb} from 'services/logger';
@@ -35,7 +35,6 @@ const ModalReset = ({visible, hideModal, page, link}) => {
   //   const {theme} = useContext(ThemeContext);
   //   const styles = myStyles(theme);
   const dispatch = useDispatch();
-  // const storePassword = useSelector(getUserPassword);
   const [list, setList] = useState('');
   const router = useRouter();
 
@@ -66,14 +65,22 @@ const ModalReset = ({visible, hideModal, page, link}) => {
       hideModal(false);
       router.push('/auth/reset-wallet');
     } else if (list === 'Forgot') {
+      // Forgot password provably means the vault is unrecoverable: the account,
+      // its wallets, the vault and every local trace go (seed phrase or nothing).
       dispatch(logOutSuccess());
       dispatch(resetWallet());
       dispatch(resetCurrentTransferData());
       dispatch(resetBatchTransactions());
+      wipeAllLocalData({persistor}).catch(e =>
+        captureError(e, {tags: {area: 'storage', op: 'wipe'}}),
+      );
       setTimeout(() => {
         router.push('/auth/registration');
       }, 200);
     } else {
+      // Log out (W2): zeroise keys in memory and pause sealed persistence
+      // until the next login.
+      dispatch(lockSession());
       hideModal(false);
       router.push('/auth/login');
     }

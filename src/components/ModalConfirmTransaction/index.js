@@ -11,11 +11,10 @@ import React, {
 // import {Modal, Text, input} from 'react-native-paper';
 // import myStyles from './ModalConfirmTransactionStyles';
 // import {Formik} from 'formik';
-import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import * as vault from 'dok-wallet-blockchain-networks/security/vault';
 // import {IS_IOS, useFloatingHeight} from 'dok-wallet-blockchain-networks/service/dimensions';
 import {validationSchemaFingerprintVerification} from 'utils/validationSchema';
 // import {useKeyboardHeight} from 'dok-wallet-blockchain-networks/service/useKeyboardHeight';
-import {useSelector} from 'react-redux';
 // import {ThemeContext} from '../../../ThemeContext';
 // import {isFingerprint} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 // import FingerprintScanner from 'react-native-fingerprint-scanner';
@@ -33,8 +32,8 @@ const ModalConfirmTransaction = ({visible, hideModal, onSuccess}) => {
 
   // const floatingModalHeight = useFloatingHeight();
   // const keyboardHeight = useKeyboardHeight();
-  const storePassword = useSelector(getUserPassword);
   const [wrong, setWrong] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   // Guards against double-submit (Enter key + click racing, or rapid clicks)
   // firing onSuccess twice and broadcasting the transaction twice.
   const isSubmittingRef = useRef(false);
@@ -85,12 +84,24 @@ const ModalConfirmTransaction = ({visible, hideModal, onSuccess}) => {
   //   }
   // }, [handleFingerprintAuth, visible]);
 
-  const onSubmit = values => {
-    const {currentPassword} = values;
-    if (currentPassword === storePassword) {
-      triggerSuccess();
-    } else {
+  // One PBKDF2 (600k, in a worker) per confirm: the KDF is the verifier.
+  const onSubmit = async values => {
+    if (verifying) {
+      return;
+    }
+    setVerifying(true);
+    try {
+      const ok = await vault.verifyPassword(values.currentPassword);
+      if (ok) {
+        triggerSuccess();
+      } else {
+        setWrong(true);
+      }
+    } catch (e) {
+      console.error('Error verifying password', e);
       setWrong(true);
+    } finally {
+      setVerifying(false);
     }
   };
 

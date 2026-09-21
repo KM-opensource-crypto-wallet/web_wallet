@@ -9,7 +9,7 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {setCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {isReduxStoreLoaded} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
-import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import {getHasAccount} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
 
 // Routes that manage a wallet without making it the active one - e.g. hiding,
 // scanning, or backing up another wallet from its Edit screen while a
@@ -29,7 +29,7 @@ export default function WalletScopedLayout({children}) {
   const isStoreLoaded = useSelector(isReduxStoreLoaded);
   const allWallets = useSelector(selectAllWallets);
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
-  const hasPassword = Boolean(useSelector(getUserPassword));
+  const hasPassword = useSelector(getHasAccount);
 
   useEffect(() => {
     if (!isStoreLoaded) {
