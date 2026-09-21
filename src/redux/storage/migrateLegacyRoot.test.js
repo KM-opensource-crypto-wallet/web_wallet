@@ -299,6 +299,62 @@ describe('migrateLegacyRoot (web)', () => {
     );
   });
 
+  describe('legacy blob read failures are never mistaken for "no legacy blob"', () => {
+    // localStorage.getItem throws (SecurityError) when site data is blocked.
+    // runMigrations must not read that as "fresh install" and stamp schema 3
+    // over an un-migrated blob: the bootstrap rejects, nothing is marked, and
+    // the next bootstrapStorage() after resetBootstrap() redoes it for real.
+    const failLegacyRead = () => {
+      const real = localStorage.getItem;
+      localStorage.getItem = key => {
+        if (key === LEGACY_ROOT_KEY) {
+          throw Object.assign(new Error('storage blocked'), {
+            name: 'SecurityError',
+          });
+        }
+        return real(key);
+      };
+      return () => {
+        localStorage.getItem = real;
+      };
+    };
+
+    it('a throwing legacy read rejects the bootstrap and never marks the schema', async () => {
+      const slices = legacySlices();
+      seedLegacy(slices);
+      const restore = failLegacyRead();
+      try {
+        await expect(bootstrapStorage()).rejects.toThrow('storage blocked');
+        expect(isStorageReady()).toBe(false);
+        expect(await plainKv.get(STORAGE_KEYS.schemaVersion)).toBeNull();
+        expect(await vault.hasVault()).toBe(false);
+      } finally {
+        restore();
+      }
+      expect(localStorage.getItem(LEGACY_ROOT_KEY)).not.toBeNull();
+
+      // Retry runs the real migration from the untouched blob.
+      resetBootstrap();
+      await bootstrapStorage();
+      expect(await plainKv.get(STORAGE_KEYS.schemaVersion)).toBe(
+        SCHEMA_VERSION.migrated,
+      );
+      expect(await vault.unlockWithPassword('Secret123!')).toEqual(
+        extractVaultPayload(slices.wallets.allWallets),
+      );
+    });
+
+    it('a throwing read with no blob is still fatal, not a fresh install', async () => {
+      const restore = failLegacyRead();
+      try {
+        await expect(bootstrapStorage()).rejects.toThrow('storage blocked');
+        expect(await plainKv.get(STORAGE_KEYS.schemaVersion)).toBeNull();
+      } finally {
+        restore();
+      }
+    });
+  });
+
   describe('finalizeLegacyMigration', () => {
     it('removes the legacy blob and sets 3 once the hydrated wallets match', async () => {
       const slices = legacySlices();
