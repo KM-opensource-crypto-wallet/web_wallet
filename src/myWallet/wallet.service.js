@@ -11,7 +11,7 @@ import bs58 from 'bs58';
 import {TronWeb} from 'tronweb';
 import {Wallet} from 'xrpl';
 import {InMemorySigner} from '@taquito/signer';
-import {config} from 'dok-wallet-blockchain-networks/config/config';
+import {config, IS_SANDBOX} from 'dok-wallet-blockchain-networks/config/config';
 import {DirectSecp256k1HdWallet} from '@cosmjs/proto-signing';
 import {Client} from '@xchainjs/xchain-thorchain';
 import {Keyring} from '@polkadot/keyring';
@@ -353,6 +353,80 @@ const createFilecoinWallet = async (mnemonic, isSandbox) => {
   }
 };
 
+// Zcash transparent (t-address) keygen. Mirrors the native ZcashCoin.java /
+// ZcashCoin.swift bridge: BIP44 account m/44'/133'/0' on mainnet, the
+// universal testnet coin type m/44'/1'/0' on testnet (the same convention
+// getAccountBasePath uses for the bitcoin chains), 20 receive + 20 change
+// addresses shipped with the wallet, and addCustomDerivation for one
+// arbitrary path.
+//
+// Zcash reuses Bitcoin's WIF version bytes (0x80 / 0xef), so bitcoinjs-lib's
+// networks are correct for the private keys; only the public address bytes
+// differ (2-byte 0x1CB8 "t1..." / 0x1D25 "tm..." prefixes bitcoinjs cannot
+// express as a `network`). Those live in exactly one place -- ZcashChain's
+// createWalletByPrivateKey -- so the address is built from the WIF there
+// rather than re-encoded here. Network, coin type and address prefix must all
+// read the same IS_SANDBOX, which is why this ignores the `isSandbox`
+// argument like the bitcoin chains do (see getBitcoinRoot above).
+const getZcashAccountBasePath = () =>
+  IS_SANDBOX ? "m/44'/1'/0'" : "m/44'/133'/0'";
+
+const getZcashRoot = mnemonic => {
+  const network = IS_SANDBOX
+    ? bitcoin.networks.testnet
+    : bitcoin.networks.bitcoin;
+  const seed = bip39.mnemonicToSeedSync(mnemonic);
+  return BIP32Factory(ecc).fromSeed(seed, network);
+};
+
+// Lazy: ZcashChain pulls in the explorer provider clients, which the keygen
+// bridge should not load eagerly (cryptoChain/index.js loads chains on
+// demand for the same reason). ZcashChain never imports this module, so
+// there is no cycle.
+const zcashAddressFromWif = privateKey => {
+  const {
+    ZcashChain,
+  } = require('dok-wallet-blockchain-networks/cryptoChain/chains/ZcashChain');
+  return ZcashChain().createWalletByPrivateKey({privateKey}).address;
+};
+
+// Same item shape as the native addCustomDerivation map and as the bitcoin
+// deriveAddressRange entries: {derivePath, address, privateKey}.
+const toZcashDeriveItem = (node, derivePath) => {
+  const privateKey = node.toWIF();
+  return {derivePath, address: zcashAddressFromWif(privateKey), privateKey};
+};
+
+const createZcashWallet = async mnemonic => {
+  try {
+    const basePath = getZcashAccountBasePath();
+    const accountNode = getZcashRoot(mnemonic).derivePath(basePath);
+    const deriveAddresses = [RECEIVE_CHAIN, CHANGE_CHAIN].flatMap(
+      chainIndex => {
+        const chainNode = accountNode.derive(chainIndex);
+        return Array.from({length: GAP_LIMIT}, (_, i) =>
+          toZcashDeriveItem(
+            chainNode.derive(i),
+            `${basePath}/${chainIndex}/${i}`,
+          ),
+        );
+      },
+    );
+    const primary = deriveAddresses[0];
+    if (!primary?.address) {
+      throw new Error('could not derive zcash account addresses');
+    }
+    return {
+      privateKey: primary.privateKey,
+      address: primary.address,
+      deriveAddresses,
+    };
+  } catch (e) {
+    console.error('Error in createZcashWallet', e);
+    throw e;
+  }
+};
+
 const createWalletObj = {
   ethereum: createEvmWallet,
   base: createEvmWallet,
@@ -387,6 +461,7 @@ const createWalletObj = {
   aptos: createAptosWallet,
   cardano: createCardanoWallet,
   filecoin: createFilecoinWallet,
+  zcash: createZcashWallet,
 };
 
 const createEVMDeriveAddress = (mnemonic, startingIndex) => {
@@ -549,6 +624,20 @@ const addCustomBitcoinDeriveAddress =
     }
   };
 
+// One arbitrary path, like addCustomBitcoinDeriveAddress; mirrors the native
+// ZcashCoin.addCustomDerivation.
+const addCustomZcashDeriveAddress = async (mnemonic, customDerivePath) => {
+  try {
+    return toZcashDeriveItem(
+      getZcashRoot(mnemonic).derivePath(customDerivePath),
+      customDerivePath,
+    );
+  } catch (e) {
+    console.error('Error in addCustomZcashDeriveAddress', e);
+    throw e;
+  }
+};
+
 const addCustomDerivePath = {
   ethereum: addCustomEVMDeriveAddress,
   solana: addCustomSolanaDeriveAddress,
@@ -557,6 +646,7 @@ const addCustomDerivePath = {
   bitcoin_segwit: addCustomBitcoinDeriveAddress('bitcoin_segwit'),
   bitcoin_legacy: addCustomBitcoinDeriveAddress('bitcoin_legacy'),
   bitcoin_taproot: addCustomBitcoinDeriveAddress('bitcoin_taproot'),
+  zcash: addCustomZcashDeriveAddress,
 };
 export const addCustomDeriveAddressToWallet = async (
   chain_name,
