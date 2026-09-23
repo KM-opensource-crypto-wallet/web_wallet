@@ -1,5 +1,9 @@
 import {createMigrate, persistReducer, persistStore} from 'redux-persist';
-import {combineReducers, configureStore} from '@reduxjs/toolkit';
+import {
+  combineReducers,
+  configureStore,
+  createListenerMiddleware,
+} from '@reduxjs/toolkit';
 import {authSlice} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {
   RELOCK_OPTIONS,
@@ -28,7 +32,10 @@ import {
   createWalletsPersistTransform,
   sellCryptoPersistTransform,
 } from 'dok-wallet-blockchain-networks/redux/storage/persistTransforms';
-import {createVaultSync} from 'dok-wallet-blockchain-networks/security/vaultSync';
+import {
+  IMMEDIATE_VAULT_WRITE_ACTIONS,
+  createVaultSync,
+} from 'dok-wallet-blockchain-networks/security/vaultSync';
 import {rejectedActionBreadcrumb} from './sentryMiddleware';
 import {plainStorage} from './storage/plainStorage';
 import {sealedStorage} from './storage/sealedStorage';
@@ -46,8 +53,12 @@ import {
 // transform and live only in the vault (security/vault.js), mirrored by the
 // vaultSync listener. `timeout: 0` is mandatory (the default 5 s timer would
 // rehydrate initial state after a slow bootstrap and persist it over the real
-// data); `throttle: 1000` batches the write bursts that froze the UI on the
-// synchronous localStorage engine this replaces.
+// data). No `throttle`: redux-persist serialises ONE top-level field per
+// throttle tick and writes a slice only once every changed field has been
+// processed, so `throttle: 1000` delayed the first wallets write after load by
+// ~9 s (nine fields) and a tab closed inside that window lost a new wallet
+// (mobile lost one the same way). `persistFlush` below also forces the write
+// on the wallet-creating actions and on resetWallet.
 export const PERSIST_VERSION = 1;
 
 export const PLAIN_SLICE_NAMES = Object.freeze([
@@ -80,7 +91,6 @@ const makePersistConfig = (slice, storage, {blacklist, transforms} = {}) => ({
   version: PERSIST_VERSION,
   migrate: createMigrate({}, {debug: false}),
   timeout: 0,
-  throttle: 1000,
   ...(blacklist ? {blacklist} : {}),
   ...(transforms ? {transforms} : {}),
   // Dev only: per-slice serialize timing (R9a evidence); read with
@@ -155,6 +165,20 @@ export const rootReducer = combineReducers({
 // logOutSuccess. `flush()` runs on pagehide next to persistor.flush().
 export const vaultSync = createVaultSync();
 
+// Key material must be on disk before the tab can close: the same actions the
+// vault writes immediately for also flush redux-persist right away (and
+// resetWallet, so an emptied wallet list is never rolled back).
+// `persistor` is assigned below; the effect only runs after dispatches.
+const persistFlush = createListenerMiddleware();
+persistFlush.startListening({
+  predicate: action =>
+    IMMEDIATE_VAULT_WRITE_ACTIONS.includes(action?.type) ||
+    action?.type === 'wallets/resetWallet',
+  effect: async () => {
+    await persistor.flush();
+  },
+});
+
 const store = configureStore({
   reducer: rootReducer,
   middleware: getDefaultMiddleware =>
@@ -162,7 +186,7 @@ const store = configureStore({
       serializableCheck: false,
       immutableCheck: false,
     })
-      .prepend(vaultSync.middleware)
+      .prepend(vaultSync.middleware, persistFlush.middleware)
       .concat(rejectedActionBreadcrumb),
   // The decrypted store (keys included) must not be inspectable in production.
   devTools: process.env.NODE_ENV !== 'production',
