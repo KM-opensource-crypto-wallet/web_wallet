@@ -130,16 +130,45 @@ export const openKvDatabase = (dbName, storeNames) => {
   return {name: dbName, open, store, close};
 };
 
-export const deleteDatabase = dbName => {
+// How long a blocked delete may wait for the other connections to close.
+// Our own handles close themselves on `versionchange` (see openKvDatabase),
+// so in the normal cross-tab case success follows within milliseconds; a tab
+// that never lets go is reported instead of being mistaken for a deletion.
+export const DELETE_BLOCKED_TIMEOUT_MS = 3000;
+
+export const deleteDatabase = (
+  dbName,
+  {blockedTimeoutMs = DELETE_BLOCKED_TIMEOUT_MS} = {},
+) => {
   if (!isIndexedDbAvailable()) {
     return Promise.resolve();
   }
   return new Promise((resolve, reject) => {
+    let timer = null;
+    const settle = fn => value => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+      fn(value);
+    };
     const request = indexedDB.deleteDatabase(dbName);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    // Another open connection is holding it; it will be deleted once they
-    // close. Resolve so the wipe can continue with the reload.
-    request.onblocked = () => resolve();
+    request.onsuccess = () => settle(resolve)();
+    request.onerror = () => settle(reject)(request.error);
+    // Another open connection is holding the database. `blocked` is not a
+    // deletion: it only says the request is parked until those connections
+    // close. Keep waiting for the real success, but never claim it.
+    request.onblocked = () => {
+      if (!timer) {
+        timer = setTimeout(
+          () =>
+            reject(
+              unavailable(
+                `IndexedDB delete of "${dbName}" is blocked by another open connection`,
+              ),
+            ),
+          blockedTimeoutMs,
+        );
+      }
+    };
   });
 };

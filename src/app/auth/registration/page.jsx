@@ -18,7 +18,7 @@ import {
   signUpSuccess,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {useDispatch} from 'react-redux';
-import {createAccount} from 'security/unlockFlow';
+import {UNLOCK_ERROR_CODES, createAccount} from 'security/unlockFlow';
 import {captureError} from 'services/logger';
 import {toast} from 'react-toastify';
 
@@ -49,8 +49,15 @@ const RegistrationScreen = () => {
     try {
       await dispatch(createAccount(values.password));
     } catch (error) {
-      captureError(error, {tags: {area: 'vault', op: 'create'}});
       dispatch(loadingOff());
+      if (error?.code === UNLOCK_ERROR_CODES.ACCOUNT_EXISTS) {
+        // Reached registration with an account on this device (e.g. a typed
+        // URL inside the auto-lock window): never replace its vault here.
+        toast.error(error.message);
+        router.replace(`/auth/login${searchParams ? `?${searchParams}` : ''}`);
+        return;
+      }
+      captureError(error, {tags: {area: 'vault', op: 'create'}});
       toast.error(
         'Could not create secure storage for your wallet. Please try again.',
       );

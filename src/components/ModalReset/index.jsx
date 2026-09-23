@@ -56,7 +56,7 @@ const ModalReset = ({visible, hideModal, page, link}) => {
     }
   };
 
-  const handlerYes = () => {
+  const handlerYes = async () => {
     // The masterClientId is discarded with the store, so user attribution
     // ends here (AppRouting clears it when the selector goes empty).
     addBreadcrumb('wallet', 'reset', {reason: list});
@@ -67,16 +67,22 @@ const ModalReset = ({visible, hideModal, page, link}) => {
     } else if (list === 'Forgot') {
       // Forgot password provably means the vault is unrecoverable: the account,
       // its wallets, the vault and every local trace go (seed phrase or nothing).
+      // Pause redux-persist first so the reset dispatches below cannot stage
+      // writes that would re-open the databases while the wipe deletes them.
+      persistor.pause();
       dispatch(logOutSuccess());
       dispatch(resetWallet());
       dispatch(resetCurrentTransferData());
       dispatch(resetBatchTransactions());
-      wipeAllLocalData({persistor}).catch(e =>
-        captureError(e, {tags: {area: 'storage', op: 'wipe'}}),
-      );
-      setTimeout(() => {
-        router.push('/auth/registration');
-      }, 200);
+      try {
+        await wipeAllLocalData({persistor});
+      } catch (e) {
+        captureError(e, {tags: {area: 'storage', op: 'wipe'}});
+      }
+      // Full page load, not a client-side push: it drops every IndexedDB
+      // connection (a delete blocked by one only completes then) and boots
+      // the empty profile from scratch instead of the reset in-memory store.
+      window.location.replace('/auth/registration');
     } else {
       // Log out (W2): zeroise keys in memory and pause sealed persistence
       // until the next login.

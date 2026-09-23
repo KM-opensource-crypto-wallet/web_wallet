@@ -229,6 +229,22 @@ describe('web storage', () => {
       expect(getDroppedSealedWrites()).toBe(dropped + 1);
       expect(await sealedStorage.getItem('persist:wallets')).toBe(slice);
     });
+
+    it('a seal that lands mid-call does not turn an in-flight read or write into a null-key call', async () => {
+      const key = await deriveStateKey(generateDek());
+      unsealStorage(key);
+      enableSealedWrites();
+      // Both calls capture the key synchronously, then await the bootstrap.
+      const write = sealedStorage.setItem('persist:wallets', slice);
+      const read = sealedStorage.getItem('persist:wallets');
+      sealStorage();
+      await expect(write).resolves.toBeUndefined();
+      // Resolves (null or the slice, whichever landed first); never rejects.
+      await expect(read).resolves.not.toBeUndefined();
+      // The write went through under the captured key.
+      unsealStorage(key);
+      expect(await sealedStorage.getItem('persist:wallets')).toBe(slice);
+    });
   });
 
   describe('secureStore (IndexedDB adapter)', () => {
@@ -249,7 +265,69 @@ describe('web storage', () => {
     });
   });
 
+  describe('deleteDatabase', () => {
+    const {deleteDatabase} = require('redux/storage/idb');
+    const {STATE_DB_NAME} = require('redux/storage/stateDb');
+    // A raw handle with no versionchange handler, like a tab that never lets go.
+    const holdOpen = () =>
+      new Promise((resolve, reject) => {
+        const req = indexedDB.open(STATE_DB_NAME);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+
+    it('a delete blocked by another connection is reported, not mistaken for success', async () => {
+      await bootstrapStorage();
+      await stateDatabase.close();
+      const holder = await holdOpen();
+      try {
+        await expect(
+          deleteDatabase(STATE_DB_NAME, {blockedTimeoutMs: 50}),
+        ).rejects.toMatchObject({code: 'unavailable'});
+      } finally {
+        holder.close();
+      }
+    });
+
+    it('a blocked delete that is released in time still resolves', async () => {
+      await bootstrapStorage();
+      await stateDatabase.close();
+      const holder = await holdOpen();
+      const pending = deleteDatabase(STATE_DB_NAME, {blockedTimeoutMs: 1000});
+      setTimeout(() => holder.close(), 20);
+      await expect(pending).resolves.toBeUndefined();
+    });
+  });
+
   describe('wipeAllLocalData', () => {
+    it('counts a blocked database delete as a failure and still finishes the other steps', async () => {
+      await bootstrapStorage();
+      localStorage.setItem(LEGACY_ROOT_KEY, 'legacy');
+      const {STATE_DB_NAME} = require('redux/storage/stateDb');
+      const holder = await new Promise((resolve, reject) => {
+        const req = indexedDB.open(STATE_DB_NAME);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const persistor = {purge: jest.fn(async () => {})};
+      try {
+        await expect(wipeAllLocalData({persistor})).rejects.toMatchObject({
+          code: 'unavailable',
+        });
+        const {captureError} = require('services/logger');
+        expect(captureError).toHaveBeenCalledWith(
+          expect.objectContaining({code: 'unavailable'}),
+          expect.objectContaining({
+            tags: expect.objectContaining({op: 'wipe', step: 'stateDb'}),
+          }),
+        );
+        // The steps after the blocked delete still ran.
+        expect(localStorage.getItem(LEGACY_ROOT_KEY)).toBeNull();
+      } finally {
+        holder.close();
+      }
+    }, 10000);
+
     it('removes vault, both databases, the legacy blob and the WalletConnect cache', async () => {
       await bootstrapStorage();
       await vault.createVault('pw');

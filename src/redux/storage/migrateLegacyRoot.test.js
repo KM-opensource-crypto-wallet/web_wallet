@@ -22,7 +22,9 @@ import {
 import {plainKv, stateDatabase} from 'redux/storage/stateDb';
 import {
   MIGRATION_ERROR_CODES,
+  commitOrphanLegacyMigration,
   consumeOrphanLegacyState,
+  decodeLegacyValue,
   finalizeLegacyMigration,
 } from 'redux/storage/migrateLegacyRoot';
 import {
@@ -127,19 +129,19 @@ const legacySlices = ({password = 'Secret123!'} = {}) => ({
   sentAddressHistory: {items: []},
 });
 
-// Exactly what redux-persist-transform-encrypt + createPersistoid wrote.
+// Exactly what redux-persist-transform-encrypt + createPersistoid wrote:
+// the encrypt transform returns a ciphertext string and the persistoid
+// serialises every transformed field (`stagedState[key] = serialize(endState)`)
+// before serialising the root, so each field is a JSON string literal *of* the
+// ciphertext ("\"U2FsdGVkX1...\""), including `_persist`.
+const encryptField = value =>
+  JSON.stringify(Aes.encrypt(JSON.stringify(value), SECRET_KEY).toString());
 const legacyRoot = slices =>
   JSON.stringify({
     ...Object.fromEntries(
-      Object.entries(slices).map(([k, v]) => [
-        k,
-        Aes.encrypt(JSON.stringify(v), SECRET_KEY).toString(),
-      ]),
+      Object.entries(slices).map(([k, v]) => [k, encryptField(v)]),
     ),
-    _persist: Aes.encrypt(
-      JSON.stringify({version: -1, rehydrated: true}),
-      SECRET_KEY,
-    ).toString(),
+    _persist: encryptField({version: -1, rehydrated: true}),
   });
 
 const seedLegacy = slices =>
@@ -262,6 +264,26 @@ describe('migrateLegacyRoot (web)', () => {
     }
   });
 
+  describe('decodeLegacyValue mirrors getStoredState: deserialise the field, then decrypt', () => {
+    it('returns the plaintext JSON of a persistoid-serialised ciphertext', () => {
+      const field = encryptField({password: 'pw', loading: false});
+      expect(JSON.parse(field)).toMatch(/^U2FsdGVkX1/); // quoted ciphertext
+      expect(JSON.parse(decodeLegacyValue('auth', field))).toEqual({
+        password: 'pw',
+        loading: false,
+      });
+    });
+
+    it('rejects a field that is not a ciphertext string with the parse code', () => {
+      expect(() => decodeLegacyValue('auth', '{"password":"pw"}')).toThrow(
+        expect.objectContaining({code: MIGRATION_ERROR_CODES.PARSE}),
+      );
+      expect(() => decodeLegacyValue('auth', 'not json')).toThrow(
+        expect.objectContaining({code: MIGRATION_ERROR_CODES.PARSE}),
+      );
+    });
+  });
+
   it('corrupt outer JSON is fatal with the parse code', async () => {
     localStorage.setItem(LEGACY_ROOT_KEY, '{not json');
     await expect(bootstrapStorage()).rejects.toMatchObject({
@@ -269,17 +291,29 @@ describe('migrateLegacyRoot (web)', () => {
     });
   });
 
-  it('no password: plain slices written, sealed slices kept in memory as orphan state', async () => {
+  it('no password: plain slices written, sealed slices kept in memory as orphan state, schema stays 0', async () => {
     seedLegacy(legacySlices({password: ''}));
     await bootstrapStorage();
-    expect(await plainKv.get(STORAGE_KEYS.schemaVersion)).toBe(
-      SCHEMA_VERSION.migrated,
-    );
+    // Nothing sealed is on disk yet, so the migration must not be marked done.
+    expect(await plainKv.get(STORAGE_KEYS.schemaVersion)).toBeNull();
     expect(
       parsePersistEnvelope(await plainKv.get('persist:auth')).hasAccount,
     ).toBe(false);
     expect(await vault.hasVault()).toBe(false);
     expect(await listSealedKeys()).toEqual([]);
+    // Finalisation never runs over pending orphan state.
+    expect(
+      await finalizeLegacyMigration({
+        getState: () => ({wallets: {allWallets: []}}),
+      }),
+    ).toBe(false);
+    expect(localStorage.getItem(LEGACY_ROOT_KEY)).not.toBeNull();
+
+    // A reload before Registration redoes the migration from the blob instead
+    // of skipping it (which would drop the wallets held only in memory).
+    consumeOrphanLegacyState();
+    resetBootstrap();
+    await bootstrapStorage();
     const orphan = consumeOrphanLegacyState();
     expect(Object.keys(orphan.slices).sort()).toEqual([
       'batchTransaction',
@@ -290,6 +324,16 @@ describe('migrateLegacyRoot (web)', () => {
     ]);
     expect(orphan.vaultPayload.wallets.w1.phrase).toBe(MNEMONIC);
     expect(() => assertNoSecrets(orphan.slices)).not.toThrow();
+
+    // createAccount's last step, after the sealed flush: now it is migrated.
+    expect(await commitOrphanLegacyMigration()).toBe(true);
+    expect(await plainKv.get(STORAGE_KEYS.schemaVersion)).toBe(
+      SCHEMA_VERSION.migrated,
+    );
+    expect(await commitOrphanLegacyMigration()).toBe(false);
+    resetBootstrap();
+    await bootstrapStorage();
+    expect(consumeOrphanLegacyState()).toBeNull();
   });
 
   it('fresh profile with no legacy blob goes straight to schema 3', async () => {

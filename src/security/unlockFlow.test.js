@@ -6,6 +6,7 @@
  */
 import 'fake-indexeddb/auto';
 import {IDBFactory} from 'fake-indexeddb';
+import Aes from 'crypto-js/aes';
 import {configureStore, createSlice} from '@reduxjs/toolkit';
 import {persistReducer, persistStore} from 'redux-persist';
 import * as vault from 'dok-wallet-blockchain-networks/security/vault';
@@ -13,8 +14,15 @@ import {createVaultSync} from 'dok-wallet-blockchain-networks/security/vaultSync
 import {authSlice} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {buildPersistEnvelope} from 'dok-wallet-blockchain-networks/redux/storage/legacyRootMigration';
 import * as secureStore from 'security/secureStore';
-import {resetBootstrap} from 'redux/storage/bootstrap';
-import {stateDatabase} from 'redux/storage/stateDb';
+import {
+  SCHEMA_VERSION,
+  STORAGE_KEYS,
+  bootstrapStorage,
+  resetBootstrap,
+} from 'redux/storage/bootstrap';
+import {consumeOrphanLegacyState} from 'redux/storage/migrateLegacyRoot';
+import {plainKv, stateDatabase} from 'redux/storage/stateDb';
+import {LEGACY_ROOT_KEY} from 'redux/storage/wipe';
 import {
   __resetSealedForTests,
   getDroppedSealedWrites,
@@ -153,6 +161,29 @@ const strippedWallet = {
 };
 
 global.window = global.window || {};
+
+// Legacy localStorage blob (crypto-js AES per field, see migrateLegacyRoot).
+const SECRET_KEY = 'test';
+process.env.REDUX_WEB_KEY = SECRET_KEY;
+const memoryStorage = () => {
+  const map = new Map();
+  return {
+    getItem: key => (map.has(key) ? map.get(key) : null),
+    setItem: (key, value) => map.set(key, String(value)),
+    removeItem: key => map.delete(key),
+    clear: () => map.clear(),
+  };
+};
+global.localStorage = memoryStorage();
+const encryptField = value =>
+  JSON.stringify(Aes.encrypt(JSON.stringify(value), SECRET_KEY).toString());
+const legacyRoot = slices =>
+  JSON.stringify({
+    ...Object.fromEntries(
+      Object.entries(slices).map(([k, v]) => [k, encryptField(v)]),
+    ),
+    _persist: encryptField({version: -1, rehydrated: true}),
+  });
 
 const waitFor = async (predicate, timeout = 3000) => {
   const start = Date.now();
@@ -293,7 +324,18 @@ describe('web unlock flow', () => {
       code: 'missing_secrets',
       clientIds: ['w2'],
     });
+    // Nothing half-open is left behind: no keys in the store, the sealed
+    // adapter closed again, the vault locked. The rehydrated (secret-free)
+    // wallets themselves stay so the lock screen can still render them.
     expect(isSealedWritable()).toBe(false);
+    expect(isSealedReadable()).toBe(false);
+    expect(vault.isUnlocked()).toBe(false);
+    expect(store.getState().auth.isVaultUnlocked).toBe(false);
+    const after = store.getState().wallets.allWallets;
+    expect(after.map(w => w.clientId)).toEqual(['w1', 'w2']);
+    expect(after.some(w => w.phrase || w.coins?.some(c => c.privateKey))).toBe(
+      false,
+    );
   });
 
   it('lockSession zeroises secrets in memory, seals persistence, and re-login restores', async () => {
@@ -351,5 +393,67 @@ describe('web unlock flow', () => {
     expect(restored.phrase).toBe(MNEMONIC);
     expect(restored.coins[0].privateKey).toBe(HEX(1));
     expect(isSealedWritable()).toBe(true);
+  });
+
+  it('createAccount seals orphaned legacy wallets and only then marks the migration done', async () => {
+    // Fresh profile holding a legacy blob with wallets but no password: the
+    // bootstrap can only park the sealed slices in memory.
+    vault.lock();
+    __resetSealedForTests();
+    resetBootstrap();
+    consumeOrphanLegacyState();
+    await stateDatabase.close();
+    await secureStore.close();
+    global.indexedDB = new IDBFactory();
+    localStorage.setItem(
+      LEGACY_ROOT_KEY,
+      legacyRoot({
+        auth: {isLogin: false, password: ''},
+        wallets: {
+          allWallets: [wallet],
+          currentWalletIndex: 0,
+          masterClientId: 'master',
+        },
+        settings: {theme: 'dark'},
+      }),
+    );
+    await bootstrapStorage();
+    expect(await plainKv.get(STORAGE_KEYS.schemaVersion)).toBeNull();
+
+    const {store} = require('redux/store');
+    const {
+      createAccount,
+      __resetUnlockFlowForTests,
+    } = require('security/unlockFlow');
+    __resetUnlockFlowForTests();
+    await store.dispatch(createAccount('newpw'));
+
+    const live = store.getState().wallets;
+    expect(live.allWallets[0].walletName).toBe('Main');
+    expect(live.allWallets[0].phrase).toBe(MNEMONIC);
+    const stateKey = await vault.getStateKey();
+    expect(await readSealed('persist:wallets', stateKey)).toContain('Main');
+    expect((await vault.readSecrets()).wallets.w1.phrase).toBe(MNEMONIC);
+    expect(await plainKv.get(STORAGE_KEYS.schemaVersion)).toBe(
+      SCHEMA_VERSION.migrated,
+    );
+    expect(consumeOrphanLegacyState()).toBeNull();
+  });
+
+  it('createAccount refuses to replace the vault while an account exists', async () => {
+    // Continues from the previous test: a vault with w1's keys, and the
+    // account is now registered.
+    const {store} = require('redux/store');
+    const {createAccount} = require('security/unlockFlow');
+    const {
+      signUpSuccess,
+    } = require('dok-wallet-blockchain-networks/redux/auth/authSlice');
+    store.dispatch(signUpSuccess());
+    await expect(
+      store.dispatch(createAccount('someone-else')),
+    ).rejects.toMatchObject({code: 'account_exists'});
+    // Untouched: same vault, same keys.
+    expect(await vault.hasVault()).toBe(true);
+    expect((await vault.readSecrets()).wallets.w1.phrase).toBe(MNEMONIC);
   });
 });

@@ -11,7 +11,10 @@ import {
   extractVaultPayload,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletSecrets';
 import {parsePersistEnvelope} from 'dok-wallet-blockchain-networks/redux/storage/legacyRootMigration';
-import {signUpSuccess} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
+import {
+  logOutSuccess,
+  signUpSuccess,
+} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {setWalletHideSettings} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import * as secureStore from 'security/secureStore';
 import {resetBootstrap} from 'redux/storage/bootstrap';
@@ -127,7 +130,14 @@ describe('web store persistence guard', () => {
 
   it('after createAccount, wallet data is sealed without secrets and mirrored to the vault', async () => {
     const {createAccount} = require('security/unlockFlow');
+    // The previous test registered an account (without a vault) to exercise
+    // the plain store; createAccount refuses to run over an existing account,
+    // so log it out first. The real page dispatches signUpSuccess only after
+    // createAccount, mirrored below.
+    store.dispatch(logOutSuccess());
+    await vaultSync.flush();
     await store.dispatch(createAccount('Secret123!'));
+    store.dispatch(signUpSuccess());
     store.dispatch({
       type: 'wallets/createWallet/fulfilled',
       payload: {newStoreWallet: newStoreWallet(), isFromImportWallet: false},
@@ -145,6 +155,8 @@ describe('web store persistence guard', () => {
     await vaultSync.flush();
 
     expect(store.getState().wallets.allWallets[0].phrase).toBe(MNEMONIC);
+    // Registration runs the same post-unlock initialisation as a login.
+    expect(store.getState().wallets.masterClientId).toEqual(expect.any(String));
 
     const stateKey = await vault.getStateKey();
     const sealedWallets = parsePersistEnvelope(

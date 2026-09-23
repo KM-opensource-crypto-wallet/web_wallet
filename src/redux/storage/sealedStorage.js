@@ -77,25 +77,31 @@ export const listSealedKeys = () => sealedKv.keys();
 
 const isBrowser = () => typeof window !== 'undefined';
 
+// The key is captured before the await: a sealStorage() that lands while the
+// bootstrap promise settles must not turn an in-flight call into a read or
+// write with a null key. The captured key is still the right one for whatever
+// this call started, and the state key only changes with a new vault.
 export const sealedStorage = {
   getItem: async key => {
-    if (!readKey || !isBrowser()) {
+    const stateKey = readKey;
+    if (!stateKey || !isBrowser()) {
       return null;
     }
     await bootstrapStorage();
-    return readSealed(key, readKey);
+    return readSealed(key, stateKey);
   },
   setItem: async (key, value) => {
     if (!isBrowser()) {
       return;
     }
-    if (!writable) {
+    const stateKey = readKey;
+    if (!writable || !stateKey) {
       droppedWrites += 1;
       addBreadcrumb('storage', 'sealed.write_dropped', {key}, 'debug');
       return;
     }
     await bootstrapStorage();
-    await writeSealed(key, value, readKey);
+    await writeSealed(key, value, stateKey);
   },
   removeItem: async key => {
     if (!isBrowser()) {

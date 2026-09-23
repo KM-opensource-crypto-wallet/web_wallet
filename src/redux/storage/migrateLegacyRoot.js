@@ -3,11 +3,25 @@
 // (redux-persist-transform-encrypt) — into IndexedDB plain/sealed slices plus
 // the vault.
 //
+// On-disk shape: redux-persist's createPersistoid serialises every transformed
+// field (`stagedState[key] = serialize(endState)`) and then the root, so each
+// field is a JSON string literal *of* the ciphertext:
+//   {"auth":"\"U2FsdGVkX1...\"","_persist":"\"U2FsdGVkX1...\"",...}
+// getStoredState deserialises the field before the transform's `out`;
+// decodeLegacyValue must do the same or crypto-js decrypts the quoted string
+// (base64 misaligned, no "Salted__" header → random salt → garbage/empty).
+//
 // State machine on `storage.schemaVersion` in the plain store (spec §5.2):
 //   0 legacy    → migrate; schemaVersion=2 is the LAST write, so a reload
 //                 anywhere before it redoes cleanly from the untouched blob
 //   2 migrated  → new stores written, legacy retained
 //   3 finalized → legacy removed after the first successful unlock
+//
+// Legacy wallets without a password cannot be sealed during the bootstrap.
+// They are parked in memory (orphanLegacyState) and the version stays at 0
+// until Registration has created the vault and flushed them to sealed storage
+// (unlockFlow.createAccount → commitOrphanLegacyMigration). Writing 2 any
+// earlier would make a reload skip the migration and lose those wallets.
 import Aes from 'crypto-js/aes';
 import Utf8 from 'crypto-js/enc-utf8';
 import * as vault from 'dok-wallet-blockchain-networks/security/vault';
@@ -61,11 +75,30 @@ export const readLegacyRoot = () =>
 
 export const hasLegacyRoot = () => readLegacyRoot() != null;
 
-/** redux-persist-transform-encrypt's `out`: AES.decrypt(value, secretKey). */
+/**
+ * getStoredState's `deserialize(rawState[key])` followed by
+ * redux-persist-transform-encrypt's `out`: AES.decrypt(value, secretKey).
+ */
 export const decodeLegacyValue = (sliceName, raw) => {
+  let ciphertext;
+  try {
+    ciphertext = JSON.parse(raw);
+  } catch (error) {
+    throw migrationError(
+      MIGRATION_ERROR_CODES.PARSE,
+      `Legacy slice "${sliceName}" is not a persisted ciphertext`,
+      error,
+    );
+  }
+  if (typeof ciphertext !== 'string') {
+    throw migrationError(
+      MIGRATION_ERROR_CODES.PARSE,
+      `Legacy slice "${sliceName}" is not a persisted ciphertext`,
+    );
+  }
   let text;
   try {
-    text = Aes.decrypt(raw, process.env.REDUX_WEB_KEY).toString(Utf8);
+    text = Aes.decrypt(ciphertext, process.env.REDUX_WEB_KEY).toString(Utf8);
   } catch (error) {
     throw migrationError(
       MIGRATION_ERROR_CODES.DECRYPT,
@@ -93,6 +126,13 @@ const writePlainSlices = async slices => {
       await plainKv.set(persistKey(name), buildPersistEnvelope(slices[name]));
     }
   }
+};
+
+const markMigrated = async () => {
+  const now = Date.now();
+  await plainKv.set(STORAGE_KEYS.migratedAt, now);
+  await plainKv.set(STORAGE_KEYS.legacyRetainedAt, now);
+  await plainKv.set(STORAGE_KEYS.schemaVersion, SCHEMA_VERSION.migrated);
 };
 
 const writeSealedSlices = async (slices, stateKey) => {
@@ -190,10 +230,16 @@ export const migrateLegacyRoot = async () => {
     vault.lock();
   }
 
-  const now = Date.now();
-  await plainKv.set(STORAGE_KEYS.migratedAt, now);
-  await plainKv.set(STORAGE_KEYS.legacyRetainedAt, now);
-  await plainKv.set(STORAGE_KEYS.schemaVersion, SCHEMA_VERSION.migrated);
+  if (orphanLegacyState) {
+    // Sealed data is only in memory: leave schemaVersion at 0 so a reload
+    // before Registration redoes this from the blob instead of skipping it.
+    const totalMs = Date.now() - startedAt;
+    breadcrumb('pending', {...counts, totalMs});
+    logger.info('storage.migration_pending', {...counts, totalMs});
+    return {status: 'pending', counts, kdfMs, totalMs};
+  }
+
+  await markMigrated();
 
   const totalMs = Date.now() - startedAt;
   breadcrumb('done', {...counts, kdfMs, totalMs});
@@ -202,10 +248,30 @@ export const migrateLegacyRoot = async () => {
 };
 
 /**
+ * 0 → 2 for the orphan path. Called by createAccount once the consumed orphan
+ * state has been flushed to sealed storage under the new vault key. Returns
+ * true when the version was advanced.
+ */
+export const commitOrphanLegacyMigration = async () => {
+  if (
+    ((await plainKv.get(STORAGE_KEYS.schemaVersion)) ??
+      SCHEMA_VERSION.legacy) !== SCHEMA_VERSION.legacy
+  ) {
+    return false;
+  }
+  await markMigrated();
+  breadcrumb('orphan_committed', {});
+  return true;
+};
+
+/**
  * 2 → 3. Called right after the first successful unlock: the hydrated store is
  * the end-to-end proof, so the legacy blob can go. Returns true when finalised.
  */
 export const finalizeLegacyMigration = async ({getState}) => {
+  if (orphanLegacyState) {
+    return false;
+  }
   if (
     (await plainKv.get(STORAGE_KEYS.schemaVersion)) !== SCHEMA_VERSION.migrated
   ) {

@@ -1,5 +1,4 @@
 'use client';
-import {walletRoutes} from 'utils/routes';
 import React, {useState, useCallback, useRef} from 'react';
 import {Formik} from 'formik';
 import styles from './LoginScreen.module.css';
@@ -32,10 +31,8 @@ import {
   unlockWithPassword,
 } from 'security/unlockFlow';
 import {captureError} from 'services/logger';
-import {
-  selectAllWallets,
-  selectCurrentWalletClientId,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {store} from 'redux/store';
+import {resolvePostUnlockRoute} from 'utils/postUnlockRoute';
 import {refreshCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {getAppSubTitle} from 'whitelabel/whiteLabelInfo';
 import {isWalletReset} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
@@ -58,18 +55,12 @@ const LoginScreen = () => {
   const router = useRouter();
   const buttonRef = useRef();
   const dispatch = useDispatch();
-  const allWallets = useSelector(selectAllWallets);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const rateLimitCheck = useSelector(isWalletReset);
   const lastAttempt = useSelector(getLastAttempt);
   const searchParams = useSearchParams();
 
   const attempts = useSelector(getAttempts);
   const MAX_ATTEMPT = useSelector(getMaxAttempt);
-
-  const hasWallet = useCallback(() => {
-    return allWallets?.length !== 0;
-  }, [allWallets]);
 
   const handleReset = useCallback(() => {
     setShowResetModal(true);
@@ -103,31 +94,20 @@ const LoginScreen = () => {
         if (rateLimitCheck) {
           dispatch(resetAttempts());
         }
-        if (hasWallet()) {
-          const redirectRoute = searchParams?.get('redirectRoute');
-          let searchParamsString = '';
-          for (const key of searchParams.keys()) {
-            if (key !== 'redirectRoute') {
-              searchParamsString += `${key}=${searchParams.get(key)}&`;
-            }
-          }
-          if (redirectRoute) {
-            // An unknown deep link loads the 404 page as a new document, which
-            // would lock again immediately and loop back here.
-            skipLockOnNextLoad({ttlMs: REPLAY_SKIP_LOCK_TTL_MS});
-          }
-          router.replace(
-            redirectRoute
-              ? `${redirectRoute}${
-                  searchParamsString ? '?' + searchParamsString : ''
-                }`
-              : `${walletRoutes.home(currentWalletClientId)}${
-                  searchParamsString ? '?' + searchParamsString : ''
-                }`,
-          );
+        // Read the store now, not the selector values from render: the sealed
+        // wallets slice was empty until the unlock above rehydrated it.
+        const {route, hasWallet, replayed} = resolvePostUnlockRoute(
+          store.getState(),
+          searchParams,
+        );
+        if (replayed) {
+          // An unknown deep link loads the 404 page as a new document, which
+          // would lock again immediately and loop back here.
+          skipLockOnNextLoad({ttlMs: REPLAY_SKIP_LOCK_TTL_MS});
+        }
+        router.replace(route);
+        if (hasWallet) {
           dispatch(refreshCoins());
-        } else {
-          router.replace('/auth/reset-wallet');
         }
       } else if (rateLimitCheck) {
         dispatch(handleAttempts({router}));
@@ -138,14 +118,7 @@ const LoginScreen = () => {
         dispatch(loadingOff());
       }
     },
-    [
-      dispatch,
-      hasWallet,
-      rateLimitCheck,
-      router,
-      searchParams,
-      currentWalletClientId,
-    ],
+    [dispatch, rateLimitCheck, router, searchParams],
   );
 
   const onKeyDown = useCallback(e => {

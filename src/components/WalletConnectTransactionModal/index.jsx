@@ -32,6 +32,7 @@ import {describeHederaRequest} from 'dok-wallet-blockchain-networks/helper/heder
 import BigNumber from 'bignumber.js';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {copyToClipboard} from 'utils/copyToClipboard';
+import {showToast} from 'utils/toast';
 import WalletConnectModalHeader from 'components/WalletConnectModalHeader';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import {
@@ -241,37 +242,6 @@ const WalletConnectTransactionModal = props => {
   // every other send applies (D2). The dApp request itself is executed by
   // approveRequest once the confirm modal succeeds.
   const [confirmVisible, setConfirmVisible] = useState(false);
-  const approveRequest = async () => {
-    try {
-      props?.onClose?.();
-      dispatch(
-        walletConnect({
-          transactionData: {
-            ...getTransactionRequestData?.finaltransactionData,
-            batchCalls: transactionData?.params?.[0]?.calls,
-            from: transactionData?.from,
-          },
-          isBatchTransaction: transactionData?.isBatchTransaction,
-          chain_name: walletData?.chain_name?.toLowerCase(),
-          // CAIP-2 id of the request; picks the executor for chains that
-          // serve more than one namespace (Hedera native vs eip155).
-          chainId,
-          privateKey: walletData?.privateKey ?? livePrivateKey,
-          walletAddress: walletData?.address,
-          expectedSignerAddress:
-            getTransactionRequestData?.expectedSignerAddress,
-          id,
-          topic,
-          method,
-          signTypeData: getTransactionRequestData?.signTypeData,
-          domain: transactionData?.peerMeta?.url,
-        }),
-      );
-    } catch (e) {
-      console.error('Error in approve request', e);
-    }
-  };
-
   const onPressReject = useCallback(() => {
     props?.onClose?.();
     const connector = getWalletConnect();
@@ -287,6 +257,51 @@ const WalletConnectTransactionModal = props => {
       connector.respondSessionRequest({topic, response});
     }
   }, [id, props, topic]);
+
+  const approveRequest = async () => {
+    // walletData is persisted without secrets; the live key is gone after an
+    // idle lock or when the paired coin was removed. Never hand the thunk an
+    // undefined key: it would show a progress toast and fail inside the signer.
+    const privateKey = walletData?.privateKey ?? livePrivateKey;
+    if (!privateKey) {
+      showToast({
+        type: 'errorToast',
+        title: 'Wallet key unavailable',
+        message:
+          'Unlock your wallet and ask the dApp to send the request again.',
+      });
+      onPressReject();
+      return;
+    }
+    try {
+      props?.onClose?.();
+      dispatch(
+        walletConnect({
+          transactionData: {
+            ...getTransactionRequestData?.finaltransactionData,
+            batchCalls: transactionData?.params?.[0]?.calls,
+            from: transactionData?.from,
+          },
+          isBatchTransaction: transactionData?.isBatchTransaction,
+          chain_name: walletData?.chain_name?.toLowerCase(),
+          // CAIP-2 id of the request; picks the executor for chains that
+          // serve more than one namespace (Hedera native vs eip155).
+          chainId,
+          privateKey,
+          walletAddress: walletData?.address,
+          expectedSignerAddress:
+            getTransactionRequestData?.expectedSignerAddress,
+          id,
+          topic,
+          method,
+          signTypeData: getTransactionRequestData?.signTypeData,
+          domain: transactionData?.peerMeta?.url,
+        }),
+      );
+    } catch (e) {
+      console.error('Error in approve request', e);
+    }
+  };
 
   const batchCallsTotal =
     getTransactionRequestData?.finaltransactionData?.batchCallsTotal || 0;

@@ -5,7 +5,7 @@ import {PersistGate} from 'redux-persist/integration/react';
 import {persistor, store} from 'redux/store';
 import {Buffer} from 'buffer';
 import 'utils/bigNumberConfig';
-import {bootstrapStorage, resetBootstrap} from 'redux/storage/bootstrap';
+import {bootstrapStorage} from 'redux/storage/bootstrap';
 import StorageErrorScreen from 'components/StorageErrorScreen';
 import {captureError} from 'services/logger';
 global.Buffer = Buffer;
@@ -15,6 +15,15 @@ global.Buffer = Buffer;
 // never fall through to an empty store, which would route a funded user to
 // onboarding. On the server there is nothing to open; render straight through
 // so hydration markup matches.
+//
+// Retry is a full page reload, not a re-run of the bootstrap in place. The
+// store module calls persistStore() at import time, so redux-persist has
+// already asked the adapters for every plain slice; when the bootstrap
+// rejected, those reads rejected too and redux-persist rehydrated the slices
+// as initial state (persistReducer treats a failed getStoredState as
+// "nothing stored"). A second bootstrap that succeeds could not undo that:
+// the slices would stay empty and the persistoid would write that empty
+// state over the real data. A fresh page load restarts the rehydration.
 const StorageGate = ({children}) => {
   const [status, setStatus] = useState(() =>
     typeof window === 'undefined' ? 'ready' : 'booting',
@@ -50,9 +59,7 @@ const StorageGate = ({children}) => {
       <StorageErrorScreen
         error={error}
         onRetry={() => {
-          resetBootstrap();
-          setStatus('booting');
-          run();
+          window.location.reload();
         }}
       />
     );
