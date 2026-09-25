@@ -19,9 +19,10 @@
 //
 // Legacy wallets without a password cannot be sealed during the bootstrap.
 // They are parked in memory (orphanLegacyState) and the version stays at 0
-// until Registration has created the vault and flushed them to sealed storage
-// (unlockFlow.createAccount → commitOrphanLegacyMigration). Writing 2 any
-// earlier would make a reload skip the migration and lose those wallets.
+// until Registration has created the vault and commitOrphanLegacyMigration
+// has sealed and verified them under its key (unlockFlow.createAccount).
+// Writing 2 any earlier would make a reload skip the migration and lose those
+// wallets.
 import Aes from 'crypto-js/aes';
 import Utf8 from 'crypto-js/enc-utf8';
 import * as vault from 'dok-wallet-blockchain-networks/security/vault';
@@ -58,10 +59,17 @@ export const SEALED_SLICES = Object.freeze([
 const migrationError = (code, message, cause) =>
   Object.assign(new Error(message), {code, cause});
 
+// Slice name only; the data itself never leaves the device.
+const sliceError = (code, sliceName, message, cause) =>
+  Object.assign(migrationError(code, message, cause), {slice: sliceName});
+
 // Legacy wallets found next to an empty password: nothing can be sealed yet.
 // Their sanitized slices and secrets stay in memory for this session and are
-// persisted once Registration creates a vault (unlockFlow.createAccount).
+// sealed once Registration creates a vault (unlockFlow.createAccount →
+// commitOrphanLegacyMigration).
 let orphanLegacyState = null;
+/** Read without clearing: createAccount consumes only after the commit. */
+export const peekOrphanLegacyState = () => orphanLegacyState;
 export const consumeOrphanLegacyState = () => {
   const state = orphanLegacyState;
   orphanLegacyState = null;
@@ -84,15 +92,17 @@ export const decodeLegacyValue = (sliceName, raw) => {
   try {
     ciphertext = JSON.parse(raw);
   } catch (error) {
-    throw migrationError(
+    throw sliceError(
       MIGRATION_ERROR_CODES.PARSE,
+      sliceName,
       `Legacy slice "${sliceName}" is not a persisted ciphertext`,
       error,
     );
   }
   if (typeof ciphertext !== 'string') {
-    throw migrationError(
+    throw sliceError(
       MIGRATION_ERROR_CODES.PARSE,
+      sliceName,
       `Legacy slice "${sliceName}" is not a persisted ciphertext`,
     );
   }
@@ -100,15 +110,17 @@ export const decodeLegacyValue = (sliceName, raw) => {
   try {
     text = Aes.decrypt(ciphertext, process.env.REDUX_WEB_KEY).toString(Utf8);
   } catch (error) {
-    throw migrationError(
+    throw sliceError(
       MIGRATION_ERROR_CODES.DECRYPT,
+      sliceName,
       `Legacy slice "${sliceName}" could not be decrypted`,
       error,
     );
   }
   if (!text) {
-    throw migrationError(
+    throw sliceError(
       MIGRATION_ERROR_CODES.DECRYPT,
+      sliceName,
       `Legacy slice "${sliceName}" decrypted to nothing (wrong REDUX_WEB_KEY?)`,
     );
   }
@@ -148,6 +160,47 @@ const writeSealedSlices = async (slices, stateKey) => {
 };
 
 /**
+ * Writes the legacy key material to the (unlocked) vault and every sealed
+ * slice under `stateKey`, then reads both back and runs the self-check.
+ * Every write is awaited and every failure rejects, so nothing downstream may
+ * treat the migration as done over data that never landed. Used for the
+ * password migration and, after Registration, for the orphan state: that
+ * rewrites every sealed slice under the new vault's key, including the ones
+ * a failed earlier attempt left under a key that no longer exists.
+ */
+const sealLegacyState = async ({
+  slices,
+  vaultPayload,
+  legacyWallets,
+  stateKey,
+}) => {
+  await vault.saveSecrets(vaultPayload);
+  await writeSealedSlices(slices, stateKey);
+  const written = await readSealed(persistKey('wallets'), stateKey);
+  const verification = verifyMigration({
+    // Normalized copy: carries the clientIds assigned to pre-clientId wallets.
+    legacyWallets,
+    migratedWallets: written ? parsePersistEnvelope(written) : undefined,
+    decryptedVault: await vault.readSecrets(),
+  });
+  if (!verification.ok) {
+    const error = migrationError(
+      MIGRATION_ERROR_CODES.VERIFY,
+      `Migration self-check failed: ${verification.problems.join('; ')}`,
+    );
+    // Structure-only diagnostics (normalized path patterns, field inventory,
+    // shape diffs, counts) so the failing path can be read off the event.
+    // String values under neutral keys: scrubObject drops keys that look
+    // sensitive.
+    captureError(error, {
+      tags: {area: 'storage', op: 'migrate', step: 'verify'},
+      extra: {problems: verification.problems, ...verification.details},
+    });
+    throw error;
+  }
+};
+
+/**
  * Runs the whole migration. Throws with a `code` from MIGRATION_ERROR_CODES on
  * corrupt/undecryptable legacy data or a failed self-check; the caller must
  * then block the app, never continue into an empty store.
@@ -167,14 +220,37 @@ export const migrateLegacyRoot = async () => {
       error?.code === MIGRATION_ERROR_CODES.DECRYPT
         ? MIGRATION_ERROR_CODES.DECRYPT
         : MIGRATION_ERROR_CODES.PARSE;
-    captureError(error, {tags: {area: 'storage', op: 'migrate', step: code}});
+    captureError(error, {
+      tags: {area: 'storage', op: 'migrate', step: code},
+      // Slice name only; the data itself never leaves the device.
+      extra: {slice: error?.slice ?? null},
+    });
     throw migrationError(code, 'Stored wallet data could not be read', error);
   }
-  const {slices, vaultPayload, legacyWallets, password, counts} =
-    splitLegacyRoot(parsed.slices);
+  const {
+    slices,
+    vaultPayload,
+    legacyWallets,
+    password,
+    counts,
+    residualSecrets,
+  } = splitLegacyRoot(parsed.slices);
+  if (residualSecrets && Object.keys(residualSecrets).length) {
+    // A non-wallet slice held a secret under a shape no sanitizer knows. The
+    // data written below is already deep-stripped, so this is a report, never
+    // a failure (a hard stop here would strand the user on StorageErrorScreen).
+    // Structure only: slice names, key names, normalized path patterns and
+    // counts, never a value. Keyed `residual`, not `residualSecrets`: the
+    // scrubber drops any key matching /secret/i, so beforeSend would strip the
+    // whole diagnostic.
+    captureError(new Error('Legacy slices carried secrets outside wallets'), {
+      level: 'warning',
+      tags: {area: 'storage', op: 'migrate', step: 'sanitize_other_slices'},
+      extra: {residual: residualSecrets},
+    });
+  }
 
   let kdfMs = 0;
-  let stateKey = null;
   if (password) {
     // A reload after the vault write but before schemaVersion=2 leaves a vault
     // behind; the redo replaces it wholesale.
@@ -184,9 +260,16 @@ export const migrateLegacyRoot = async () => {
     const kdfStart = Date.now();
     await vault.createVault(password);
     kdfMs = Date.now() - kdfStart;
-    await vault.saveSecrets(vaultPayload);
-    stateKey = await vault.getStateKey();
-    await writeSealedSlices(slices, stateKey);
+    try {
+      await sealLegacyState({
+        slices,
+        vaultPayload,
+        legacyWallets,
+        stateKey: await vault.getStateKey(),
+      });
+    } finally {
+      vault.lock();
+    }
   } else if (counts.wallets > 0 || SEALED_SLICES.some(n => slices[n])) {
     orphanLegacyState = {
       slices: Object.fromEntries(
@@ -196,6 +279,7 @@ export const migrateLegacyRoot = async () => {
         ]),
       ),
       vaultPayload,
+      legacyWallets,
     };
     if (counts.wallets > 0) {
       captureError(new Error('Legacy wallets found without a password'), {
@@ -207,28 +291,6 @@ export const migrateLegacyRoot = async () => {
   }
 
   await writePlainSlices(slices);
-
-  if (password) {
-    const written = await readSealed(persistKey('wallets'), stateKey);
-    const verification = verifyMigration({
-      // Normalized copy: carries the clientIds assigned to pre-clientId wallets.
-      legacyWallets,
-      migratedWallets: written ? parsePersistEnvelope(written) : undefined,
-      decryptedVault: await vault.readSecrets(),
-    });
-    if (!verification.ok) {
-      vault.lock();
-      const error = migrationError(
-        MIGRATION_ERROR_CODES.VERIFY,
-        `Migration self-check failed: ${verification.problems.join('; ')}`,
-      );
-      captureError(error, {
-        tags: {area: 'storage', op: 'migrate', step: 'verify'},
-      });
-      throw error;
-    }
-    vault.lock();
-  }
 
   if (orphanLegacyState) {
     // Sealed data is only in memory: leave schemaVersion at 0 so a reload
@@ -248,11 +310,18 @@ export const migrateLegacyRoot = async () => {
 };
 
 /**
- * 0 → 2 for the orphan path. Called by createAccount once the consumed orphan
- * state has been flushed to sealed storage under the new vault key. Returns
- * true when the version was advanced.
+ * 0 → 2 for the orphan path. Called by createAccount right after it created
+ * the vault (unlocked, `stateKey` derived from it): seals and verifies the
+ * parked state exactly like the password migration, then advances the
+ * version. Rejects without advancing when any write or the self-check fails;
+ * the parked state is never consumed here, so a retry redoes all of it.
+ * Returns true when the version was advanced.
  */
-export const commitOrphanLegacyMigration = async () => {
+export const commitOrphanLegacyMigration = async stateKey => {
+  if (!orphanLegacyState) {
+    return false;
+  }
+  await sealLegacyState({...orphanLegacyState, stateKey});
   if (
     ((await plainKv.get(STORAGE_KEYS.schemaVersion)) ??
       SCHEMA_VERSION.legacy) !== SCHEMA_VERSION.legacy

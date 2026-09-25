@@ -16,6 +16,7 @@ import {
   signUpSuccess,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {setWalletHideSettings} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {setRequestDetails} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSlice';
 import * as secureStore from 'security/secureStore';
 import {resetBootstrap} from 'redux/storage/bootstrap';
 import {plainKv, stateDatabase} from 'redux/storage/stateDb';
@@ -180,5 +181,70 @@ describe('web store persistence guard', () => {
     expect(await vault.readSecrets()).toEqual(
       extractVaultPayload(store.getState().wallets.allWallets),
     );
+  });
+
+  it('strips coin copies held by the sellCrypto and batchTransaction slices', async () => {
+    // Continues unlocked from the previous test, so sealed writes land.
+    const coin = {
+      _id: 'c1',
+      chain_name: 'ethereum',
+      symbol: 'ETH',
+      address: '0xa0',
+      privateKey: HEX(1),
+      deriveAddresses: [{address: '0xa1', privateKey: HEX(2)}],
+    };
+    store.dispatch(
+      setRequestDetails({
+        requestId: 'r1',
+        selectedFromAsset: coin,
+        selectedFromWallet: {clientId: 'w1', phrase: MNEMONIC, coins: [coin]},
+      }),
+    );
+    const tx = {
+      transactionId: 't1',
+      transferData: {amount: '1'},
+      coinInfo: coin,
+    };
+    store.dispatch({
+      type: 'batchTransaction/addBatchTransaction/fulfilled',
+      payload: {wallet_id: 'w1', chain_name: 'ethereum', transaction: tx},
+    });
+    store.dispatch({
+      type: 'batchTransaction/initializeFilters/fulfilled',
+      payload: {
+        filteredTransactions: [tx],
+        uniqueChains: ['ethereum'],
+        uniqueAddresses: ['0xa0'],
+        selectedChain: 'ethereum',
+        selectedAddress: '0xa0',
+        isValid: true,
+        invalid_reason: '',
+      },
+    });
+    await persistor.flush();
+
+    // In memory the copies keep their keys for this session.
+    expect(
+      store.getState().batchTransaction.filteredData.filteredTransactions[0]
+        .coinInfo.privateKey,
+    ).toBe(HEX(1));
+
+    const stateKey = await vault.getStateKey();
+    const sealed = async name =>
+      parsePersistEnvelope(await readSealed(`persist:${name}`, stateKey));
+    const sellCrypto = await sealed('sellCrypto');
+    const batchTransaction = await sealed('batchTransaction');
+    expect(() => assertNoSecrets(sellCrypto)).not.toThrow();
+    expect(() => assertNoSecrets(batchTransaction)).not.toThrow();
+    expect(sellCrypto.requestDetails.selectedFromAsset).toEqual({
+      _id: 'c1',
+      chain_name: 'ethereum',
+      symbol: 'ETH',
+      address: '0xa0',
+      deriveAddresses: [{address: '0xa1'}],
+    });
+    expect(
+      batchTransaction.filteredData.filteredTransactions[0].coinInfo.address,
+    ).toBe('0xa0');
   });
 });

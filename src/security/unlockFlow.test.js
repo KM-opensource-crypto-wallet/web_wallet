@@ -20,7 +20,10 @@ import {
   bootstrapStorage,
   resetBootstrap,
 } from 'redux/storage/bootstrap';
-import {consumeOrphanLegacyState} from 'redux/storage/migrateLegacyRoot';
+import {
+  consumeOrphanLegacyState,
+  peekOrphanLegacyState,
+} from 'redux/storage/migrateLegacyRoot';
 import {plainKv, stateDatabase} from 'redux/storage/stateDb';
 import {LEGACY_ROOT_KEY} from 'redux/storage/wipe';
 import {
@@ -28,6 +31,7 @@ import {
   getDroppedSealedWrites,
   isSealedReadable,
   isSealedWritable,
+  listSealedKeys,
   readSealed,
   sealedStorage,
 } from 'redux/storage/sealedStorage';
@@ -45,6 +49,25 @@ jest.mock('services/logger', () => ({
 jest.mock('utils/localStorageData', () => ({
   clearWalletConnectStorageCache: jest.fn(async () => {}),
 }));
+// SWC-compiled ES exports are not configurable, so jest.spyOn cannot patch the
+// vault namespace; a partial mock with a one-shot failure flag does the job.
+jest.mock('dok-wallet-blockchain-networks/security/vault', () => {
+  const actual = jest.requireActual(
+    'dok-wallet-blockchain-networks/security/vault',
+  );
+  const control = {failNextRead: false};
+  return {
+    ...actual,
+    __control: control,
+    readSecrets: (...args) => {
+      if (control.failNextRead) {
+        control.failNextRead = false;
+        return Promise.reject(new Error('vault read failed'));
+      }
+      return actual.readSecrets(...args);
+    },
+  };
+});
 jest.mock('dok-wallet-blockchain-networks/security/vaultCore', () => {
   const actual = jest.requireActual(
     'dok-wallet-blockchain-networks/security/vaultCore',
@@ -438,6 +461,84 @@ describe('web unlock flow', () => {
       SCHEMA_VERSION.migrated,
     );
     expect(consumeOrphanLegacyState()).toBeNull();
+  });
+
+  it('a failed orphan commit leaves nothing half-open and the retry reseals every slice under the new key', async () => {
+    const {store} = require('redux/store');
+    const {
+      createAccount,
+      __resetUnlockFlowForTests,
+    } = require('security/unlockFlow');
+    const {
+      setWallets,
+    } = require('dok-wallet-blockchain-networks/redux/wallets/walletsSlice');
+    const {
+      vaultLocked,
+    } = require('dok-wallet-blockchain-networks/redux/auth/authSlice');
+    // Back to a locked page load holding a password-less legacy blob.
+    vault.lock();
+    __resetSealedForTests();
+    store.dispatch(vaultLocked());
+    store.dispatch(setWallets([]));
+    resetBootstrap();
+    consumeOrphanLegacyState();
+    await stateDatabase.close();
+    await secureStore.close();
+    global.indexedDB = new IDBFactory();
+    localStorage.setItem(
+      LEGACY_ROOT_KEY,
+      legacyRoot({
+        auth: {isLogin: false, password: ''},
+        wallets: {
+          allWallets: [wallet],
+          currentWalletIndex: 0,
+          masterClientId: 'master',
+        },
+        customRpc: {rpcs: {ethereum: 'https://rpc.example'}},
+        settings: {theme: 'dark'},
+      }),
+    );
+    await bootstrapStorage();
+    __resetUnlockFlowForTests();
+
+    // The read-back after the sealed writes fails: those slices are on disk
+    // under a key that the retry's destroy() throws away.
+    vault.__control.failNextRead = true;
+    await expect(store.dispatch(createAccount('first'))).rejects.toThrow(
+      'vault read failed',
+    );
+    expect(await listSealedKeys()).toContain('persist:customRpc');
+    expect(vault.isUnlocked()).toBe(false);
+    expect(isSealedReadable()).toBe(false);
+    expect(isSealedWritable()).toBe(false);
+    expect(store.getState().auth.isVaultUnlocked).toBe(false);
+    expect(store.getState().wallets.allWallets).toEqual([]);
+    expect(await plainKv.get(STORAGE_KEYS.schemaVersion)).toBeNull();
+    expect(peekOrphanLegacyState()).not.toBeNull();
+
+    await store.dispatch(createAccount('second'));
+    const stateKey = await vault.getStateKey();
+    // Every sealed slice decrypts under the new key (none left behind under
+    // the first attempt's key, which would lock the next login out).
+    const sealedKeys = await listSealedKeys();
+    expect(sealedKeys).toEqual(
+      expect.arrayContaining(['persist:wallets', 'persist:customRpc']),
+    );
+    for (const key of sealedKeys) {
+      await expect(readSealed(key, stateKey)).resolves.toEqual(
+        expect.any(String),
+      );
+    }
+    expect(await readSealed('persist:customRpc', stateKey)).toContain(
+      'rpc.example',
+    );
+    expect(store.getState().wallets.allWallets[0].phrase).toBe(MNEMONIC);
+    expect(store.getState().auth.isVaultUnlocked).toBe(true);
+    expect((await vault.readSecrets()).wallets.w1.phrase).toBe(MNEMONIC);
+    expect(await plainKv.get(STORAGE_KEYS.schemaVersion)).toBe(
+      SCHEMA_VERSION.migrated,
+    );
+    expect(peekOrphanLegacyState()).toBeNull();
   });
 
   it('createAccount refuses to replace the vault while an account exists', async () => {

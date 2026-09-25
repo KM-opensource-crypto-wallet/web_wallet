@@ -28,7 +28,7 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {getHasAccount} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
 import {addBreadcrumb, captureError} from 'services/logger';
-import {SEALED_PERSIST_CONFIGS, persistor, vaultSync} from 'redux/store';
+import {SEALED_PERSIST_CONFIGS, vaultSync} from 'redux/store';
 import {
   enableSealedWrites,
   isSealedWritable,
@@ -39,6 +39,7 @@ import {
   commitOrphanLegacyMigration,
   consumeOrphanLegacyState,
   finalizeLegacyMigration,
+  peekOrphanLegacyState,
 } from 'redux/storage/migrateLegacyRoot';
 
 export const UNLOCK_ERROR_CODES = Object.freeze({
@@ -89,9 +90,9 @@ const rehydrateSealedSlices = async dispatch => {
   }
 };
 
-// Legacy state migrated without a password (nothing could be sealed): feed
-// the sanitized slices in from memory so Registration → createAccount can
-// persist them.
+// Legacy state migrated without a password, already sealed on disk by
+// commitOrphanLegacyMigration: feed the same sanitized slices and secrets
+// into the store from memory.
 const rehydrateOrphanLegacyState = (dispatch, orphan) => {
   for (const [name, slice] of Object.entries(orphan.slices)) {
     dispatch({type: REHYDRATE, key: name, payload: slice, err: undefined});
@@ -171,11 +172,15 @@ export const unlockWithPassword = password => async (dispatch, getState) => {
  * exists: an existing vault is only ever replaced through the explicit reset
  * flow (wipeAllLocalData). The one vault this replaces is a leftover from a
  * wipe whose destroy step failed, where no account remains. Sealed writes
- * open straight away (there is nothing on disk to rehydrate). Orphaned legacy
- * state, if any, is fed in so the listener and persistoid store it under the
- * new key; the migration's schemaVersion is only advanced once both have been
- * flushed to disk, so a reload before that point redoes the migration from
- * the legacy blob.
+ * open straight away (there is nothing on disk to rehydrate).
+ *
+ * Orphaned legacy state (migrated without a password) is sealed, verified and
+ * committed (schemaVersion 0 → 2) BEFORE the store sees it, with awaited
+ * writes: redux-persist swallows a failed sealed write, so its flush cannot
+ * prove anything landed. The parked state is released only after the commit;
+ * a failure locks the new vault again, leaves the store untouched and keeps
+ * the state parked, so the next Registration submit (or a reload, which
+ * redoes the migration from the legacy blob) retries all of it.
  */
 export const createAccount = password => async (dispatch, getState) => {
   if (getHasAccount(getState())) {
@@ -185,14 +190,27 @@ export const createAccount = password => async (dispatch, getState) => {
     await vault.destroy();
   }
   await vault.createVault(password);
-  unsealStorage(await vault.getStateKey());
-  sealedRehydrated = true;
-  const orphan = consumeOrphanLegacyState();
+  const stateKey = await vault.getStateKey();
+  // Peek, never consume here: consuming before the commit landed would make a
+  // retry find nothing to migrate and leave the wallets without keys.
+  const orphan = peekOrphanLegacyState();
   if (orphan) {
-    // reset() first: it also drops any pending snapshot, so calling it after
-    // the hydrate would throw away the very write flush() is meant to land.
+    try {
+      await commitOrphanLegacyMigration(stateKey);
+    } catch (error) {
+      vault.lock();
+      throw error;
+    }
+  }
+  unsealStorage(stateKey);
+  sealedRehydrated = true;
+  if (orphan) {
+    // reset() first: it also drops any pending snapshot. The vault already
+    // holds exactly this payload, so the hydrate's write is skipped.
     vaultSync.reset();
     rehydrateOrphanLegacyState(dispatch, orphan);
+    vaultSync.markSynced(orphan.vaultPayload);
+    consumeOrphanLegacyState();
   }
   enableSealedWrites();
   dispatch(vaultUnlocked());
@@ -202,11 +220,6 @@ export const createAccount = password => async (dispatch, getState) => {
   // context), and orphaned legacy wallets need the privacy-mode / hidden
   // wallet housekeeping that runs on every unlock.
   runPostUnlockThunks(dispatch);
-  if (orphan) {
-    await vaultSync.flush();
-    await persistor.flush();
-    await commitOrphanLegacyMigration();
-  }
 };
 
 /**
