@@ -13,8 +13,9 @@ global.Buffer = Buffer;
 // Nothing renders until IndexedDB is open and any legacy localStorage blob has
 // been migrated (bootstrapStorage). A failure shows a blocking error screen:
 // never fall through to an empty store, which would route a funded user to
-// onboarding. On the server there is nothing to open; render straight through
-// so hydration markup matches.
+// onboarding. The server has nothing to open, but it starts at `booting` too:
+// the first client render must produce the same (empty) markup as the server,
+// and only the effect below, which runs in the browser alone, moves on.
 //
 // Retry is a full page reload, not a re-run of the bootstrap in place. The
 // store module calls persistStore() at import time, so redux-persist has
@@ -25,9 +26,7 @@ global.Buffer = Buffer;
 // the slices would stay empty and the persistoid would write that empty
 // state over the real data. A fresh page load restarts the rehydration.
 const StorageGate = ({children}) => {
-  const [status, setStatus] = useState(() =>
-    typeof window === 'undefined' ? 'ready' : 'booting',
-  );
+  const [status, setStatus] = useState('booting');
   const [error, setError] = useState(null);
 
   // State only changes from the promise callbacks (never synchronously inside

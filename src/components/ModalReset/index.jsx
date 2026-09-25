@@ -85,8 +85,9 @@ const ModalReset = ({visible, hideModal, page, link}) => {
       window.location.replace('/auth/registration');
     } else {
       // Log out (W2): zeroise keys in memory and pause sealed persistence
-      // until the next login.
-      dispatch(lockSession());
+      // until the next login. Awaited: the keys must be gone before the
+      // login page renders.
+      await dispatch(lockSession());
       hideModal(false);
       router.push('/auth/login');
     }
