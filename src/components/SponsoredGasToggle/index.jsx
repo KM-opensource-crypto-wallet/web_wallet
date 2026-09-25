@@ -9,6 +9,7 @@ const SponsoredGasToggle = ({
   tokenSymbol,
   checked,
   onToggle,
+  disabled,
   maxFeeDisplay,
 }) => {
   const [showInfo, setShowInfo] = useState(false);
@@ -19,6 +20,7 @@ const SponsoredGasToggle = ({
         <label className={s.labelRow}>
           <Checkbox
             checked={!!checked}
+            disabled={disabled}
             onChange={onToggle}
             sx={{padding: 0, color: 'var(--gray)'}}
           />

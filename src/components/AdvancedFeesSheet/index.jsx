@@ -41,16 +41,16 @@ const FeeInput = ({
   <div className={s.inputFieldContainer}>
     <div className={s.inputLabelWithIcon}>
       <span className={s.inputIcon}>{icon}</span>
-      <span className={s.inputLabelText}>{label}</span>
-      <label htmlFor={id} className={s.inputLabelText}>
+      <span id={`${id}-label`} className={s.inputLabelText}>
         {label}
-      </label>
+      </span>
     </div>
     <FormControl variant='outlined' fullWidth>
       <OutlinedInput
         fullWidth
         id={id}
         name={name}
+        aria-labelledby={`${id}-label`}
         type='text'
         inputMode='decimal'
         autoFocus={autoFocus}
@@ -86,7 +86,8 @@ const AdvancedFeesSheet = ({
   customFeesError = null,
   payGasWithToken,
   gasTokenCandidates,
-  selectedGasTokenSymbol,
+  selectedGasTokenAddress,
+  gasTokenSelectDisabled,
   onSelectGasToken,
 }) => {
   const isEVM = isEVMChain(chainName);
@@ -104,14 +105,15 @@ const AdvancedFeesSheet = ({
           <div className={s.feesOptionContainer}>
             {gasTokenCandidates.map(item => (
               <button
-                key={`gas_token_${item.symbol}`}
+                key={`gas_token_${item.contractAddress}`}
                 type='button'
+                disabled={gasTokenSelectDisabled}
                 className={`${s.feesOptionsItem} ${
-                  selectedGasTokenSymbol === item.symbol
+                  selectedGasTokenAddress === item.contractAddress
                     ? s.feesOptionsItemSelected
                     : ''
                 }`}
-                onClick={() => onSelectGasToken(item.symbol)}>
+                onClick={() => onSelectGasToken(item.contractAddress)}>
                 <p className={s.feesOptionTitle}>{item.symbol}</p>
               </button>
             ))}

@@ -398,15 +398,19 @@ const CommonTransfer = () => {
     payGasWithTokenRef.current = payGasWithToken;
   }, [payGasWithToken]);
 
-  const gasTokenSymbol = transferData?.gasTokenSymbol;
+  const gasTokenContractAddress = transferData?.gasTokenContractAddress;
   const activeGasToken = useMemo(
     () =>
-      sponsoredGasCoins.find(item => item.symbol === gasTokenSymbol) ||
-      sponsoredGasCoins[0],
-    [sponsoredGasCoins, gasTokenSymbol],
+      sponsoredGasCoins.find(
+        item => item.contractAddress === gasTokenContractAddress,
+      ) || sponsoredGasCoins[0],
+    [sponsoredGasCoins, gasTokenContractAddress],
   );
 
   const requoteSponsoredGas = useCallback(() => {
+    if (isFetchingRef.current) {
+      return;
+    }
     setIsFetchingFeesAgain(true);
     isFetchingRef.current = true;
     dispatch(calculateEstimateFee(buildEstimatePayload()))
@@ -441,8 +445,10 @@ const CommonTransfer = () => {
   }, [dispatch, payGasWithToken, activeGasToken, requoteSponsoredGas]);
 
   const onSelectGasToken = useCallback(
-    symbol => {
-      const picked = sponsoredGasCoins.find(item => item.symbol === symbol);
+    contractAddress => {
+      const picked = sponsoredGasCoins.find(
+        item => item.contractAddress === contractAddress,
+      );
       if (!picked) {
         return;
       }
@@ -458,6 +464,31 @@ const CommonTransfer = () => {
     [dispatch, sponsoredGasCoins, requoteSponsoredGas],
   );
 
+  // Keep redux aligned when the stored token is no longer available: the quote it
+  // was priced for names a token the wallet no longer holds.
+  useEffect(() => {
+    if (
+      payGasWithToken &&
+      activeGasToken &&
+      activeGasToken.contractAddress !== gasTokenContractAddress
+    ) {
+      dispatch(
+        setCurrentTransferData({
+          gasTokenSymbol: activeGasToken.symbol,
+          gasTokenContractAddress: activeGasToken.contractAddress,
+          sponsoredQuote: null,
+        }),
+      );
+      requoteSponsoredGas();
+    }
+  }, [
+    dispatch,
+    payGasWithToken,
+    activeGasToken,
+    gasTokenContractAddress,
+    requoteSponsoredGas,
+  ]);
+
   const isFetchingSponsoredQuote =
     payGasWithToken && !transferData?.sponsoredQuote;
 
@@ -471,6 +502,7 @@ const CommonTransfer = () => {
       tokenSymbol={activeGasToken.symbol}
       checked={payGasWithToken}
       onToggle={onToggleSponsoredGas}
+      disabled={isFetchingFeesAgain}
       maxFeeDisplay={
         payGasWithToken && !isFetchingSponsoredQuote
           ? transferData?.transactionFee
@@ -740,9 +772,13 @@ const CommonTransfer = () => {
     }
   }, [submitTransferData, quoteExpiresAt]);
 
+  // Paying the fee in a token hides the custom gas inputs and prices the fee
+  // from the quote, so a stale invalid tip must not block that flow.
+  const hasBlockingCustomFees = !payGasWithToken && !isCustomFeesValid;
+
   const handleSubmitForm = () => {
     // The panel can be collapsed with an invalid tip, so re-check here.
-    if (!isCustomFeesValid) {
+    if (hasBlockingCustomFees) {
       return;
     }
     if (quoteExpiresAt && Date.now() >= quoteExpiresAt) {
@@ -758,12 +794,30 @@ const CommonTransfer = () => {
     setIsAdvancedOptionsOpen(prev => !prev);
   };
 
+  // The gas token can differ from the one being sent, so each cost is checked
+  // against its own balance and only combined when they are the same token.
+  const isSponsoredBalanceShort = () => {
+    const sendBalance = transferData?.currentCoin?.totalAmount;
+    const sendAmount = isSendFundScreen ? transferData?.amount : null;
+    const fee = transferData?.transactionFee;
+    const gasTokenAddress = activeGasToken?.contractAddress?.toLowerCase();
+    if (
+      gasTokenAddress ===
+      transferData?.currentCoin?.contractAddress?.toLowerCase()
+    ) {
+      return isBalanceNotAvailable(sendBalance, fee, sendAmount);
+    }
+    const gasBalance = currentWallet?.coins?.find(
+      coin => coin?.contractAddress?.toLowerCase() === gasTokenAddress,
+    )?.totalAmount;
+    return (
+      isBalanceNotAvailable(gasBalance, fee) ||
+      (!!sendAmount && isBalanceNotAvailable(sendBalance, sendAmount))
+    );
+  };
+
   const isDisabled = payGasWithToken
-    ? isBalanceNotAvailable(
-        transferData?.currentCoin?.totalAmount,
-        transferData?.transactionFee,
-        isSendFundScreen ? transferData?.amount : null,
-      )
+    ? isSponsoredBalanceShort()
     : isBalanceNotAvailable(
         transferData?.selectedUTXOsValue || balance,
         transferData?.transactionFee,
@@ -1186,7 +1240,8 @@ const CommonTransfer = () => {
                       {...advancedFeesSheetProps}
                       payGasWithToken={payGasWithToken}
                       gasTokenCandidates={sponsoredGasCoins}
-                      selectedGasTokenSymbol={activeGasToken?.symbol}
+                      selectedGasTokenAddress={activeGasToken?.contractAddress}
+                      gasTokenSelectDisabled={isFetchingFeesAgain}
                       onSelectGasToken={onSelectGasToken}
                     />
                   </div>
@@ -1207,7 +1262,7 @@ const CommonTransfer = () => {
                 : 'Quote expired — go back and refresh the quote.'}
             </p>
           )}
-          {!isCustomFeesValid && (
+          {hasBlockingCustomFees && (
             <p className={s.errorText}>
               {
                 'Priority fee cannot be higher than max fee — fix it in Advanced Options.'
@@ -1220,7 +1275,7 @@ const CommonTransfer = () => {
               isSubmitting ||
               isFetchingFeesAgain ||
               isQuoteExpired ||
-              !isCustomFeesValid ||
+              hasBlockingCustomFees ||
               isFetchingSponsoredQuote
             }
             className={s.button}
@@ -1230,7 +1285,7 @@ const CommonTransfer = () => {
                 isSubmitting ||
                 isFetchingFeesAgain ||
                 isQuoteExpired ||
-                !isCustomFeesValid ||
+                hasBlockingCustomFees ||
                 isFetchingSponsoredQuote
                   ? 'var(--disabledButton)'
                   : 'var(--background)',

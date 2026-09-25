@@ -32,7 +32,7 @@ const SponsoredGasInfoModal = ({
       : 'You pay the gas fee up to estimated fee plus 10% service fee for this transaction.',
     'The total shows as the Estimated Fee before you confirm',
     'Your transfer and the fee are sent together, so if one fails neither happens.',
-    `Your ${symbol} balance has to cover both the amount you send and the fee.`,
+    `Your ${symbol} balance has to cover the fee, and the token you are sending has to cover the amount.`,
   ];
 
   return (
