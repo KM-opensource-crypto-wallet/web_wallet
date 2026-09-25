@@ -41,15 +41,16 @@ const FeeInput = ({
   <div className={s.inputFieldContainer}>
     <div className={s.inputLabelWithIcon}>
       <span className={s.inputIcon}>{icon}</span>
-      <label htmlFor={id} className={s.inputLabelText}>
+      <span id={`${id}-label`} className={s.inputLabelText}>
         {label}
-      </label>
+      </span>
     </div>
     <FormControl variant='outlined' fullWidth>
       <OutlinedInput
         fullWidth
         id={id}
         name={name}
+        aria-labelledby={`${id}-label`}
         type='text'
         inputMode='decimal'
         autoFocus={autoFocus}
@@ -83,6 +84,11 @@ const AdvancedFeesSheet = ({
   onChangeCustomPriorityFee,
   baseFeePerGas,
   customFeesError = null,
+  payGasWithToken,
+  gasTokenCandidates,
+  selectedGasTokenAddress,
+  gasTokenSelectDisabled,
+  onSelectGasToken,
 }) => {
   const isEVM = isEVMChain(chainName);
   const showPriorityFee = isEip1559 && !!onChangeCustomPriorityFee;
@@ -93,8 +99,35 @@ const AdvancedFeesSheet = ({
 
   return (
     <>
+      {/* Token Gas Price Section */}
+      {!!payGasWithToken && gasTokenCandidates?.length > 1 && (
+        <div className={s.feesMainContainer}>
+          <div className={s.feesOptionContainer}>
+            {gasTokenCandidates.map(item => (
+              <button
+                key={`gas_token_${item.contractAddress}`}
+                type='button'
+                disabled={gasTokenSelectDisabled}
+                className={`${s.feesOptionsItem} ${
+                  selectedGasTokenAddress === item.contractAddress
+                    ? s.feesOptionsItemSelected
+                    : ''
+                }`}
+                onClick={() => onSelectGasToken(item.contractAddress)}>
+                <p className={s.feesOptionTitle}>{item.symbol}</p>
+              </button>
+            ))}
+          </div>
+          <p className={s.hint}>
+            {
+              'The network fee is taken from this token as part of your transaction.'
+            }
+          </p>
+        </div>
+      )}
+
       {/* Gas Price / Max Fee Section */}
-      {!!feesOptions?.length && (
+      {!!feesOptions?.length && !payGasWithToken && (
         <div className={s.feesMainContainer}>
           <div className={s.feesOptionContainer}>
             {feesOptions.map(option => {
@@ -171,7 +204,7 @@ const AdvancedFeesSheet = ({
         </div>
       )}
       {/* Nonce Section */}
-      {isEVM && (
+      {isEVM && !payGasWithToken && (
         <>
           <FeeInput
             id='nonceInput'
