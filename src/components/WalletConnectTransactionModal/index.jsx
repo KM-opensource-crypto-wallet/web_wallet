@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import styles from './WalletConnectTransactionModal.module.css';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
@@ -17,7 +17,10 @@ import {
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
 import {getWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
 import {selectWalletConnectTransactionData} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
-import {selectWalletConnectData} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {
+  selectLivePrivateKey,
+  selectWalletConnectData,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {walletConnect} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {
   EVM_SIGN_REQUEST_HANDLERS,
@@ -29,7 +32,9 @@ import {describeHederaRequest} from 'dok-wallet-blockchain-networks/helper/heder
 import BigNumber from 'bignumber.js';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {copyToClipboard} from 'utils/copyToClipboard';
+import {showToast} from 'utils/toast';
 import WalletConnectModalHeader from 'components/WalletConnectModalHeader';
+import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import {
   BatchCallDataView,
   MessageNode,
@@ -150,6 +155,17 @@ const WalletConnectTransactionModal = props => {
     const finalChains = Array.isArray(chains) ? chains : [];
     return finalChains.find(item => item.key === chainId);
   }, [chainId, sessionId, walletConnectData]);
+  // Per-session walletData is persisted without its private key; sign with
+  // the live coin that owns the session's address.
+  const selectSessionPrivateKey = useCallback(
+    state =>
+      selectLivePrivateKey(state, {
+        chain_name: walletData?.chain_name,
+        address: walletData?.address,
+      }),
+    [walletData?.chain_name, walletData?.address],
+  );
+  const livePrivateKey = useSelector(selectSessionPrivateKey);
 
   const getTransactionRequestData = useMemo(() => {
     if (isNonEVMChain(transactionData?.chainId)) {
@@ -222,37 +238,10 @@ const WalletConnectTransactionModal = props => {
     }
   }, [transactionData, walletData]);
 
-  const onPressApprove = async () => {
-    try {
-      props?.onClose?.();
-      dispatch(
-        walletConnect({
-          transactionData: {
-            ...getTransactionRequestData?.finaltransactionData,
-            batchCalls: transactionData?.params?.[0]?.calls,
-            from: transactionData?.from,
-          },
-          isBatchTransaction: transactionData?.isBatchTransaction,
-          chain_name: walletData?.chain_name?.toLowerCase(),
-          // CAIP-2 id of the request; picks the executor for chains that
-          // serve more than one namespace (Hedera native vs eip155).
-          chainId,
-          privateKey: walletData?.privateKey,
-          walletAddress: walletData?.address,
-          expectedSignerAddress:
-            getTransactionRequestData?.expectedSignerAddress,
-          id,
-          topic,
-          method,
-          signTypeData: getTransactionRequestData?.signTypeData,
-          domain: transactionData?.peerMeta?.url,
-        }),
-      );
-    } catch (e) {
-      console.error('Error in approve request', e);
-    }
-  };
-
+  // Approving signs with the wallet key: the same password / biometric gate as
+  // every other send applies (D2). The dApp request itself is executed by
+  // approveRequest once the confirm modal succeeds.
+  const [confirmVisible, setConfirmVisible] = useState(false);
   const onPressReject = useCallback(() => {
     props?.onClose?.();
     const connector = getWalletConnect();
@@ -268,6 +257,51 @@ const WalletConnectTransactionModal = props => {
       connector.respondSessionRequest({topic, response});
     }
   }, [id, props, topic]);
+
+  const approveRequest = async () => {
+    // walletData is persisted without secrets; the live key is gone after an
+    // idle lock or when the paired coin was removed. Never hand the thunk an
+    // undefined key: it would show a progress toast and fail inside the signer.
+    const privateKey = walletData?.privateKey ?? livePrivateKey;
+    if (!privateKey) {
+      showToast({
+        type: 'errorToast',
+        title: 'Wallet key unavailable',
+        message:
+          'Unlock your wallet and ask the dApp to send the request again.',
+      });
+      onPressReject();
+      return;
+    }
+    try {
+      props?.onClose?.();
+      dispatch(
+        walletConnect({
+          transactionData: {
+            ...getTransactionRequestData?.finaltransactionData,
+            batchCalls: transactionData?.params?.[0]?.calls,
+            from: transactionData?.from,
+          },
+          isBatchTransaction: transactionData?.isBatchTransaction,
+          chain_name: walletData?.chain_name?.toLowerCase(),
+          // CAIP-2 id of the request; picks the executor for chains that
+          // serve more than one namespace (Hedera native vs eip155).
+          chainId,
+          privateKey,
+          walletAddress: walletData?.address,
+          expectedSignerAddress:
+            getTransactionRequestData?.expectedSignerAddress,
+          id,
+          topic,
+          method,
+          signTypeData: getTransactionRequestData?.signTypeData,
+          domain: transactionData?.peerMeta?.url,
+        }),
+      );
+    } catch (e) {
+      console.error('Error in approve request', e);
+    }
+  };
 
   const batchCallsTotal =
     getTransactionRequestData?.finaltransactionData?.batchCallsTotal || 0;
@@ -377,78 +411,88 @@ const WalletConnectTransactionModal = props => {
       : transactionFee;
 
   return (
-    <Modal
-      open={props.visible}
-      onClose={() => props.onClose(false)}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={styles.container}>
-          <WalletConnectModalHeader image={image} title={title} url={url} />
-          {method?.includes('wallet_sendCalls') ? (
-            BatchCallsView()
-          ) : isWalletConnectTransaction(method) ? (
-            <div className={styles.formInput}>
-              <p className={styles.amountTitle}>{`-${amount || 0} ${
-                walletData?.symbol || ''
-              }`}</p>
-              <div className={styles.boxBalance}>
-                {currencySymbol[localCurrency] || ''}
-                {priceValue?.toFixed(2) || '0'}
-              </div>
+    <>
+      <Modal
+        open={props.visible}
+        onClose={() => props.onClose(false)}
+        aria-labelledby='modal-modal-title'
+        aria-describedby='modal-modal-description'>
+        <Box sx={style}>
+          <div className={styles.container}>
+            <WalletConnectModalHeader image={image} title={title} url={url} />
+            {method?.includes('wallet_sendCalls') ? (
+              BatchCallsView()
+            ) : isWalletConnectTransaction(method) ? (
+              <div className={styles.formInput}>
+                <p className={styles.amountTitle}>{`-${amount || 0} ${
+                  walletData?.symbol || ''
+                }`}</p>
+                <div className={styles.boxBalance}>
+                  {currencySymbol[localCurrency] || ''}
+                  {priceValue?.toFixed(2) || '0'}
+                </div>
 
-              <div className={styles.box2Balance}>
-                <DetailRow
-                  label={'Chain'}
-                  value={`${walletData?.chain_display_name}`}
-                />
-                <DetailRow
-                  label={'Asset'}
-                  value={`${walletData?.name} (${walletData?.symbol})`}
-                />
-                <DetailRow
-                  label={'From'}
-                  value={getCustomizePublicAddress(walletData?.address)}
-                />
-                <DetailRow
-                  label={'To'}
-                  value={getCustomizePublicAddress(
-                    getTransactionRequestData?.toAddress,
-                  )}
-                />
-              </div>
-              <div className={styles.box}>
-                {!!finalTransactionFee && (
+                <div className={styles.box2Balance}>
                   <DetailRow
-                    label={'Network Fee'}
-                    value={`${finalTransactionFee} ${walletData?.chain_symbol}`}
+                    label={'Chain'}
+                    value={`${walletData?.chain_display_name}`}
                   />
-                )}
-                <DetailRow
-                  label={'Max Total'}
-                  value={`${currencySymbol[localCurrency]}${totalValue || 0}`}
-                />
+                  <DetailRow
+                    label={'Asset'}
+                    value={`${walletData?.name} (${walletData?.symbol})`}
+                  />
+                  <DetailRow
+                    label={'From'}
+                    value={getCustomizePublicAddress(walletData?.address)}
+                  />
+                  <DetailRow
+                    label={'To'}
+                    value={getCustomizePublicAddress(
+                      getTransactionRequestData?.toAddress,
+                    )}
+                  />
+                </div>
+                <div className={styles.box}>
+                  {!!finalTransactionFee && (
+                    <DetailRow
+                      label={'Network Fee'}
+                      value={`${finalTransactionFee} ${walletData?.chain_symbol}`}
+                    />
+                  )}
+                  <DetailRow
+                    label={'Max Total'}
+                    value={`${currencySymbol[localCurrency]}${totalValue || 0}`}
+                  />
+                </div>
               </div>
-            </div>
-          ) : (
-            MessageView()
-          )}
-          <div className={styles.bottomView}>
-            <div className={styles.rowView}>
-              <button className={styles.button} onClick={onPressReject}>
-                {'Reject'}
-              </button>
-              <button
-                className={styles.button}
-                onClick={onPressApprove}
-                disabled={isBatchTooLarge}>
-                {'Approve'}
-              </button>
+            ) : (
+              MessageView()
+            )}
+            <div className={styles.bottomView}>
+              <div className={styles.rowView}>
+                <button className={styles.button} onClick={onPressReject}>
+                  {'Reject'}
+                </button>
+                <button
+                  className={styles.button}
+                  onClick={() => setConfirmVisible(true)}
+                  disabled={isBatchTooLarge}>
+                  {'Approve'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </Box>
-    </Modal>
+        </Box>
+      </Modal>
+      <ModalConfirmTransaction
+        visible={confirmVisible}
+        hideModal={() => setConfirmVisible(false)}
+        onSuccess={() => {
+          setConfirmVisible(false);
+          approveRequest();
+        }}
+      />
+    </>
   );
 };
 export default WalletConnectTransactionModal;

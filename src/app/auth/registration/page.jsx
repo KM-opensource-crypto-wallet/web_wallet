@@ -13,10 +13,14 @@ import {validationSchemaRegistration} from 'utils/validationSchema';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {VerifyInfoModal} from 'components/VerifyInfo';
 import {
+  loadingOff,
   loadingOn,
   signUpSuccess,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {useDispatch} from 'react-redux';
+import {UNLOCK_ERROR_CODES, createAccount} from 'security/unlockFlow';
+import {captureError} from 'services/logger';
+import {toast} from 'react-toastify';
 
 // import {loadingOn, signUpSuccess} from 'redux/auth/authSlice';
 // import myStyles from './RegistrationScreenStyles';
@@ -38,14 +42,29 @@ const RegistrationScreen = () => {
   // const styles = myStyles(theme);
   const dispatch = useDispatch();
 
-  const handleSubmit = values => {
+  // The password never gets stored: it wraps a fresh vault key, and sealed
+  // persistence opens under the key derived from it.
+  const handleSubmit = async values => {
     dispatch(loadingOn());
-    setTimeout(() => {
-      dispatch(signUpSuccess(values.password));
-      router.push(
-        `/auth/reset-wallet${searchParams ? `?${searchParams}` : ''}`,
+    try {
+      await dispatch(createAccount(values.password));
+    } catch (error) {
+      dispatch(loadingOff());
+      if (error?.code === UNLOCK_ERROR_CODES.ACCOUNT_EXISTS) {
+        // Reached registration with an account on this device (e.g. a typed
+        // URL inside the auto-lock window): never replace its vault here.
+        toast.error(error.message);
+        router.replace(`/auth/login${searchParams ? `?${searchParams}` : ''}`);
+        return;
+      }
+      captureError(error, {tags: {area: 'vault', op: 'create'}});
+      toast.error(
+        'Could not create secure storage for your wallet. Please try again.',
       );
-    }, 200);
+      return;
+    }
+    dispatch(signUpSuccess());
+    router.push(`/auth/reset-wallet${searchParams ? `?${searchParams}` : ''}`);
   };
 
   // useEffect(() => {

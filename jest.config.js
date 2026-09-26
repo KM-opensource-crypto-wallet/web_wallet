@@ -19,6 +19,20 @@ const config = {
     '<rootDir>/src',
     '<rootDir>/dok-wallet-blockchain-networks/service',
     '<rootDir>/dok-wallet-blockchain-networks/helper',
+    // Shared secure-storage code. `security/*` resolves to this app's
+    // WebCrypto + IndexedDB adapters, so running these suites here is what
+    // proves the vault envelope is identical on both platforms.
+    '<rootDir>/dok-wallet-blockchain-networks/security',
+    '<rootDir>/dok-wallet-blockchain-networks/redux/storage',
+    '<rootDir>/dok-wallet-blockchain-networks/redux/wallets',
+    '<rootDir>/dok-wallet-blockchain-networks/redux/auth',
+  ],
+  // walletSlice.test.js exercises thunks against RN-only mocks; it stays a
+  // mobile-repo suite.
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/.next/',
+    '<rootDir>/dok-wallet-blockchain-networks/redux/wallets/walletSlice.test.js',
   ],
   // services/logger imports @sentry/nextjs, which needs a browser/Node runtime
   // the tests do not have; jest.setup.js stubs the SDK surface.
@@ -38,6 +52,7 @@ const config = {
     '^whitelabel/(.*)$': '<rootDir>/src/whitelabel/$1',
     '^utils/(.*)$': '<rootDir>/src/utils/$1',
     '^myWallet/(.*)$': '<rootDir>/src/myWallet/$1',
+    '^security/(.*)$': '<rootDir>/src/security/$1',
     '^theme/(.*)$': '<rootDir>/src/theme/$1',
   },
 };

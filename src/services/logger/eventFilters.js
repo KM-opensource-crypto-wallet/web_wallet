@@ -58,5 +58,25 @@ export const isNonBrowserRuntime = event =>
     ),
   );
 
+// Scripts browser extensions inject into the page: extension URL schemes, and
+// the wallet-provider `inpage[.bundle].js` (reported as
+// `app:///inpage.bundle.js`: two wallet extensions racing to define a
+// read-only `window.ethereum`, DOKWALLET-WALLET-WEB-P).
+const EXTENSION_FRAME =
+  /^(chrome|moz|safari(-web)?|ms-browser)-extension:|(^|\/)inpage(\.bundle)?\.js$/;
+
+// Only when EVERY frame is an extension's: one app frame keeps the event.
+export const isExtensionOnlyError = event => {
+  const frames = (event?.exception?.values || []).flatMap(
+    exception => exception?.stacktrace?.frames || [],
+  );
+  return (
+    frames.length > 0 &&
+    frames.every(frame => EXTENSION_FRAME.test(frame?.filename || ''))
+  );
+};
+
 export const shouldDropEvent = event =>
-  isUnsupportedBrowser(event) || isNonBrowserRuntime(event);
+  isUnsupportedBrowser(event) ||
+  isNonBrowserRuntime(event) ||
+  isExtensionOnlyError(event);
