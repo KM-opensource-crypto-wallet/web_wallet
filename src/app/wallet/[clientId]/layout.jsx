@@ -4,6 +4,7 @@ import React, {useEffect} from 'react';
 import {useParams, usePathname, useRouter} from 'next/navigation';
 import {useDispatch, useSelector} from 'react-redux';
 import {
+  isWalletHiddenAndLocked,
   selectAllWallets,
   selectCurrentWalletClientId,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -45,10 +46,11 @@ export default function WalletScopedLayout({children}) {
       }
       return;
     }
-    const walletExists = allWallets.some(
-      wallet => wallet?.clientId === clientId,
-    );
-    if (!walletExists) {
+    // A hidden (locked) wallet is treated as absent: its URL survives a
+    // refresh via the login redirectRoute, a bookmark or the back button, and
+    // activating it here would undo the relock that unlock just applied.
+    const wallet = allWallets.find(item => item?.clientId === clientId);
+    if (!wallet || isWalletHiddenAndLocked(wallet)) {
       router.replace('/home');
       return;
     }

@@ -258,29 +258,29 @@ function AppRouting({children, wlData}) {
           setRoutingDone(true);
         })();
       } else {
-        const lastActiveTime = getLastActiveTime();
-        const elapsedMinutesSinceLastActive = lastActiveTime
-          ? (Date.now() - lastActiveTime) / (1000 * 60)
-          : Infinity;
-        const isWithinAutoLockWindow =
-          lockTime > 0 && elapsedMinutesSinceLastActive < lockTime;
-        const shouldSkipLock = shouldSkipLockScreen() || isWithinAutoLockWindow;
-
         if (!hasAccount) {
           if (pathname !== '/auth/registration') {
             routing.replace(searchString ? `/?${searchString}` : '/');
           }
-          clearSkipLockScreen();
-        } else if (!shouldSkipLock || pathname === '/') {
-          // The onboarding carousel at '/' is for new users only. With a
-          // wallet present it always hands over to login, which itself skips
-          // the password while the auto-lock window is open.
+        } else if (shouldSkipLockScreen()) {
+          // A post-login replay of an unknown deep link reloaded into the 404
+          // page. Log in again without replaying it, or this loops forever.
+          const forwarded = new URLSearchParams(searchParams?.toString());
+          forwarded.delete('redirectRoute');
+          const forwardedString = forwarded.toString();
+          routing.replace(
+            forwardedString ? `/auth/login?${forwardedString}` : `/auth/login`,
+          );
+        } else {
+          // Every full load starts locked: the vault key lives only in memory,
+          // so the sealed wallet data is unreadable until the password is
+          // entered again, whatever the auto-lock setting. The redirectRoute
+          // brings the user back to this page afterwards.
           routing.replace(
             searchString ? `/auth/login?${searchString}` : `/auth/login`,
           );
-        } else {
-          clearSkipLockScreen();
         }
+        clearSkipLockScreen();
         setTimeout(() => {
           setRoutingDone(true);
         }, 500);
