@@ -1,5 +1,4 @@
 'use client';
-import {walletRoutes} from 'utils/routes';
 import React, {useState, useCallback, useRef} from 'react';
 import {Formik} from 'formik';
 import styles from './LoginScreen.module.css';
@@ -23,15 +22,17 @@ import {
 import {useDispatch, useSelector} from 'react-redux';
 import {
   getAttempts,
-  getIsLocked,
   getLastAttempt,
   getMaxAttempt,
-  getUserPassword,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
 import {
-  selectAllWallets,
-  selectCurrentWalletClientId,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+  UNLOCK_ERROR_CODES,
+  isInvalidPassword,
+  unlockWithPassword,
+} from 'security/unlockFlow';
+import {captureError} from 'services/logger';
+import {store} from 'redux/store';
+import {resolvePostUnlockRoute} from 'utils/postUnlockRoute';
 import {refreshCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {getAppSubTitle} from 'whitelabel/whiteLabelInfo';
 import {isWalletReset} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
@@ -48,23 +49,18 @@ const LoginScreen = () => {
   const [hide, setHide] = useState(true);
   const [showResetModal, setShowResetModal] = useState(false);
   const [wrong, setWrong] = useState(false);
+  // A problem that must not be dismissed as "wrong password": wallets without
+  // keys in the vault, or secure storage unavailable.
+  const [blocked, setBlocked] = useState(null);
   const router = useRouter();
   const buttonRef = useRef();
   const dispatch = useDispatch();
-  const storePassword = useSelector(getUserPassword);
-  const allWallets = useSelector(selectAllWallets);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const rateLimitCheck = useSelector(isWalletReset);
   const lastAttempt = useSelector(getLastAttempt);
   const searchParams = useSearchParams();
 
   const attempts = useSelector(getAttempts);
-  const isLocked = useSelector(getIsLocked);
   const MAX_ATTEMPT = useSelector(getMaxAttempt);
-
-  const hasWallet = useCallback(() => {
-    return allWallets?.length !== 0;
-  }, [allWallets]);
 
   const handleReset = useCallback(() => {
     setShowResetModal(true);
@@ -72,37 +68,46 @@ const LoginScreen = () => {
 
   const onClickLogin = useCallback(
     async values => {
-      if (storePassword === values.password) {
-        dispatch(logInSuccess(values.password));
+      let unlocked = false;
+      try {
+        // "Correct password" = the vault key unwrapped; nothing is compared.
+        // This also rehydrates the sealed slices and re-enables persistence.
+        await dispatch(unlockWithPassword(values.password));
+        unlocked = true;
+      } catch (error) {
+        if (!isInvalidPassword(error)) {
+          if (error?.code === UNLOCK_ERROR_CODES.MISSING_SECRETS) {
+            setBlocked(error.message);
+          } else {
+            captureError(error, {tags: {area: 'auth', op: 'unlock_password'}});
+            setBlocked(
+              'Your wallet could not be unlocked because its secure storage is unavailable. Please reload the page.',
+            );
+          }
+          dispatch(loadingOff());
+          return;
+        }
+      }
+      if (unlocked) {
+        dispatch(logInSuccess());
         setLastActiveTime();
         if (rateLimitCheck) {
           dispatch(resetAttempts());
         }
-        if (hasWallet()) {
-          const redirectRoute = searchParams?.get('redirectRoute');
-          let searchParamsString = '';
-          for (const key of searchParams.keys()) {
-            if (key !== 'redirectRoute') {
-              searchParamsString += `${key}=${searchParams.get(key)}&`;
-            }
-          }
-          if (redirectRoute) {
-            // An unknown deep link loads the 404 page as a new document, which
-            // would lock again immediately and loop back here.
-            skipLockOnNextLoad({ttlMs: REPLAY_SKIP_LOCK_TTL_MS});
-          }
-          router.replace(
-            redirectRoute
-              ? `${redirectRoute}${
-                  searchParamsString ? '?' + searchParamsString : ''
-                }`
-              : `${walletRoutes.home(currentWalletClientId)}${
-                  searchParamsString ? '?' + searchParamsString : ''
-                }`,
-          );
+        // Read the store now, not the selector values from render: the sealed
+        // wallets slice was empty until the unlock above rehydrated it.
+        const {route, hasWallet, replayed} = resolvePostUnlockRoute(
+          store.getState(),
+          searchParams,
+        );
+        if (replayed) {
+          // An unknown deep link loads the 404 page as a new document, which
+          // would lock again immediately and loop back here.
+          skipLockOnNextLoad({ttlMs: REPLAY_SKIP_LOCK_TTL_MS});
+        }
+        router.replace(route);
+        if (hasWallet) {
           dispatch(refreshCoins());
-        } else {
-          router.replace('/auth/reset-wallet');
         }
       } else if (rateLimitCheck) {
         dispatch(handleAttempts({router}));
@@ -113,15 +118,7 @@ const LoginScreen = () => {
         dispatch(loadingOff());
       }
     },
-    [
-      dispatch,
-      hasWallet,
-      rateLimitCheck,
-      router,
-      searchParams,
-      storePassword,
-      currentWalletClientId,
-    ],
+    [dispatch, rateLimitCheck, router, searchParams],
   );
 
   const onKeyDown = useCallback(e => {
@@ -221,6 +218,7 @@ const LoginScreen = () => {
                   * You have entered an invalid password
                 </p>
               )}
+              {blocked ? <p className={styles.textWarning}>{blocked}</p> : null}
 
               <button className={styles.button} type='submit' ref={buttonRef}>
                 Sign in

@@ -178,9 +178,13 @@ const HideWallet = () => {
             relockOption,
           }),
         );
-      } else if (initialHideSettings) {
+      } else if (
+        initialHideSettings?.secretCodeSalt &&
+        initialHideSettings?.secretCodeHash
+      ) {
         // Blank code while already hidden = keep the existing code, only the
-        // re-lock option may have changed.
+        // re-lock option may have changed. (Salt/hash are absent from memory
+        // while the session is locked; the reducer would throw on them.)
         dispatch(
           setWalletHideSettings({
             clientId: walletClientId,

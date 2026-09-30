@@ -4,12 +4,13 @@ import React, {useEffect} from 'react';
 import {useParams, usePathname, useRouter} from 'next/navigation';
 import {useDispatch, useSelector} from 'react-redux';
 import {
+  isWalletHiddenAndLocked,
   selectAllWallets,
   selectCurrentWalletClientId,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {setCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {isReduxStoreLoaded} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
-import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import {getHasAccount} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
 
 // Routes that manage a wallet without making it the active one - e.g. hiding,
 // scanning, or backing up another wallet from its Edit screen while a
@@ -29,7 +30,7 @@ export default function WalletScopedLayout({children}) {
   const isStoreLoaded = useSelector(isReduxStoreLoaded);
   const allWallets = useSelector(selectAllWallets);
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
-  const hasPassword = Boolean(useSelector(getUserPassword));
+  const hasPassword = useSelector(getHasAccount);
 
   useEffect(() => {
     if (!isStoreLoaded) {
@@ -45,10 +46,11 @@ export default function WalletScopedLayout({children}) {
       }
       return;
     }
-    const walletExists = allWallets.some(
-      wallet => wallet?.clientId === clientId,
-    );
-    if (!walletExists) {
+    // A hidden (locked) wallet is treated as absent: its URL survives a
+    // refresh via the login redirectRoute, a bookmark or the back button, and
+    // activating it here would undo the relock that unlock just applied.
+    const wallet = allWallets.find(item => item?.clientId === clientId);
+    if (!wallet || isWalletHiddenAndLocked(wallet)) {
       router.replace('/home');
       return;
     }

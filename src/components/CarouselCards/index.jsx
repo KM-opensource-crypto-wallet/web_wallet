@@ -5,7 +5,7 @@ import {Carousel} from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {useSelector} from 'react-redux';
-import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import {getHasAccount} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
 import Image from 'next/image';
 import {getAppAssets} from 'whitelabel/whiteLabelInfo';
 import {ThemeContext} from 'theme/ThemeContext';
@@ -13,7 +13,7 @@ import {ThemeContext} from 'theme/ThemeContext';
 const CarouselCards = () => {
   const [index, setIndex] = useState(0);
   const router = useRouter();
-  const storePassword = useSelector(getUserPassword);
+  const storePassword = useSelector(getHasAccount);
   const {themeType} = useContext(ThemeContext);
   const searchParams = useSearchParams();
 

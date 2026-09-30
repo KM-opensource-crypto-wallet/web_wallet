@@ -9,7 +9,7 @@ import {
   selectCurrentWalletClientId,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {isReduxStoreLoaded} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
-import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import {getHasAccount} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
 import Loading from 'components/Loading';
 import {getCoinSlug} from 'utils/common';
 import {resolveLegacyRoute} from 'utils/legacyRoutes';
@@ -34,7 +34,7 @@ const LegacyRouteRedirect = ({fallbackToHome = false}) => {
   const isStoreLoaded = useSelector(isReduxStoreLoaded);
   const clientId = useSelector(selectCurrentWalletClientId);
   const hasWallets = useSelector(selectAllWallets)?.length > 0;
-  const hasPassword = Boolean(useSelector(getUserPassword));
+  const hasPassword = useSelector(getHasAccount);
   const currentWallet = useSelector(selectCurrentWallet);
   const currentCoin = useSelector(selectCurrentCoin);
 
