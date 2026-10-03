@@ -1,5 +1,10 @@
 import {NextResponse} from 'next/server';
-import {parseEnvelopeDsn, resolveTunnelTarget} from 'services/logger/tunnel';
+import {
+  MAX_ENVELOPE_BYTES,
+  parseEnvelopeDsn,
+  readBodyWithLimit,
+  resolveTunnelTarget,
+} from 'services/logger/tunnel';
 
 const NEWLINE = 0x0a;
 
@@ -11,7 +16,15 @@ const NEWLINE = 0x0a;
  * never logged: it carries user context.
  */
 export async function POST(request) {
-  const body = new Uint8Array(await request.arrayBuffer());
+  const declaredLength = Number(request.headers.get('content-length'));
+  if (declaredLength > MAX_ENVELOPE_BYTES) {
+    return new NextResponse(null, {status: 413});
+  }
+  // The declared length can be absent or wrong, so the stream is capped too.
+  const body = await readBodyWithLimit(request.body, MAX_ENVELOPE_BYTES);
+  if (!body) {
+    return new NextResponse(null, {status: 413});
+  }
   const headerEnd = body.indexOf(NEWLINE);
   const header = new TextDecoder().decode(
     headerEnd === -1 ? body : body.subarray(0, headerEnd),

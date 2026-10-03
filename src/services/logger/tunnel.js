@@ -8,6 +8,42 @@
 // Matches `trailingSlash: true`, so the POST is not bounced by a 308.
 export const TUNNEL_PATH = '/monitoring/';
 
+// The endpoint is unauthenticated, so the body is capped before it is held in
+// memory. 1 MiB is above anything the browser SDK sends here (log batches
+// flush at an ~800k size estimate, strings are scrubbed to 1 KB, no replay or
+// attachments) and Sentry rejects a single event over 1 MB anyway.
+export const MAX_ENVELOPE_BYTES = 1024 * 1024;
+
+// Reads a web ReadableStream, giving up as soon as it passes `limit` bytes.
+// Returns the bytes, or null when the limit was exceeded.
+export const readBodyWithLimit = async (stream, limit) => {
+  if (!stream) {
+    return new Uint8Array(0);
+  }
+  const reader = stream.getReader();
+  const chunks = [];
+  let total = 0;
+  for (;;) {
+    const {done, value} = await reader.read();
+    if (done) {
+      break;
+    }
+    total += value.byteLength;
+    if (total > limit) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
+};
+
 const parseDsn = dsn => {
   try {
     const url = new URL(dsn);

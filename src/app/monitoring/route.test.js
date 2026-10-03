@@ -1,4 +1,5 @@
 import {POST} from './route';
+import {MAX_ENVELOPE_BYTES} from 'services/logger/tunnel';
 
 const OUR_DSN = 'https://abc123@o4507.ingest.us.sentry.io/4512055212244992';
 const TARGET =
@@ -58,5 +59,19 @@ describe('POST /monitoring/', () => {
     expect((await post(envelope(OUR_DSN))).status).toBe(429);
     global.fetch.mockRejectedValueOnce(new Error('offline'));
     expect((await post(envelope(OUR_DSN))).status).toBe(502);
+  });
+
+  it('rejects a body over the limit with 413 without forwarding', async () => {
+    const oversized = `${envelope(OUR_DSN)}${'x'.repeat(MAX_ENVELOPE_BYTES)}`;
+    expect((await post(oversized)).status).toBe(413);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects a declared content-length over the limit before reading', async () => {
+    const res = await post(envelope(OUR_DSN), {
+      'content-length': String(MAX_ENVELOPE_BYTES + 1),
+    });
+    expect(res.status).toBe(413);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });
