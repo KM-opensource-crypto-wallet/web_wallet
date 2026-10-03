@@ -24,13 +24,15 @@ const ImportWalletByPrivateKey = () => {
   const searchParams = useSearchParams();
 
   const onSubmit = useCallback(
-    values => {
+    async values => {
       try {
         const chainName = networkInput;
         const privateKey = values?.privateKey;
         if (chainName && privateKey) {
           const chain = getChain(chainName);
-          const isValid = chain.isValidPrivateKey({privateKey});
+          // Several chains validate asynchronously; an un-awaited Promise is
+          // always truthy and would let any key through.
+          const isValid = await chain.isValidPrivateKey({privateKey});
           if (isValid) {
             dispatch(setPhrase(null));
             dispatch(setChainName(chainName));
