@@ -89,6 +89,7 @@ const ImportWalletByPrivateKey = () => {
             values,
             errors,
             touched,
+            isSubmitting,
           }) => (
             <div>
               <div className={s.addressViev}>
@@ -138,11 +139,11 @@ const ImportWalletByPrivateKey = () => {
                 className={s.button}
                 onClick={handleSubmit}
                 style={
-                  !networkInput || !values.privateKey
+                  !networkInput || !values.privateKey || isSubmitting
                     ? {backgroundColor: 'var(--gray)'}
                     : {}
                 }
-                disabled={!networkInput || !values.privateKey}>
+                disabled={!networkInput || !values.privateKey || isSubmitting}>
                 <p className={s.buttonTitle}>Import</p>
               </button>
             </div>
