@@ -88,6 +88,10 @@ describe('browser Sentry init', () => {
     expect(options.enableLogs).toBe(true);
   });
 
+  it('tunnels browser events through the first-party route', () => {
+    expect(options.tunnel).toBe('/monitoring/');
+  });
+
   it('denies errors thrown from the reCAPTCHA script only', () => {
     const denied = url => options.denyUrls.some(pattern => pattern.test(url));
     expect(

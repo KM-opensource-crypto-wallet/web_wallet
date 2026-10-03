@@ -2,6 +2,7 @@
 // runs before hydration, so startup failures are covered too.
 import * as Sentry from '@sentry/nextjs';
 import {baseOptions} from './sentryOptions';
+import {TUNNEL_PATH} from './tunnel';
 import {CONSOLE_LOG_LEVELS} from './consoleLevels';
 import {
   describeClientDevice,
@@ -24,6 +25,8 @@ const THIRD_PARTY_SCRIPT_URLS = [/\/recaptcha\/releases\//];
 
 Sentry.init({
   ...baseOptions(),
+  // Through our own origin so ad blockers cannot drop events.
+  tunnel: TUNNEL_PATH,
   denyUrls: THIRD_PARTY_SCRIPT_URLS,
   integrations: defaults => [
     ...defaults.filter(

@@ -157,7 +157,7 @@ if (process.argv.includes('build') && !process.env.SENTRY_AUTH_TOKEN) {
 module.exports = withSentryConfig(withNextIntl(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
-  // Build-time secret only (project:releases + org:read); never NEXT_PUBLIC_.
+  // Build-time secret only (Sentry org token, org:ci); never NEXT_PUBLIC_.
   authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: !process.env.CI,
   telemetry: false,
@@ -168,10 +168,9 @@ module.exports = withSentryConfig(withNextIntl(nextConfig), {
     treeshake: {removeDebugLogging: process.env.SENTRY_DEBUG !== 'true'},
     automaticVercelMonitors: false,
   },
-  // Events go through our own origin so ad blockers cannot drop them. The
-  // trailing slash matches `trailingSlash: true`, so the POST is served
-  // directly instead of bouncing through Next's 308 redirect.
-  tunnelRoute: '/monitoring/',
+  // No `tunnelRoute`: browser events still go through our own origin, but via
+  // the src/app/monitoring route handler (services/logger/tunnel.js). The
+  // rewrite-based tunnel tripped Next 16.3's MaxListenersExceededWarning.
   sourcemaps: {
     disable: !process.env.SENTRY_AUTH_TOKEN,
     // The SDK default, pinned: a wallet must never serve its client maps.
