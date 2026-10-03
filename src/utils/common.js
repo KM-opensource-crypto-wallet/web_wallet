@@ -72,11 +72,12 @@ export const popupCenter = async ({url, title, callback}) => {
     const h = height * 0.9;
     const left = (width - w) / 2 / systemZoom + dualScreenLeft;
     const top = (height - h) / 2 / systemZoom + dualScreenTop;
+    // No `noopener` here: it makes window.open return null, and the handle is
+    // needed to poll for close / the send-funds redirect. opener is cut below.
     const newWindow = window.open(
       url,
       title,
       `
-      noopener,
       scrollbars=yes,
       width=${w / systemZoom}, 
       height=${h / systemZoom}, 
@@ -93,6 +94,12 @@ export const popupCenter = async ({url, title, callback}) => {
 
     if (callback == null || typeof callback !== 'function') {
       return;
+    }
+
+    // Popup blocked: report it as closed and let the caller tell the user.
+    if (!newWindow) {
+      callback(false);
+      return null;
     }
 
     const POLL_INTERVAL = 1000;
