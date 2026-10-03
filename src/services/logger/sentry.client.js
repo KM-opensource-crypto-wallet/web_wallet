@@ -16,8 +16,15 @@ const host =
 // SDK adds by default would only create spans to discard them.
 const TRACING_INTEGRATIONS = new Set(['BrowserTracing', 'WebVitals']);
 
+// Errors thrown inside Google's reCAPTCHA script (reported as
+// app:///recaptcha/releases/...): not ours to fix, and bursts of them from
+// headless clients drowned the project (DOKWALLET-WALLET-WEB-Z, -H).
+// denyUrls matches the frame that threw, so an app frame throwing still reports.
+const THIRD_PARTY_SCRIPT_URLS = [/\/recaptcha\/releases\//];
+
 Sentry.init({
   ...baseOptions(),
+  denyUrls: THIRD_PARTY_SCRIPT_URLS,
   integrations: defaults => [
     ...defaults.filter(
       integration => !TRACING_INTEGRATIONS.has(integration.name),
