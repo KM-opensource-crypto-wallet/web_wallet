@@ -8,6 +8,7 @@
 import {scrubObject, scrubString} from './scrub';
 import {ignoreErrors} from './ignoreErrors';
 import {shouldDropEvent} from './eventFilters';
+import {captureCallerStack, isForeignLog} from './logFilters';
 
 // Support wants `tx_hash` searchable; it is public chain data.
 export const EVENT_ALLOW_KEYS = ['tx_hash'];
@@ -65,12 +66,23 @@ export const beforeSend = event => {
   return event;
 };
 
+// Console output from scripts injected into the page (extensions, in-app
+// browsers). Both hooks run synchronously inside the console call, so the
+// caller's stack is still live; only browsers have such scripts.
+const isForeignConsoleOutput = message =>
+  isForeignLog(
+    message,
+    typeof window !== 'undefined' ? captureCallerStack() : null,
+  );
+
 export const beforeBreadcrumb = breadcrumb => {
-  if (
-    breadcrumb.category === 'console' &&
-    !CONSOLE_BREADCRUMB_LEVELS.has(breadcrumb.level)
-  ) {
-    return null;
+  if (breadcrumb.category === 'console') {
+    if (
+      !CONSOLE_BREADCRUMB_LEVELS.has(breadcrumb.level) ||
+      isForeignConsoleOutput(breadcrumb.message)
+    ) {
+      return null;
+    }
   }
   if (breadcrumb.message) {
     breadcrumb.message = scrubString(breadcrumb.message);
@@ -84,6 +96,9 @@ export const beforeBreadcrumb = breadcrumb => {
 };
 
 export const beforeSendLog = log => {
+  if (isForeignConsoleOutput(log.message)) {
+    return null;
+  }
   if (log.message) {
     log.message = scrubString(log.message);
   }
