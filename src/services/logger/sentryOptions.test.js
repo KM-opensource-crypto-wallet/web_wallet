@@ -141,6 +141,16 @@ describe('beforeBreadcrumb', () => {
     ).not.toBeNull();
   });
 
+  it('drops console breadcrumbs injected by in-app browsers', () => {
+    expect(
+      beforeBreadcrumb({
+        category: 'console',
+        level: 'info',
+        message: 'FBNavLargestContentfulPaint:1790',
+      }),
+    ).toBeNull();
+  });
+
   it('scrubs message and data on other breadcrumbs', () => {
     const crumb = beforeBreadcrumb({
       category: 'ui.toast',
@@ -162,6 +172,53 @@ describe('beforeSendLog', () => {
     });
     expect(log.message).toBe('Imported: [REDACTED_MNEMONIC]');
     expect(log.attributes).toEqual({tx_hash: HEX64, chain: 'solana'});
+  });
+
+  it('drops console output injected by in-app browsers and extensions', () => {
+    expect(
+      beforeSendLog({level: 'log', message: 'FBNavFirstContentfulPaint:1790'}),
+    ).toBeNull();
+    expect(
+      beforeSendLog({
+        level: 'log',
+        message: '%c[ResourceDetector] color: #0066cc; all links count 0',
+      }),
+    ).toBeNull();
+    expect(
+      beforeSendLog({level: 'info', message: 'dokapi.failed'}),
+    ).not.toBeNull();
+  });
+
+  describe('in the browser', () => {
+    beforeAll(() => {
+      global.window = {};
+    });
+    afterAll(() => {
+      delete global.window;
+    });
+
+    // A script V8 attributes to an extension URL, as Chrome does for one an
+    // extension injects into the page. It logs from a timer callback, so the
+    // extension script is the origin of the call stack.
+    const logFromExtension = () =>
+      new Promise(resolve => {
+        const vm = require('vm');
+        const run = vm.runInThisContext(
+          '(hook, done) => setImmediate(() => done(hook({level: "log", message: "injected"})))',
+          {filename: 'chrome-extension://abcdefghijklmnop/inject.js'},
+        );
+        run(beforeSendLog, resolve);
+      });
+
+    it('drops a log whose call started in an extension script', async () => {
+      await expect(logFromExtension()).resolves.toBeNull();
+    });
+
+    it('keeps a log whose call started in app code', () => {
+      expect(
+        beforeSendLog({level: 'log', message: 'browser details Safari_27.0'}),
+      ).not.toBeNull();
+    });
   });
 });
 

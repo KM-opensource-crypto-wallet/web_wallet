@@ -142,11 +142,23 @@ const nextConfig = {
   },
 };
 
+// Without the token the Sentry plugin is skipped entirely, so it cannot say so
+// itself: production stack traces then stay minified.
+if (process.argv.includes('build') && !process.env.SENTRY_AUTH_TOKEN) {
+  console.warn(
+    '[sentry] SENTRY_AUTH_TOKEN is not set: source maps and the release will not be uploaded.',
+  );
+}
+
 // Sentry wraps last so it sees the final webpack config (next-intl included).
-// org/project/authToken are read from SENTRY_ORG / SENTRY_PROJECT /
-// SENTRY_AUTH_TOKEN; without the token no source maps or releases are
-// uploaded and the build stays silent about it.
+// Source maps: client maps are generated hidden (no sourceMappingURL in the
+// shipped JS), uploaded, then deleted from .next/static before deploy, so they
+// are never publicly served. Server maps stay on the server only.
 module.exports = withSentryConfig(withNextIntl(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Build-time secret only (Sentry org token, org:ci); never NEXT_PUBLIC_.
+  authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: !process.env.CI,
   telemetry: false,
   widenClientFileUpload: true,
@@ -156,11 +168,14 @@ module.exports = withSentryConfig(withNextIntl(nextConfig), {
     treeshake: {removeDebugLogging: process.env.SENTRY_DEBUG !== 'true'},
     automaticVercelMonitors: false,
   },
-  // Events go through our own origin so ad blockers cannot drop them. The
-  // trailing slash matches `trailingSlash: true`, so the POST is served
-  // directly instead of bouncing through Next's 308 redirect.
-  tunnelRoute: '/monitoring/',
-  sourcemaps: {disable: !process.env.SENTRY_AUTH_TOKEN},
+  // No `tunnelRoute`: browser events still go through our own origin, but via
+  // the src/app/monitoring route handler (services/logger/tunnel.js). The
+  // rewrite-based tunnel tripped Next 16.3's MaxListenersExceededWarning.
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+    // The SDK default, pinned: a wallet must never serve its client maps.
+    deleteSourcemapsAfterUpload: true,
+  },
   release: {
     create: Boolean(process.env.SENTRY_AUTH_TOKEN),
     // Must equal `releaseName()` in src/services/logger/sentryOptions.js.

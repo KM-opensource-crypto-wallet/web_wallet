@@ -44,6 +44,14 @@ describe('ignoreErrors', () => {
     ).toBe(true);
   });
 
+  it('ignores Next.js Server Action deploy skew', () => {
+    expect(
+      matches(
+        'Failed to find Server Action "7f3a". This request might be from an older or newer deployment.',
+      ),
+    ).toBe(true);
+  });
+
   it('does not ignore ordinary defects', () => {
     expect(
       matches("Cannot read properties of undefined (reading 'chain_name')"),

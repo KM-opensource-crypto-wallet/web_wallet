@@ -62,7 +62,7 @@ export const isNonBrowserRuntime = event =>
 // the wallet-provider `inpage[.bundle].js` (reported as
 // `app:///inpage.bundle.js`: two wallet extensions racing to define a
 // read-only `window.ethereum`, DOKWALLET-WALLET-WEB-P).
-const EXTENSION_FRAME =
+export const EXTENSION_FRAME =
   /^(chrome|moz|safari(-web)?|ms-browser)-extension:|(^|\/)inpage(\.bundle)?\.js$/;
 
 // Only when EVERY frame is an extension's: one app frame keeps the event.
