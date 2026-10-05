@@ -142,26 +142,13 @@ const nextConfig = {
   },
 };
 
-// Without the token the Sentry plugin is skipped entirely, so it cannot say so
-// itself: production stack traces then stay minified.
-if (process.argv.includes('build') && !process.env.SENTRY_AUTH_TOKEN) {
-  console.warn(
-    '[sentry] SENTRY_AUTH_TOKEN is not set: source maps and the release will not be uploaded.',
-  );
-}
-
 // Sentry wraps last so it sees the final webpack config (next-intl included).
-// Source maps: client maps are generated hidden (no sourceMappingURL in the
-// shipped JS), uploaded, then deleted from .next/static before deploy, so they
-// are never publicly served. Server maps stay on the server only.
+// No source maps: the plugin neither generates nor uploads them, and no Sentry
+// release is created. Generating them doubled the build's memory and put
+// ~140 MB of server maps into the Amplify Lambda bundle (over its 220 MB cap).
 module.exports = withSentryConfig(withNextIntl(nextConfig), {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  // Build-time secret only (Sentry org token, org:ci); never NEXT_PUBLIC_.
-  authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: !process.env.CI,
   telemetry: false,
-  widenClientFileUpload: true,
   webpack: {
     // Strip the SDK's own debug logging from the bundles, unless a developer
     // asked for it (SENTRY_DEBUG=true also flips `debug` in Sentry.init).
@@ -171,13 +158,9 @@ module.exports = withSentryConfig(withNextIntl(nextConfig), {
   // No `tunnelRoute`: browser events still go through our own origin, but via
   // the src/app/monitoring route handler (services/logger/tunnel.js). The
   // rewrite-based tunnel tripped Next 16.3's MaxListenersExceededWarning.
-  sourcemaps: {
-    disable: !process.env.SENTRY_AUTH_TOKEN,
-    // The SDK default, pinned: a wallet must never serve its client maps.
-    deleteSourcemapsAfterUpload: true,
-  },
+  sourcemaps: {disable: true},
   release: {
-    create: Boolean(process.env.SENTRY_AUTH_TOKEN),
+    create: false,
     // Must equal `releaseName()` in src/services/logger/sentryOptions.js.
     name: `${name}@${version}`,
   },
