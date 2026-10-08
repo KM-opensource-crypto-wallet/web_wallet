@@ -33,6 +33,7 @@ const config = {
     '/node_modules/',
     '/.next/',
     '<rootDir>/dok-wallet-blockchain-networks/redux/wallets/walletSlice.test.js',
+    '<rootDir>/dok-wallet-blockchain-networks/redux/wallets/walletsSlice.walletConnect.test.js',
   ],
   // services/logger imports @sentry/nextjs, which needs a browser/Node runtime
   // the tests do not have; jest.setup.js stubs the SDK surface.

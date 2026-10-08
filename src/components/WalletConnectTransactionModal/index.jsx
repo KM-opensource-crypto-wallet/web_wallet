@@ -4,12 +4,12 @@ import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import GppMaybeOutlinedIcon from '@mui/icons-material/GppMaybeOutlined';
 import {currencySymbol} from 'data/currency';
 import {
   convertHexToUtf8IfPossible,
   decodeSolMessage,
   getCustomizePublicAddress,
-  isValidBigInt,
   parseBalance,
   safelyJsonParse,
   safelyJsonStringify,
@@ -38,8 +38,14 @@ import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import {
   BatchCallDataView,
   MessageNode,
+  MessageValueRow,
   stringifyPrimitive,
 } from 'components/WalletConnectMessageTree';
+import {clearWalletConnectTransactionData} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSlice';
+import {
+  getEvmTxMaxFeeWei,
+  reviewEvmWalletConnectTx,
+} from 'dok-wallet-blockchain-networks/helper/evmTxReview';
 
 const style = {
   position: 'absolute',
@@ -135,8 +141,61 @@ const DetailRow = ({label, value}) => (
   </div>
 );
 
+// Review section for a single eth_sendTransaction / eth_signTransaction: the
+// risk banner, the decoded approval summary rows, the decoded method +
+// arguments (or selector + calldata when unknown) and the raw calldata, so the
+// user always sees exactly what the signer will sign (KIML-002).
+const TxCalldataView = ({review}) => {
+  if (!review) {
+    return null;
+  }
+  const {tx, risk} = review;
+  const hasData = !!tx?.data && tx.data !== '0x';
+  return (
+    <>
+      {risk.level === 'danger' && (
+        <div className={styles.dangerBanner}>
+          <GppMaybeOutlinedIcon sx={{fontSize: 18, color: '#e5484d'}} />
+          <p className={styles.dangerBannerText}>{risk.reasons.join(' ')}</p>
+        </div>
+      )}
+      {risk.level === 'warn' && (
+        <div className={styles.batchLimitWarning}>
+          <WarningAmberIcon sx={{fontSize: 16, color: 'var(--warning)'}} />
+          <p className={styles.batchLimitWarningText}>
+            {risk.reasons.join(' ')}
+          </p>
+        </div>
+      )}
+      {risk.rows.map(row => (
+        <MessageValueRow key={row.label} label={row.label} value={row.value} />
+      ))}
+      {review.decoded?.kind === 'decoded' && (
+        <BatchCallDataView
+          call={tx}
+          rowClassName={styles.transferItemView}
+          labelClassName={styles.transferTitle}
+          valueClassName={styles.boxBalance}
+        />
+      )}
+      {hasData && (
+        <MessageValueRow
+          label={review.decoded?.kind === 'decoded' ? 'Raw data' : 'Calldata'}
+          value={tx.data}
+        />
+      )}
+    </>
+  );
+};
+
 const WalletConnectTransactionModal = props => {
-  const transactionData = useSelector(selectWalletConnectTransactionData);
+  // Snapshot of the request this modal instance was opened for. Sidebar keys
+  // the modal by request id, so a new request remounts it; what the user
+  // reviews and approves is frozen here, the WalletConnect service refuses new
+  // requests while the modal is open, and the thunk re-checks id and digest.
+  const liveTransactionData = useSelector(selectWalletConnectTransactionData);
+  const [transactionData] = useState(() => liveTransactionData);
+  const [acknowledged, setAcknowledged] = useState(false);
   const dispatch = useDispatch();
   const image = transactionData?.peerMeta?.icons?.[0] || null;
   const title = transactionData?.peerMeta?.name || '';
@@ -166,6 +225,15 @@ const WalletConnectTransactionModal = props => {
     [walletData?.chain_name, walletData?.address],
   );
   const livePrivateKey = useSelector(selectSessionPrivateKey);
+
+  // Canonical allow-listed tx + decoded calldata + risk for EVM transactions.
+  const evmReview = useMemo(
+    () =>
+      isWalletConnectTransaction(method) && !isNonEVMChain(chainId)
+        ? reviewEvmWalletConnectTx(transactionData?.params?.[0], {chainId})
+        : null,
+    [method, chainId, transactionData],
+  );
 
   const getTransactionRequestData = useMemo(() => {
     if (isNonEVMChain(transactionData?.chainId)) {
@@ -197,6 +265,30 @@ const WalletConnectTransactionModal = props => {
           expectedSignerAddress: transactionData?.params?.[0]?.from,
         };
       }
+      if (evmReview) {
+        // eth_sendTransaction / eth_signTransaction: everything shown comes
+        // from the canonical tx the signer will receive. A malformed request
+        // renders with no tx and cannot be approved.
+        const tx = evmReview.tx;
+        if (!tx) {
+          return {finaltransactionData: {}, expectedSignerAddress: undefined};
+        }
+        const etherAmount = parseBalance(tx.value, 18);
+        const maxFeeWei = getEvmTxMaxFeeWei(tx);
+        const transactionFees =
+          maxFeeWei == null ? '0' : parseBalance(maxFeeWei, 18);
+        const fiatTransactionFees = BigNumber(transactionFees)
+          .multipliedBy(BigNumber(walletData?.currencyRate || '0'))
+          .toString();
+        return {
+          finaltransactionData: tx,
+          etherAmount,
+          expectedSignerAddress: tx.from,
+          transactionFees,
+          fiatTransactionFees,
+          toAddress: tx.to,
+        };
+      }
       const finaltransactionData = transactionData?.params?.[0] || {};
       const {signTypeData, expectedSignerAddress} = EVM_SIGN_REQUEST_HANDLERS[
         transactionData?.method
@@ -204,39 +296,13 @@ const WalletConnectTransactionModal = props => {
         signTypeData: transactionData?.params?.[1],
         expectedSignerAddress: undefined,
       };
-      if (finaltransactionData?.value) {
-        const etherAmount = finaltransactionData?.value
-          ? parseBalance(finaltransactionData?.value, 18)
-          : '';
-        const gasPrice =
-          isValidBigInt(finaltransactionData?.gasPrice) || BigInt(0);
-        const gasLimit =
-          isValidBigInt(finaltransactionData?.gasLimit) || BigInt(0);
-
-        const transactionFees = parseBalance(gasPrice * gasLimit, 18);
-        const transactionFeeBN = BigNumber(transactionFees);
-        const currencyRateBN = BigNumber(walletData?.currencyRate || '0');
-        const fiatTransactionFees = transactionFeeBN
-          .multipliedBy(currencyRateBN)
-          .toString();
-        const toAddress = finaltransactionData?.to;
-        return {
-          finaltransactionData,
-          etherAmount,
-          signTypeData,
-          expectedSignerAddress,
-          transactionFees,
-          fiatTransactionFees,
-          toAddress,
-        };
-      }
       return {
         finaltransactionData,
         signTypeData,
         expectedSignerAddress,
       };
     }
-  }, [transactionData, walletData]);
+  }, [transactionData, walletData, evmReview]);
 
   // Approving signs with the wallet key: the same password / biometric gate as
   // every other send applies (D2). The dApp request itself is executed by
@@ -256,7 +322,8 @@ const WalletConnectTransactionModal = props => {
       };
       connector.respondSessionRequest({topic, response});
     }
-  }, [id, props, topic]);
+    dispatch(clearWalletConnectTransactionData({id}));
+  }, [dispatch, id, props, topic]);
 
   const approveRequest = async () => {
     // walletData is persisted without secrets; the live key is gone after an
@@ -275,14 +342,19 @@ const WalletConnectTransactionModal = props => {
     }
     try {
       props?.onClose?.();
+      const isBatch = method?.includes('wallet_sendCalls');
       dispatch(
         walletConnect({
-          transactionData: {
-            ...getTransactionRequestData?.finaltransactionData,
-            batchCalls: transactionData?.params?.[0]?.calls,
-            from: transactionData?.from,
-          },
-          isBatchTransaction: transactionData?.isBatchTransaction,
+          transactionData: isBatch
+            ? {
+                ...getTransactionRequestData?.finaltransactionData,
+                batchCalls: transactionData?.params?.[0]?.calls,
+              }
+            : getTransactionRequestData?.finaltransactionData,
+          // Binds this approval to the reviewed request: the thunk rebuilds
+          // the tx from the store and refuses if id or digest differ.
+          reviewedTxDigest: evmReview?.digest,
+          reviewedRequestId: id,
           chain_name: walletData?.chain_name?.toLowerCase(),
           // CAIP-2 id of the request; picks the executor for chains that
           // serve more than one namespace (Hedera native vs eip155).
@@ -306,6 +378,14 @@ const WalletConnectTransactionModal = props => {
   const batchCallsTotal =
     getTransactionRequestData?.finaltransactionData?.batchCallsTotal || 0;
   const isBatchTooLarge = batchCallsTotal > MAX_BATCH_CALLS;
+  // Danger-level calls (unlimited approvals, operator grants, opaque or
+  // malformed calldata, contract creation) need an explicit acknowledgement;
+  // a malformed request can never be approved.
+  const needsAcknowledgement = evmReview?.risk?.level === 'danger';
+  const approveDisabled =
+    isBatchTooLarge ||
+    !!evmReview?.error ||
+    (needsAcknowledgement && !acknowledged);
 
   const BatchCallsView = () => {
     const calls =
@@ -447,10 +527,19 @@ const WalletConnectTransactionModal = props => {
                   />
                   <DetailRow
                     label={'To'}
-                    value={getCustomizePublicAddress(
-                      getTransactionRequestData?.toAddress,
-                    )}
+                    value={
+                      getTransactionRequestData?.toAddress
+                        ? getCustomizePublicAddress(
+                            getTransactionRequestData?.toAddress,
+                          )
+                        : evmReview?.tx
+                          ? 'Contract creation'
+                          : '—'
+                    }
                   />
+                </div>
+                <div className={styles.box}>
+                  <TxCalldataView review={evmReview} />
                 </div>
                 <div className={styles.box}>
                   {!!finalTransactionFee && (
@@ -464,6 +553,18 @@ const WalletConnectTransactionModal = props => {
                     value={`${currencySymbol[localCurrency]}${totalValue || 0}`}
                   />
                 </div>
+                {needsAcknowledgement && (
+                  <label className={styles.checkboxRow}>
+                    <input
+                      type='checkbox'
+                      checked={acknowledged}
+                      onChange={e => setAcknowledged(e.target.checked)}
+                    />
+                    <span className={styles.checkboxText}>
+                      {'I understand the risk and want to continue'}
+                    </span>
+                  </label>
+                )}
               </div>
             ) : (
               MessageView()
@@ -476,7 +577,7 @@ const WalletConnectTransactionModal = props => {
                 <button
                   className={styles.button}
                   onClick={() => setConfirmVisible(true)}
-                  disabled={isBatchTooLarge}>
+                  disabled={approveDisabled}>
                   {'Approve'}
                 </button>
               </div>
