@@ -1,0 +1,135 @@
+// @override-of src/components/ModalReset/index.jsx sha256:3bc92d8e65976510455c446864f4e2455212dddef24538ae3cbed7abf45459f3
+// Extension copy: only the full-page reload after "Forgot password" differs
+// (marked [ext]). Re-merge when `yarn ext:check` reports changes.
+import React, {useState, useEffect, useContext, useLayoutEffect} from 'react';
+import {logOutSuccess} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
+import {lockSession} from 'security/unlockFlow';
+import {persistor} from 'redux/store';
+import {wipeAllLocalData} from 'redux/storage/wipe';
+import {captureError} from 'services/logger';
+import {useDispatch} from 'react-redux';
+import {resetWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {addBreadcrumb} from 'services/logger';
+import styles from '@web-original/src/components/ModalReset/ModalReset.module.css';
+import Modal from '@mui/material/Modal';
+import Box from '@mui/material/Box';
+import {useRouter} from 'next/navigation';
+import {resetCurrentTransferData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
+import {resetBatchTransactions} from 'dok-wallet-blockchain-networks/redux/batchTransaction/batchTransactionSlice';
+
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: '80%',
+  bgcolor: 'var(--secondaryBackgroundColor)',
+  borderRadius: '10px',
+  overflow: 'hidden',
+  '@media (min-width: 500px)': {
+    width: '60%',
+  },
+  '@media (min-width: 768px)': {
+    width: '40%',
+  },
+};
+
+const ModalReset = ({visible, hideModal, page, link}) => {
+  //   const {theme} = useContext(ThemeContext);
+  //   const styles = myStyles(theme);
+  const dispatch = useDispatch();
+  const [list, setList] = useState('');
+  const router = useRouter();
+
+  useEffect(() => {
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => {
+      setList(page);
+    })();
+  }, [page]);
+
+  const handlerNo = () => {
+    if (list === 'Reset Wallet') {
+      hideModal(false);
+    } else if (list === 'Forgot') {
+      hideModal(false);
+    } else {
+      hideModal(false);
+    }
+  };
+
+  const handlerYes = async () => {
+    // The masterClientId is discarded with the store, so user attribution
+    // ends here (AppRouting clears it when the selector goes empty).
+    addBreadcrumb('wallet', 'reset', {reason: list});
+    if (list === 'Reset Wallet') {
+      dispatch(resetWallet());
+      hideModal(false);
+      router.push('/auth/reset-wallet');
+    } else if (list === 'Forgot') {
+      // Forgot password provably means the vault is unrecoverable: the account,
+      // its wallets, the vault and every local trace go (seed phrase or nothing).
+      // Pause redux-persist first so the reset dispatches below cannot stage
+      // writes that would re-open the databases while the wipe deletes them.
+      persistor.pause();
+      dispatch(logOutSuccess());
+      dispatch(resetWallet());
+      dispatch(resetCurrentTransferData());
+      dispatch(resetBatchTransactions());
+      try {
+        await wipeAllLocalData({persistor});
+      } catch (e) {
+        captureError(e, {tags: {area: 'storage', op: 'wipe'}});
+      }
+      // Full page load, not a client-side push: it drops every IndexedDB
+      // connection (a delete blocked by one only completes then) and boots
+      // the empty profile from scratch instead of the reset in-memory store.
+      // [ext] The app path lives in the hash (src/router/history.js); a
+      // path URL would point at a file that does not exist.
+      window.history.replaceState(null, '', '#/auth/registration/');
+      window.location.reload();
+    } else {
+      // Log out (W2): zeroise keys in memory and pause sealed persistence
+      // until the next login. Awaited: the keys must be gone before the
+      // login page renders.
+      await dispatch(lockSession());
+      hideModal(false);
+      router.push('/auth/login');
+    }
+  };
+
+  return (
+    <Modal
+      open={visible}
+      onClose={() => {}}
+      aria-labelledby='modal-modal-title'
+      aria-describedby='modal-modal-description'>
+      <Box sx={style}>
+        <div className={styles.container}>
+          <div className={styles.infoList}>
+            <p className={styles.titleInfo}>{page}</p>
+            <p className={styles.info}>
+              Please make sure you have a copy of 12-word seed phrase. You will
+              need it in order to restore your wallet. Without it you will NOT
+              be able to restore your wallet and you will lose access to your
+              funds.
+            </p>
+            <p className={styles.info}>Are you sure you want to proceed?</p>
+          </div>
+          <div className={styles.btnList}>
+            <button className={styles.learnBox} onClick={() => handlerNo()}>
+              No
+            </button>
+
+            <button className={styles.learnBox} onClick={() => handlerYes()}>
+              Yes
+            </button>
+          </div>
+        </div>
+      </Box>
+    </Modal>
+  );
+};
+
+export default ModalReset;

@@ -22,6 +22,12 @@ export default defineConfig([
       // prefer deriving the value during render or resetting by (re)mounting.
     },
   },
+  {
+    // Chrome extension build (extension/README.md): extension pages and the
+    // service worker run with the `chrome` API instead of a Next server.
+    files: ['extension/**'],
+    languageOptions: {globals: {chrome: 'readonly'}},
+  },
   globalIgnores([
     // Defaults of eslint-config-next (restated because globalIgnores replaces them).
     '.next/**',
@@ -36,5 +42,8 @@ export default defineConfig([
     'patches/**',
     'docs/**',
     '.swc/**',
+    // Chrome extension build output and generated route table.
+    'extension/dist/**',
+    'extension/.generated/**',
   ]),
 ]);
