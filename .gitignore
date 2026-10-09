@@ -37,3 +37,8 @@ yarn-error.log*
 next-env.d.ts
 
 .claude
+
+# chrome extension (extension/)
+/extension/dist
+/extension/.generated
+/extension/.env

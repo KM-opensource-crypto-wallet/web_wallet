@@ -15,7 +15,8 @@
       "utils/*": ["./src/utils/*"],
       "myWallet/*": ["./src/myWallet/*"],
       "security/*": ["./src/security/*"],
-      "theme/*": ["./src/theme/*"]
+      "theme/*": ["./src/theme/*"],
+      "@ext/*": ["./extension/src/*"]
     }
   }
 }
