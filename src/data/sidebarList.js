@@ -1,129 +1,75 @@
 import {walletRoutes} from 'utils/routes';
-
-const icons = require(`assets/images/sidebarIcons`).default;
+import {
+  AboutIcon,
+  BuyIcon,
+  ContactIcon,
+  HomeIcon,
+  LogoutIcon,
+  PaymentUrlIcon,
+  ResetIcon,
+  SellIcon,
+  SettingsIcon,
+  SwapIcon,
+  WalletConnectIcon,
+  WalletIcon,
+} from 'components/Sidebar/SidebarIcons';
 
 // Wallet-scoped entries need the active wallet's id in the URL, so the list
-// is built per-render rather than exported as static data.
+// is built per-render rather than exported as static data. `key` doubles as
+// the `home` translation key; `section` groups the entries in the sidebar.
 const sidebarList = currentWalletClientId => [
   {
     key: 'home',
     href: walletRoutes.home(currentWalletClientId),
-    item: t => (
-      <>
-        {icons.home} <span>{t('home')}</span>
-      </>
-    ),
+    Icon: HomeIcon,
+    section: 'wallet',
   },
   {
     key: 'buyCrypto',
     href: walletRoutes.buyCrypto(currentWalletClientId),
-    item: t => (
-      <>
-        {icons.buy}
-        <span>{t('buyCrypto')}</span>
-      </>
-    ),
+    Icon: BuyIcon,
+    section: 'wallet',
   },
   {
     key: 'swap',
     href: walletRoutes.swap(currentWalletClientId),
-    item: t => (
-      <>
-        {icons.exchange}
-        <span>{t('swap')}</span>
-      </>
-    ),
+    Icon: SwapIcon,
+    section: 'wallet',
   },
   {
     key: 'sellCrypto',
     href: walletRoutes.sellCrypto(currentWalletClientId),
-    item: t => (
-      <>
-        {icons.buy}
-        <span>{t('sellCrypto')}</span>
-      </>
-    ),
+    Icon: SellIcon,
+    section: 'wallet',
   },
-  {
-    key: 'wallets',
-    href: '/wallets',
-    item: t => (
-      <>
-        {icons.wallet}
-        <span>{t('wallets')}</span>
-      </>
-    ),
-  },
+  {key: 'wallets', href: '/wallets', Icon: WalletIcon, section: 'wallet'},
   {
     key: 'walletConnect',
     href: walletRoutes.walletConnect(currentWalletClientId),
-    item: t => (
-      <>
-        {icons.walletConnect}
-        <span>{t('walletConnect')}</span>
-      </>
-    ),
-  },
-  {
-    key: 'about',
-    href: '/about',
-    item: t => (
-      <>
-        {icons.about}
-        <span>{t('about')}</span>
-      </>
-    ),
-  },
-  {
-    key: 'contactUs',
-    href: '/contact-us',
-    item: t => (
-      <>
-        {icons.contactUs}
-        <span>{t('contactUs')}</span>
-      </>
-    ),
-  },
-  {
-    key: 'settings',
-    href: '/settings',
-    item: t => (
-      <>
-        {icons.settings}
-        <span>{t('settings')}</span>
-      </>
-    ),
+    Icon: WalletConnectIcon,
+    section: 'wallet',
   },
   {
     key: 'receivePaymentUrl',
     href: walletRoutes.receivePaymentUrl(currentWalletClientId),
-    item: t => (
-      <>
-        {icons.url}
-        <span>{t('receivePaymentUrl')}</span>
-      </>
-    ),
+    Icon: PaymentUrlIcon,
+    section: 'wallet',
+  },
+  {key: 'settings', href: '/settings', Icon: SettingsIcon, section: 'general'},
+  {key: 'about', href: '/about', Icon: AboutIcon, section: 'general'},
+  {
+    key: 'contactUs',
+    href: '/contact-us',
+    Icon: ContactIcon,
+    section: 'general',
   },
   {
     key: 'resetWallet',
     href: '/reset-wallet',
-    item: t => (
-      <>
-        {icons.walletReset}
-        <span>{t('resetWallet')}</span>
-      </>
-    ),
+    Icon: ResetIcon,
+    section: 'account',
   },
-  {
-    key: 'logout',
-    href: '/logout',
-    item: t => (
-      <>
-        {icons.logout}
-        <span>{t('logout')}</span>
-      </>
-    ),
-  },
+  {key: 'logout', href: '/logout', Icon: LogoutIcon, section: 'account'},
 ];
 
 export default sidebarList;

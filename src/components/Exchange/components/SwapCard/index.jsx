@@ -27,7 +27,7 @@ const SwapCard = ({
       <div className={s.headerRow}>
         <p className={s.label}>{label}</p>
         {isBalanceFetching ? (
-          <CircularProgress size={14} sx={{color: 'var(--gray)'}} />
+          <CircularProgress size={14} sx={{color: 'var(--sw-muted)'}} />
         ) : (
           !!balanceText && <p className={s.balance}>{balanceText}</p>
         )}

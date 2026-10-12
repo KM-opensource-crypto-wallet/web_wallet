@@ -1,7 +1,7 @@
 'use client';
 
 import {walletRoutes} from 'utils/routes';
-import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   isWalletHiddenAndLocked,
@@ -25,17 +25,11 @@ import {
   resetPaymentUrl,
   setWalletsSortOption,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
-import SortMenu from 'components/SortMenu';
 import Image from 'next/image';
 import s from './Wallets.module.css';
 import {useRouter} from 'next/navigation';
 import ModalCreateWallet from 'components/ModalCreateWallet';
 import RefreshWalletsButton from 'components/RefreshWalletsButton';
-import CircularProgress from '@mui/material/CircularProgress';
-import {getPngIcons} from 'assets/images/icons/pngIcon';
-import {ThemeContext} from 'theme/ThemeContext';
-import icons from 'src/assets/images/icons';
-import PageTitle from 'components/PageTitle';
 import {debounce, moveItem} from 'dok-wallet-blockchain-networks/helper';
 import {
   normalizeSecretCode,
@@ -43,45 +37,82 @@ import {
   SECRET_CODE_MIN_LENGTH,
 } from 'utils/hideWallet';
 import {store} from 'redux/store';
-import TextField from '@mui/material/TextField';
-import IconButton from '@mui/material/IconButton';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import {closestCenter, DndContext} from '@dnd-kit/core';
 import {restrictToParentElement} from '@dnd-kit/modifiers';
 import {SortableContext, verticalListSortingStrategy} from '@dnd-kit/sortable';
 import SortableItem from 'components/Sortable/sortable';
-import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 import {currencySymbol} from 'data/currency';
-
-function getStyle(style) {
-  if (style.transform) {
-    const axisLockY =
-      'translate(0px' +
-      style.transform.slice(
-        style.transform.indexOf(','),
-        style.transform.length,
-      );
-    return {
-      ...style,
-      transform: axisLockY,
-    };
-  }
-  return style;
-}
-
-const disabledStyle = {
-  filter: 'opacity(0.5) drop-shadow(0 0 0 gray)',
-  cursor: 'not-allowed',
-};
+import GeneralButton from 'components/Button';
+import HomeSheet from 'components/Home/HomeSheet';
+import {MASK} from 'components/Home/AssetRow';
+import {
+  readHideBalances,
+  writeHideBalances,
+} from 'src/hooks/protectedRoutes/wallet/useHome';
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  CloseIcon,
+  EyeIcon,
+  PlusIcon,
+  SearchIcon,
+  SettingsIcon,
+  SortIcon,
+} from 'components/Home/HomeIcons';
 
 const WALLET_SORT_OPTIONS = [
-  {label: 'Default Order', value: 'default', showDivider: true},
-  {label: 'Value: High to Low', value: 'value_desc'},
-  {label: 'Value: Low to High', value: 'value_asc', showDivider: true},
-  {label: 'Name: A to Z', value: 'name_asc'},
-  {label: 'Name: Z to A', value: 'name_desc'},
+  {label: 'Custom order', sub: 'Drag or use the arrows', value: 'default'},
+  {
+    label: 'Value: high to low',
+    sub: 'Largest balance first',
+    value: 'value_desc',
+  },
+  {
+    label: 'Value: low to high',
+    sub: 'Smallest balance first',
+    value: 'value_asc',
+  },
+  {label: 'Name: A to Z', sub: 'Alphabetical', value: 'name_asc'},
+  {label: 'Name: Z to A', sub: 'Reverse alphabetical', value: 'name_desc'},
 ];
+
+const MoreIcon = () => (
+  <svg width='18' height='18' viewBox='0 0 24 24' aria-hidden='true'>
+    {[5, 12, 19].map(x => (
+      <circle key={x} cx={x} cy='12' r='2' style={{fill: 'currentColor'}} />
+    ))}
+  </svg>
+);
+
+const GripIcon = () => (
+  <svg width='14' height='18' viewBox='0 0 14 18' aria-hidden='true'>
+    {[3, 9, 15].map(y =>
+      [4, 10].map(x => (
+        <circle
+          key={`${x}-${y}`}
+          cx={x}
+          cy={y}
+          r='1.6'
+          style={{fill: 'currentColor'}}
+        />
+      )),
+    )}
+  </svg>
+);
+
+const walletTotal = wallet =>
+  (wallet?.coins || []).reduce(
+    (sum, coin) =>
+      coin?.isInWallet ? sum + (parseFloat(coin?.totalCourse) || 0) : sum,
+    0,
+  );
+
+const formatMoney = (value, symbol) =>
+  `${symbol || ''}${Number(value || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
 const Wallets = () => {
   const currentWallet = useSelector(selectCurrentWallet);
@@ -93,12 +124,11 @@ const Wallets = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const [modalVisible, setmodalVisible] = useState(false);
-  const {themeType} = useContext(ThemeContext);
   const [searchQuery, setSearchQuery] = useState('');
   const [matchedReveal, setMatchedReveal] = useState(null);
-  const PngIcons = getPngIcons(themeType);
-  const [sortMenuVisible, setSortMenuVisible] = useState(false);
-  const filterButtonRef = useRef(null);
+  const [sortSheetOpen, setSortSheetOpen] = useState(false);
+  const [menuId, setMenuId] = useState(null);
+  const [hidden, setHidden] = useState(readHideBalances);
   const walletsSortOption = useSelector(getWalletsSortOption);
   const localCurrency = useSelector(getLocalCurrency);
   // Set by refreshAllWalletsCoins while it works through the wallets, so the
@@ -220,90 +250,164 @@ const Wallets = () => {
   };
 
   const walletList = displayedWallets;
-  const uniqueIds = useMemo(() => {
-    return walletList.map(item => item?.clientId);
-  }, [walletList]);
+  const uniqueIds = useMemo(
+    () => walletList.map(item => item?.clientId),
+    [walletList],
+  );
+  const fiatSymbol = currencySymbol[localCurrency] || '';
+  const grandTotal = useMemo(
+    () => visibleWallets.reduce((sum, wallet) => sum + walletTotal(wallet), 0),
+    [visibleWallets],
+  );
+  const isCustomOrder = walletsSortOption === 'default' || !walletsSortOption;
+  const canReorder = isCustomOrder && !searchQuery && walletList.length > 1;
+  const sortLabel =
+    WALLET_SORT_OPTIONS.find(option => option.value === walletsSortOption)
+      ?.label || 'Custom order';
+
+  // Close the ⋯ menu on any press outside it (or its own button). A backdrop
+  // element can't do this here: each card sits in a SortableItem whose
+  // `scale` style makes it its own stacking context, so a page-level backdrop
+  // would cover the open menu and swallow clicks on its items.
+  useEffect(() => {
+    if (!menuId) {
+      return undefined;
+    }
+    const onPointerDown = event => {
+      if (!event.target?.closest?.('[data-wallet-menu]')) {
+        setMenuId(null);
+      }
+    };
+    const onKeyDown = event => {
+      if (event.key === 'Escape') {
+        setMenuId(null);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuId]);
+
+  const toggleHidden = () => {
+    const next = !hidden;
+    setHidden(next);
+    writeHideBalances(next);
+  };
+
+  const activate = useCallback(
+    item => {
+      dispatch(refreshCoins());
+      dispatch(resetPaymentUrl());
+      if (isWalletHiddenAndLocked(item)) {
+        dispatch(
+          setWalletRevealed({clientId: item?.clientId, isHidden: false}),
+        );
+      }
+      dispatch(setCurrentWalletClientId(item?.clientId));
+    },
+    [dispatch],
+  );
+
+  const openWallet = item => {
+    activate(item);
+    router.push(walletRoutes.home(item.clientId));
+  };
+
+  const editWallet = item => {
+    setMenuId(null);
+    router.push(
+      `/wallets/create-wallet?walletName=${encodeURIComponent(
+        item?.walletName,
+      )}&walletClientId=${item?.clientId}`,
+    );
+  };
+
   return (
-    <>
-      <PageTitle
-        title='Wallets'
-        extraElement={
-          <div className={s.extraElementContainer}>
-            <button
-              ref={filterButtonRef}
-              className={s.headerIconButton}
-              onClick={() => setSortMenuVisible(prev => !prev)}>
-              {icons.filter}
-            </button>
-            <button
-              className={s.headerIconButton}
-              onClick={() => setmodalVisible(true)}>
-              {icons.pluscircleo}
-            </button>
-          </div>
-        }
-      />
-      <div className={s.sortMenuWrapper}>
-        <SortMenu
-          visible={sortMenuVisible}
-          onClose={() => setSortMenuVisible(false)}
-          onSelect={handleSortSelect}
-          currentSort={walletsSortOption}
-          anchorRef={filterButtonRef}
-          sortOptions={WALLET_SORT_OPTIONS}
-          title='Sort Wallets'
-        />
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <h1 className={s.title}>Wallets</h1>
+        <span className={s.topActions}>
+          <GeneralButton
+            variant='unstyled'
+            className={s.iconButton}
+            aria-label='Sort wallets'
+            aria-haspopup='dialog'
+            onClick={() => setSortSheetOpen(true)}>
+            <SortIcon size={21} />
+          </GeneralButton>
+          <GeneralButton
+            variant='unstyled'
+            className={s.iconButton}
+            aria-label='Add wallet'
+            aria-haspopup='dialog'
+            onClick={() => setmodalVisible(true)}>
+            <PlusIcon size={22} />
+          </GeneralButton>
+        </span>
       </div>
-      <div className={s.container}>
-        <div className={s.searchRow}>
-          <TextField
-            placeholder='Search'
-            variant='outlined'
-            id='search-bar'
-            fullWidth
-            value={searchQuery}
-            onChange={handleSearch}
-            sx={{
-              '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
-                {
-                  borderColor: 'var(--gray)',
-                },
-              '& .MuiOutlinedInput-root': {
-                border: '1px solid var(--gray)',
-                borderRadius: '10px',
-                marginBottom: '10px',
-                fontSize: '18px',
-                marginTop: '20px',
-              },
-            }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <IconButton type='submit' aria-label='search'>
-                    <SearchIcon
-                      sx={{
-                        color: 'gray',
-                        marginRight: '10px',
-                      }}
-                    />
-                  </IconButton>
-                ),
-                endAdornment: searchQuery && (
-                  <IconButton
-                    onClick={() => handleSearch({target: {value: ''}})}
-                    size='small'
-                    sx={{
-                      color: 'gray',
-                    }}>
-                    <ClearIcon />
-                  </IconButton>
-                ),
-              },
-            }}
-          />
-          <RefreshWalletsButton className={s.searchRefreshButton} />
+
+      <div className={s.column}>
+        <div className={s.toolbar}>
+          <label className={s.search}>
+            <SearchIcon size={18} />
+            <input
+              value={searchQuery}
+              onChange={handleSearch}
+              placeholder='Search wallets'
+              aria-label='Search wallets'
+            />
+            {searchQuery ? (
+              <button
+                type='button'
+                className={s.clear}
+                aria-label='Clear search'
+                onClick={() => handleSearch({target: {value: ''}})}>
+                <CloseIcon size={12} />
+              </button>
+            ) : null}
+          </label>
+          <RefreshWalletsButton className={s.refreshButton} />
         </div>
-        <div className={s.walletSection}>
+
+        <div className={s.summary}>
+          <span className={s.summaryText}>
+            <span className={s.summaryCount}>
+              {visibleWallets.length}{' '}
+              {visibleWallets.length === 1 ? 'wallet' : 'wallets'} ·
+            </span>
+            <span className={s.summaryTotal}>
+              {hidden ? MASK : formatMoney(grandTotal, fiatSymbol)}
+            </span>
+            <button
+              type='button'
+              className={s.eye}
+              aria-label={hidden ? 'Show balances' : 'Hide balances'}
+              aria-pressed={hidden}
+              onClick={toggleHidden}>
+              <EyeIcon size={14} off={hidden} />
+            </button>
+          </span>
+          <button
+            type='button'
+            className={s.sortLink}
+            onClick={() => setSortSheetOpen(true)}>
+            <SortIcon size={12} />
+            {sortLabel}
+          </button>
+        </div>
+
+        {walletList.length ? (
           <DndContext
             collisionDetection={closestCenter}
             onDragEnd={onDragEnd}
@@ -311,203 +415,175 @@ const Wallets = () => {
             <SortableContext
               items={uniqueIds}
               strategy={verticalListSortingStrategy}>
-              <ul style={{listStyle: 'none', padding: 0}}>
+              <ul className={s.list}>
                 {walletList.map((item, index) => {
-                  const isSelectedWallet =
-                    item.clientId === currentWallet?.clientId;
-                  const visibleIndex = index;
-                  const showMoveButtons =
-                    displayedWallets.length > 1 && !searchQuery;
-                  const totalBalance =
-                    item?.coins?.reduce((acc, coin) => {
-                      if (!coin?.isInWallet) return acc;
-                      return acc + (parseFloat(coin?.totalCourse) || 0);
-                    }, 0) || 0;
-
-                  const walletCoins =
-                    item?.coins?.filter(c => c?.isInWallet) || [];
-                  const coinsCount = walletCoins.length;
-                  const displayCoins = walletCoins.slice(0, 4);
-
+                  const isActive = item.clientId === currentWallet?.clientId;
+                  const coins = item?.coins?.filter(c => c?.isInWallet) || [];
+                  const isRefreshing =
+                    item?.clientId === refreshingWalletClientId;
+                  const typeLabel = item?.isImportWalletWithPrivateKey
+                    ? `${item?.coins?.[0]?.chain_display_name || 'Single-coin'} wallet`
+                    : 'Multi-coin wallet';
+                  const menuOpen = menuId === item.clientId;
                   return (
                     <SortableItem key={item.clientId} id={item.clientId}>
                       {dragHandleProps => (
                         <div
-                          className={`${s.walletCard} ${isSelectedWallet ? s.walletCardActive : ''}`}>
-                          {/* Header: Name, Badge, Actions */}
-                          <div className={s.cardHeader}>
+                          className={`${s.card} ${
+                            isActive ? s.cardActive : ''
+                          } ${menuOpen ? s.cardRaised : ''}`}>
+                          <div className={s.cardHead}>
+                            {canReorder ? (
+                              <span
+                                className={s.grip}
+                                aria-label={`Drag ${item?.walletName}`}
+                                {...dragHandleProps}>
+                                <GripIcon />
+                              </span>
+                            ) : (
+                              <span className={s.avatar} aria-hidden='true'>
+                                {(item?.walletName || '?')[0].toUpperCase()}
+                              </span>
+                            )}
                             <button
-                              className={s.leftHeader}
-                              onClick={() => {
-                                dispatch(refreshCoins());
-                                dispatch(resetPaymentUrl());
-                                if (isWalletHiddenAndLocked(item)) {
-                                  dispatch(
-                                    setWalletRevealed({
-                                      clientId: item?.clientId,
-                                      isHidden: false,
-                                    }),
-                                  );
-                                }
-                                dispatch(
-                                  setCurrentWalletClientId(item?.clientId),
-                                );
-                                router.push(walletRoutes.home(item.clientId));
-                              }}>
-                              <div
-                                className={s.dragHandle}
-                                {...dragHandleProps}
-                                onClick={e => e.stopPropagation()}>
-                                {icons.dragVertical}
-                              </div>
-
-                              <div className={s.avatarWrapper}>
-                                <Image
-                                  className={s.avatarAvatar}
-                                  alt='avatar'
-                                  width={40}
-                                  height={40}
-                                  src={getAppIcon()}
-                                />
-                              </div>
-
-                              <div className={s.walletTitleGroup}>
-                                <div className={s.walletNameRow}>
-                                  <span className={s.mainText}>
-                                    {item?.walletName}
+                              type='button'
+                              className={s.cardMain}
+                              onClick={() => openWallet(item)}>
+                              <span className={s.name}>{item?.walletName}</span>
+                              <span className={s.tags}>
+                                {isActive ? (
+                                  <span className={s.tagActive}>Active</span>
+                                ) : null}
+                                <span className={s.tag}>{typeLabel}</span>
+                                {!item?.isBackedup &&
+                                !item?.isImportWalletWithPrivateKey ? (
+                                  <span className={s.tagWarn}>
+                                    Not backed up
                                   </span>
-                                  {isSelectedWallet && (
-                                    <span className={s.activeBadge}>
-                                      Active
-                                    </span>
-                                  )}
-                                </div>
-                                <span className={s.secondaryText}>
-                                  {item?.isImportWalletWithPrivateKey
-                                    ? `${item?.coins?.[0]?.chain_display_name || ''} Wallet`
-                                    : 'Multi-Coin Wallet'}
-                                </span>
-                              </div>
+                                ) : null}
+                              </span>
                             </button>
-
-                            <div className={s.cardActions}>
-                              {/* Move Up/Down Arrows (Preserved) */}
-                              {showMoveButtons && (
-                                <>
-                                  <button
-                                    disabled={visibleIndex === 0}
-                                    className={s.actionButton}
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      onPressMove(visibleIndex, true);
-                                    }}>
-                                    <Image
-                                      style={
-                                        visibleIndex === 0 ? disabledStyle : {}
-                                      }
-                                      src={PngIcons.UpArrow}
-                                      alt={'Up arrow'}
-                                      width={20}
-                                      height={20}
-                                    />
-                                  </button>
-                                  <button
-                                    disabled={
-                                      visibleIndex ===
-                                      displayedWallets.length - 1
-                                    }
-                                    className={s.actionButton}
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      onPressMove(visibleIndex, false);
-                                    }}>
-                                    <Image
-                                      src={PngIcons.DownArrow}
-                                      alt={'Down arrow'}
-                                      width={20}
-                                      height={20}
-                                      style={
-                                        visibleIndex ===
-                                        displayedWallets.length - 1
-                                          ? disabledStyle
-                                          : {}
-                                      }
-                                    />
-                                  </button>
-                                </>
-                              )}
-
-                              {/* Menu Button */}
+                            {canReorder ? (
+                              <span className={s.moves}>
+                                <button
+                                  type='button'
+                                  className={s.move}
+                                  aria-label='Move up'
+                                  disabled={index === 0}
+                                  onClick={() => onPressMove(index, true)}>
+                                  <ChevronDownIcon size={15} className={s.up} />
+                                </button>
+                                <button
+                                  type='button'
+                                  className={s.move}
+                                  aria-label='Move down'
+                                  disabled={index === walletList.length - 1}
+                                  onClick={() => onPressMove(index, false)}>
+                                  <ChevronDownIcon size={15} />
+                                </button>
+                              </span>
+                            ) : null}
+                            <span className={s.menuWrap} data-wallet-menu>
                               <button
-                                className={s.actionButton}
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  const walletName = item?.walletName;
-                                  router.push(
-                                    `/wallets/create-wallet?walletName=${encodeURIComponent(walletName)}&walletClientId=${item?.clientId}`,
-                                  );
-                                }}>
-                                <Image
-                                  src={PngIcons.MenuVertical}
-                                  alt={'Menu vertical'}
-                                  width={20}
-                                  height={20}
-                                />
+                                type='button'
+                                className={s.more}
+                                aria-label={`${item?.walletName} options`}
+                                aria-haspopup='menu'
+                                aria-expanded={menuOpen}
+                                onClick={() =>
+                                  setMenuId(menuOpen ? null : item.clientId)
+                                }>
+                                <MoreIcon />
                               </button>
-                            </div>
+                              {menuOpen ? (
+                                <>
+                                  <div className={s.menu} role='menu'>
+                                    {!isActive ? (
+                                      <button
+                                        type='button'
+                                        role='menuitem'
+                                        className={s.menuItem}
+                                        onClick={() => {
+                                          setMenuId(null);
+                                          activate(item);
+                                        }}>
+                                        <CheckIcon size={16} />
+                                        Set as active
+                                      </button>
+                                    ) : null}
+                                    <button
+                                      type='button'
+                                      role='menuitem'
+                                      className={s.menuItem}
+                                      onClick={() => {
+                                        setMenuId(null);
+                                        router.push(
+                                          walletRoutes.manageCoins(
+                                            item.clientId,
+                                          ),
+                                        );
+                                      }}>
+                                      <PlusIcon size={16} />
+                                      Manage coins
+                                    </button>
+                                    <button
+                                      type='button'
+                                      role='menuitem'
+                                      className={s.menuItem}
+                                      onClick={() => editWallet(item)}>
+                                      <SettingsIcon size={16} />
+                                      Edit wallet
+                                      <span className={s.menuHint}>
+                                        Rename, back up, hide or remove
+                                      </span>
+                                    </button>
+                                  </div>
+                                </>
+                              ) : null}
+                            </span>
                           </div>
-
-                          {/* Body: Balance, Coins */}
                           <div className={s.cardBody}>
-                            <div className={s.balanceSection}>
+                            <span className={s.balanceBlock}>
                               <span className={s.balanceLabel}>
-                                Total Balance
+                                Total balance
                               </span>
-                              <span className={s.balanceValue}>
-                                {currencySymbol[localCurrency]}
-                                {totalBalance.toFixed(2)}
-                                {item?.clientId ===
-                                  refreshingWalletClientId && (
-                                  <CircularProgress
-                                    size={14}
-                                    className={s.balanceRefreshIndicator}
-                                    sx={{color: 'var(--font)'}}
+                              <span className={s.balance}>
+                                {hidden
+                                  ? MASK
+                                  : formatMoney(walletTotal(item), fiatSymbol)}
+                                {isRefreshing ? (
+                                  <span
+                                    className={s.spinner}
+                                    aria-label='Refreshing'
                                   />
-                                )}
+                                ) : null}
                               </span>
-                            </div>
-
-                            <div className={s.coinSummary}>
-                              <div className={s.coinIcons}>
-                                {displayCoins.map((coin, i) => (
-                                  <div
-                                    key={i}
-                                    className={s.miniCoinIcon}
-                                    style={{
-                                      overflow: 'hidden',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontSize: 8,
-                                      background: '#ddd',
-                                    }}>
+                            </span>
+                            <span className={s.coins}>
+                              <span className={s.coinStack}>
+                                {coins.slice(0, 4).map((coin, i) => (
+                                  <span
+                                    key={coin?._id || i}
+                                    className={s.coinDot}
+                                    style={{zIndex: 10 - i}}>
                                     {coin.icon ? (
                                       <Image
                                         src={coin.icon}
-                                        width={16}
-                                        height={16}
-                                        alt={coin.symbol}
+                                        width={22}
+                                        height={22}
+                                        alt=''
                                       />
                                     ) : (
                                       coin.symbol?.[0]
                                     )}
-                                  </div>
+                                  </span>
                                 ))}
-                              </div>
-                              <span className={s.coinCount}>
-                                {coinsCount} coins
                               </span>
-                            </div>
+                              <span className={s.coinCount}>
+                                {coins.length}{' '}
+                                {coins.length === 1 ? 'coin' : 'coins'}
+                              </span>
+                            </span>
                           </div>
                         </div>
                       )}
@@ -517,13 +593,48 @@ const Wallets = () => {
               </ul>
             </SortableContext>
           </DndContext>
-        </div>
-        <ModalCreateWallet
-          visible={modalVisible}
-          hideModal={() => setmodalVisible(false)}
-        />
+        ) : (
+          <div className={s.empty}>
+            <p className={s.emptyTitle}>No wallets found</p>
+            <p className={s.emptyText}>Try a different name</p>
+          </div>
+        )}
       </div>
-    </>
+
+      <HomeSheet
+        visible={sortSheetOpen}
+        onClose={() => setSortSheetOpen(false)}
+        title='Sort wallets'
+        labelId='sort-wallets-title'>
+        <div className={s.sortList} role='radiogroup' aria-label='Sort'>
+          {WALLET_SORT_OPTIONS.map(option => {
+            const on = option.value === (walletsSortOption || 'default');
+            return (
+              <button
+                key={option.value}
+                type='button'
+                role='radio'
+                aria-checked={on}
+                className={`${s.sortOption} ${on ? s.sortOptionOn : ''}`}
+                onClick={() => {
+                  handleSortSelect(option.value);
+                  setSortSheetOpen(false);
+                }}>
+                <span className={s.sortText}>
+                  <span className={s.sortTitle}>{option.label}</span>
+                  <span className={s.sortSub}>{option.sub}</span>
+                </span>
+                {on ? <CheckIcon size={18} /> : null}
+              </button>
+            );
+          })}
+        </div>
+      </HomeSheet>
+      <ModalCreateWallet
+        visible={modalVisible}
+        hideModal={() => setmodalVisible(false)}
+      />
+    </main>
   );
 };
 

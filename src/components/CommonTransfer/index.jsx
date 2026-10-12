@@ -51,9 +51,16 @@ import {
   selectExchangeToName,
   selectSelectedExchangeChain,
 } from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
-import PageTitle from 'components/PageTitle';
+import CoinIcon from 'components/CoinIcon';
+import GeneralButton from 'components/Button';
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  SettingsIcon,
+} from 'components/Home/HomeIcons';
+import HomeSheet from 'components/Home/HomeSheet';
 import {calculateEstimateFee} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import icons from 'assets/images/icons';
 import ValidatorItem from 'components/ValidatorItem';
 import {getSellCryptoRequestDetails} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
 import BatchTransactionItem from 'components/BatchTransactionItem';
@@ -64,49 +71,82 @@ import useAdvancedFees from 'src/hooks/useAdvancedFees';
 import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 
-// One label/value line of a details or fee box.
-const InfoRow = ({label, value}) => (
-  <div className={s.itemView}>
-    <p className={s.title}>{label}</p>
-    <p className={s.boxBalance}>{value}</p>
+// One label/value line of a details card. `mono` for addresses.
+const InfoRow = ({label, value, mono = false, capitalize = false}) => (
+  <div className={s.row}>
+    <span className={s.rowLabel}>{label}</span>
+    <span
+      className={`${s.rowValue} ${mono ? s.mono : ''} ${
+        capitalize ? s.capitalize : ''
+      }`}>
+      {value}
+    </span>
   </div>
 );
 
-// On EIP-1559 chains `fee` is the reserved maximum (gasLimit * maxFeePerGas);
-// what the sender actually pays is `estimatedFee` (gasLimit * (baseFee + tip)).
-// Non-1559 chains pay `fee` in full, so only that single row is shown. The
-// per-gas parameters (max fee, priority fee) are edited in AdvancedFeesSheet.
-const FeeSummaryBox = ({
-  isRefreshing,
-  fee,
-  feeSymbol,
-  maxTotalDisplay,
-  isEip1559,
-  estimatedFee,
-  children,
-}) => {
-  const formatFee = value =>
-    isRefreshing ? 'Refreshing' : `${value || '0'} ${feeSymbol}`;
-  return (
-    <div className={s.box}>
-      {children}
-      {isEip1559 ? (
-        <>
-          <InfoRow
-            label={'Estimated Fee'}
-            value={formatFee(estimatedFee ?? fee)}
-          />
-          <InfoRow label={'Max Fee'} value={formatFee(fee)} />
-        </>
-      ) : (
-        <InfoRow label={'Network Fee'} value={formatFee(fee)} />
-      )}
-      {maxTotalDisplay != null && (
-        <InfoRow label={'Max Total'} value={maxTotalDisplay} />
-      )}
+// A glass card with an optional heading, holding InfoRows.
+const DetailsCard = ({heading, children}) => (
+  <section className={s.card}>
+    {heading ? <h2 className={s.cardHeading}>{heading}</h2> : null}
+    {children}
+  </section>
+);
+
+// The amount leaving the wallet: coin icon, big amount, local-currency value.
+const AmountHero = ({coin, amount, symbol, fiat, sign = '-'}) => (
+  <section className={s.hero}>
+    {coin ? (
+      <span className={s.heroIcon}>
+        <CoinIcon item={coin} />
+      </span>
+    ) : null}
+    <span className={s.heroText}>
+      <span className={s.heroAmount}>
+        {sign}
+        {amount || 0} <span className={s.heroSymbol}>{symbol || ''}</span>
+      </span>
+      <span className={s.heroFiat}>{fiat}</span>
+    </span>
+  </section>
+);
+
+// One end of the from -> to journey.
+const PartyCard = ({label, name, sub, meta, initial, accent = false, coin}) => (
+  <div className={s.party}>
+    {coin ? (
+      <span className={s.partyCoin}>
+        <CoinIcon item={coin} />
+      </span>
+    ) : (
+      <span className={`${s.partyAvatar} ${accent ? s.partyAvatarAccent : ''}`}>
+        {(initial || name || '?').toString().slice(0, 1).toUpperCase()}
+      </span>
+    )}
+    <span className={s.partyText}>
+      <span className={s.partyLabel}>{label}</span>
+      <span className={s.partyName}>{name}</span>
+      {sub ? <span className={s.partySub}>{sub}</span> : null}
+    </span>
+    {meta ? <span className={s.partyMeta}>{meta}</span> : null}
+  </div>
+);
+
+// From card, dashed connector with a short note, To card.
+const Journey = ({from, to, link}) => (
+  <section className={s.journey} aria-label='From and to'>
+    <PartyCard label='From' accent {...from} />
+    <div className={s.link}>
+      <span className={s.linkLine} aria-hidden='true' />
+      {link ? (
+        <span className={s.linkText}>
+          <ChevronDownIcon size={12} />
+          {link}
+        </span>
+      ) : null}
     </div>
-  );
-};
+    <PartyCard label='To' {...to} />
+  </section>
+);
 
 const CommonTransfer = () => {
   const localCurrency = useSelector(getLocalCurrency);
@@ -245,7 +285,9 @@ const CommonTransfer = () => {
     sheetProps: advancedFeesSheetProps,
     feesOptions,
     isEip1559,
+    selectedFeesType,
     selectedFeesTypeRef,
+    selectedFeesLabel,
     finalNonce,
     isCustomFeesValid,
   } = useAdvancedFees({chainName, convertedChainName, isPauseCalculateFees});
@@ -265,26 +307,26 @@ const CommonTransfer = () => {
   }, [isBatchTransaction, batchTransactionsData]);
 
   const title = isSendFundScreen
-    ? 'Transfer'
+    ? 'Confirm send'
     : isExchangeScreen
-      ? 'Swap Confirm'
+      ? 'Confirm swap'
       : isSellCryptoScreen
-        ? 'Sell Crypto Confirm'
+        ? 'Confirm sale'
         : isSendNFT
-          ? 'Transfer NFT'
+          ? 'Confirm NFT transfer'
           : isCreateVote
-            ? 'Confirm Validators'
+            ? 'Confirm validators'
             : isCreateStaking
-              ? 'Confirm Staking'
+              ? 'Confirm stake'
               : isWithdrawStaking
-                ? 'Confirm Withdraw Staking'
+                ? 'Confirm withdrawal'
                 : isDeactivateStaking
-                  ? 'Confirm Deactivate Staking'
+                  ? 'Confirm unstake'
                   : isStakingRewards
-                    ? 'Confirm Staking Rewards'
+                    ? 'Confirm rewards claim'
                     : isBatchTransaction
-                      ? 'Confirm Batch Transactions'
-                      : '';
+                      ? 'Confirm batch'
+                      : 'Confirm transaction';
 
   // Latch the render/poll state machine on the first successful estimate.
   // The screen can mount while the first estimate is still in flight, so this
@@ -630,10 +672,6 @@ const CommonTransfer = () => {
     isPauseCalculateFees.current = true;
   };
 
-  const toggleAdvancedOptions = () => {
-    setIsAdvancedOptionsOpen(prev => !prev);
-  };
-
   const isDisabled = isBalanceNotAvailable(
     transferData?.selectedUTXOsValue || balance,
     transferData?.transactionFee,
@@ -644,13 +682,10 @@ const CommonTransfer = () => {
         : null,
   );
 
-  const feeSummaryProps = {
-    isRefreshing: isFetchingFeesAgain,
-    fee: transferData?.transactionFee,
-    feeSymbol: transferData?.currentCoin?.chain_symbol,
-    isEip1559,
-    estimatedFee: transferData?.estimatedFee,
-  };
+  const fiatSymbol = currencySymbol[localCurrency] || '';
+  const feeSymbol = isExchangeScreen
+    ? selectedFromAsset?.chain_symbol
+    : transferData?.currentCoin?.chain_symbol;
 
   const currencyRate =
     (isSendFundScreen || isSellCryptoScreen || isStakingScreen
@@ -671,67 +706,60 @@ const CommonTransfer = () => {
   const fiatEstimateFeeBN = new BigNumber(fiatEstimateFee);
   const totalValue = priceValue.plus(fiatEstimateFeeBN).toFixed(2);
 
+  const fiatValue = `${fiatSymbol}${priceValue?.toFixed(2) || '0'}`;
+  const maxTotal = `${fiatSymbol}${totalValue || 0}`;
+  const formatAddress = address =>
+    isCustomAddressNotSupportedChain(chainName)
+      ? address
+      : getCustomizePublicAddress(address);
+
+  const walletName = currentWallet?.walletName || 'Wallet';
+  const fromParty = coin => ({
+    name: walletName,
+    sub: formatAddress(coin?.address),
+    meta:
+      coin?.totalAmount != null
+        ? `${coin.totalAmount} ${coin?.symbol || ''} available`
+        : null,
+  });
+  // No address book on web: a resolved name (ENS etc.) is the best label.
+  const toParty = (address, extra = {}) => ({
+    name: transferData?.validName || formatAddress(address),
+    sub: transferData?.validName ? formatAddress(address) : null,
+    initial: transferData?.validName ? transferData.validName : '#',
+    ...extra,
+  });
+  const tokenLink = coin =>
+    coin?.type === 'token'
+      ? `Token · fee paid in ${coin?.chain_symbol || ''}`
+      : null;
+
   const renderSendFundUI = () => {
+    const coin = transferData?.currentCoin;
     return (
-      <div className={s.formInput}>
-        <p className={s.amountTitle}>{`-${transferData?.amount || 0} ${
-          transferData?.currentCoin?.symbol || ''
-        }`}</p>
-        <p className={s.boxBalance}>
-          {currencySymbol[localCurrency] || ''}
-          {priceValue?.toFixed(2) || '0'}
-        </p>
-        <div className={s.box}>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Chain'}</p>
-            <p className={s.boxBalance}>
-              {transferData?.currentCoin?.chain_display_name}
-            </p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Asset'}</p>
-            <p
-              className={
-                s.boxBalance
-              }>{`${transferData?.currentCoin?.name} (${transferData?.currentCoin?.symbol})`}</p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'From'}</p>
-            <p className={s.boxBalance}>{`${
-              isCustomAddressNotSupportedChain(chainName)
-                ? transferData?.currentCoin?.address
-                : getCustomizePublicAddress(transferData?.currentCoin?.address)
-            }`}</p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'To'}</p>
-            <p className={s.boxBalance}>{`${
-              isCustomAddressNotSupportedChain(chainName)
-                ? transferData?.toAddress
-                : getCustomizePublicAddress(transferData?.toAddress)
-            }`}</p>
-          </div>
-          {!!transferData?.validName && (
-            <div className={s.itemView}>
-              <p className={s.title}>{'DNS'}</p>
-              <p className={s.boxBalance} style={{textTransform: 'none'}}>
-                {transferData?.validName}
-              </p>
-            </div>
-          )}
-          {!!transferData?.memo && (
-            <div className={s.itemView}>
-              <p className={s.title}>{'Memo'}</p>
-              <p className={s.boxBalance}>{transferData?.memo}</p>
-            </div>
-          )}
+      <>
+        <AmountHero
+          coin={coin}
+          amount={transferData?.amount}
+          symbol={coin?.symbol}
+          fiat={fiatValue}
+        />
+        <Journey
+          from={fromParty(coin)}
+          to={toParty(transferData?.toAddress)}
+          link={
+            transferData?.memo
+              ? `Memo: ${transferData.memo}`
+              : tokenLink(coin) || coin?.chain_display_name
+          }
+        />
+        <DetailsCard>
+          <InfoRow label={'Asset'} value={`${coin?.name} (${coin?.symbol})`} />
+          <InfoRow label={'Network'} value={coin?.chain_display_name} />
           {chainName === 'hedera' && (
             <>
-              {!!transferData?.currentCoin?.accountId && (
-                <InfoRow
-                  label={'Account ID'}
-                  value={transferData.currentCoin.accountId}
-                />
+              {!!coin?.accountId && (
+                <InfoRow label={'Account ID'} value={coin.accountId} mono />
               )}
               <InfoRow
                 label={'To account ID'}
@@ -745,222 +773,113 @@ const CommonTransfer = () => {
               />
             </>
           )}
-        </div>
-        <FeeSummaryBox
-          {...feeSummaryProps}
-          maxTotalDisplay={`${currencySymbol[localCurrency]}${totalValue || 0}`}
-        />
-      </div>
+        </DetailsCard>
+      </>
     );
   };
+
   const renderSellCryptoUI = () => {
+    const coin = transferData?.currentCoin;
     return (
-      <div className={s.formInput}>
-        <p className={s.amountTitle}>{`-${transferData?.amount || 0} ${
-          transferData?.currentCoin?.symbol || ''
-        }`}</p>
-        <p className={s.boxBalance}>
-          {currencySymbol[localCurrency] || ''}
-          {priceValue?.toFixed(2) || '0'}
-        </p>
-        <div className={s.box}>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Chain'}</p>
-            <p className={s.boxBalance}>
-              {transferData?.currentCoin?.chain_display_name}
-            </p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Asset'}</p>
-            <p
-              className={
-                s.boxBalance
-              }>{`${transferData?.currentCoin?.name} (${transferData?.currentCoin?.symbol})`}</p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'From'}</p>
-            <p className={s.boxBalance}>{`${
-              isCustomAddressNotSupportedChain(chainName)
-                ? transferData?.currentCoin?.address
-                : getCustomizePublicAddress(transferData?.currentCoin?.address)
-            }`}</p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'To'}</p>
-            <p className={s.boxBalance}>{`${
-              isCustomAddressNotSupportedChain(chainName)
-                ? transferData?.toAddress
-                : getCustomizePublicAddress(transferData?.toAddress)
-            }`}</p>
-          </div>
-          {!!transferData?.validName && (
-            <div className={s.itemView}>
-              <p className={s.title}>{'DNS'}</p>
-              <p className={s.boxBalance} style={{textTransform: 'none'}}>
-                {transferData?.validName}
-              </p>
-            </div>
-          )}
-          {!!transferData?.memo && (
-            <div className={s.itemView}>
-              <p className={s.title}>{'Memo'}</p>
-              <p className={s.boxBalance}>{transferData?.memo}</p>
-            </div>
-          )}
-          <div className={s.itemView}>
-            <p className={s.title}>{'Provider'}</p>
-            <p className={s.boxBalance}>
-              {sellCryptoRequestDetails?.providerDisplayName}
-            </p>
-          </div>
-        </div>
-        <FeeSummaryBox
-          {...feeSummaryProps}
-          maxTotalDisplay={`${currencySymbol[localCurrency]}${totalValue || 0}`}
+      <>
+        <AmountHero
+          coin={coin}
+          amount={transferData?.amount}
+          symbol={coin?.symbol}
+          fiat={fiatValue}
         />
-      </div>
+        <Journey
+          from={fromParty(coin)}
+          to={toParty(transferData?.toAddress, {
+            name:
+              sellCryptoRequestDetails?.providerDisplayName ||
+              formatAddress(transferData?.toAddress),
+            sub: formatAddress(transferData?.toAddress),
+            initial: sellCryptoRequestDetails?.providerDisplayName || '#',
+          })}
+          link={
+            transferData?.memo
+              ? `Memo: ${transferData.memo}`
+              : tokenLink(coin) || 'Sell order deposit'
+          }
+        />
+        <DetailsCard>
+          <InfoRow label={'Asset'} value={`${coin?.name} (${coin?.symbol})`} />
+          <InfoRow label={'Network'} value={coin?.chain_display_name} />
+          <InfoRow
+            label={'Provider'}
+            value={sellCryptoRequestDetails?.providerDisplayName}
+          />
+        </DetailsCard>
+      </>
     );
   };
-  const renderExchangeUI = () => {
-    return (
-      <div className={s.formInput}>
-        <div className={s.box}>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Asset'}</p>
-            <p
-              className={
-                s.boxBalance
-              }>{`${selectedFromAsset?.name} (${selectedFromAsset?.symbol})`}</p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'From'}</p>
-            <p className={s.boxBalance}>{`${getCustomizePublicAddress(
-              selectedFromAsset?.address,
-            )}`}</p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Chain'}</p>
-            <p
-              className={
-                s.boxBalance
-              }>{`${selectedFromAsset?.chain_display_name}`}</p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Pay Amount'}</p>
-            <p
-              className={
-                s.boxBalance
-              }>{`${amountFrom} ${selectedFromAsset?.symbol}`}</p>
-          </div>
-        </div>
-        <div className={s.iconView}>{icons.sCurved}</div>
-        <div className={s.box}>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Asset'}</p>
-            <p
-              className={
-                s.boxBalance
-              }>{`${selectedToAsset?.name} (${selectedToAsset?.symbol})`}</p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'To'}</p>
-            <p className={s.boxBalance}>{`${getCustomizePublicAddress(
-              exchangeToAddress,
-            )}`}</p>
-          </div>
-          {!!exchangeToName && (
-            <div className={s.itemView}>
-              <p className={s.title}>{'DNS'}</p>
-              <p className={s.boxBalance}>{exchangeToName}</p>
-            </div>
-          )}
-          <div className={s.itemView}>
-            <p className={s.title}>{'Chain'}</p>
-            <p
-              className={
-                s.boxBalance
-              }>{`${selectedToAsset?.chain_display_name}`}</p>
-          </div>
-          <div className={s.itemView}>
-            <p className={s.title}>{'Receive Amount'}</p>
-            <p
-              className={
-                s.boxBalance
-              }>{`${amountTo} ${selectedToAsset?.symbol}`}</p>
-          </div>
-        </div>
-        <FeeSummaryBox
-          {...feeSummaryProps}
-          feeSymbol={selectedFromAsset?.chain_symbol}
-          maxTotalDisplay={`${currencySymbol[localCurrency]}${totalValue || 0}`}>
-          {!!selectedExchangeChain?.providerName && (
-            <div className={s.itemView}>
-              <p className={s.title}>{'Exchange Provider'}</p>
-              <p className={s.boxBalance} style={{textTransform: 'capitalize'}}>
-                {selectedExchangeChain?.providerName}
-              </p>
-            </div>
-          )}
-        </FeeSummaryBox>
-      </div>
-    );
-  };
+
+  const renderExchangeUI = () => (
+    <>
+      <Journey
+        from={{
+          coin: selectedFromAsset,
+          name: `${amountFrom} ${selectedFromAsset?.symbol || ''}`,
+          sub: `${selectedFromAsset?.chain_display_name || ''} · ${getCustomizePublicAddress(
+            selectedFromAsset?.address,
+          )}`,
+          meta: fiatValue,
+        }}
+        to={{
+          coin: selectedToAsset,
+          name: `${amountTo} ${selectedToAsset?.symbol || ''}`,
+          sub: `${selectedToAsset?.chain_display_name || ''} · ${
+            exchangeToName || getCustomizePublicAddress(exchangeToAddress)
+          }`,
+          meta: selectedExchangeChain?.providerName
+            ? `via ${selectedExchangeChain.providerName}`
+            : null,
+        }}
+        link='You swap'
+      />
+    </>
+  );
+
   const renderStakingUI = () => {
+    const coin = transferData?.currentCoin;
+    const validatorLabel =
+      transferData?.validatorName ||
+      (transferData?.validatorPubKey
+        ? getCustomizePublicAddress(transferData.validatorPubKey)
+        : null);
     return (
-      <div className={s.formInput}>
-        <div className={s.amountTitle}>{`-${
-          transferData?.amount || 0
-        } ${transferData?.currentCoin?.symbol || ''}`}</div>
-        <div className={s.boxBalance}>
-          {currencySymbol[localCurrency] || ''}
-          {priceValue?.toFixed(2) || '0'}
-        </div>
-        <div className={s.box}>
-          <div className={s.itemView}>
-            <div className={s.title}>{'Chain'}</div>
-            <div className={s.boxBalance}>
-              {transferData?.currentCoin?.chain_display_name}
-            </div>
-          </div>
-          <div className={s.itemView}>
-            <div className={s.title}>{'Asset'}</div>
-            <div
-              className={
-                s.boxBalance
-              }>{`${transferData?.currentCoin?.name} (${transferData?.currentCoin?.symbol})`}</div>
-          </div>
-          <div className={s.itemView}>
-            <div className={s.title}>{'From'}</div>
-            <div className={s.boxBalance}>{`${getCustomizePublicAddress(
-              transferData?.currentCoin?.address,
-            )}`}</div>
-          </div>
-          {!!transferData?.validatorPubKey && (
-            <div className={s.itemView}>
-              <div className={s.title}>{'Validator Address'}</div>
-              <div className={s.boxBalance}>{`${getCustomizePublicAddress(
-                transferData?.validatorPubKey,
-              )}`}</div>
-            </div>
-          )}
-          {!!transferData?.validatorName && (
-            <div className={s.itemView}>
-              <div className={s.title}>{'Validator Name'}</div>
-              <div className={s.boxBalance}>{transferData?.validatorName}</div>
-            </div>
-          )}
-          {!!transferData?.resourceType && (
-            <div className={s.itemView}>
-              <div className={s.title}>{'Resource Type'}</div>
-              <div className={s.boxBalance}>{transferData?.resourceType}</div>
-            </div>
-          )}
-        </div>
-        <FeeSummaryBox
-          {...feeSummaryProps}
-          maxTotalDisplay={`${currencySymbol[localCurrency]}${totalValue || 0}`}
+      <>
+        <AmountHero
+          coin={coin}
+          amount={transferData?.amount}
+          symbol={coin?.symbol}
+          fiat={fiatValue}
+          sign={isCreateStaking ? '' : isWithdrawStaking ? '+' : ''}
         />
-      </div>
+        <Journey
+          from={fromParty(coin)}
+          to={{
+            name: validatorLabel || coin?.chain_display_name || 'Staking',
+            sub:
+              transferData?.validatorName && transferData?.validatorPubKey
+                ? getCustomizePublicAddress(transferData.validatorPubKey)
+                : 'Validator',
+            initial: validatorLabel || 'V',
+          }}
+          link={title
+            .replace('Confirm ', '')
+            .replace(/^./, c => c.toUpperCase())}
+        />
+        {!!transferData?.resourceType && (
+          <DetailsCard>
+            <InfoRow
+              label={'Resource type'}
+              value={transferData.resourceType}
+            />
+          </DetailsCard>
+        )}
+      </>
     );
   };
 
@@ -969,7 +888,7 @@ const CommonTransfer = () => {
       ? transferData?.displayValidators
       : [];
     return (
-      <div className={s.formInput}>
+      <section className={s.listCard}>
         {displayValidators?.map(item => (
           <ValidatorItem
             item={item}
@@ -982,8 +901,7 @@ const CommonTransfer = () => {
             }}
           />
         ))}
-        <FeeSummaryBox {...feeSummaryProps} />
-      </div>
+      </section>
     );
   };
 
@@ -992,7 +910,7 @@ const CommonTransfer = () => {
       ? transferData?.transactionsData
       : [];
     return (
-      <div className={s.formInput}>
+      <section className={s.listCard}>
         {batchTransactions?.map((item, index) => (
           <BatchTransactionItem
             key={`batch_transaction_${index}`}
@@ -1002,107 +920,215 @@ const CommonTransfer = () => {
             localCurrency={localCurrency}
           />
         ))}
-        <FeeSummaryBox {...feeSummaryProps} />
-      </div>
+      </section>
     );
   };
 
+  const showFeeTiers =
+    isFeesOptionChain(convertedChainName) && !!feesOptions?.length;
+  const gasCurrency = advancedFeesSheetProps?.gasCurrency;
+  const feeAmount = isEip1559
+    ? (transferData?.estimatedFee ?? transferData?.transactionFee)
+    : transferData?.transactionFee;
+  const showTotal = !isVoteStakingScreen && !isBatchTransaction;
+
+  const isSendDisabled =
+    isDisabled ||
+    isSubmitting ||
+    isFetchingFeesAgain ||
+    isQuoteExpired ||
+    !isCustomFeesValid;
+
+  const ready = feeSuccess || estimateStatus === 'success';
+
   return (
-    <div className={s.mainView}>
-      <div className={s.goBack}>
-        <PageTitle title={title} />
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <h1 className={s.title}>{title}</h1>
+        <span className={s.iconSpacer} aria-hidden='true' />
       </div>
-      {/* {!!isSubmitting && <Spinner />} */}
-      {(isLoading || isExchangeLoading) && !isFetchingFeesAgain ? (
-        <Loading />
-      ) : feeSuccess || estimateStatus === 'success' ? (
-        <div className={s.container}>
-          {isSendFundScreen
-            ? renderSendFundUI()
-            : isSellCryptoScreen
-              ? renderSellCryptoUI()
-              : isExchangeScreen
-                ? renderExchangeUI()
-                : isStakingScreen
-                  ? renderStakingUI()
-                  : isBatchTransaction
-                    ? renderBatchTransactionUI()
-                    : renderVotingUI()}
-          {isFeesOptionChain(convertedChainName) && !!feesOptions?.length && (
-            <div className={s.advancedOptionsContainer}>
-              <button
-                className={s.advancedOptionsHeader}
-                onClick={toggleAdvancedOptions}>
-                <div className={s.advancedOptionsTitleContainer}>
-                  <span className={s.advancedOptionsSettingsIcon}>
-                    {icons.settingsSlider}
-                  </span>
-                  <span className={s.advancedOptionsTitle}>
-                    Advanced Options
-                  </span>
+
+      <div className={s.column}>
+        {(isLoading || isExchangeLoading) && !isFetchingFeesAgain ? (
+          <div className={s.loading}>
+            <Loading />
+          </div>
+        ) : ready ? (
+          <>
+            {isSendFundScreen
+              ? renderSendFundUI()
+              : isSellCryptoScreen
+                ? renderSellCryptoUI()
+                : isExchangeScreen
+                  ? renderExchangeUI()
+                  : isStakingScreen
+                    ? renderStakingUI()
+                    : isBatchTransaction
+                      ? renderBatchTransactionUI()
+                      : renderVotingUI()}
+
+            {showFeeTiers ? (
+              <section className={s.fees} aria-label='Network fee'>
+                <div className={s.feesHead}>
+                  <span className={s.sectionLabel}>Network fee</span>
+                  <span className={s.feesSelected}>{selectedFeesLabel}</span>
                 </div>
-                <span
-                  className={`${s.advancedOptionsChevron} ${isAdvancedOptionsOpen ? s.advancedOptionsChevronOpen : ''}`}>
-                  {icons.chevronDown}
+                <div
+                  className={s.tiers}
+                  style={{'--tier-count': Math.min(feesOptions.length + 1, 4)}}
+                  role='radiogroup'
+                  aria-label='Network fee'>
+                  {feesOptions.map(option => {
+                    const type = option?.title?.toLowerCase();
+                    if (!type) {
+                      return null;
+                    }
+                    const on = selectedFeesType?.toLowerCase() === type;
+                    return (
+                      <button
+                        key={type}
+                        type='button'
+                        role='radio'
+                        aria-checked={on}
+                        className={`${s.tier} ${on ? s.tierOn : ''}`}
+                        onClick={() =>
+                          advancedFeesSheetProps.onSelectFeesType(
+                            type,
+                            option.gasPrice,
+                          )
+                        }>
+                        <span className={s.tierLabel}>{option.title}</span>
+                        <span className={s.tierCost}>
+                          {option.gasPrice} {gasCurrency}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  <button
+                    type='button'
+                    role='radio'
+                    aria-checked={selectedFeesType === 'custom'}
+                    className={`${s.tier} ${s.tierCustom} ${
+                      selectedFeesType === 'custom' ? s.tierOn : ''
+                    }`}
+                    onClick={() => {
+                      advancedFeesSheetProps.onSelectFeesType('custom');
+                      setIsAdvancedOptionsOpen(true);
+                    }}>
+                    <SettingsIcon size={17} />
+                    <span className={s.tierLabel}>Custom</span>
+                  </button>
+                </div>
+                {selectedFeesType === 'custom' ? (
+                  <button
+                    type='button'
+                    className={s.editFees}
+                    onClick={() => setIsAdvancedOptionsOpen(true)}>
+                    Edit custom fee and nonce
+                  </button>
+                ) : null}
+              </section>
+            ) : null}
+
+            {isDisabled && (
+              <p className={s.alert} role='alert'>
+                {`You don't have enough balance for this transaction. You need ${transferData?.transactionFee} ${transferData?.currentCoin?.chain_symbol} to cover the fee.`}
+              </p>
+            )}
+            {isQuoteExpired && (
+              <p className={s.alert} role='alert'>
+                Quote expired — go back and refresh the quote.
+              </p>
+            )}
+            {!isCustomFeesValid && (
+              <p className={s.alert} role='alert'>
+                Priority fee cannot be higher than max fee — fix it in the
+                custom fee settings.
+              </p>
+            )}
+
+            <div className={s.summary}>
+              <span className={s.summaryCol}>
+                <span className={s.sectionLabel}>
+                  {isEip1559 ? 'Estimated fee' : 'Fee'}
                 </span>
-              </button>
-              {isAdvancedOptionsOpen && (
-                <div className={s.advancedOptionsContent}>
-                  <AdvancedFeesSheet {...advancedFeesSheetProps} />
-                </div>
-              )}
+                <span className={s.summaryFee}>
+                  {isFetchingFeesAgain ? (
+                    <span className={s.refreshing}>Refreshing…</span>
+                  ) : (
+                    <>
+                      {feeAmount || '0'} {feeSymbol}
+                      {isEip1559 && transferData?.transactionFee ? (
+                        <span className={s.summaryMuted}>
+                          {' '}
+                          · max {transferData.transactionFee}
+                        </span>
+                      ) : null}
+                    </>
+                  )}
+                </span>
+              </span>
+              {showTotal ? (
+                <span className={`${s.summaryCol} ${s.summaryEnd}`}>
+                  <span className={s.sectionLabel}>
+                    {isEip1559 ? 'Max total' : 'Total'}
+                  </span>
+                  <span className={s.summaryTotal}>{maxTotal}</span>
+                </span>
+              ) : null}
             </div>
-          )}
-          {isDisabled && (
-            <p
-              className={
-                s.errorText
-              }>{`You don't have enough balance for make transaction you require ${transferData?.transactionFee} ${transferData?.currentCoin?.chain_symbol} to complete the transaction `}</p>
-          )}
-          {isQuoteExpired && (
-            <p className={s.errorText}>
-              {'Quote expired — go back and refresh the quote.'}
+
+            <GeneralButton
+              fullWidth
+              className={s.sendButton}
+              disabled={isSendDisabled}
+              loading={isSubmitting}
+              loadingLabel='Sending…'
+              onClick={handleSubmitForm}>
+              <CheckIcon size={19} />
+              {title}
+            </GeneralButton>
+          </>
+        ) : (
+          <section className={s.emptyCard}>
+            <p className={s.emptyTitle}>Could not prepare this transaction</p>
+            <p className={s.emptyText}>
+              {customError
+                ? customError?.toString()
+                : 'Something went wrong in generating transaction fees'}
             </p>
-          )}
-          {!isCustomFeesValid && (
-            <p className={s.errorText}>
-              {
-                'Priority fee cannot be higher than max fee — fix it in Advanced Options.'
-              }
-            </p>
-          )}
-          <button
-            disabled={
-              isDisabled ||
-              isSubmitting ||
-              isFetchingFeesAgain ||
-              isQuoteExpired ||
-              !isCustomFeesValid
-            }
-            className={s.button}
-            style={{
-              backgroundColor:
-                isDisabled ||
-                isSubmitting ||
-                isFetchingFeesAgain ||
-                isQuoteExpired ||
-                !isCustomFeesValid
-                  ? 'var(--disabledButton)'
-                  : 'var(--background)',
-            }}
-            onClick={handleSubmitForm}>
-            <p className={s.buttonTitle}>Send</p>
-          </button>
-        </div>
-      ) : (
-        <div className={s.emptyView}>
-          <p className={s.title}>
-            {customError
-              ? customError?.toString()
-              : 'Something went wrong in generating transaction fees'}
-          </p>
-        </div>
-      )}
+            <GeneralButton variant='secondary' onClick={() => router.back()}>
+              Go back
+            </GeneralButton>
+          </section>
+        )}
+      </div>
+
+      {showFeeTiers ? (
+        <HomeSheet
+          visible={isAdvancedOptionsOpen}
+          onClose={() => setIsAdvancedOptionsOpen(false)}
+          title='Custom fee'
+          labelId='custom-fee-title'>
+          <div className={s.sheetBody}>
+            <AdvancedFeesSheet {...advancedFeesSheetProps} />
+          </div>
+          <GeneralButton
+            fullWidth
+            disabled={!isCustomFeesValid}
+            onClick={() => setIsAdvancedOptionsOpen(false)}>
+            Apply
+          </GeneralButton>
+        </HomeSheet>
+      ) : null}
       <ModalConfirmTransaction
         hideModal={() => {
           setShowConfirmModal(false);
@@ -1115,7 +1141,7 @@ const CommonTransfer = () => {
         visible={showDuplicateModal}
         onClose={() => setShowDuplicateModal(false)}
       />
-    </div>
+    </main>
   );
 };
 

@@ -1,13 +1,14 @@
 'use client';
 import {walletRoutes} from 'utils/routes';
-import {useCallback, useEffect, useRef} from 'react';
+import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useParams, useRouter} from 'next/navigation';
 import InfiniteScroll from 'react-infinite-scroller';
-import CircularProgress from '@mui/material/CircularProgress';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import PageTitle from 'components/PageTitle';
+import dayjs from 'dayjs';
 import Loading from 'components/Loading';
+import GeneralButton from 'components/Button';
+import {ChevronLeftIcon, SwapIcon} from 'components/Home/HomeIcons';
+import {ResetIcon} from 'components/Transactions/TxIcons';
 import ExchangeTransactionItem from 'components/ExchangeHistory/ExchangeTransactionItem';
 import {
   fetchExchangeTransactions,
@@ -26,6 +27,13 @@ import s from './SwapHistory.module.css';
 
 // Swap history for the current wallet: newest first, header refresh,
 // infinite scroll. The backend refreshes pending statuses on each fetch.
+const dayLabel = date => {
+  const day = dayjs(date);
+  if (day.isSame(dayjs(), 'day')) return 'Today';
+  if (day.isSame(dayjs().subtract(1, 'day'), 'day')) return 'Yesterday';
+  return day.format('D MMM YYYY');
+};
+
 const SwapHistory = () => {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -66,79 +74,115 @@ const SwapHistory = () => {
 
   const hasMore = (meta?.currentPage || 0) < (meta?.totalPages || 0);
 
-  const refreshButton = (
-    <div className={s.headerAction}>
-      <button
-        className={s.refreshButton}
-        onClick={onRefresh}
-        disabled={refreshing}
-        aria-label='Refresh'>
-        {refreshing ? (
-          <CircularProgress size={20} sx={{color: 'var(--background)'}} />
-        ) : (
-          <RefreshIcon />
-        )}
-      </button>
-    </div>
-  );
+  // Newest first from the API, so consecutive grouping keeps the order.
+  const groups = useMemo(() => {
+    const list = [];
+    transactions.forEach(item => {
+      const label = item?.created_at ? dayLabel(item.created_at) : 'Earlier';
+      const last = list[list.length - 1];
+      if (last && last.label === label) {
+        last.items.push(item);
+      } else {
+        list.push({label, items: [item]});
+      }
+    });
+    return list;
+  }, [transactions]);
 
   return (
-    <div className={s.page}>
-      <PageTitle title='Swap History' extraElement={refreshButton} />
-      {loading && !transactions.length ? (
-        <Loading />
-      ) : (
-        <div className={s.scrollContainer}>
-          {!transactions.length ? (
-            <div className={s.emptyContainer}>
-              <p className={s.emptyText}>
-                {error
-                  ? 'Could not load your swap history.'
-                  : 'No swaps yet. Your exchange transactions will appear here.'}
-              </p>
-              <button
-                className={s.emptyButton}
-                onClick={
-                  error
-                    ? onRefresh
-                    : () => router.push(walletRoutes.swap(clientId))
-                }>
-                {error ? 'Retry' : 'Make a swap'}
-              </button>
-            </div>
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <h1 className={s.title}>Swap history</h1>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Refresh'
+          disabled={refreshing}
+          onClick={onRefresh}>
+          {refreshing ? (
+            <span className={s.spinner} />
           ) : (
-            <>
-              <InfiniteScroll
-                className={s.list}
-                initialLoad={false}
-                pageStart={1}
-                loadMore={onEndReached}
-                hasMore={hasMore}
-                loader={
-                  <div className={s.footer} key={0}>
-                    {loadingMore ? (
-                      <CircularProgress
-                        size={24}
-                        sx={{color: 'var(--background)'}}
-                      />
-                    ) : null}
-                  </div>
-                }
-                useWindow={false}>
-                {transactions.map(item => (
-                  <ExchangeTransactionItem
-                    key={item?._id}
-                    transaction={item}
-                    onPress={onPressItem}
-                  />
-                ))}
-              </InfiniteScroll>
-              {!!error && <p className={s.errorText}>{error}</p>}
-            </>
+            <ResetIcon size={19} />
           )}
-        </div>
-      )}
-    </div>
+        </GeneralButton>
+      </div>
+
+      <div className={s.scrollContainer}>
+        {loading && !transactions.length ? (
+          <div className={s.loading}>
+            <Loading />
+          </div>
+        ) : !transactions.length ? (
+          <div className={s.empty}>
+            <span className={s.emptyIcon}>
+              <SwapIcon size={26} />
+            </span>
+            <p className={s.emptyTitle}>
+              {error ? 'Could not load your swaps' : 'No swaps yet'}
+            </p>
+            <p className={s.emptyText}>
+              {error
+                ? 'Check your connection and try again.'
+                : 'Your exchanges will show up here.'}
+            </p>
+            <button
+              type='button'
+              className={s.emptyAction}
+              onClick={
+                error
+                  ? onRefresh
+                  : () => router.push(walletRoutes.swap(clientId))
+              }>
+              {error ? 'Retry' : 'Make a swap'}
+            </button>
+          </div>
+        ) : (
+          <InfiniteScroll
+            className={s.list}
+            initialLoad={false}
+            pageStart={1}
+            loadMore={onEndReached}
+            hasMore={hasMore}
+            loader={
+              <div className={s.footer} key={0}>
+                {loadingMore ? <span className={s.spinner} /> : null}
+              </div>
+            }
+            useWindow={false}>
+            {groups.map(group => (
+              <section
+                key={group.label}
+                className={s.group}
+                aria-label={group.label}>
+                <span className={s.groupLabel}>{group.label}</span>
+                <div className={s.card}>
+                  {group.items.map(item => (
+                    <ExchangeTransactionItem
+                      key={item?._id}
+                      transaction={item}
+                      onPress={onPressItem}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+            {!!error && (
+              <p className={s.errorText} role='alert'>
+                {error}
+              </p>
+            )}
+          </InfiniteScroll>
+        )}
+      </div>
+    </main>
   );
 };
 

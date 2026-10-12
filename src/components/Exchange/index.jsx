@@ -13,7 +13,14 @@ import {shallowEqual, useSelector, useDispatch} from 'react-redux';
 import {useRouter} from 'next/navigation';
 import BigNumber from 'bignumber.js';
 import {CircularProgress, TextField} from '@mui/material';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import GeneralButton from 'components/Button';
+import WalletSwitcher from 'components/Home/WalletSwitcher';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/useHome';
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  HistoryIcon,
+} from 'components/Home/HomeIcons';
 
 import {showToast} from 'utils/toast';
 import s from './Exchange.module.css';
@@ -30,6 +37,7 @@ import ProviderList from './components/ProviderList';
 import SlippageEditor from './components/SlippageEditor';
 
 import {
+  selectCurrentWallet,
   selectCurrentWalletClientId,
   getCoinsOptions,
   selectVisibleWallets,
@@ -86,6 +94,8 @@ const Exchange = () => {
   const coinOptions = useSelector(getCoinsOptions, shallowEqual);
   const allWallets = useSelector(selectVisibleWallets);
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
+  const currentWallet = useSelector(selectCurrentWallet);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const {
     selectedCoinToOptions,
     selectedFromAsset,
@@ -693,235 +703,268 @@ const Exchange = () => {
     permitModalVisible;
 
   return (
-    <div className={s.container}>
-      <div className={s.headerRow}>
-        <h3 className={s.pageTitle}>Swap</h3>
-        <button
-          type='button'
-          className={s.historyButton}
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <GeneralButton
+          variant='unstyled'
+          className={s.heading}
+          aria-haspopup='dialog'
+          onClick={() => setSwitcherOpen(true)}>
+          <h1 className={s.headingTitle}>Swap</h1>
+          <span className={s.headingSub}>
+            <span className={s.walletAvatar}>
+              {(currentWallet?.walletName || 'Wallet')[0].toUpperCase()}
+            </span>
+            <span className={s.headingSubText}>
+              {currentWallet?.walletName || 'Wallet'}
+            </span>
+            <ChevronDownIcon size={12} className={s.headingChevron} />
+          </span>
+        </GeneralButton>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Swap history'
           onClick={() =>
             router.push(walletRoutes.swapHistory(currentWalletClientId))
-          }
-          aria-label='Swap history'>
-          <AccessTimeIcon
-            sx={{fontSize: 24, color: 'var(--borderActiveColor)'}}
-          />
-        </button>
+          }>
+          <HistoryIcon size={21} />
+        </GeneralButton>
       </div>
-      <SwapCard
-        label='You pay'
-        coinOption={selectedCoinFromOptions}
-        amount={amountFrom}
-        fiatValue={
-          validateNumber(amountFrom) && selectedFromAsset?.currencyRate
-            ? `~${fiatSymbol}${multiplyBNWithFixed(
-                amountFrom,
-                selectedFromAsset?.currencyRate,
-                2,
-              )}`
-            : ''
-        }
-        balanceText={balanceText}
-        isBalanceFetching={fromBalanceLoading}
-        editable={true}
-        onChangeAmount={handleAmountChange}
-        onPressCoin={() => coinSelectorSheetRef.current?.present('from')}
-        hasError={isBalanceLess}>
-        {new BigNumber(selectedFromAsset?.totalAmount ?? 0).gt(0) && (
-          <AmountChips
-            onSelectFraction={onSelectFraction}
-            disabled={fromBalanceLoading}
-          />
-        )}
-      </SwapCard>
-      <FlipButton onPress={onFlip} />
-      <SwapCard
-        label='You receive (estimated)'
-        coinOption={selectedCoinToOptions}
-        amount={validateNumber(amountTo) ? `${amountTo}` : ''}
-        fiatValue={
-          validateNumber(amountTo) && selectedToAsset?.currencyRate
-            ? `~${fiatSymbol}${multiplyBNWithFixed(
-                amountTo,
-                selectedToAsset?.currencyRate,
-                2,
-              )}`
-            : ''
-        }
-        editable={false}
-        onPressCoin={() => coinSelectorSheetRef.current?.present('to')}
-        isFetching={isQuoteFetching}
-      />
-      {isMinimumValueGreater && (
-        <p className={s.errorText}>
-          {`Minimum for ${
-            selectedExchangeChain?.title || 'this provider'
-          } is ${minimumValue} ${selectedFromAsset?.symbol || ''}`}
-        </p>
-      )}
-      {isBalanceLess && (
-        <p className={s.errorText}>
-          {`You don't have ${amountFrom} ${selectedFromAsset?.symbol || ''}`}
-        </p>
-      )}
-      {possibleFromCoin?.length > 1 && (
-        <div className={s.addressView}>
-          <h3 className={s.addressTitle}>Pay from address</h3>
-          <DokDropdown
-            key={selectedFromAsset?.address}
-            placeholder={'Pay from address'}
-            listData={possibleFromCoin}
-            onValueChange={onSelectFromAsset}
-            value={selectedFromAsset?.address}
-          />
-        </div>
-      )}
-      {!!possibleToCoins?.length && (
-        <div className={s.addressView}>
-          <h3 className={s.addressTitle}>Receive to address</h3>
-          <DokDropdown
-            key={customOption || selectedToAsset?.address}
-            placeholder={'Receive to address'}
-            listData={possibleToCoins}
-            onValueChange={onSelectToAsset}
-            value={customOption || selectedToAsset?.address}
-          />
-        </div>
-      )}
-      {customOption === 'Custom' && (
-        <TextField
-          style={{width: '100%', marginTop: 14}}
-          label='To Address'
-          placeholder={'Enter to address'}
-          sx={{
-            '& fieldset': {
-              borderColor: 'var(--whiteOutline) !important',
-            },
-            '& .MuiInputBase-input': {
-              color: 'var(--font)',
-            },
-          }}
-          name='To Address'
-          autoFocus={true}
-          onChange={event => {
-            dispatch(setExchangeFields({customAddress: event?.target.value}));
-          }}
-          value={customAddress}
-          slotProps={{
-            inputLabel: {style: {color: 'var(--sidebarIcon)'}},
-          }}
+      <div className={s.container}>
+        <SwapCard
+          label='You pay'
+          coinOption={selectedCoinFromOptions}
+          amount={amountFrom}
+          fiatValue={
+            validateNumber(amountFrom) && selectedFromAsset?.currencyRate
+              ? `~${fiatSymbol}${multiplyBNWithFixed(
+                  amountFrom,
+                  selectedFromAsset?.currencyRate,
+                  2,
+                )}`
+              : ''
+          }
+          balanceText={balanceText}
+          isBalanceFetching={fromBalanceLoading}
+          editable={true}
+          onChangeAmount={handleAmountChange}
+          onPressCoin={() => coinSelectorSheetRef.current?.present('from')}
+          hasError={isBalanceLess}>
+          {new BigNumber(selectedFromAsset?.totalAmount ?? 0).gt(0) && (
+            <AmountChips
+              onSelectFraction={onSelectFraction}
+              disabled={fromBalanceLoading}
+            />
+          )}
+        </SwapCard>
+        <FlipButton onPress={onFlip} />
+        <SwapCard
+          label='You receive (estimated)'
+          coinOption={selectedCoinToOptions}
+          amount={validateNumber(amountTo) ? `${amountTo}` : ''}
+          fiatValue={
+            validateNumber(amountTo) && selectedToAsset?.currencyRate
+              ? `~${fiatSymbol}${multiplyBNWithFixed(
+                  amountTo,
+                  selectedToAsset?.currencyRate,
+                  2,
+                )}`
+              : ''
+          }
+          editable={false}
+          onPressCoin={() => coinSelectorSheetRef.current?.present('to')}
+          isFetching={isQuoteFetching}
         />
-      )}
-      <p className={s.addCoinText}>
-        {'Looking for more coins?'}
-        <button
-          type='button'
-          className={s.addCoinLink}
-          onClick={() => setModalAddCoinsVisible(true)}>
-          {' Add coins to this wallet'}
-        </button>
-      </p>
-      {!!selectedExchangeChain &&
-        (backendSlippage !== undefined && backendSlippage !== null
-          ? true
-          : !!slippage) && (
-          <div className={s.detailsCard}>
-            <SlippageEditor
-              slippage={slippage}
-              backendSlippage={backendSlippage}
-              onCommit={onCommitSlippage}
+        {isMinimumValueGreater && (
+          <p className={s.errorText}>
+            {`Minimum for ${
+              selectedExchangeChain?.title || 'this provider'
+            } is ${minimumValue} ${selectedFromAsset?.symbol || ''}`}
+          </p>
+        )}
+        {isBalanceLess && (
+          <p className={s.errorText}>
+            {`You don't have ${amountFrom} ${selectedFromAsset?.symbol || ''}`}
+          </p>
+        )}
+        {possibleFromCoin?.length > 1 && (
+          <div className={s.addressView}>
+            <h3 className={s.addressTitle}>Pay from address</h3>
+            <DokDropdown
+              key={selectedFromAsset?.address}
+              placeholder={'Pay from address'}
+              listData={possibleFromCoin}
+              onValueChange={onSelectFromAsset}
+              value={selectedFromAsset?.address}
             />
           </div>
         )}
-      <ProviderList
-        rows={providerRows}
-        isFetching={isQuoteFetching}
-        error={quoteError}
-        onRetry={onRefreshQuotes}
-        onPressProvider={onPressProvider}
-        fromSymbol={selectedFromAsset?.symbol?.toUpperCase()}
-        toSymbol={selectedToAsset?.symbol?.toUpperCase()}
-        fiatSymbol={fiatSymbol}
-        quoteFetchedAt={isQuoteLocked ? null : quoteFetchedAt}
-        refreshPaused={refreshPaused}
-        onRefresh={onRefreshQuotes}
-      />
-      <div className={s.boxFooter}>
-        <p className={s.footerText}>
-          {`Swap services are available through third-party API provider (${exchangeProvidersText}).`}
-        </p>
+        {!!possibleToCoins?.length && (
+          <div className={s.addressView}>
+            <h3 className={s.addressTitle}>Receive to address</h3>
+            <DokDropdown
+              key={customOption || selectedToAsset?.address}
+              placeholder={'Receive to address'}
+              listData={possibleToCoins}
+              onValueChange={onSelectToAsset}
+              value={customOption || selectedToAsset?.address}
+            />
+          </div>
+        )}
         {customOption === 'Custom' && (
-          <p className={s.warningText}>
-            {'Please ensure the custom wallet address before exchanging.'}
-          </p>
+          <TextField
+            style={{width: '100%', marginTop: 14}}
+            label='To Address'
+            placeholder={'Enter to address'}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '14px',
+                backgroundColor: 'var(--sw-field)',
+              },
+              '& fieldset': {
+                borderColor: 'var(--sw-field-border) !important',
+              },
+              '& .MuiInputBase-input': {
+                color: 'var(--sw-ink)',
+              },
+            }}
+            name='To Address'
+            autoFocus={true}
+            onChange={event => {
+              dispatch(setExchangeFields({customAddress: event?.target.value}));
+            }}
+            value={customAddress}
+            slotProps={{
+              inputLabel: {style: {color: 'var(--sw-muted)'}},
+            }}
+          />
         )}
-        {!!disabledReason && (
-          <p
-            className={
-              disabledReason.transient ? s.buttonHintInfo : s.buttonHintError
-            }>
-            {disabledReason.text}
+        <p className={s.addCoinText}>
+          {'Looking for more coins?'}
+          <button
+            type='button'
+            className={s.addCoinLink}
+            onClick={() => setModalAddCoinsVisible(true)}>
+            {' Add coins to this wallet'}
+          </button>
+        </p>
+        {!!selectedExchangeChain &&
+          (backendSlippage !== undefined && backendSlippage !== null
+            ? true
+            : !!slippage) && (
+            <div className={s.detailsCard}>
+              <SlippageEditor
+                slippage={slippage}
+                backendSlippage={backendSlippage}
+                onCommit={onCommitSlippage}
+              />
+            </div>
+          )}
+        <ProviderList
+          rows={providerRows}
+          isFetching={isQuoteFetching}
+          error={quoteError}
+          onRetry={onRefreshQuotes}
+          onPressProvider={onPressProvider}
+          fromSymbol={selectedFromAsset?.symbol?.toUpperCase()}
+          toSymbol={selectedToAsset?.symbol?.toUpperCase()}
+          fiatSymbol={fiatSymbol}
+          quoteFetchedAt={isQuoteLocked ? null : quoteFetchedAt}
+          refreshPaused={refreshPaused}
+          onRefresh={onRefreshQuotes}
+        />
+        <div className={s.boxFooter}>
+          <p className={s.footerText}>
+            {`Swap services are available through third-party API provider (${exchangeProvidersText}).`}
           </p>
-        )}
-        <button
-          type='button'
-          className={s.button}
-          style={{
-            backgroundColor:
-              isButtonDisabled || isPreparingAllowance
-                ? 'var(--disabledButton)'
-                : 'var(--background)',
-          }}
-          onClick={handleSubmit}
-          disabled={isButtonDisabled || isPreparingAllowance}>
-          {isPreparingAllowance ? (
-            <CircularProgress size={20} sx={{color: 'var(--title)'}} />
-          ) : (
-            <p className={s.buttonTitle}>
-              {showApproveAndSwap ? 'Approve and swap' : 'Next'}
+          {customOption === 'Custom' && (
+            <p className={s.warningText}>
+              {'Please ensure the custom wallet address before exchanging.'}
             </p>
           )}
-        </button>
+          {!!disabledReason && (
+            <p
+              className={
+                disabledReason.transient ? s.buttonHintInfo : s.buttonHintError
+              }>
+              {disabledReason.text}
+            </p>
+          )}
+          <button
+            type='button'
+            className={s.button}
+            style={{
+              backgroundColor:
+                isButtonDisabled || isPreparingAllowance
+                  ? 'var(--disabledButton)'
+                  : 'var(--background)',
+            }}
+            onClick={handleSubmit}
+            disabled={isButtonDisabled || isPreparingAllowance}>
+            {isPreparingAllowance ? (
+              <CircularProgress size={20} sx={{color: 'var(--title)'}} />
+            ) : (
+              <p className={s.buttonTitle}>
+                {showApproveAndSwap ? 'Approve and swap' : 'Next'}
+              </p>
+            )}
+          </button>
+        </div>
+        <CoinSelectorSheet
+          ref={coinSelectorSheetRef}
+          options={coinOptions}
+          onSelect={onSelectCoin}
+        />
+        {modalAddCoinsVisible && (
+          <ModalAddCoins
+            visible={modalAddCoinsVisible}
+            hideModal={setModalAddCoinsVisible}
+          />
+        )}
+        {isSwapApprovalAsset && (
+          <ModalAllowanceInfo
+            visible={allowanceModalVisible}
+            onClose={() => setAllowanceModalVisible(false)}
+            source='exchange'
+            tokenSymbol={selectedFromAsset?.symbol}
+            requiredAmount={amountFrom}
+            availableAmount={selectedFromAsset?.totalAmount}
+            chainName={selectedFromAsset?.chain_name}
+            chainSymbol={selectedFromAsset?.chain_symbol}
+            approveLoading={exchangeApproveLoading}
+            onContinue={onAllowanceContinue}
+          />
+        )}
+        {isERC20FromAsset && (
+          <ModalPermitInfo
+            visible={permitModalVisible}
+            onClose={() => setPermitModalVisible(false)}
+            tokenSymbol={selectedFromAsset?.symbol}
+            requiredAmount={amountFrom}
+            availableAmount={selectedFromAsset?.totalAmount}
+            chainName={selectedFromAsset?.chain_name}
+            chainSymbol={selectedFromAsset?.chain_symbol}
+            approveLoading={exchangePermitApproveLoading}
+            onContinue={onPermitAllowanceContinue}
+          />
+        )}
       </div>
-      <CoinSelectorSheet
-        ref={coinSelectorSheetRef}
-        options={coinOptions}
-        onSelect={onSelectCoin}
+      <WalletSwitcher
+        visible={switcherOpen}
+        onClose={() => setSwitcherOpen(false)}
+        hidden={switcherOpen && readHideBalances()}
+        localCurrency={localCurrency}
       />
-      {modalAddCoinsVisible && (
-        <ModalAddCoins
-          visible={modalAddCoinsVisible}
-          hideModal={setModalAddCoinsVisible}
-        />
-      )}
-      {isSwapApprovalAsset && (
-        <ModalAllowanceInfo
-          visible={allowanceModalVisible}
-          onClose={() => setAllowanceModalVisible(false)}
-          source='exchange'
-          tokenSymbol={selectedFromAsset?.symbol}
-          requiredAmount={amountFrom}
-          availableAmount={selectedFromAsset?.totalAmount}
-          chainName={selectedFromAsset?.chain_name}
-          chainSymbol={selectedFromAsset?.chain_symbol}
-          approveLoading={exchangeApproveLoading}
-          onContinue={onAllowanceContinue}
-        />
-      )}
-      {isERC20FromAsset && (
-        <ModalPermitInfo
-          visible={permitModalVisible}
-          onClose={() => setPermitModalVisible(false)}
-          tokenSymbol={selectedFromAsset?.symbol}
-          requiredAmount={amountFrom}
-          availableAmount={selectedFromAsset?.totalAmount}
-          chainName={selectedFromAsset?.chain_name}
-          chainSymbol={selectedFromAsset?.chain_symbol}
-          approveLoading={exchangePermitApproveLoading}
-          onContinue={onPermitAllowanceContinue}
-        />
-      )}
-    </div>
+    </main>
   );
 };
 

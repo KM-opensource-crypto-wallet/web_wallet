@@ -1,15 +1,14 @@
 import React, {memo, useCallback, useMemo} from 'react';
-import styles from './CryptoGroupItem.module.css';
-import Button from '@mui/material/Button';
-import AddIcon from '@mui/icons-material/Add';
-import CheckIcon from '@mui/icons-material/Check';
 import {useGroupCoins} from '../../hooks/useGroupCoins';
 import CoinIcons from '../CoinsIcons';
+import {CheckIcon, PlusIcon} from 'components/Home/HomeIcons';
+import s from 'components/ModalAddCoins/ModalAddCoins.module.css';
 
+// One coin group in "Add coin or token": name, coin icons, description and
+// an Add button. Tapping the row opens the group's details.
 const CryptoGroupItem = ({
   currentWallet,
   item,
-  index,
   userCoins,
   onPressItem,
   onPressAddItem,
@@ -44,27 +43,33 @@ const CryptoGroupItem = ({
 
   return (
     <div
-      className={`${styles.section} ${isDisabledItem ? styles.disableSection : ''}`}
-      onClick={isDisabledItem ? undefined : onLocalPress}>
-      <div className={styles.content}>
-        <div className={styles.header}>
-          <h3 className={styles.title}>{item?.name}</h3>
+      role='button'
+      tabIndex={isDisabledItem ? -1 : 0}
+      aria-disabled={isDisabledItem}
+      className={`${s.groupRow} ${isDisabledItem ? s.groupRowDisabled : ''}`}
+      onClick={isDisabledItem ? undefined : onLocalPress}
+      onKeyDown={event => {
+        if (!isDisabledItem && event.key === 'Enter') {
+          onLocalPress();
+        }
+      }}>
+      <div className={s.groupText}>
+        <div className={s.groupHead}>
+          <h3 className={s.groupName}>{item?.name}</h3>
           <CoinIcons icons={icons} />
         </div>
-        <p className={`${styles.description} ${styles.mobileDescription}`}>
-          {item?.description}
-        </p>
+        {item?.description ? (
+          <p className={s.groupDescription}>{item.description}</p>
+        ) : null}
       </div>
-      <Button
+      <button
+        type='button'
         onClick={onLocalAddPress}
         disabled={isDisabledItem || isAdding}
-        className={`${styles.addButton} ${isDisabledItem ? styles.disabledButton : ''}`}
-        data-state={
-          isAdding ? 'adding' : isGroupCoinsAdded ? 'added' : 'default'
-        }
-        startIcon={isGroupCoinsAdded ? <CheckIcon /> : <AddIcon />}>
-        {isAdding ? 'Adding...' : isGroupCoinsAdded ? 'Added' : 'Add'}
-      </Button>
+        className={`${s.groupAdd} ${isGroupCoinsAdded ? s.groupAdded : ''}`}>
+        {isGroupCoinsAdded ? <CheckIcon size={14} /> : <PlusIcon size={14} />}
+        {isAdding ? 'Adding…' : isGroupCoinsAdded ? 'Added' : 'Add'}
+      </button>
     </div>
   );
 };

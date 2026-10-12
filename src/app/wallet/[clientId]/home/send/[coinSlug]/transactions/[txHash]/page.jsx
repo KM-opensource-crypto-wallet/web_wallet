@@ -1,7 +1,7 @@
 'use client';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {useParams} from 'next/navigation';
+import {useParams, useRouter} from 'next/navigation';
 import {
   selectCurrentCoin,
   selectCurrentCoinRecentTransaction,
@@ -13,70 +13,56 @@ import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/
 import {currencySymbol} from 'data/currency';
 import dayjs from 'dayjs';
 import Image from 'next/image';
-import PageTitle from 'components/PageTitle';
 import {showToast} from 'utils/toast';
 import s from './TransactionDetails.module.css';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import GeneralButton from 'components/Button';
+import {txStatus} from 'components/Transactions';
+import {CheckIcon, ChevronLeftIcon, CopyIcon} from 'components/Home/HomeIcons';
 import {
-  ContractCall,
-  CopyIcon,
-  DelegationIcon,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CheckCircleIcon,
+  ContractIcon,
+  EmptyIcon,
   ExternalLinkIcon,
+  ImageIcon,
   LayersIcon,
   PowerIcon,
-  ReceiveIcon,
-  SendIcon,
+  ShieldIcon,
   StarIcon,
-  VoteIcon,
-} from 'assets/images/icons';
+  TrendDownIcon,
+  TrendUpIcon,
+} from 'components/Transactions/TxIcons';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 
-const STATUS_CONFIG = {
-  SUCCESS: {label: 'Success', color: '#71C441'},
-  PENDING: {label: 'Pending', color: '#ffcc00'},
-  FAILED: {label: 'Failed', color: '#FF4444'},
-};
+const STATUS_LABEL = {success: 'Success', pending: 'Pending', failed: 'Failed'};
 
-const CopyRow = ({value}) => {
+// Shortened value with a copy button; the full value goes to the clipboard.
+const CopyValue = ({value}) => {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef(null);
+  useEffect(() => () => clearTimeout(timer.current), []);
   const stringValue = typeof value === 'string' ? value : undefined;
   const handleCopy = () => {
-    if (stringValue) {
-      navigator.clipboard?.writeText(stringValue).then(() => {
-        showToast({type: 'successToast', title: 'Copied to clipboard'});
-      });
-    }
+    if (!stringValue) return;
+    navigator.clipboard?.writeText(stringValue).then(() => {
+      showToast({type: 'successToast', title: 'Copied to clipboard'});
+      setCopied(true);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setCopied(false), 1500);
+    });
   };
   return (
-    <button className={s.rowValueRow} onClick={handleCopy}>
-      <span className={s.rowValue}>
-        {getCustomizePublicAddress(stringValue)}
-      </span>
-      <CopyIcon />
+    <button
+      type='button'
+      className={`${s.copyValue} ${copied ? s.copyDone : ''}`}
+      title={stringValue}
+      onClick={handleCopy}>
+      <span className={s.mono}>{getCustomizePublicAddress(stringValue)}</span>
+      {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
     </button>
   );
 };
-
-const StatusBadge = ({statusConfig, badgeBgColor}) => (
-  <div className={s.statusBadge} style={{backgroundColor: badgeBgColor}}>
-    <div
-      className={s.statusDot}
-      style={{backgroundColor: statusConfig.color}}
-    />
-    <span className={s.statusText} style={{color: statusConfig.color}}>
-      {statusConfig.label}
-    </span>
-  </div>
-);
-
-const ExplorerButton = ({url, onViewExplorer}) =>
-  !!url ? (
-    <button className={s.explorerBtn} onClick={onViewExplorer}>
-      <ExternalLinkIcon />
-      View on Explorer
-    </button>
-  ) : null;
 
 const TransactionDetails = () => {
   const params = useParams();
@@ -176,14 +162,54 @@ const TransactionDetails = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const router = useRouter();
+  const symbol = currentCoin?.symbol?.toUpperCase() ?? '';
+  const fiatSymbol = currencySymbol[localCurrency] || '';
+
+  const topBar = (title, onViewExplorer) => (
+    <div className={s.topBar}>
+      <GeneralButton
+        variant='unstyled'
+        className={s.iconButton}
+        aria-label='Back'
+        onClick={() => router.back()}>
+        <ChevronLeftIcon size={24} />
+      </GeneralButton>
+      <h1 className={s.title}>{title}</h1>
+      {refreshing ? (
+        <span className={s.refreshing} aria-label='Refreshing' />
+      ) : onViewExplorer ? (
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='View on explorer'
+          onClick={onViewExplorer}>
+          <ExternalLinkIcon size={19} />
+        </GeneralButton>
+      ) : (
+        <span className={s.iconSpacer} aria-hidden='true' />
+      )}
+    </div>
+  );
+
   if (!transaction) {
     return (
-      <>
-        <PageTitle title='Transaction Details' />
-        <div className={s.emptyContainer}>
-          <p className={s.emptyText}>No transaction data found.</p>
+      <main className={s.page}>
+        <div className={s.glow} aria-hidden='true' />
+        {topBar('Transaction details')}
+        <div className={s.column}>
+          <div className={s.empty}>
+            <span className={s.emptyIcon}>
+              <EmptyIcon size={26} />
+            </span>
+            <p className={s.emptyTitle}>No transaction data found</p>
+            <p className={s.emptyText}>
+              It may still be propagating. Pull it up again from the transaction
+              history in a moment.
+            </p>
+          </div>
         </div>
-      </>
+      </main>
     );
   }
 
@@ -233,667 +259,270 @@ const TransactionDetails = () => {
       : transaction?.to?.toUpperCase() === currentCoin?.address?.toUpperCase()
     : false;
 
-  const statusKey = transaction?.status?.toUpperCase();
-  const statusConfig = STATUS_CONFIG[statusKey] || {
-    label: transaction?.status || '—',
-    color: '#888',
-  };
-  const badgeBgColor = statusConfig.color + '22';
+  const status = txStatus(transaction);
+  const statusLabel = transaction?.status ? STATUS_LABEL[status] : '—';
 
   const pageTitle = isNFT
     ? 'NFT Transfer'
     : `${currentCoin?.name || ''} Transaction`;
 
-  const onViewExplorer = () => {
-    if (transaction?.url) {
-      window.open(transaction.url, '_blank', 'noopener,noreferrer');
-    }
-  };
+  const onViewExplorer = transaction?.url
+    ? () => window.open(transaction.url, '_blank', 'noopener,noreferrer')
+    : null;
 
-  // ── Shared rows ─────────────────────────────────────────────────────────────
+  // ── Hero + rows per type ────────────────────────────────────────────────────
 
-  const renderCommonRows = () => (
-    <>
-      {!!transaction.date && (
-        <>
-          <div className={s.divider} />
-          <div className={s.row}>
-            <span className={s.rowLabel}>Date</span>
-            <span className={s.rowValue}>
-              {dayjs(transaction.date).format('DD MMM YYYY, HH:mm')}
-            </span>
-          </div>
-        </>
-      )}
-      {transaction.blockNumber != null && (
-        <>
-          <div className={s.divider} />
-          <div className={s.row}>
-            <span className={s.rowLabel}>Block no.</span>
-            <span className={s.rowValue}>{transaction.blockNumber}</span>
-          </div>
-        </>
-      )}
-      {transaction.confirmations != null && (
-        <>
-          <div className={s.divider} />
-          <div className={s.row}>
-            <span className={s.rowLabel}>No. of Confirmation</span>
-            <span className={s.rowValue}>{transaction.confirmations}</span>
-          </div>
-        </>
-      )}
-      {!!transaction.link && (
-        <>
-          <div className={s.divider} />
-          <div className={s.row}>
-            <span className={s.rowLabel}>Tx Hash</span>
-            <CopyRow value={transaction.link} />
-          </div>
-        </>
-      )}
-    </>
-  );
+  const chainRow = currentCoin?.chain_display_name
+    ? {label: 'Chain', value: currentCoin.chain_display_name}
+    : null;
+  const fromRow = (label = 'From') =>
+    transaction.from ? {label, copy: transaction.from} : null;
+  const toRow = (label = 'To') =>
+    transaction.to ? {label, copy: transaction.to} : null;
+  const fiatText =
+    transaction.totalCourse != null
+      ? `${fiatSymbol}${transaction.totalCourse}`
+      : null;
 
-  // ── NFT ─────────────────────────────────────────────────────────────────────
+  let hero = {};
+  let rows = [];
+  let list = null;
 
-  if (isNFT) {
-    const nftLabel = transaction.nftTokenId
-      ? `${transaction.nftName || '—'} (#${transaction.nftTokenId})`
-      : transaction.nftName || '—';
-
-    return (
-      <>
-        <PageTitle title={pageTitle} />
-        {refreshing && <div className={s.refreshingBar} />}
-        <div className={s.container}>
-          <div className={s.hero}>
-            {transaction.nftImage && !nftImageError ? (
-              <div className={s.nftHeroImage}>
-                <Image
-                  src={transaction.nftImage}
-                  alt='NFT'
-                  fill
-                  style={{objectFit: 'cover', borderRadius: 12}}
-                  onError={() => setNftImageError(true)}
-                />
-              </div>
-            ) : (
-              <div className={s.nftHeroImage}>
-                <div className={s.nftPlaceholder}>
-                  <span className={s.nftPlaceholderText}>NFT</span>
-                </div>
-              </div>
-            )}
-            <span className={s.txType}>NFT Transfer</span>
-            <span className={s.amount}>{nftLabel}</span>
-            <StatusBadge
-              statusConfig={statusConfig}
-              badgeBgColor={badgeBgColor}
-            />
-          </div>
-
-          <div className={s.card}>
-            <p className={s.cardTitle}>Transaction Details</p>
-            {!!currentCoin?.chain_display_name && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Chain</span>
-                  <span className={s.rowValue}>
-                    {currentCoin.chain_display_name}
-                  </span>
-                </div>
-              </>
-            )}
-            {!!transaction.from && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>From</span>
-                  <CopyRow value={transaction.from} />
-                </div>
-              </>
-            )}
-            {!!transaction.to && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>To</span>
-                  <CopyRow value={transaction.to} />
-                </div>
-              </>
-            )}
-            {renderCommonRows()}
-          </div>
-
-          <ExplorerButton
-            url={transaction.url}
-            onViewExplorer={onViewExplorer}
-          />
-        </div>
-      </>
-    );
-  }
-
-  // ── NFT Historical (no metadata) ─────────────────────────────────────────────
-
-  if (isNFTHistorical) {
-    return (
-      <>
-        <PageTitle title={pageTitle} />
-        {refreshing && <div className={s.refreshingBar} />}
-        <div className={s.container}>
-          <div className={s.hero}>
-            <div
-              className={s.iconCircle}
-              style={{backgroundColor: '#fdf4ff', color: '#9333ea'}}>
-              <ImageOutlinedIcon style={{fontSize: 32}} />
-            </div>
-            <span className={s.txType}>NFT Transfer</span>
-            <StatusBadge
-              statusConfig={statusConfig}
-              badgeBgColor={badgeBgColor}
-            />
-          </div>
-
-          <div className={s.card}>
-            <p className={s.cardTitle}>Transaction Details</p>
-            {!!currentCoin?.chain_display_name && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Chain</span>
-                  <span className={s.rowValue}>
-                    {currentCoin.chain_display_name}
-                  </span>
-                </div>
-              </>
-            )}
-            {!!transaction.from && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>From</span>
-                  <CopyRow value={transaction.from} />
-                </div>
-              </>
-            )}
-            {!!transaction.to && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>To</span>
-                  <CopyRow value={transaction.to} />
-                </div>
-              </>
-            )}
-            {renderCommonRows()}
-          </div>
-
-          <ExplorerButton
-            url={transaction.url}
-            onViewExplorer={onViewExplorer}
-          />
-        </div>
-      </>
-    );
-  }
-
-  // ── Batch Transaction ────────────────────────────────────────────────────────
-
-  if (isBatchTx) {
+  if (isNFT || isNFTHistorical) {
+    hero = {
+      Icon: ImageIcon,
+      tone: 'tonePurple',
+      title: 'NFT Transfer',
+      image: isNFT ? transaction.nftImage || null : undefined,
+      amount: isNFT
+        ? transaction.nftTokenId
+          ? `${transaction.nftName || '—'} (#${transaction.nftTokenId})`
+          : transaction.nftName || '—'
+        : null,
+    };
+    rows = [chainRow, fromRow(), toRow()];
+  } else if (isBatchTx) {
     const batchItems = Array.isArray(transaction.transactionsData)
       ? transaction.transactionsData
       : [];
-
-    return (
-      <>
-        <PageTitle title={pageTitle} />
-        {refreshing && <div className={s.refreshingBar} />}
-        <div className={s.container}>
-          <div className={s.hero}>
-            <div
-              className={s.iconCircle}
-              style={{backgroundColor: '#e8eaf6', color: '#5c6bc0'}}>
-              <LayersIcon />
-            </div>
-            <span className={s.txType}>Batch Transaction</span>
-            <span className={s.heroSubLabel}>
-              {batchItems.length} transaction
-              {batchItems.length !== 1 ? 's' : ''}
-            </span>
-            <StatusBadge
-              statusConfig={statusConfig}
-              badgeBgColor={badgeBgColor}
-            />
-          </div>
-
-          {batchItems.length > 0 && (
-            <div className={s.batchCard}>
-              <p className={s.cardTitle}>Transactions</p>
-              {batchItems.map((item, index) => {
-                const coinInfo = item?.coinInfo;
-                const tData = item?.transferData;
-                return (
-                  <div key={`batch_item_${index}`}>
-                    <div className={s.divider} />
-                    <div className={s.batchItem}>
-                      <div className={s.batchItemRow}>
-                        <span className={s.batchItemCoin}>
-                          {coinInfo?.name
-                            ? `${coinInfo.name} (${coinInfo.symbol})`
-                            : coinInfo?.symbol || '—'}
-                        </span>
-                        <span className={s.batchItemAmount}>
-                          {tData?.amount || '0'} {coinInfo?.symbol || ''}
-                        </span>
-                      </div>
-                      {!!tData?.to && (
-                        <span className={s.batchItemTo}>
-                          To: {getCustomizePublicAddress(tData.to)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className={s.card}>
-            <p className={s.cardTitle}>Transaction Details</p>
-            {renderCommonRows()}
-          </div>
-
-          <ExplorerButton
-            url={transaction.url}
-            onViewExplorer={onViewExplorer}
-          />
-        </div>
-      </>
-    );
-  }
-
-  // ── Staking ──────────────────────────────────────────────────────────────────
-
-  if (isStakingTx) {
+    hero = {
+      Icon: LayersIcon,
+      tone: 'toneBlue',
+      title: 'Batch Transaction',
+      sub: `${batchItems.length} transaction${
+        batchItems.length !== 1 ? 's' : ''
+      }`,
+    };
+    list = batchItems.length
+      ? {
+          title: 'Transactions',
+          items: batchItems.map((item, index) => {
+            const coinInfo = item?.coinInfo;
+            const tData = item?.transferData;
+            return {
+              key: `batch_item_${index}`,
+              primary: coinInfo?.name
+                ? `${coinInfo.name} (${coinInfo.symbol})`
+                : coinInfo?.symbol || '—',
+              secondary: tData?.to
+                ? `To ${getCustomizePublicAddress(tData.to)}`
+                : null,
+              value: `${tData?.amount || '0'} ${coinInfo?.symbol || ''}`,
+            };
+          }),
+        }
+      : null;
+  } else if (isStakingTx) {
     const isPositive =
       transaction?.isCreateStaking || transaction?.isStakingRewards;
-    const stakingIconBg = isPositive ? '#e8f7e0' : '#fff3e0';
-    const stakingIconColor = isPositive ? '#71C441' : '#FF9800';
-    const StakingIcon = transaction?.isCreateStaking
-      ? TrendingUpIcon
-      : transaction?.isWithdrawStaking
-        ? TrendingDownIcon
-        : transaction?.isDeactivateStaking
-          ? PowerIcon
-          : StarIcon;
-    const amountColor = isPositive ? '#71C441' : '#FF9800';
-
-    return (
-      <>
-        <PageTitle title={pageTitle} />
-        {refreshing && <div className={s.refreshingBar} />}
-        <div className={s.container}>
-          <div className={s.hero}>
-            <div
-              className={s.iconCircle}
-              style={{backgroundColor: stakingIconBg, color: stakingIconColor}}>
-              <StakingIcon />
-            </div>
-            <span className={s.txType}>{stakingLabel}</span>
-            {!!transaction.amount && (
-              <span className={s.amount} style={{color: amountColor}}>
-                {transaction.amount} {currentCoin?.symbol}
-              </span>
-            )}
-            {transaction.totalCourse != null && (
-              <span className={s.fiatAmount}>
-                {currencySymbol[localCurrency]}
-                {transaction.totalCourse}
-              </span>
-            )}
-            <StatusBadge
-              statusConfig={statusConfig}
-              badgeBgColor={badgeBgColor}
-            />
-          </div>
-
-          <div className={s.card}>
-            <p className={s.cardTitle}>Transaction Details</p>
-            {!!currentCoin?.chain_display_name && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Chain</span>
-                  <span className={s.rowValue}>
-                    {currentCoin.chain_display_name}
-                  </span>
-                </div>
-              </>
-            )}
-            {!!currentCoin?.name && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Asset</span>
-                  <span className={s.rowValue}>
-                    {currentCoin.name} ({currentCoin.symbol})
-                  </span>
-                </div>
-              </>
-            )}
-            {!!transaction.from && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>From</span>
-                  <CopyRow value={transaction.from} />
-                </div>
-              </>
-            )}
-            {!!transaction.validatorPubKey && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Validator Address</span>
-                  <CopyRow value={transaction.validatorPubKey} />
-                </div>
-              </>
-            )}
-            {!!transaction.validatorName && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Validator Name</span>
-                  <span className={s.rowValue}>
-                    {transaction.validatorName}
-                  </span>
-                </div>
-              </>
-            )}
-            {!!transaction.resourceType && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Resource Type</span>
-                  <span className={s.rowValue}>{transaction.resourceType}</span>
-                </div>
-              </>
-            )}
-            {renderCommonRows()}
-          </div>
-
-          <ExplorerButton
-            url={transaction.url}
-            onViewExplorer={onViewExplorer}
-          />
-        </div>
-      </>
-    );
-  }
-
-  // ── Vote Staking ─────────────────────────────────────────────────────────────
-
-  if (isVoteTx) {
+    hero = {
+      Icon: transaction?.isCreateStaking
+        ? TrendUpIcon
+        : transaction?.isWithdrawStaking
+          ? TrendDownIcon
+          : transaction?.isDeactivateStaking
+            ? PowerIcon
+            : StarIcon,
+      tone: isPositive ? 'toneIn' : 'toneWarn',
+      title: stakingLabel,
+      amount: transaction.amount ? `${transaction.amount} ${symbol}` : null,
+      amountTone: isPositive ? 'amountIn' : 'amountWarn',
+      fiat: fiatText,
+    };
+    rows = [
+      chainRow,
+      currentCoin?.name
+        ? {
+            label: 'Asset',
+            value: `${currentCoin.name} (${currentCoin.symbol})`,
+          }
+        : null,
+      fromRow(),
+      transaction.validatorPubKey
+        ? {label: 'Validator address', copy: transaction.validatorPubKey}
+        : null,
+      transaction.validatorName
+        ? {label: 'Validator name', value: transaction.validatorName}
+        : null,
+      transaction.resourceType
+        ? {label: 'Resource type', value: transaction.resourceType}
+        : null,
+    ];
+  } else if (isVoteTx) {
     const displayValidators = Array.isArray(transaction.displayValidators)
       ? transaction.displayValidators
       : [];
-
-    return (
-      <>
-        <PageTitle title={pageTitle} />
-        {refreshing && <div className={s.refreshingBar} />}
-        <div className={s.container}>
-          <div className={s.hero}>
-            <div
-              className={s.iconCircle}
-              style={{backgroundColor: '#e3f2fd', color: '#1976D2'}}>
-              <VoteIcon />
-            </div>
-            <span className={s.txType}>Votes Submitted</span>
-            {displayValidators.length > 0 && (
-              <span className={s.heroSubLabel}>
-                {displayValidators.length} validator
-                {displayValidators.length !== 1 ? 's' : ''}
-              </span>
-            )}
-            <StatusBadge
-              statusConfig={statusConfig}
-              badgeBgColor={badgeBgColor}
-            />
-          </div>
-
-          {displayValidators.length > 0 && (
-            <div className={s.batchCard}>
-              <p className={s.cardTitle}>Validators</p>
-              {displayValidators.map((item, index) => (
-                <div key={`validator_${index}`}>
-                  <div className={s.divider} />
-                  <div className={s.validatorItem}>
-                    <div className={s.validatorItemRow}>
-                      <span className={s.validatorItemName}>
-                        {item?.name ||
-                          getCustomizePublicAddress(item?.validatorAddress)}
-                      </span>
-                      <span className={s.validatorItemVotes}>
-                        {item?.votes} votes
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className={s.card}>
-            <p className={s.cardTitle}>Transaction Details</p>
-            {!!transaction.from && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>From</span>
-                  <CopyRow value={transaction.from} />
-                </div>
-              </>
-            )}
-            {renderCommonRows()}
-          </div>
-
-          <ExplorerButton
-            url={transaction.url}
-            onViewExplorer={onViewExplorer}
-          />
-        </div>
-      </>
-    );
-  }
-
-  // ── Smart Contract ───────────────────────────────────────────────────────────
-
-  if (isSmartContractTx) {
-    return (
-      <>
-        <PageTitle title={pageTitle} />
-        {refreshing && <div className={s.refreshingBar} />}
-        <div className={s.container}>
-          <div className={s.hero}>
-            <div
-              className={s.iconCircle}
-              style={{backgroundColor: '#f3e5f5', color: '#9c27b0'}}>
-              <ContractCall />
-            </div>
-            <span className={s.txType}>Contract Call</span>
-            <StatusBadge
-              statusConfig={statusConfig}
-              badgeBgColor={badgeBgColor}
-            />
-          </div>
-
-          <div className={s.card}>
-            <p className={s.cardTitle}>Transaction Details</p>
-            {!!currentCoin?.chain_display_name && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Chain</span>
-                  <span className={s.rowValue}>
-                    {currentCoin.chain_display_name}
-                  </span>
-                </div>
-              </>
-            )}
-            {!!transaction.from && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>From</span>
-                  <CopyRow value={transaction.from} />
-                </div>
-              </>
-            )}
-            {!!transaction.to && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Contract</span>
-                  <CopyRow value={transaction.to} />
-                </div>
-              </>
-            )}
-            {renderCommonRows()}
-          </div>
-
-          <ExplorerButton
-            url={transaction.url}
-            onViewExplorer={onViewExplorer}
-          />
-        </div>
-      </>
-    );
-  }
-
-  // ── Delegation Change ────────────────────────────────────────────────────────
-
-  if (isDelegationTx) {
+    hero = {
+      Icon: CheckCircleIcon,
+      tone: 'toneBlue',
+      title: 'Votes Submitted',
+      sub: displayValidators.length
+        ? `${displayValidators.length} validator${
+            displayValidators.length !== 1 ? 's' : ''
+          }`
+        : null,
+    };
+    list = displayValidators.length
+      ? {
+          title: 'Validators',
+          items: displayValidators.map((item, index) => ({
+            key: `validator_${index}`,
+            primary:
+              item?.name || getCustomizePublicAddress(item?.validatorAddress),
+            value: `${item?.votes} votes`,
+          })),
+        }
+      : null;
+    rows = [fromRow()];
+  } else if (isSmartContractTx) {
+    hero = {Icon: ContractIcon, tone: 'tonePurple', title: 'Contract Call'};
+    rows = [chainRow, fromRow(), toRow('Contract')];
+  } else if (isDelegationTx) {
     const isRevoke =
       transaction?.from?.toLowerCase() === transaction?.to?.toLowerCase();
-    return (
-      <>
-        <PageTitle title={pageTitle} />
-        {refreshing && <div className={s.refreshingBar} />}
-        <div className={s.container}>
-          <div className={s.hero}>
-            <div
-              className={s.iconCircle}
-              style={{backgroundColor: '#eff6ff', color: '#2563eb'}}>
-              <DelegationIcon />
-            </div>
-            <span className={s.txType}>
-              {isRevoke ? 'Delegation Revoked' : 'Delegation Change'}
-            </span>
-            <span className={s.heroSubLabel}>EIP-7702</span>
-            <StatusBadge
-              statusConfig={statusConfig}
-              badgeBgColor={badgeBgColor}
-            />
-          </div>
-
-          <div className={s.card}>
-            <p className={s.cardTitle}>Transaction Details</p>
-            {!!currentCoin?.chain_display_name && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Chain</span>
-                  <span className={s.rowValue}>
-                    {currentCoin.chain_display_name}
-                  </span>
-                </div>
-              </>
-            )}
-            {!!transaction.from && (
-              <>
-                <div className={s.divider} />
-                <div className={s.row}>
-                  <span className={s.rowLabel}>Wallet</span>
-                  <CopyRow value={transaction.from} />
-                </div>
-              </>
-            )}
-            {renderCommonRows()}
-          </div>
-
-          <ExplorerButton
-            url={transaction.url}
-            onViewExplorer={onViewExplorer}
-          />
-        </div>
-      </>
-    );
+    hero = {
+      Icon: ShieldIcon,
+      tone: 'toneBlue',
+      title: isRevoke ? 'Delegation Revoked' : 'Delegation Change',
+      sub: 'EIP-7702',
+    };
+    rows = [chainRow, fromRow('Wallet')];
+  } else {
+    hero = {
+      Icon: isReceived ? ArrowDownIcon : ArrowUpIcon,
+      tone: isReceived ? 'toneIn' : 'toneOut',
+      title: isReceived ? 'Received' : 'Sent',
+      amount: `${isReceived ? '+' : '−'}${transaction.amount} ${symbol}`,
+      amountTone: isReceived ? 'amountIn' : 'amountOut',
+      fiat: fiatText,
+    };
+    rows = [fromRow(), toRow()];
   }
 
-  // ── Regular (Send / Receive) ─────────────────────────────────────────────────
+  rows = [
+    ...rows,
+    transaction.date
+      ? {
+          label: 'Date',
+          value: dayjs(transaction.date).format('DD MMM YYYY, HH:mm'),
+        }
+      : null,
+    transaction.blockNumber != null
+      ? {label: 'Block no.', value: String(transaction.blockNumber)}
+      : null,
+    transaction.confirmations != null
+      ? {label: 'Confirmations', value: String(transaction.confirmations)}
+      : null,
+    transaction.link ? {label: 'Tx hash', copy: transaction.link} : null,
+  ].filter(Boolean);
 
-  const iconBgColor = isReceived ? '#e8f7e0' : '#fdecea';
-  const iconColor = isReceived ? '#71C441' : '#FF4444';
-  const amountColor = isReceived ? '#71C441' : '#FF4444';
+  const showImage = hero.image !== undefined;
 
   return (
-    <>
-      <PageTitle title={pageTitle} />
-      {refreshing && <div className={s.refreshingBar} />}
-      <div className={s.container}>
-        <div className={s.hero}>
-          <div
-            className={s.iconCircle}
-            style={{backgroundColor: iconBgColor, color: iconColor}}>
-            {isReceived ? <ReceiveIcon /> : <SendIcon />}
-          </div>
-          <span className={s.txType}>{isReceived ? 'Received' : 'Sent'}</span>
-          <span className={s.amount} style={{color: amountColor}}>
-            {isReceived ? '+' : '-'}
-            {transaction.amount} {currentCoin?.symbol}
-          </span>
-          {transaction.totalCourse != null && (
-            <span className={s.fiatAmount}>
-              {currencySymbol[localCurrency]}
-              {transaction.totalCourse}
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      {topBar(pageTitle, onViewExplorer)}
+      <div className={s.column}>
+        <section className={s.hero} aria-label='Summary'>
+          {showImage ? (
+            <div className={s.nftImage}>
+              {hero.image && !nftImageError ? (
+                <Image
+                  src={hero.image}
+                  alt='NFT'
+                  fill
+                  style={{objectFit: 'cover'}}
+                  onError={() => setNftImageError(true)}
+                />
+              ) : (
+                <span className={s.nftPlaceholder}>NFT</span>
+              )}
+            </div>
+          ) : (
+            <span className={`${s.heroIcon} ${s[hero.tone]}`}>
+              <hero.Icon size={26} />
             </span>
           )}
-          <StatusBadge
-            statusConfig={statusConfig}
-            badgeBgColor={badgeBgColor}
-          />
-        </div>
+          <span className={s.heroTitle}>{hero.title}</span>
+          {hero.amount ? (
+            <span
+              className={`${s.amount} ${
+                hero.amountTone ? s[hero.amountTone] : ''
+              }`}>
+              {hero.amount}
+            </span>
+          ) : null}
+          {hero.fiat ? <span className={s.fiat}>{hero.fiat}</span> : null}
+          {hero.sub ? <span className={s.heroSub}>{hero.sub}</span> : null}
+          <span className={`${s.status} ${s[`status_${status}`]}`}>
+            <span className={s.statusDot} />
+            {statusLabel}
+          </span>
+        </section>
 
-        <div className={s.card}>
-          <p className={s.cardTitle}>Transaction Details</p>
-          {!!transaction.from && (
-            <>
-              <div className={s.divider} />
-              <div className={s.row}>
-                <span className={s.rowLabel}>From</span>
-                <CopyRow value={transaction.from} />
+        {list ? (
+          <section className={s.card} aria-label={list.title}>
+            <span className={s.cardTitle}>{list.title}</span>
+            {list.items.map(item => (
+              <div key={item.key} className={s.listItem}>
+                <span className={s.listText}>
+                  <span className={s.listPrimary}>{item.primary}</span>
+                  {item.secondary ? (
+                    <span className={s.listSecondary}>{item.secondary}</span>
+                  ) : null}
+                </span>
+                <span className={s.listValue}>{item.value}</span>
               </div>
-            </>
-          )}
-          {!!transaction.to && (
-            <>
-              <div className={s.divider} />
-              <div className={s.row}>
-                <span className={s.rowLabel}>To</span>
-                <CopyRow value={transaction.to} />
-              </div>
-            </>
-          )}
-          {renderCommonRows()}
-        </div>
+            ))}
+          </section>
+        ) : null}
 
-        <ExplorerButton url={transaction.url} onViewExplorer={onViewExplorer} />
+        <section className={s.card} aria-label='Transaction details'>
+          <span className={s.cardTitle}>Details</span>
+          {rows.map(row => (
+            <div key={row.label} className={s.row}>
+              <span className={s.rowLabel}>{row.label}</span>
+              {row.copy ? (
+                <CopyValue value={row.copy} />
+              ) : (
+                <span className={s.rowValue}>{row.value}</span>
+              )}
+            </div>
+          ))}
+        </section>
+
+        {onViewExplorer ? (
+          <GeneralButton
+            variant='secondary'
+            fullWidth
+            className={s.explorer}
+            onClick={onViewExplorer}>
+            <ExternalLinkIcon size={17} />
+            View on explorer
+          </GeneralButton>
+        ) : null}
       </div>
-    </>
+    </main>
   );
 };
 

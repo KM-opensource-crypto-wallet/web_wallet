@@ -1,58 +1,95 @@
-.container {
-  margin: auto;
-  width: 100%;
-}
-.formTitle {
-  width: 45%;
-  @media (max-width:768px) {
-    width: 80%;
-  }
-  margin: auto;
-  margin-top: 40px;
-}
-.title {
-  color: var(--font);
-  font-size: 30px;
-  margin-bottom: 10px;
-  text-align: left;
-}
-.text {
-  color: var(--primary);
-  font-size: 15px;
-  margin-bottom: 20px;
+/* Create account: the strength meter and the requirement checklist. The
+   page layout, card and fields are the shared auth ones
+   (components/AuthLayout). */
+.scope {
+  --rg-dot: #b3a89e;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
 }
 
-.formInput {
-  width: 50%;
-  margin-top: 40px;
+:global([data-theme='dark']) .scope {
+  --rg-dot: #6b6259;
+}
+
+.strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 4px 0;
+}
+
+.segments {
+  display: flex;
+  flex: 1;
+  gap: 5px;
+}
+
+.segments span {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--ln-off);
+  transition: background-color 0.3s;
+}
+
+.strengthLabel {
+  min-width: 52px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.strength[data-score='1'] {
+  --rg-level: var(--ln-error);
+}
+
+.strength[data-score='2'] {
+  --rg-level: var(--ln-warning);
+}
+
+.strength[data-score='3'] {
+  --rg-level: var(--ln-success);
+}
+
+.strength[data-score='1'] .segments span:nth-child(-n + 1),
+.strength[data-score='2'] .segments span:nth-child(-n + 2),
+.strength[data-score='3'] .segments span {
+  background: var(--rg-level);
+}
+
+.strengthLabel {
+  color: var(--rg-level, var(--ln-faint));
+}
+
+.rules {
   display: flex;
   flex-direction: column;
-  margin: auto;
-  @media (max-width:768px) {
-    width: 90%;
-  }
+  gap: 6px;
+  margin: 12px 4px 0;
 }
 
-
-.formInput > div {
-  width: 90%;
-  margin: 10px auto;
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ln-faint);
+  transition: color 0.2s;
 }
 
-.button {
-  width: 90%;
-  margin: auto;
-  background-color: var(--background);
-  height: 60px;
-  border-radius: 10px;
-  color: var(--title);
-  font-size: 16px;
-  margin-top: 10px;
+.rule svg {
+  flex: none;
+  color: var(--rg-dot);
 }
 
-.textConfirm {
-  color: red;
-  font-size: 12px;
-  width: 89%;
-  margin: -5px auto 10px auto;
+.ruleMet,
+.ruleMet svg {
+  color: var(--ln-success);
+}
+
+.matchIcon {
+  display: flex;
+  color: var(--ln-success);
 }

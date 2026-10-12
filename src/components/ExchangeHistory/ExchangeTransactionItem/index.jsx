@@ -1,67 +1,94 @@
 'use client';
 import React from 'react';
 import dayjs from 'dayjs';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import ExchangeStatusBadge from 'components/ExchangeHistory/ExchangeStatusBadge';
 import SwapCoinIcon from 'components/ExchangeHistory/SwapCoinIcon';
 import useSwapCoinDisplay from 'components/ExchangeHistory/useSwapCoinDisplay';
-import {truncateExchangeAmount} from 'components/ExchangeHistory/exchangeFormat';
+import {
+  EXCHANGE_STATUS_CONFIG,
+  truncateExchangeAmount,
+} from 'components/ExchangeHistory/exchangeFormat';
+import {ChevronRightIcon} from 'components/Home/HomeIcons';
 import s from './ExchangeTransactionItem.module.css';
 
-// One swap-history card: provider · date + status header, then a full line
-// per side of the swap (icon with chain badge, symbol over chain name,
-// amount on the right) joined by a down-arrow connector. Each coin owns a
-// whole line, so long chain names never truncate.
-const ExchangeTransactionItem = ({transaction, onPress}) => {
+// One swap in the history list (Transaction History style): overlapping
+// from / to coin icons, "BTC → ETH", provider · time, and the received /
+// sent amounts. Non-completed swaps show their status instead of the sent
+// amount.
+const ExchangeTransactionItem = ({transaction, onPress, showDate}) => {
   const {from, to} = useSwapCoinDisplay(transaction);
+  const status = transaction?.status;
+  const statusConfig = EXCHANGE_STATUS_CONFIG[status];
 
   const providerTitle =
     transaction?.metadata?.providerTitle || transaction?.provider || '';
-  const dateLabel = transaction?.created_at
-    ? dayjs(transaction.created_at).format('DD MMM YYYY, hh:mm A')
+  const time = transaction?.created_at
+    ? dayjs(transaction.created_at).format(
+        showDate ? 'D MMM YYYY · HH:mm' : 'HH:mm',
+      )
     : null;
-  const metaLine = [providerTitle, dateLabel].filter(Boolean).join(' · ');
+  const sub = [providerTitle, time].filter(Boolean).join(' · ');
   const fromAmount = truncateExchangeAmount(transaction?.from_amount);
   const toAmount = truncateExchangeAmount(transaction?.to_amount);
-
-  const renderCoinRow = (side, amountText, amountClassName) => (
-    <div className={s.coinRow}>
-      <SwapCoinIcon
-        icon={side.icon}
-        symbol={side.symbol}
-        chainName={side.chainName}
-        size={34}
-      />
-      <div className={s.coinTextBox}>
-        <span className={s.coinSymbol}>{side.symbol || '—'}</span>
-        {!!side.chainDisplayName && (
-          <span className={s.coinChain}>{side.chainDisplayName}</span>
-        )}
-      </div>
-      {!!amountText && <span className={amountClassName}>{amountText}</span>}
-    </div>
-  );
+  const isDone = status === 'completed';
 
   return (
-    <button className={s.card} onClick={() => onPress?.(transaction)}>
-      <div className={s.headerRow}>
-        <span className={s.headerMeta}>{metaLine}</span>
-        <ExchangeStatusBadge status={transaction?.status} small />
-      </div>
-      <div className={s.divider} />
-      {renderCoinRow(
-        from,
-        fromAmount ? `-${fromAmount} ${from.symbol || ''}` : '',
-        s.sentAmount,
-      )}
-      <div className={s.connectorRow}>
-        <ArrowDownwardIcon className={s.connectorIcon} />
-      </div>
-      {renderCoinRow(
-        to,
-        toAmount ? `+${toAmount} ${to.symbol || ''}` : '',
-        s.receivedAmount,
-      )}
+    <button
+      type='button'
+      className={s.row}
+      onClick={() => onPress?.(transaction)}>
+      <span className={s.icons}>
+        <span className={s.iconFrom}>
+          <SwapCoinIcon
+            icon={from.icon}
+            symbol={from.symbol}
+            chainName={from.chainName}
+            size={30}
+          />
+        </span>
+        <span className={s.iconTo}>
+          <SwapCoinIcon
+            icon={to.icon}
+            symbol={to.symbol}
+            chainName={to.chainName}
+            size={30}
+          />
+        </span>
+      </span>
+      <span className={s.text}>
+        <span className={s.title}>
+          {from.symbol || '—'}
+          <span className={s.arrow} aria-label='to'>
+            →
+          </span>
+          {to.symbol || '—'}
+        </span>
+        {sub ? <span className={s.sub}>{sub}</span> : null}
+      </span>
+      <span className={s.amounts}>
+        {toAmount ? (
+          <span className={`${s.got} ${isDone ? s.gotDone : ''}`}>
+            +{toAmount} {to.symbol || ''}
+          </span>
+        ) : null}
+        {isDone ? (
+          fromAmount ? (
+            <span className={s.sent}>
+              −{fromAmount} {from.symbol || ''}
+            </span>
+          ) : null
+        ) : (
+          <span
+            className={s.status}
+            style={{color: statusConfig?.color || undefined}}>
+            <span
+              className={s.statusDot}
+              style={{background: statusConfig?.color || undefined}}
+            />
+            {statusConfig?.label || status || '—'}
+          </span>
+        )}
+      </span>
+      <ChevronRightIcon size={16} className={s.chevron} />
     </button>
   );
 };

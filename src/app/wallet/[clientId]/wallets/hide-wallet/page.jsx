@@ -3,11 +3,14 @@
 import React, {useMemo, useState, useCallback, useEffect, useRef} from 'react';
 import {useSelector, useDispatch, shallowEqual} from 'react-redux';
 import {useParams, useRouter} from 'next/navigation';
-import {Switch, CircularProgress, TextField} from '@mui/material';
-import HelpOutline from '@mui/icons-material/HelpOutline';
-import DokRadioButton from 'components/DokRadioButton';
 import ModalHideWalletConfirm from 'components/ModalHideWalletConfirm';
-import GoBackButton from 'components/GoBackButton';
+import GeneralButton from 'components/Button';
+import {
+  ChevronLeftIcon,
+  EyeIcon,
+  InfoIcon,
+  SearchIcon,
+} from 'components/Home/HomeIcons';
 import {
   selectAllWalletName,
   selectAllWallets,
@@ -31,8 +34,16 @@ import {
 import s from './HideWallet.module.css';
 
 const RELOCK_OPTIONS_UI = [
-  {label: 'On page refresh (default)', value: RELOCK_OPTIONS.RELAUNCH},
-  {label: 'Manual only', value: RELOCK_OPTIONS.MANUAL},
+  {
+    label: 'On page refresh (default)',
+    hint: 'Hidden again whenever the app reloads',
+    value: RELOCK_OPTIONS.RELAUNCH,
+  },
+  {
+    label: 'Manual only',
+    hint: 'Stays visible until you hide it again',
+    value: RELOCK_OPTIONS.MANUAL,
+  },
 ];
 
 const HideWallet = () => {
@@ -63,6 +74,7 @@ const HideWallet = () => {
   // confirm modals can never both be considered visible at once.
   const [hideModal, setHideModal] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showCode, setShowCode] = useState(false);
 
   // AC6: at least one wallet must stay PUBLIC (no hideSettings at all). A
   // merely *revealed* hidden wallet doesn't count - it re-locks on relaunch/
@@ -89,9 +101,6 @@ const HideWallet = () => {
     relockOption === RELOCK_OPTIONS.BACKGROUND
       ? RELOCK_OPTIONS.RELAUNCH
       : relockOption;
-  const selectedRelockLabel = RELOCK_OPTIONS_UI.find(
-    option => option.value === displayRelockOption,
-  )?.label;
 
   // Debounced since PBKDF2 is deliberately slow - runs against every other
   // hidden wallet's stored salt/hash (AC2's "code already in use" rule).
@@ -272,82 +281,180 @@ const HideWallet = () => {
     setHideModal(null);
   }, []);
 
+  const toggleError =
+    hideToggleError ||
+    (isHideToggleDisabled
+      ? 'At least one wallet must stay public. Unhide another wallet or add a new one before hiding this one.'
+      : null);
+
   return (
-    <div className={s.safeAreaView}>
-      <div className={s.container}>
-        <GoBackButton />
-        <div className={s.content}>
-          <div className={s.hideWalletHeaderRow}>
-            <span className={s.hideWalletLabel}>Hide wallet</span>
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <div className={s.heading}>
+          <h1 className={s.headingTitle}>Hide wallet</h1>
+          {editingWallet?.walletName ? (
+            <span className={s.headingSub}>{editingWallet.walletName}</span>
+          ) : null}
+        </div>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='How hiding works'
+          onClick={() => setHideModal('info')}>
+          <InfoIcon size={20} />
+        </GeneralButton>
+      </div>
+
+      <form
+        className={s.column}
+        noValidate
+        onSubmit={event => {
+          event.preventDefault();
+          if (!isHideSectionInvalid && !isSaving) {
+            handleSubmit();
+          }
+        }}>
+        <section className={s.card} aria-label='Hide wallet'>
+          <div className={s.toggleRow}>
+            <span className={s.toggleIcon}>
+              <EyeIcon size={19} off />
+            </span>
+            <span className={s.toggleText}>
+              <span className={s.toggleTitle}>Hide this wallet</span>
+              <span className={s.toggleHint}>
+                Keep it out of the wallet list until its secret code is
+                searched.
+              </span>
+            </span>
             <button
               type='button'
-              className={s.infoButton}
-              onClick={() => setHideModal('info')}>
-              <HelpOutline className={s.infoIcon} />
-            </button>
-            <div className={s.spacer} />
-            <Switch
-              checked={isHideEnabled}
+              role='switch'
+              aria-checked={isHideEnabled}
+              aria-label='Hide this wallet'
+              className={`${s.switch} ${isHideEnabled ? s.switchOn : ''}`}
               disabled={isHideToggleDisabled}
-              onChange={e => handleToggleHide(e.target.checked)}
-              color='warning'
-            />
+              onClick={() => handleToggleHide(!isHideEnabled)}>
+              <span className={s.knob} />
+            </button>
           </div>
+        </section>
 
-          {(hideToggleError || isHideToggleDisabled) && (
-            <p className={s.hideToggleError}>
-              {hideToggleError ||
-                'At least one wallet must stay public. Unhide another wallet or add a new one before hiding this one.'}
-            </p>
-          )}
+        {toggleError ? (
+          <p className={s.alert} role='alert'>
+            {toggleError}
+          </p>
+        ) : null}
 
-          {isHideEnabled && (
-            <>
-              <TextField
-                className={s.input}
-                label='Secret code'
-                variant='outlined'
-                fullWidth
-                autoComplete='off'
-                value={secretCode}
-                error={!!secretCodeError}
-                onChange={e => handleSecretCodeChange(e.target.value)}
-                placeholder={
-                  initialHideSettings ? 'Leave blank to keep current code' : ''
-                }
-                inputProps={{autoCapitalize: 'none'}}
-                sx={{
-                  marginTop: '16px',
-                  '& .MuiInputBase-input': {color: 'var(--font)'},
-                  '& .MuiInputLabel-root': {color: 'var(--gray)'},
-                }}
-              />
-              {secretCodeError && (
-                <p className={s.textConfirm}>{secretCodeError}</p>
+        {isHideEnabled ? (
+          <>
+            <section className={s.field}>
+              <label htmlFor='secret-code' className={s.label}>
+                Secret code
+                {initialHideSettings ? (
+                  <span className={s.optional}> · optional</span>
+                ) : null}
+              </label>
+              <div
+                className={`${s.inputBox} ${
+                  secretCodeError ? s.inputBoxError : ''
+                }`}>
+                <input
+                  id='secret-code'
+                  className={s.input}
+                  type={showCode ? 'text' : 'password'}
+                  autoComplete='off'
+                  autoCapitalize='none'
+                  spellCheck={false}
+                  value={secretCode}
+                  onChange={e => handleSecretCodeChange(e.target.value)}
+                  placeholder={
+                    initialHideSettings
+                      ? 'Leave blank to keep the current code'
+                      : 'Choose a secret code'
+                  }
+                  aria-invalid={!!secretCodeError}
+                />
+                <button
+                  type='button'
+                  className={s.reveal}
+                  aria-label={showCode ? 'Hide code' : 'Show code'}
+                  onClick={() => setShowCode(v => !v)}>
+                  <EyeIcon size={18} off={showCode} />
+                </button>
+              </div>
+              {secretCodeError ? (
+                <p className={s.error} role='alert'>
+                  {secretCodeError}
+                </p>
+              ) : (
+                <p className={s.hint}>
+                  {SECRET_CODE_MIN_LENGTH}-{SECRET_CODE_MAX_LENGTH} characters:
+                  letters, numbers, @, _ or -. It can&apos;t be another
+                  wallet&apos;s name.
+                </p>
               )}
-              <div className={s.paddingDiv} />
-              <DokRadioButton
-                title='Re-hide this wallet:'
-                options={RELOCK_OPTIONS_UI}
-                checked={selectedRelockLabel}
-                setChecked={handleRelockChange}
-              />
-            </>
-          )}
+            </section>
+
+            <section className={s.field}>
+              <span className={s.label}>Re-hide this wallet</span>
+              <div
+                className={s.options}
+                role='radiogroup'
+                aria-label='Re-hide this wallet'>
+                {RELOCK_OPTIONS_UI.map(option => {
+                  const on = option.value === displayRelockOption;
+                  return (
+                    <button
+                      key={option.value}
+                      type='button'
+                      role='radio'
+                      aria-checked={on}
+                      className={`${s.option} ${on ? s.optionOn : ''}`}
+                      onClick={() => handleRelockChange(option.label)}>
+                      <span className={s.radio}>
+                        {on ? <span className={s.radioDot} /> : null}
+                      </span>
+                      <span className={s.optionText}>
+                        <span className={s.optionTitle}>{option.label}</span>
+                        <span className={s.optionHint}>{option.hint}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <p className={s.note}>
+              <SearchIcon size={16} />
+              <span>
+                To open a hidden wallet, type its secret code into the search on
+                the Wallets page.
+              </span>
+            </p>
+          </>
+        ) : null}
+
+        <div className={s.footer}>
+          <GeneralButton
+            type='submit'
+            fullWidth
+            className={s.save}
+            disabled={isHideSectionInvalid}
+            loading={isSaving}
+            loadingLabel='Saving…'>
+            Save
+          </GeneralButton>
         </div>
-        <button
-          type='button'
-          className={s.button}
-          disabled={isHideSectionInvalid || isSaving}
-          style={{opacity: isHideSectionInvalid ? 0.5 : 1}}
-          onClick={handleSubmit}>
-          {isSaving ? (
-            <CircularProgress size={22} sx={{color: 'var(--title)'}} />
-          ) : (
-            <span className={s.buttonTitle}>Save</span>
-          )}
-        </button>
-      </div>
+      </form>
+
       <ModalHideWalletConfirm
         visible={!!hideModal}
         mode={hideModal || 'confirm'}
@@ -355,7 +462,7 @@ const HideWallet = () => {
         onCancel={onCancelHideModal}
         onConfirm={onConfirmHideAndSave}
       />
-    </div>
+    </main>
   );
 };
 

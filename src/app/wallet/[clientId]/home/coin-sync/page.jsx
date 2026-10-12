@@ -32,11 +32,10 @@ import CoinSyncItem from 'components/CoinSyncItem';
 import CoinSyncActionButton from 'components/CoinSyncActionButton';
 import CoinSyncEmptyState from 'components/CoinSyncEmptyState';
 import ConfirmationModal from 'components/ConfirmationModal';
-import ArrowBack from '@mui/icons-material/ArrowBack';
 import CheckCircleOutline from '@mui/icons-material/CheckCircleOutline';
-import IconButton from '@mui/material/IconButton';
 import Modal from '@mui/material/Modal';
-import CircularProgress from '@mui/material/CircularProgress';
+import GeneralButton from 'components/Button';
+import {ChevronLeftIcon} from 'components/Home/HomeIcons';
 import styles from './CoinSync.module.css';
 
 const CoinSync = () => {
@@ -97,15 +96,12 @@ const CoinSync = () => {
     };
   }, [coinsWithBalanceCount, syncingWalletName, targetWalletName]);
 
-  const pageTitle = useMemo(() => {
-    if (syncingWalletName && (isSyncing || isCompleted)) {
-      return `Sync · ${syncingWalletName}`;
-    }
-    if (targetWalletName) {
-      return `Sync · ${targetWalletName}`;
-    }
-    return 'Sync Coin Balances';
-  }, [syncingWalletName, isSyncing, isCompleted, targetWalletName]);
+  // Wallet named under the title: the one being scanned, else the URL's.
+  const headerWalletName =
+    (isSyncing || isCompleted ? syncingWalletName : null) ||
+    targetWalletName ||
+    resolvedWallet?.walletName ||
+    null;
 
   // Clear leftovers from a previous scan of a DIFFERENT wallet (cancelled or
   // completed-and-never-dismissed) so this wallet's screen starts pristine.
@@ -223,50 +219,62 @@ const CoinSync = () => {
   }, [coinsWithBalance, dispatch, router, syncingWalletClientId]);
 
   return (
-    <div className={styles.safeArea}>
-      <div className={styles.container}>
-        <div className={styles.navHeader}>
-          <IconButton
-            onClick={handleGoBack}
-            disabled={isCreatingWallets}
-            sx={{
-              '& .MuiSvgIcon-root': {
-                color: isCreatingWallets ? 'var(--gray)' : 'var(--font)',
-              },
-            }}>
-            <ArrowBack />
-          </IconButton>
-          <h3 className={styles.title}>{pageTitle}</h3>
-          <div className={styles.placeholder} />
+    <main className={styles.page}>
+      <div className={styles.glow} aria-hidden='true' />
+      <div className={styles.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={styles.iconButton}
+          aria-label='Back'
+          disabled={isCreatingWallets}
+          onClick={handleGoBack}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <div className={styles.heading}>
+          <h1 className={styles.title}>Scan coins</h1>
+          {headerWalletName ? (
+            <span className={styles.subtitle}>{headerWalletName}</span>
+          ) : null}
         </div>
+        <span className={styles.iconSpacer} aria-hidden='true' />
+      </div>
 
-        <div className={styles.scrollArea}>
-          <CoinSyncProgress
-            progress={progress}
-            currentCoin={currentCoin}
-            isSyncing={isSyncing}
-            status={status}
-            syncingWalletName={syncingWalletName}
-          />
+      <div className={styles.column}>
+        <CoinSyncProgress
+          progress={progress}
+          currentCoin={currentCoin}
+          isSyncing={isSyncing}
+          status={status}
+          syncingWalletName={syncingWalletName}
+        />
 
-          {coinsWithBalanceCount > 0 && resultsHeaderText && (
-            <p className={styles.resultsHeader}>{resultsHeaderText}</p>
-          )}
-
-          {coinsWithBalance.length > 0 ? (
-            coinsWithBalance.map((item, index) => (
-              <CoinSyncItem
-                key={item._id || `${item.symbol}_${index}`}
-                coin={item}
-                isSelectable={isCompleted}
-                isSelected={item.isSelected}
-                onToggle={() => handleToggleSelection(index)}
-              />
-            ))
-          ) : (
-            <CoinSyncEmptyState status={status} />
-          )}
-        </div>
+        {coinsWithBalance.length > 0 ? (
+          <section className={styles.results} aria-label='Coins found'>
+            <div className={styles.resultsHead}>
+              <span className={styles.resultsLabel}>
+                {resultsHeaderText || 'Coins found'}
+              </span>
+              <span className={styles.resultsCount}>
+                {isCompleted
+                  ? `${selectedCount} of ${coinsWithBalanceCount} selected`
+                  : `${coinsWithBalanceCount} found`}
+              </span>
+            </div>
+            <div className={styles.card}>
+              {coinsWithBalance.map((item, index) => (
+                <CoinSyncItem
+                  key={item._id || `${item.symbol}_${index}`}
+                  coin={item}
+                  isSelectable={isCompleted}
+                  isSelected={item.isSelected}
+                  onToggle={() => handleToggleSelection(index)}
+                />
+              ))}
+            </div>
+          </section>
+        ) : (
+          <CoinSyncEmptyState status={status} />
+        )}
 
         <CoinSyncActionButton
           status={status}
@@ -281,11 +289,11 @@ const CoinSync = () => {
 
       <Modal open={isCreatingWallets} disableEscapeKeyDown>
         <div className={styles.blockerOverlay}>
-          <div className={styles.blockerDialog}>
-            <CircularProgress size={40} sx={{color: 'var(--background)'}} />
-            <p className={styles.blockerTitle}>Creating wallets...</p>
+          <div className={styles.blockerDialog} role='alertdialog'>
+            <span className={styles.blockerSpinner} aria-hidden='true' />
+            <p className={styles.blockerTitle}>Creating wallets…</p>
             <p className={styles.blockerSubtitle}>
-              Please wait, do not close the website.
+              Please wait and keep this page open.
             </p>
           </div>
         </div>
@@ -320,7 +328,7 @@ const CoinSync = () => {
         onConfirm={handleConfirmCancelScan}
         onDismiss={handleDismissCancelScan}
       />
-    </div>
+    </main>
   );
 };
 

@@ -4,37 +4,31 @@ import styles from './CoinSyncEmptyState.module.css';
 
 const EMPTY_STATE_CONFIG = {
   fetching: {
-    title: 'Loading coins...',
-    subtitle: 'Fetching available coins to scan',
+    title: 'Loading coins…',
+    subtitle: 'Fetching the coins to scan',
   },
   creating_wallets: {
-    title: 'Preparing wallets...',
-    subtitle: 'Creating wallets for different chains',
+    title: 'Preparing wallets…',
+    subtitle: 'Creating addresses for each chain',
   },
   syncing: {
-    title: 'Scanning for balances...',
-    subtitle: 'Checking all coins for balances',
+    title: 'Scanning for balances…',
+    subtitle: 'Coins with a balance will appear here as they are found',
   },
   idle: {
-    title: 'Scan for coins',
-    subtitle: "We'll check all supported coins for balances",
+    title: 'Find coins you already hold',
+    subtitle:
+      'Scanning can run once every 24 hours per wallet. Found coins can be added to this wallet.',
   },
   completed: {
-    title: 'All caught up!',
-    subtitle: 'No additional coins with balance found',
+    title: 'All caught up',
+    subtitle: 'No other coins with a balance were found',
   },
 };
 
+// Placeholder under the progress card while no coins have been found.
 const CoinSyncEmptyState = ({status}) => {
-  const config = useMemo(() => {
-    if (status === 'fetching') return EMPTY_STATE_CONFIG.fetching;
-    if (status === 'creating_wallets')
-      return EMPTY_STATE_CONFIG.creating_wallets;
-    if (status === 'syncing') return EMPTY_STATE_CONFIG.syncing;
-    if (status === 'idle') return EMPTY_STATE_CONFIG.idle;
-    if (status === 'completed') return EMPTY_STATE_CONFIG.completed;
-    return null;
-  }, [status]);
+  const config = useMemo(() => EMPTY_STATE_CONFIG[status] || null, [status]);
 
   if (!config) return null;
 

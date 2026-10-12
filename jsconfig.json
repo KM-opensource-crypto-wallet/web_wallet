@@ -18,6 +18,7 @@
       "theme/*": ["./src/theme/*"],
       "@ext/*": ["./extension/src/*"]
     }
-  }
+  },
+  "include": ["src/**/*", "dok-wallet-blockchain-networks/**/*", "extension/src/**/*"],
+  "exclude": ["node_modules", ".next", "out", "build", "extension/dist", "coverage"]
 }
-

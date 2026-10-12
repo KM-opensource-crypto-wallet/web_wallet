@@ -8,26 +8,52 @@ import {
   getCurrentWalletIsAddMoreAddressPopupHidden,
   isImportWalletWithPrivateKey,
   selectCurrentCoin,
+  selectCurrentWallet,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
   addEVMAndTronDeriveAddresses,
   refreshCurrentCoin,
+  revokeDelegation,
   setIsAddMoreAddressPopupHidden,
   setSelectedDeriveAddress,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {
+  getCryptoProviders,
+  getExchangeProviders,
+} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 
 import s from './Send.module.css';
 import {useRouter} from 'next/navigation';
 
-const icons = require(`assets/images/send`).default;
-const copyIcon = require(`assets/images/icons`).default;
-import Link from 'next/link';
-import GoBackButton from 'components/GoBackButton';
 import Loading from 'components/Loading';
-import Image from 'next/image';
+import CoinIcon from 'components/CoinIcon';
+import GeneralButton from 'components/Button';
+import {copyToClipboard} from 'utils/copyToClipboard';
+import {showToast} from 'src/utils/toast';
+import {
+  BuyIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  CopyIcon,
+  HistoryIcon,
+  InfoIcon,
+  KeyIcon,
+  QrIcon,
+  ReceiveIcon,
+  SendIcon,
+  StakingIcon,
+  SwapIcon,
+  UnlinkIcon,
+} from 'components/Home/HomeIcons';
+import WalletSwitcher from 'components/Home/WalletSwitcher';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/useHome';
 import {
   delay,
   isBitcoinChain,
+  isEip7702SupportedChain,
   isPrivateKeyNotSupportedChain,
   isDeriveAddressSupportChain,
   isStakingChain,
@@ -35,23 +61,34 @@ import {
 } from 'dok-wallet-blockchain-networks/helper';
 import {getVisibleDeriveAddresses} from 'dok-wallet-blockchain-networks/service/bitcoinHdAddress';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
-import {toast} from 'react-toastify';
-import classNames from 'components/Home/Home.module.css';
+import ModalDelegation from 'components/ModalDelegation';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import IconButton from '@mui/material/IconButton';
-import Close from '@mui/icons-material/Close';
 import AddressSelectorSheet from 'components/AddressSelectorSheet';
-import AddressSelectorTrigger from 'components/AddressSelectorTrigger';
 import AddressTypeBadge from 'components/AddressTypeBadge';
 import SendPopOver from 'components/SendPopOver';
 import {clearSelectedUTXOs} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import ModalUnclaimedDeposit from 'components/ModalUnclaimedDeposit';
+
+// Glass card row used for history / staking, and (flat) inside Advanced.
+const ActionRow = ({icon, tone, title, hint, onClick, chevron = true}) => (
+  <GeneralButton variant='unstyled' className={s.row} onClick={onClick}>
+    <span className={`${s.rowIcon} ${tone ? s[tone] : ''}`}>{icon}</span>
+    <span className={s.rowText}>
+      <span className={s.rowTitle}>{title}</span>
+      {hint ? <span className={s.rowHint}>{hint}</span> : null}
+    </span>
+    {chevron ? <ChevronRightIcon size={17} className={s.chevron} /> : null}
+  </GeneralButton>
+);
 
 const SendScreen = () => {
   const router = useRouter();
   const routes = useAppRoutes();
   const localCurrency = useSelector(getLocalCurrency);
   const currentCoin = useSelector(selectCurrentCoin);
+  const currentWallet = useSelector(selectCurrentWallet);
+  const buyProviders = useSelector(getCryptoProviders);
+  const swapProviders = useSelector(getExchangeProviders);
   const isAddMoreAddressPopupHide = useSelector(
     getCurrentWalletIsAddMoreAddressPopupHidden,
   );
@@ -61,9 +98,6 @@ const SendScreen = () => {
   // onChangeSelectedAddress.
   const addressSheetRef = useRef();
 
-  //   const { theme } = useContext(ThemeContext);
-  //   const styles = myStyles(theme);
-
   const isBitcoin = isBitcoinChain(currentCoin?.chain_name);
   const isStaking = isStakingChain(
     getStakignKey(currentCoin?.chain_name, currentCoin?.symbol),
@@ -71,14 +105,12 @@ const SendScreen = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [addressCopied, setAddressCopied] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [delegationModalVisible, setDelegationModalVisible] = useState(false);
+  const [delegationLoading, setDelegationLoading] = useState(false);
+  const copiedTimer = useRef(null);
 
-  //   const [refreshing, setRefreshing] = useState(false);
-
-  //   const wallet = useSelector(selectCurrentWallet);
-  //   const [lastRefreshTime, setLastRefreshTime] = useState(
-  //     wallet.updateTimestamp ?? 0
-  //   );
-  //   const { item } = route.params;
   const dispatch = useDispatch();
 
   const isDeriveAddressChain = isDeriveAddressSupportChain(
@@ -180,182 +212,336 @@ const SendScreen = () => {
   const onSuccessOfPrivateKey = useCallback(() => {
     setShowConfirmModal(false);
     if (currentCoin?.privateKey) {
-      navigator.clipboard.writeText(currentCoin?.privateKey);
-      toast.success('Private key copied');
+      copyToClipboard(currentCoin?.privateKey, 'Private key copied');
     }
   }, [currentCoin?.privateKey]);
 
+  const onRevokeDelegation = useCallback(async () => {
+    setDelegationLoading(true);
+    try {
+      await dispatch(revokeDelegation()).unwrap();
+      showToast({
+        type: 'successToast',
+        title: 'Delegation Removed',
+        message: 'EIP-7702 delegation has been successfully revoked.',
+      });
+    } catch (e) {
+      console.error('Error revoking delegation', e);
+      showToast({
+        type: 'errorToast',
+        title: 'Failed to Remove Delegation',
+        message: 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setDelegationLoading(false);
+    }
+  }, [dispatch]);
+
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
+
+  const onCopyAddress = useCallback(async () => {
+    if (await copyToClipboard(currentCoin?.address)) {
+      setAddressCopied(true);
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setAddressCopied(false), 2000);
+    }
+  }, [currentCoin?.address]);
+
+  const openAddressPicker = useCallback(() => {
+    addressSheetRef.current?.present({
+      chain_name: currentCoin?.chain_name,
+      symbol: currentCoin?.symbol,
+      decimal: currentCoin?.decimal,
+      items: deriveAddresses,
+      selectedAddress: currentCoin?.address,
+    });
+  }, [currentCoin, deriveAddresses]);
+
+  const symbol = currentCoin?.symbol?.toUpperCase() ?? '';
+  const walletName = currentWallet?.walletName || 'Wallet';
+  const showMenu =
+    isBitcoin || (isDeriveAddressChain && !isImportWithPrivateKey);
+  const showAddAddressesNotice =
+    isDeriveAddressChain &&
+    !isBitcoin &&
+    !isImportWithPrivateKey &&
+    !isAddMoreAddressPopupHide;
+  const showAddressSelector =
+    (isBitcoin || isDeriveAddressChain) && deriveAddresses?.length > 1;
+  const selectedAddressIndex = showAddressSelector
+    ? deriveAddresses.findIndex(item => item?.address === currentCoin?.address)
+    : -1;
+  const showNetwork = currentCoin?.type === 'token' || isBitcoin;
+  const showPrivateKey = !isPrivateKeyNotSupportedChain(
+    currentCoin?.chain_name,
+  );
+  const showDelegation =
+    !!currentCoin?.isDelegationAvailable &&
+    isEip7702SupportedChain(currentCoin?.chain_name);
+
+  const quickActions = [
+    {
+      key: 'send',
+      label: 'Send',
+      Icon: SendIcon,
+      onClick: () => {
+        dispatch(clearSelectedUTXOs());
+        router.push(routes.coin.sendFunds());
+      },
+    },
+    {
+      key: 'receive',
+      label: 'Receive',
+      Icon: ReceiveIcon,
+      onClick: () => router.push(routes.coin.receiveFunds()),
+    },
+    buyProviders?.length && {
+      key: 'buy',
+      label: 'Buy',
+      Icon: BuyIcon,
+      onClick: () => router.push(routes.wallet.buyCrypto()),
+    },
+    swapProviders?.length && {
+      key: 'swap',
+      label: 'Swap',
+      Icon: SwapIcon,
+      onClick: () => router.push(routes.wallet.swap()),
+    },
+  ].filter(Boolean);
+
   return (
     <>
-      <div className={s.goBack}>
-        <GoBackButton />
-        {(isBitcoin || (isDeriveAddressChain && !isImportWithPrivateKey)) && (
-          <SendPopOver
-            isBitcoin={isBitcoin}
-            isDeriveAddressChain={
-              isDeriveAddressChain && !isImportWithPrivateKey
-            }
-          />
-        )}
-      </div>
-      {isLoading ? (
-        <Loading />
-      ) : (
-        <div className={s.container}>
-          {isDeriveAddressChain &&
-            !isBitcoin &&
-            !isImportWithPrivateKey &&
-            !isAddMoreAddressPopupHide && (
-              <div className={classNames.syncView}>
-                <div
-                  className={
-                    classNames.syncTitle
-                  }>{`Do you want to allow more addresses under this wallet?`}</div>
-                <button
-                  className={classNames.syncButton}
-                  onClick={onPressAddAddresses}>
-                  <div className={classNames.syncButtonTitle}>Add</div>
-                </button>
-                <IconButton
-                  aria-label='closeSyncDiv'
-                  onClick={onPressAddressClose}
-                  edge='end'
-                  sx={{
-                    '&  .MuiSvgIcon-root': {
-                      color: 'var(--font)',
-                    },
-                  }}>
-                  <Close />
-                </IconButton>
+      <main className={s.page}>
+        <div className={s.glow} aria-hidden='true' />
+        <div className={s.topBar}>
+          <GeneralButton
+            variant='unstyled'
+            className={s.iconButton}
+            aria-label='Back'
+            onClick={() => router.back()}>
+            <ChevronLeftIcon size={24} />
+          </GeneralButton>
+          <GeneralButton
+            variant='unstyled'
+            className={s.walletPill}
+            aria-haspopup='dialog'
+            onClick={() => setSwitcherOpen(true)}>
+            <span className={s.walletPillAvatar}>
+              {walletName[0].toUpperCase()}
+            </span>
+            <span className={s.walletPillName}>{walletName}</span>
+            <ChevronDownIcon size={16} className={s.walletPillChevron} />
+          </GeneralButton>
+          {showMenu ? (
+            <div className={s.menu}>
+              <SendPopOver
+                isBitcoin={isBitcoin}
+                isDeriveAddressChain={
+                  isDeriveAddressChain && !isImportWithPrivateKey
+                }
+              />
+            </div>
+          ) : (
+            <span className={s.iconSpacer} aria-hidden='true' />
+          )}
+        </div>
+
+        <div className={s.column}>
+          {isLoading ? (
+            <div className={s.loading}>
+              <Loading />
+            </div>
+          ) : (
+            <>
+              <section className={s.hero} aria-label='Balance'>
+                <span className={s.heroIcon}>
+                  <CoinIcon item={currentCoin} />
+                </span>
+                <span className={s.heroName}>
+                  <span className={s.coinName}>{currentCoin?.name}</span>
+                  {symbol ? <span className={s.chip}>{symbol}</span> : null}
+                  {showNetwork && currentCoin?.chain_display_name ? (
+                    <span className={s.chip}>
+                      {currentCoin.chain_display_name}
+                    </span>
+                  ) : null}
+                </span>
+                <p className={s.balance}>
+                  {currentCoin?.totalAmount}{' '}
+                  <span className={s.balanceSymbol}>{symbol}</span>
+                </p>
+                <p className={s.fiat}>
+                  {currencySymbol[localCurrency] || ''}
+                  {currentCoin?.totalCourse}
+                </p>
+              </section>
+
+              <div
+                className={s.actions}
+                style={{'--action-count': quickActions.length}}>
+                {quickActions.map(({key, label, Icon, onClick}) => (
+                  <GeneralButton
+                    key={key}
+                    variant='unstyled'
+                    className={s.action}
+                    onClick={onClick}>
+                    <span className={s.actionIcon}>
+                      <Icon size={20} />
+                    </span>
+                    <span className={s.actionLabel}>{label}</span>
+                  </GeneralButton>
+                ))}
               </div>
-            )}
-          <div className={s.box}>
-            <div className={s.coinList}>
-              <div className={s.coinIcon}>
-                <Image
-                  src={currentCoin?.icon}
-                  height={80}
-                  width={80}
-                  alt={'currency_icon'}
+
+              {showAddAddressesNotice ? (
+                <div className={s.notice}>
+                  <InfoIcon size={20} className={s.noticeIcon} />
+                  <p className={s.noticeText}>
+                    <strong>Want more addresses?</strong> Add extra EVM, SOL and
+                    TRX addresses under this wallet.
+                  </p>
+                  <GeneralButton
+                    variant='unstyled'
+                    className={s.noticeAction}
+                    onClick={onPressAddAddresses}>
+                    Add
+                  </GeneralButton>
+                  <GeneralButton
+                    variant='unstyled'
+                    className={s.noticeClose}
+                    aria-label='Dismiss'
+                    onClick={onPressAddressClose}>
+                    <CloseIcon size={14} />
+                  </GeneralButton>
+                </div>
+              ) : null}
+
+              <section className={s.card} aria-label='Your address'>
+                <div className={s.cardHead}>
+                  <span className={s.label}>Your address</span>
+                  {showAddressSelector ? (
+                    <GeneralButton
+                      variant='unstyled'
+                      className={s.addressPicker}
+                      aria-haspopup='dialog'
+                      onClick={openAddressPicker}>
+                      {selectedAddressIndex >= 0
+                        ? `Address ${selectedAddressIndex + 1} of ${
+                            deriveAddresses.length
+                          }`
+                        : 'Change address'}
+                      <ChevronDownIcon size={13} />
+                    </GeneralButton>
+                  ) : null}
+                </div>
+                <p className={s.address}>{currentCoin?.address || ''}</p>
+                <div className={s.cardFoot}>
+                  <span className={s.meta}>
+                    {selectedDeriveAddressItem?.derivePath ? (
+                      <span className={s.path}>
+                        {selectedDeriveAddressItem.derivePath}
+                      </span>
+                    ) : null}
+                    <AddressTypeBadge
+                      chain_name={currentCoin?.chain_name}
+                      item={selectedDeriveAddressItem}
+                    />
+                  </span>
+                  <span className={s.addressActions}>
+                    <GeneralButton
+                      variant='unstyled'
+                      className={`${s.outlineButton} ${
+                        addressCopied ? s.copyDone : ''
+                      }`}
+                      aria-label='Copy address'
+                      onClick={onCopyAddress}>
+                      {addressCopied ? (
+                        <CheckIcon size={14} />
+                      ) : (
+                        <CopyIcon size={14} />
+                      )}
+                      <span>{addressCopied ? 'Copied' : 'Copy'}</span>
+                    </GeneralButton>
+                    <GeneralButton
+                      variant='unstyled'
+                      className={`${s.outlineButton} ${s.qrButton}`}
+                      aria-label='Show QR code'
+                      onClick={() => router.push(routes.coin.receiveFunds())}>
+                      <QrIcon size={15} />
+                    </GeneralButton>
+                  </span>
+                </div>
+              </section>
+
+              <div className={s.glassRow}>
+                <ActionRow
+                  icon={<HistoryIcon size={19} />}
+                  title='Transaction history'
+                  hint={`Sent and received ${symbol} for this address`}
+                  onClick={() => router.push(routes.coin.transactions())}
                 />
               </div>
 
-              <div className={s.coinBox}>
-                <div className={s.cryptoOverlay}>
-                  <p className={s.coinNumber} style={{marginRight: 5}}>
-                    {currentCoin?.totalAmount}
-                  </p>
-                  <p className={s.coinNumber}>
-                    {currentCoin?.symbol?.toUpperCase()}
-                  </p>
-                  {isBitcoin && (
-                    <p
-                      className={
-                        s.coinNumber
-                      }>{` (${currentCoin?.chain_display_name})`}</p>
-                  )}
+              {isStaking ? (
+                <div className={s.glassRow}>
+                  <ActionRow
+                    icon={<StakingIcon size={19} />}
+                    tone='toneSuccess'
+                    title='Staking'
+                    hint='Stake and manage your rewards'
+                    onClick={() => router.push(routes.coin.stakingList())}
+                  />
                 </div>
-                <p className={s.coinNumber}>{currentCoin?.name}</p>
-              </div>
-              <p className={s.coinSum}>
-                {currencySymbol[localCurrency] || ''}
-                {currentCoin?.totalCourse}
-              </p>
-            </div>
-            <div className={s.btnList}>
-              <Link
-                href={routes.coin.sendFunds()}
-                className={`${s.btn} ${s.shadow}`}
-                style={{marginRight: 20}}
-                onClick={() => dispatch(clearSelectedUTXOs())}>
-                <div className={s.icon}>{icons.send}</div>
-                <p className={s.btnText}>Send</p>
-              </Link>
-              <Link
-                className={`${s.btn} ${s.shadow}`}
-                href={routes.coin.receiveFunds()}>
-                <div className={s.icon}>{icons.rec}</div>
-                <p className={s.btnText}>Receive</p>
-              </Link>
-            </div>
-            {(isBitcoin || isDeriveAddressChain) &&
-              deriveAddresses?.length > 1 && (
-                <div>
-                  <p className={s.addresTitle}>Select Address:</p>
-                  <div className={s.addressSelector}>
-                    <AddressSelectorTrigger
-                      chain_name={currentCoin?.chain_name}
-                      item={selectedDeriveAddressItem}
-                      symbol={currentCoin?.symbol}
-                      decimal={currentCoin?.decimal}
-                      fallbackAddress={currentCoin?.address}
-                      onPress={() =>
-                        addressSheetRef.current?.present({
-                          chain_name: currentCoin?.chain_name,
-                          symbol: currentCoin?.symbol,
-                          decimal: currentCoin?.decimal,
-                          items: deriveAddresses,
-                          selectedAddress: currentCoin?.address,
-                        })
+              ) : null}
+
+              {showPrivateKey || showDelegation ? (
+                <section className={s.advanced} aria-label='Advanced'>
+                  <span className={`${s.label} ${s.advancedLabel}`}>
+                    Advanced
+                  </span>
+                  {showPrivateKey ? (
+                    <ActionRow
+                      icon={<KeyIcon size={17} />}
+                      tone='toneNeutral'
+                      title='Copy private key'
+                      hint='Asks for your password · never share it'
+                      onClick={() => setShowConfirmModal(true)}
+                    />
+                  ) : null}
+                  {showDelegation ? (
+                    <ActionRow
+                      icon={
+                        delegationLoading ? (
+                          <span className={s.spinner} />
+                        ) : (
+                          <UnlinkIcon size={17} />
+                        )
+                      }
+                      tone='toneDanger'
+                      title='Remove delegation'
+                      hint={
+                        delegationLoading
+                          ? 'Removing delegation…'
+                          : 'Revoke smart-account (EIP-7702) code on this address'
+                      }
+                      chevron={false}
+                      onClick={() =>
+                        !delegationLoading && setDelegationModalVisible(true)
                       }
                     />
-                  </div>
-                </div>
-              )}
-            <div className={s.boxAdress}>
-              <div className={s.addressTitleRow}>
-                <p className={s.addresTitle}>Your Address:</p>
-                <AddressTypeBadge
-                  chain_name={currentCoin?.chain_name}
-                  item={selectedDeriveAddressItem}
-                />
-              </div>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(currentCoin?.address || '');
-                  toast.success('address copied');
-                }}>
-                <div style={{fill: 'var(--background)'}}>{copyIcon.copy}</div>
-              </button>
-            </div>
-            <p className={s.address}>{currentCoin?.address || ''}</p>
-            {!isPrivateKeyNotSupportedChain(currentCoin?.chain_name) && (
-              <>
-                <div className={s.boxAdress}>
-                  <p className={s.privateKeyTitle}>Private Key:</p>
-                  <button
-                    onClick={() => {
-                      setShowConfirmModal(true);
-                    }}>
-                    <div style={{fill: 'var(--background)'}}>
-                      {copyIcon.copy}
-                    </div>
-                  </button>
-                </div>
-                <p className={s.privateKey}>
-                  {
-                    'Click here to copy the private key. Ensure that you keep your private key secure.'
-                  }
-                </p>
-              </>
-            )}
-            <div className={s.actionBtnList}>
-              <button
-                className={s.button}
-                onClick={() => router.push(routes.coin.transactions())}>
-                TRANSACTION HISTORY
-              </button>
-              {isStaking && (
-                <button
-                  className={s.button}
-                  onClick={() => router.push(routes.coin.stakingList())}>
-                  STAKING
-                </button>
-              )}
-            </div>
-          </div>
+                  ) : null}
+                </section>
+              ) : null}
+            </>
+          )}
         </div>
-      )}
+      </main>
+      <WalletSwitcher
+        visible={switcherOpen}
+        onClose={() => setSwitcherOpen(false)}
+        hidden={switcherOpen && readHideBalances()}
+        localCurrency={localCurrency}
+      />
       <ModalConfirmTransaction
         hideModal={() => {
           setShowConfirmModal(false);
@@ -363,6 +549,13 @@ const SendScreen = () => {
         visible={showConfirmModal}
         onSuccess={onSuccessOfPrivateKey}
       />
+      {showDelegation ? (
+        <ModalDelegation
+          visible={delegationModalVisible}
+          onClose={() => setDelegationModalVisible(false)}
+          onConfirm={onRevokeDelegation}
+        />
+      ) : null}
       {!isLoading && (
         <ModalUnclaimedDeposit
           visible={modalUnclaimDepositVisible}

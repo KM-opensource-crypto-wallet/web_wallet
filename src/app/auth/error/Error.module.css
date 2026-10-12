@@ -1,62 +1,48 @@
-.container {
+/* Sign-in error page, inside AuthLayout (its --ln-* tokens apply here). */
+.errorCard {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.iconBadge {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  flex: none;
   align-items: center;
-  height: 80vh;
-  background: var(--backgroundColor);
-  color: var(--font);
-  padding: 20px;
-  text-align: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: var(--ln-error);
+  background: color-mix(in srgb, var(--ln-error) 12%, transparent);
 }
 
-.redirectContainer {
+.message {
+  margin: 0;
+  align-self: center;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ln-ink);
+}
+
+.redirect {
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background: var(--backgroundColor);
-  color: var(--font);
+  margin-top: 40px;
 }
 
-.card {
-  padding: 40px;
-  border-radius: 16px;
-  background: var(--lightBackground);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
-  width: 100%;
-  border: 1px solid var(--whiteOutline);
-  text-align: center;
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid color-mix(in srgb, var(--background) 25%, transparent);
+  border-top-color: var(--background);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
 }
 
-.icon {
-  font-size: 48px;
-  margin-bottom: 20px;
-}
-
-.title {
-  margin-bottom: 10px;
-  color: var(--background);
-}
-
-.errorText {
-  margin-bottom: 20px;
-  opacity: 0.8;
-}
-
-.button {
-  background: var(--background);
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-  margin-top: 10px;
-  transition: opacity 0.2s;
-}
-
-.button:hover {
-  opacity: 0.9;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

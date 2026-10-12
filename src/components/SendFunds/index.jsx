@@ -15,11 +15,15 @@ import {currencySymbol} from 'data/currency';
 import {
   selectCurrentCoin,
   selectCurrentWallet,
+  selectUserCoins,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {useRouter, useSearchParams} from 'next/navigation';
 import ModalSend from 'components/ModalSend';
 import ModalDelegation from 'components/ModalDelegation';
-import {revokeDelegation} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {
+  revokeDelegation,
+  setCurrentCoin,
+} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 import {
   isNameSupportChain,
@@ -29,8 +33,23 @@ import {
   validateNumberInInput,
   isBitcoinChain,
   isEip7702SupportedChain,
+  isEVMChain,
+  validateSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
-import PageTitle from 'components/PageTitle';
+import CoinIcon from 'components/CoinIcon';
+import GeneralButton from 'components/Button';
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  SwapIcon,
+} from 'components/Home/HomeIcons';
+import CoinPicker from 'components/Home/CoinPicker';
+import WalletSwitcher from 'components/Home/WalletSwitcher';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/useHome';
+import {coinRoutes} from 'utils/routes';
+import {getCoinSlug, isValidBrowser} from 'utils/common';
 import s from './SendFunds.module.css';
 import {showToast} from 'src/utils/toast';
 import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
@@ -47,6 +66,13 @@ import {getBolt11InvoiceAmount} from 'dok-wallet-blockchain-networks/helper/bolt
 import {getSentAddressHistory} from 'dok-wallet-blockchain-networks/redux/sentAddressHistory/sentAddressHistorySelectors';
 import ModalAddressPoisoningWarning from 'components/ModalAddressPoisoningWarning';
 import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
+
+const MAX_RECENTS = 6;
+
+const shortAddress = address =>
+  address && address.length > 14
+    ? `${address.slice(0, 6)}…${address.slice(-4)}`
+    : address || '';
 
 const HEDERA_LOOKUP_DEBOUNCE_MS = 400;
 
@@ -114,6 +140,11 @@ const SendFunds = () => {
     ],
   );
   const [modal, setModal] = useState(false);
+  // Which side of the amount is typed: the coin, or the local currency.
+  const [unit, setUnit] = useState('crypto');
+  const [coinPickerOpen, setCoinPickerOpen] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const userCoins = useSelector(selectUserCoins);
   const [maxAmount, setMaxAmount] = useState('0.00000');
 
   // A fixed-amount invoice must be paid exactly and locks the amount fields
@@ -376,10 +407,76 @@ const SendFunds = () => {
     uuid,
   ]);
 
+  const symbol = currentCoin?.symbol?.toUpperCase() ?? '';
+  const isBatchSupported = isEip7702SupportedChain(currentCoin?.chain_name);
+  const fiatSymbol = currencySymbol[localCurrency] || '';
+  const walletName = currentWallet?.walletName || 'Wallet';
+
+  // Same coin list as Home's Send picker.
+  const pickerCoins = useMemo(
+    () =>
+      (userCoins || []).filter(
+        item =>
+          validateSupportedChain(item?.chain_name) &&
+          (item?.chain_name !== 'thorchain' || isValidBrowser()),
+      ),
+    [userCoins],
+  );
+
+  // Sent-address history is only kept for EVM chains (shared bucket).
+  const recents = useMemo(
+    () =>
+      isEVMChain(currentCoin?.chain_name)
+        ? (sentAddressHistory?.evm || []).slice(0, MAX_RECENTS)
+        : [],
+    [currentCoin?.chain_name, sentAddressHistory],
+  );
+
+  const onPickCoin = useCallback(
+    item => {
+      setCoinPickerOpen(false);
+      dispatch(setCurrentCoin(item?._id));
+      router.replace(
+        coinRoutes.sendFunds(currentWallet?.clientId, getCoinSlug(item)),
+      );
+    },
+    [currentWallet?.clientId, dispatch, router],
+  );
+
+  const showNetwork =
+    currentCoin?.type === 'token' || isBitcoin
+      ? currentCoin?.chain_display_name
+      : null;
+
   return (
-    <>
-      <PageTitle title='Send Funds' />
-      <div className={s.contentContainerStyle}>
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <GeneralButton
+          variant='unstyled'
+          className={s.heading}
+          aria-haspopup='dialog'
+          onClick={() => setSwitcherOpen(true)}>
+          <h1 className={s.headingTitle}>Send</h1>
+          <span className={s.headingSub}>
+            <span className={s.walletAvatar}>
+              {walletName[0].toUpperCase()}
+            </span>
+            <span className={s.headingSubText}>{walletName}</span>
+            <ChevronDownIcon size={12} className={s.headingChevron} />
+          </span>
+        </GeneralButton>
+        <span className={s.iconSpacer} aria-hidden='true' />
+      </div>
+
+      <div className={s.column}>
         <Formik
           innerRef={formikRef}
           enableReinitialize={true}
@@ -406,7 +503,6 @@ const SendFunds = () => {
             handleSubmit,
             values,
             errors,
-            touched,
             isValid,
             setFieldValue,
           }) => {
@@ -414,305 +510,389 @@ const SendFunds = () => {
             // fields stay locked while such an invoice is entered.
             const isInvoiceAmountLocked =
               isLightning && !!getBolt11InvoiceAmount(values.send);
+            const setMax = async () => {
+              await setFieldValue('currencyAmount', availableAmountCurrency);
+              await setFieldValue('amount', maxAmount + '');
+            };
+            const onChangeRecipient = async text => {
+              await setFieldValue('send', text);
+              if (!isLightning) {
+                return;
+              }
+              const invoiceAmount = getBolt11InvoiceAmount(text);
+              if (invoiceAmount) {
+                await setFieldValue('amount', invoiceAmount);
+                await setFieldValue(
+                  'currencyAmount',
+                  multiplyBNWithFixed(
+                    invoiceAmount,
+                    currentCoin?.currencyRate,
+                    2,
+                  ),
+                );
+              } else if (getBolt11InvoiceAmount(values.send)) {
+                // The previous recipient was a fixed-amount invoice;
+                // its amount no longer applies to this recipient.
+                await setFieldValue('amount', '');
+                await setFieldValue('currencyAmount', '');
+              }
+            };
+            const onPaste = async () => {
+              try {
+                const text = (await navigator.clipboard.readText())?.trim();
+                if (text) {
+                  await onChangeRecipient(text);
+                }
+              } catch (e) {
+                showToast({
+                  type: 'errorToast',
+                  title: 'Clipboard unavailable',
+                  message: 'Paste the address into the field instead.',
+                });
+              }
+            };
+            const onChangeAmount = async raw => {
+              if (unit === 'crypto') {
+                const tempValues = validateNumberInInput(
+                  raw,
+                  currentCoin?.decimal,
+                );
+                await setFieldValue('amount', tempValues);
+                await setFieldValue(
+                  'currencyAmount',
+                  multiplyBNWithFixed(tempValues, currentCoin?.currencyRate, 2),
+                );
+              } else {
+                const tempValues = validateNumberInInput(raw, 2);
+                await setFieldValue('currencyAmount', tempValues);
+                await setFieldValue(
+                  'amount',
+                  new BigNumber(tempValues)
+                    .dividedBy(new BigNumber(currentCoin?.currencyRate))
+                    .toFixed(Number(currentCoin?.decimal)),
+                );
+              }
+            };
+            const amountError = errors.amount || errors.currencyAmount;
+            const isCrypto = unit === 'crypto';
+            const converted = isCrypto
+              ? `${fiatSymbol}${values.currencyAmount || '0.00'}`
+              : `${validateBigNumberStr(values.amount) || '0'} ${symbol}`;
             return (
-              <div style={{display: 'flex', flex: 1}}>
-                <div className={s.container}>
-                  <div className={s.formInput}>
-                    <p className={s.title}>Your balance</p>
-                    <div className={s.box}>
-                      <p className={s.boxTitle}>{availableAmount}</p>
-                      <p className={s.boxTitle}>{' ' + currentCoin?.symbol}</p>
-                    </div>
-                    <div className={s.box}>
-                      <p className={s.boxBalance}>
-                        {currencySymbol[localCurrency] || ''}
+              <form
+                className={s.form}
+                noValidate
+                onSubmit={event => {
+                  event.preventDefault();
+                  handleSubmit();
+                }}>
+                <button
+                  type='button'
+                  className={s.coinCard}
+                  aria-haspopup='dialog'
+                  onClick={() => setCoinPickerOpen(true)}>
+                  <span className={s.coinIcon}>
+                    <CoinIcon item={currentCoin} />
+                  </span>
+                  <span className={s.coinText}>
+                    <span className={s.coinLabel}>
+                      Available to send
+                      {showNetwork ? (
+                        <span className={s.network}>{showNetwork}</span>
+                      ) : null}
+                    </span>
+                    <span className={s.coinBalance}>
+                      <span className={s.coinAmount}>{availableAmount}</span>
+                      <span className={s.coinSymbol}>{symbol}</span>
+                      <span className={s.coinFiat}>
+                        {fiatSymbol}
                         {availableAmountCurrency}
-                      </p>
-                    </div>
+                      </span>
+                    </span>
+                  </span>
+                  <span className={s.changeChip}>
+                    Change
+                    <ChevronRightIcon size={12} />
+                  </span>
+                </button>
 
-                    <div className={s.boxInputFull}>
-                      <p className={s.listTitle}>Send to</p>
+                <div className={s.field}>
+                  <label htmlFor='send' className={s.label}>
+                    Send to
+                  </label>
+                  <div
+                    className={`${s.inputBox} ${
+                      errors.send ? s.inputBoxError : ''
+                    }`}>
+                    <input
+                      id='send'
+                      className={s.input}
+                      placeholder={
+                        isLightning
+                          ? 'Invoice or Lightning address'
+                          : 'Wallet address'
+                      }
+                      autoComplete='off'
+                      spellCheck={false}
+                      name='send'
+                      onChange={event => onChangeRecipient(event.target.value)}
+                      onBlur={handleBlur('send')}
+                      value={values.send}
+                    />
+                    {values.send ? (
+                      <button
+                        type='button'
+                        className={s.clearButton}
+                        aria-label='Clear address'
+                        onClick={() => onChangeRecipient('')}>
+                        <CloseIcon size={12} />
+                      </button>
+                    ) : (
+                      <button
+                        type='button'
+                        className={s.pasteButton}
+                        onClick={onPaste}>
+                        Paste
+                      </button>
+                    )}
+                  </div>
+                  {errors.send && (
+                    <p className={s.error} role='alert'>
+                      {errors.send}
+                    </p>
+                  )}
+                  {isHedera && !errors.send && (
+                    <HederaRecipientHint
+                      address={values.send}
+                      getHederaChain={getHederaChain}
+                    />
+                  )}
+                  {isHedera && !!currentCoin?.accountId && (
+                    <p className={s.infoText}>
+                      {`Your account ID: ${currentCoin.accountId}`}
+                    </p>
+                  )}
+                  {!values.send && recents.length ? (
+                    <div className={s.recents}>
+                      <span className={s.recentsLabel}>Recent</span>
+                      <div className={s.recentsRow}>
+                        {recents.map(address => (
+                          <button
+                            key={address}
+                            type='button'
+                            className={s.recent}
+                            title={address}
+                            onClick={() => onChangeRecipient(address)}>
+                            <span className={s.recentAvatar}>
+                              {address.slice(2, 3).toUpperCase()}
+                            </span>
+                            <span className={s.recentText}>
+                              {shortAddress(address)}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className={s.field}>
+                  <div className={s.labelRow}>
+                    <label htmlFor='amount' className={s.label}>
+                      Amount
+                    </label>
+                    {!isInvoiceAmountLocked && currentCoin?.currencyRate ? (
+                      <button
+                        type='button'
+                        className={s.unitSwap}
+                        onClick={() => setUnit(isCrypto ? 'fiat' : 'crypto')}>
+                        <SwapIcon size={13} />
+                        Enter in {isCrypto ? localCurrency : symbol}
+                      </button>
+                    ) : null}
+                  </div>
+                  <div
+                    className={`${s.amountCard} ${
+                      amountError ? s.inputBoxError : ''
+                    } ${isInvoiceAmountLocked ? s.inputBoxLocked : ''}`}>
+                    <div className={s.amountRow}>
                       <input
-                        className={s.input}
-                        placeholder='Enter wallet adress'
-                        style={{
-                          borderColor: errors.send ? 'red' : 'var(--gray)',
-                        }}
-                        name='send'
-                        onChange={async event => {
-                          const text = event.target.value;
-                          await setFieldValue('send', text);
-                          if (!isLightning) {
-                            return;
-                          }
-                          const invoiceAmount = getBolt11InvoiceAmount(text);
-                          if (invoiceAmount) {
-                            await setFieldValue('amount', invoiceAmount);
-                            await setFieldValue(
-                              'currencyAmount',
-                              multiplyBNWithFixed(
-                                invoiceAmount,
-                                currentCoin?.currencyRate,
-                                2,
-                              ),
-                            );
-                          } else if (getBolt11InvoiceAmount(values.send)) {
-                            // The previous recipient was a fixed-amount invoice;
-                            // its amount no longer applies to this recipient.
-                            await setFieldValue('amount', '');
-                            await setFieldValue('currencyAmount', '');
-                          }
-                        }}
-                        onBlur={handleBlur('send')}
-                        value={values.send}
-                        onSubmit={handleSubmit}
+                        id='amount'
+                        className={s.amountInput}
+                        placeholder='0'
+                        inputMode='decimal'
+                        name={isCrypto ? 'amount' : 'currencyAmount'}
+                        readOnly={isInvoiceAmountLocked}
+                        onChange={event => onChangeAmount(event.target.value)}
+                        onBlur={handleBlur(
+                          isCrypto ? 'amount' : 'currencyAmount',
+                        )}
+                        value={isCrypto ? values.amount : values.currencyAmount}
+                        type='number'
                       />
-                      {isHedera && !errors.send && (
-                        <HederaRecipientHint
-                          address={values.send}
-                          getHederaChain={getHederaChain}
-                        />
-                      )}
-                      {isHedera && !!currentCoin?.accountId && (
-                        <p className={s.infoText}>
-                          {`Your account ID: ${currentCoin.accountId}`}
-                        </p>
-                      )}
-                      {errors.send && (
-                        <p className={s.textConfirm}>{errors.send}</p>
+                      <span className={s.unit}>
+                        {isCrypto ? symbol : localCurrency}
+                      </span>
+                      {!isInvoiceAmountLocked && (
+                        <button
+                          type='button'
+                          className={s.maxButton}
+                          onClick={setMax}>
+                          Max
+                        </button>
                       )}
                     </div>
-
-                    <div className={s.inputWrapper}>
-                      {/* //////////amount//////////// */}
-                      <div className={s.boxInput}>
-                        <p className={s.listTitle}>Amount</p>
-                        <div className={s.inputView}>
-                          <input
-                            className={s.input}
-                            placeholder='Enter amount of Crypto to send'
-                            style={{
-                              borderColor: errors.amount
-                                ? 'red'
-                                : 'var(--gray)',
-                              color: isInvoiceAmountLocked
-                                ? 'var(--gray)'
-                                : undefined,
-                            }}
-                            name='amount'
-                            readOnly={isInvoiceAmountLocked}
-                            onChange={async event => {
-                              const tempValues = validateNumberInInput(
-                                event.target.value,
-                                currentCoin?.decimal,
-                              );
-                              const tempAmount = multiplyBNWithFixed(
-                                tempValues,
-                                currentCoin?.currencyRate,
-                                2,
-                              );
-                              await setFieldValue('amount', tempValues);
-                              await setFieldValue('currencyAmount', tempAmount);
-                            }}
-                            onBlur={handleBlur('amount')}
-                            value={values.amount}
-                            onSubmit={handleSubmit}
-                            type='number'
-                          />
-                          {!isInvoiceAmountLocked && (
-                            <button
-                              className={s.btnMax}
-                              onClick={async () => {
-                                await setFieldValue(
-                                  'currencyAmount',
-                                  availableAmountCurrency,
-                                );
-                                await setFieldValue('amount', maxAmount + '');
-                              }}>
-                              <p className={s.btnText}>Max</p>
-                            </button>
-                          )}
-                        </div>
-
-                        {errors.amount && (
-                          <p className={s.textConfirm}>{errors.amount}</p>
-                        )}
-                      </div>
-                      <div className={s.boxInput}>
-                        <p className={s.listTitle}>Currency Amount</p>
-                        <div className={s.inputView}>
-                          <input
-                            className={s.input}
-                            placeholder={`Enter ${localCurrency} amount of Crypto to send`}
-                            style={{
-                              borderColor: errors.currencyAmount
-                                ? 'red'
-                                : 'var(--gray)',
-                              color: isInvoiceAmountLocked
-                                ? 'var(--gray)'
-                                : undefined,
-                            }}
-                            name='currencyAmount'
-                            readOnly={isInvoiceAmountLocked}
-                            onChange={async event => {
-                              const tempValues = validateNumberInInput(
-                                event.target.value,
-                                2,
-                              );
-                              const tempAmount = new BigNumber(tempValues)
-                                .dividedBy(
-                                  new BigNumber(currentCoin?.currencyRate),
-                                )
-                                .toFixed(Number(currentCoin?.decimal));
-                              await setFieldValue('currencyAmount', tempValues);
-                              await setFieldValue('amount', tempAmount);
-                            }}
-                            onBlur={handleBlur('currencyAmount')}
-                            value={values.currencyAmount}
-                            onSubmit={handleSubmit}
-                            type='number'
-                          />
-                          {!isInvoiceAmountLocked && (
-                            <button
-                              className={s.btnMax}
-                              onClick={async () => {
-                                await setFieldValue(
-                                  'currencyAmount',
-                                  availableAmountCurrency,
-                                );
-                                await setFieldValue('amount', maxAmount + '');
-                              }}>
-                              <p className={s.btnText}>Max</p>
-                            </button>
-                          )}
-                        </div>
-
-                        {errors.currencyAmount && (
-                          <p className={s.textConfirm}>
-                            {errors.currencyAmount}
-                          </p>
-                        )}
-                      </div>
-                      {isMemoSupported && (
-                        <div className={s.boxInputFull}>
-                          <p className={s.listTitle}>Memo</p>
-                          <input
-                            className={s.input}
-                            placeholder='Enter memo'
-                            style={{
-                              borderColor: errors.memo ? 'red' : 'var(--gray)',
-                            }}
-                            name='send'
-                            onChange={handleChange('memo')}
-                            onBlur={handleBlur('memo')}
-                            value={values.memo}
-                          />
-                          <p className={s.infoText}>
-                            {
-                              'Memo or Tag is optional, It is only required when recipient needed.'
-                            }
-                          </p>
-                          {errors.memo && (
-                            <p className={s.textConfirm}>{errors.memo}</p>
-                          )}
-                        </div>
-                      )}
+                    <div className={s.convertedRow}>
+                      <span className={s.converted}>≈ {converted}</span>
                     </div>
                   </div>
-                  {isEip7702SupportedChain(currentCoin?.chain_name) && (
-                    <button
-                      disabled={!isValid}
-                      className={s.button}
-                      style={{
-                        backgroundColor: isValid
-                          ? 'var(--background)'
-                          : 'var(--gray)',
-                      }}
-                      onClick={addToBatch}>
-                      <p className={s.buttonTitle}>Add to Batch</p>
-                    </button>
+                  {isInvoiceAmountLocked && (
+                    <p className={s.infoText}>
+                      This invoice has a fixed amount.
+                    </p>
                   )}
-                  <button
-                    disabled={!isValid}
-                    className={s.button}
-                    style={{
-                      backgroundColor: isValid
-                        ? 'var(--background)'
-                        : 'var(--gray)',
-                    }}
-                    onClick={handleSubmit}>
-                    <p className={s.buttonTitle}>Next</p>
-                  </button>
+                  {errors.amount && (
+                    <p className={s.error} role='alert'>
+                      {errors.amount}
+                    </p>
+                  )}
+                  {errors.currencyAmount && (
+                    <p className={s.error} role='alert'>
+                      {errors.currencyAmount}
+                    </p>
+                  )}
                 </div>
-              </div>
+
+                {isMemoSupported && (
+                  <div className={s.field}>
+                    <label htmlFor='memo' className={s.label}>
+                      Memo <span className={s.optional}>· optional</span>
+                    </label>
+                    <div
+                      className={`${s.inputBox} ${
+                        errors.memo ? s.inputBoxError : ''
+                      }`}>
+                      <input
+                        id='memo'
+                        className={s.input}
+                        placeholder='Memo or tag'
+                        name='memo'
+                        onChange={handleChange('memo')}
+                        onBlur={handleBlur('memo')}
+                        value={values.memo}
+                      />
+                    </div>
+                    <p className={s.infoText}>
+                      Only needed when the recipient asks for one, e.g. an
+                      exchange deposit.
+                    </p>
+                    {errors.memo && (
+                      <p className={s.error} role='alert'>
+                        {errors.memo}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className={s.feeRow}>
+                  <span>Network fee</span>
+                  <span className={s.feeValue}>Shown on the next step</span>
+                </div>
+
+                <div className={s.actions}>
+                  <GeneralButton
+                    type='submit'
+                    fullWidth
+                    className={s.review}
+                    disabled={!isValid}>
+                    Review
+                  </GeneralButton>
+                  {isBatchSupported && (
+                    <GeneralButton
+                      variant='secondary'
+                      fullWidth
+                      disabled={!isValid}
+                      onClick={addToBatch}>
+                      Add to batch
+                    </GeneralButton>
+                  )}
+                </div>
+              </form>
             );
           }}
         </Formik>
 
-        {currentCoin?.isDelegationAvailable &&
-          isEip7702SupportedChain(currentCoin?.chain_name) && (
-            <button
-              className={s.button}
-              disabled={isDelegationLoading}
-              style={{
-                backgroundColor: isDelegationLoading
-                  ? 'var(--gray)'
-                  : 'var(--background)',
-                marginTop: 12,
-              }}
-              onClick={() => setIsDelegationModalVisible(true)}>
-              <p className={s.buttonTitle}>
-                {isDelegationLoading
-                  ? 'Removing Delegation…'
-                  : 'Remove Delegation'}
-              </p>
-            </button>
-          )}
-
-        <ModalDelegation
-          visible={isDelegationModalVisible}
-          onClose={() => setIsDelegationModalVisible(false)}
-          onConfirm={async () => {
-            setIsDelegationLoading(true);
-            try {
-              await dispatch(revokeDelegation()).unwrap();
-              showToast({
-                type: 'successToast',
-                title: 'Delegation Removed',
-                message: 'EIP-7702 delegation has been successfully revoked.',
-              });
-            } catch (e) {
-              console.error('Error revoking delegation', e);
-              showToast({
-                type: 'errorToast',
-                title: 'Failed to Remove Delegation',
-                message: 'Something went wrong. Please try again.',
-              });
-            } finally {
-              setIsDelegationLoading(false);
-            }
-          }}
-        />
-
-        <ModalSend
-          visible={modal}
-          hideModal={setModal}
-          currentCoin={currentCoin}
-        />
-
-        <ModalAddressPoisoningWarning
-          visible={!!poisonWarning}
-          suspiciousAddress={poisonWarning?.suspiciousAddress}
-          matchedAddress={poisonWarning?.matchedAddress}
-          onCancel={() => setPoisonWarning(null)}
-          onContinue={() => {
-            const pending = poisonWarning;
-            setPoisonWarning(null);
-            pending?.onConfirm?.();
-          }}
-        />
+        {currentCoin?.isDelegationAvailable && isBatchSupported && (
+          <GeneralButton
+            variant='link'
+            className={s.delegation}
+            loading={isDelegationLoading}
+            loadingLabel='Removing delegation…'
+            onClick={() => setIsDelegationModalVisible(true)}>
+            Remove delegation
+          </GeneralButton>
+        )}
       </div>
-    </>
+
+      <CoinPicker
+        visible={coinPickerOpen}
+        onClose={() => setCoinPickerOpen(false)}
+        title='Send which coin?'
+        coins={pickerCoins}
+        hidden={coinPickerOpen && readHideBalances()}
+        localCurrency={localCurrency}
+        onPick={onPickCoin}
+      />
+      <WalletSwitcher
+        visible={switcherOpen}
+        onClose={() => setSwitcherOpen(false)}
+        hidden={switcherOpen && readHideBalances()}
+        localCurrency={localCurrency}
+      />
+
+      <ModalDelegation
+        visible={isDelegationModalVisible}
+        onClose={() => setIsDelegationModalVisible(false)}
+        onConfirm={async () => {
+          setIsDelegationLoading(true);
+          try {
+            await dispatch(revokeDelegation()).unwrap();
+            showToast({
+              type: 'successToast',
+              title: 'Delegation Removed',
+              message: 'EIP-7702 delegation has been successfully revoked.',
+            });
+          } catch (e) {
+            console.error('Error revoking delegation', e);
+            showToast({
+              type: 'errorToast',
+              title: 'Failed to Remove Delegation',
+              message: 'Something went wrong. Please try again.',
+            });
+          } finally {
+            setIsDelegationLoading(false);
+          }
+        }}
+      />
+
+      <ModalSend
+        visible={modal}
+        hideModal={setModal}
+        currentCoin={currentCoin}
+      />
+
+      <ModalAddressPoisoningWarning
+        visible={!!poisonWarning}
+        suspiciousAddress={poisonWarning?.suspiciousAddress}
+        matchedAddress={poisonWarning?.matchedAddress}
+        onCancel={() => setPoisonWarning(null)}
+        onContinue={() => {
+          const pending = poisonWarning;
+          setPoisonWarning(null);
+          pending?.onConfirm?.();
+        }}
+      />
+    </main>
   );
 };
 

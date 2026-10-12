@@ -1,87 +1,342 @@
-.box {
-  background-color: var(--whiteOutline);
-  padding: 0 16px;
-  border-radius: 8px;
+/* Staking overview: balance and staking info with their actions, the
+   Stake / Validators / Unstake buttons, then the active stakes. Same warm
+   surface and glass cards as Home; the accent is the white-label
+   `--background` colour. */
+.page {
+  --sl-ink: #1a1613;
+  --sl-muted: #6e655e;
+  --sl-faint: #8a7f76;
+  --sl-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
+  --sl-glass: rgba(255, 255, 255, 0.65);
+  --sl-glass-strong: rgba(255, 255, 255, 0.85);
+  --sl-glass-border: rgba(255, 255, 255, 0.9);
+  --sl-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --sl-line: rgba(26, 22, 19, 0.07);
+  --sl-hover: rgba(26, 22, 19, 0.05);
+  --sl-chip: rgba(26, 22, 19, 0.06);
+  --sl-warning-bg: rgba(247, 144, 9, 0.1);
+  --sl-warning-border: rgba(247, 144, 9, 0.3);
+  --sl-warning-ink: #93520a;
+  position: relative;
+  min-height: calc(var(--app-height, 100vh) - 70px);
   overflow: hidden;
-  margin: 20px 20px 5px 20px;
+  padding: 0 0 40px;
+  background: var(--sl-surface);
 }
 
-.itemView {
+:global([data-theme='dark']) .page {
+  --sl-ink: #f5f1ec;
+  --sl-muted: #a89c92;
+  --sl-faint: #a89c92;
+  --sl-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
+  --sl-glass: rgba(255, 255, 255, 0.05);
+  --sl-glass-strong: rgba(255, 255, 255, 0.08);
+  --sl-glass-border: rgba(255, 255, 255, 0.1);
+  --sl-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --sl-line: rgba(255, 255, 255, 0.07);
+  --sl-hover: rgba(255, 255, 255, 0.06);
+  --sl-chip: rgba(255, 255, 255, 0.08);
+  --sl-warning-bg: rgba(253, 176, 34, 0.1);
+  --sl-warning-border: rgba(253, 176, 34, 0.28);
+  --sl-warning-ink: #fdb022;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". Only our
+   own line icons; StakingItem keeps its own. */
+.back svg,
+.actions svg {
+  fill: none;
+}
+
+.glow {
+  position: absolute;
+  top: -120px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--background) 13%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.column {
+  position: relative;
   display: flex;
-  flex-direction: row;
-  height: 40px;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 14px 16px 0;
 }
 
-.boxBalance {
-  color: var(--gray);
-  font-size: 16px;
-  font-family: var(--font-roboto);
-  display: -webkit-box;
-  -webkit-line-clamp: 1; /* number of lines to show */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+/* Top bar */
+.topBar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--sl-ink) 7%, transparent);
+}
+
+.back,
+.iconSpacer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--sl-ink);
+  transition: background-color 0.2s;
+}
+
+.back:hover {
+  background: var(--sl-hover);
 }
 
 .title {
-  color: var(--gray);
-  font-size: 16px;
-  font-family: var(--font-roboto);
-  margin-right: 8px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--sl-ink);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.button {
-  width: 30%;
-  margin: auto;
-  background-color: var(--background);
-  height: 60px;
-  border-radius: 10px;
-  color: var(--title);
-  font-size: 16px;
-  margin-top: 10px;
-  margin-bottom: 10px;
-}
-
-.stakingTitle {
-  color: var(--font);
-  font-size: 16px;
-  font-Weight: 600;
-  margin-bottom: 8px;
-  margin-Left: 20px;
-}
-
-.createStakingWrapper {
+.loading {
   display: flex;
   justify-content: center;
+  padding: 60px 0;
 }
 
-.stakingItemWrapper {
-  max-height: 370px;
-  overflow: auto;
+/* Cards */
+.hero,
+.listCard {
+  border: 1px solid var(--sl-glass-border);
+  border-radius: 24px;
+  background: var(--sl-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--sl-shadow);
 }
-.rightItemView {
-  flex: 1;
+
+/* Overview */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  background:
+    radial-gradient(
+      circle at 0% 0%,
+      color-mix(in srgb, var(--background) 14%, transparent) 0%,
+      transparent 55%
+    ),
+    var(--sl-glass);
+}
+
+.heroTop {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-}
-.buttonStyle {
-  padding: 0 12px;
-  justify-content: center;
-  height: 32px;
-  border: 1px solid var(--background);
-  border-radius: 8px;
-  margin-left: 8px;
-  color: var(--font);
-  font-size: 14px;
-  font-family: var(--font-roboto);
+  gap: 12px;
 }
 
-.errorTitle {
+.coinIcon {
+  display: flex;
+  flex: none;
+  padding: 4px;
+  border-radius: 50%;
+  background: var(--sl-glass-strong);
+}
+
+/* CoinIcon brings its own margin and dark plate; enlarge and lighten. */
+.coinIcon > div {
+  width: 46px;
+  height: 46px;
+  margin: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.heroText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sl-faint);
+}
+
+.balance {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  line-height: 1.15;
+  color: var(--sl-ink);
+}
+
+.balanceSymbol {
+  font-size: 16px;
+  letter-spacing: -0.2px;
+  color: var(--sl-muted);
+}
+
+/* Staking info rows */
+.rows {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 14px;
+  border-radius: 16px;
+  background: var(--sl-glass-strong);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--sl-line);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.rowLabel {
+  min-width: 0;
   font-size: 14px;
-  font-family: var(--font-roboto);
-  color: red;
-  margin: 0 20px 20px;
+  font-weight: 500;
+  color: var(--sl-muted);
+}
+
+.rowRight {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  max-width: 65%;
+}
+
+.rowValue {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sl-ink);
   text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowRight > .rowAction {
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
+
+/* Actions */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.actions > button {
+  min-height: 50px;
+  font-size: 16px;
+}
+
+.notice {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--sl-warning-border);
+  border-radius: 14px;
+  background: var(--sl-warning-bg);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--sl-warning-ink);
+}
+
+/* Active staking */
+.listCard {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px 12px;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px 10px;
+}
+
+.listTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sl-ink);
+}
+
+.count {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--sl-chip);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sl-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty {
+  margin: 0;
+  padding: 18px 12px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--sl-muted);
+}
+
+.back:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .topBar {
+    padding: 10px 20px;
+  }
+
+  .column {
+    padding-top: 24px;
+  }
+
+  .hero {
+    padding: 22px;
+  }
 }

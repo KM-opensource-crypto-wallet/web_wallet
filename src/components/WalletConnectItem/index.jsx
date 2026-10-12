@@ -1,82 +1,23 @@
 import styles from './WalletConnectItem.module.css';
-import React, {useCallback, useMemo, useState} from 'react';
+import React from 'react';
 import Image from 'next/image';
-import {getWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
-import {getSdkError} from '@walletconnect/utils';
-import {resetWalletConnect} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSlice';
-import {
-  removeAllWalletConnectSession,
-  removeWalletConnectSession,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {
-  selectWalletConnectData,
-  selectWalletConnectSessions,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {clearWalletConnectStorageCache} from 'utils/localStorageData';
 import WalletConnectChainRow from 'components/WalletConnectChainRow';
+import useWalletConnectSessions from 'src/hooks/walletConnect/useWalletConnectSessions';
 
 /////////////////////////////////////////
 
 const WalletConnectItem = ({onClose}) => {
-  const sessions = useSelector(selectWalletConnectSessions, shallowEqual);
-  const walletData = useSelector(selectWalletConnectData, shallowEqual);
-  const dispatch = useDispatch();
-  const [deletingSession, setDeletingSession] = useState([]);
-
-  const allSessions = useMemo(() => {
-    const sessionKeys = Object.keys(sessions);
-    let finalData = [];
-    sessionKeys.forEach(item => {
-      let tempSession = sessions[item];
-      tempSession = {...tempSession, chainData: walletData[item]};
-      finalData.push(tempSession);
-    });
-    return finalData;
-  }, [sessions, walletData]);
-
-  const onPressDisconnect = useCallback(
-    async (sessionId, topic) => {
-      try {
-        setDeletingSession(prevState => [...prevState, sessionId]);
-        const walletConnect = getWalletConnect();
-        if (!walletConnect) {
-          throw new Error('WalletConnect is not initialised yet');
-        }
-        await walletConnect.disconnectSession({
-          topic,
-          reason: getSdkError('USER_DISCONNECTED'),
-        });
-
-        if (allSessions.length === 1) {
-          onClose && onClose();
-          dispatch(resetWalletConnect());
-          sessionId && dispatch(removeAllWalletConnectSession());
-          clearWalletConnectStorageCache().then();
-        } else {
-          dispatch(removeWalletConnectSession(sessionId));
-        }
-        setDeletingSession(prevState =>
-          prevState.filter(item => item !== sessionId),
-        );
-        // }
-      } catch (e) {
-        dispatch(resetWalletConnect());
-        dispatch(removeAllWalletConnectSession());
-        setDeletingSession(prevState =>
-          prevState.filter(item => item !== sessionId),
-        );
-        console.error('Error in disconnect', e);
-      }
-    },
-    [allSessions.length, dispatch, onClose],
-  );
+  const {
+    sessions: allSessions,
+    disconnect: onPressDisconnect,
+    isDisconnecting,
+  } = useWalletConnectSessions({onLastDisconnected: onClose});
 
   return allSessions.map((item, index) => {
     const metadata = item?.peer?.metadata;
     const icon = metadata?.icons[0] || '';
     const chainData = Array.isArray(item?.chainData) ? item?.chainData : [];
-    const isDeleting = deletingSession.includes(item.pairingTopic);
+    const isDeleting = isDisconnecting(item.pairingTopic);
     return (
       <div className={styles.itemView} key={'' + item.key + index}>
         <div className={styles.rowView}>

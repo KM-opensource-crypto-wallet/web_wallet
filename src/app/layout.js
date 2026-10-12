@@ -13,6 +13,7 @@ import {isLocaleSet} from 'utils/updateLocale';
 import AuthProvider from 'components/AuthProvider';
 import {captureError, setWhiteLabelContext} from 'services/logger';
 import {rememberWhiteLabelForHost} from 'whitelabel/serverWhiteLabel';
+import {resolveWhiteLabelHost} from 'whitelabel/serverBrand';
 
 // Next signals "this route must render per request" by throwing from
 // headers()/cookies() during static prerender (digest DYNAMIC_SERVER_USAGE).
@@ -37,7 +38,7 @@ export default async function RootLayout({children}) {
     const headersList = await headers();
     const host = headersList.get('x-forwarded-host') ?? headersList.get('host');
     firstHost = host.split(':')[0];
-    const resp = await getWhiteLabelInfo(firstHost);
+    const resp = await getWhiteLabelInfo(resolveWhiteLabelHost(firstHost));
     wlData = resp?.data;
   } catch (error) {
     // `headers()` throws Next's internal bail-out while a page is being

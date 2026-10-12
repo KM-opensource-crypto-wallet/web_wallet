@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const {version, name} = require('./package.json');
 const createNextIntlPlugin = require('next-intl/plugin');
+const os = require('os');
 const path = require('path');
 const {loadEnvConfig} = require('@next/env');
 const {withSentryConfig} = require('@sentry/nextjs/config');

@@ -1,113 +1,311 @@
-.container {
-  margin: 0 auto;
+/* Onboarding. Phone: one centred column (hero, text, dots, button), like the
+   mobile app. Desktop (>= 900px): hero panel on the left, text and controls
+   on the right. The accent is the white-label `--background` colour. */
+.page {
+  --ob-ink: #1a1613;
+  --ob-muted: #6e655e;
+  --ob-skip: #8a7f76;
+  --ob-dot: rgba(26, 22, 19, 0.18);
+  --ob-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
+  --hero-scale: 1;
+  position: relative;
+  display: flex;
+  min-height: calc(var(--app-height, 100vh) - 70px);
+  padding: 56px 24px 24px;
+  background: var(--ob-surface);
+  touch-action: pan-y;
+}
+
+:global([data-theme='dark']) .page {
+  --ob-ink: #f5f1ec;
+  --ob-muted: #a89c92;
+  --ob-skip: #a89c92;
+  --ob-dot: rgba(245, 241, 236, 0.2);
+  --ob-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
+}
+
+.shell {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  height: calc(var(--app-height) - 110px);
-  padding: 20px;
-}
-
-.carouselSection {
-  height: 80%;
-  display: flex;
-  align-items: center;
-}
-
-.caruselList {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-.box {
+  width: 100%;
+  max-width: 480px;
   margin: 0 auto;
 }
 
-.box > svg {
-  fill: var(--background);
-}
-
-.header {
-  margin: 20px auto 0 auto;
-}
-
-.title {
-  color: var(--font);
-  font-size: 20px;
-  text-align: center;
-}
-
-@media (min-width: 768px) {
-  .title {
-    font-size: 34px;
-  }
-}
-
-.body {
-  color: var(--primary);
-  font-size: 18px;
-  margin-top: 20px;
-  text-align: center;
-}
-
-.section {
+.heroPanel {
   display: flex;
-  justify-content: center;
   align-items: center;
 }
 
-.paginationContainer {
+.viewport {
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+.track {
+  display: flex;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.heroSlide,
+.textSlide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+.heroSlide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Room for the hero's glow, which the sliding viewport would clip. */
+  padding: 12px 0 40px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.topRow {
+  position: absolute;
+  top: 12px;
+  right: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.paginationDotsContainer {
-  display: flex;
-  align-items: center;
-}
-
-.inactiveDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 4px;
-  background-color: var(--carouselPoints);
-  margin: 0 5px;
-}
-
-.activeDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 4px;
-  background-color: var(--background);
-  margin: 0 5px;
-}
-
-.btn {
-  font-weight: bold;
-  color: var(--carouselPoints);
-}
-
-.hidden {
+.counter {
   display: none;
 }
 
-.button {
-  width: 100%;
-  background-color: var(--background);
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  border: 1px solid var(--background);
-  color: var(--title);
-  font-size: 16px;
+.skip {
+  border: none;
+  background: transparent;
+  padding: 8px 0 8px 12px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ob-skip);
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
-@media (min-width: 768px) {
-  .button {
-    width: 50%;
+.skip:hover {
+  color: var(--background);
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+.textSlide {
+  padding: 0 8px;
+  text-align: center;
+}
+
+.title {
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  color: var(--ob-ink);
+  text-wrap: balance;
+}
+
+.body {
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ob-muted);
+  text-wrap: pretty;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: var(--ob-dot);
+  cursor: pointer;
+  transition:
+    width 0.3s,
+    background-color 0.3s;
+}
+
+.activeDot {
+  width: 26px;
+  background: var(--background);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Next / Get started and Back are GeneralButtons; these only lay them out. */
+.nextButton {
+  flex: 1;
+}
+
+/* Phones go straight forward like the app; Back is a desktop affordance.
+   Scoped under .actions so it beats GeneralButton's own `display`. */
+.actions .backButton {
+  display: none;
+}
+
+.skip:focus-visible,
+.dot:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 3px;
+}
+
+@media (max-width: 359px) {
+  .page {
+    --hero-scale: 0.85;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  .page {
+    --hero-scale: 1.25;
+  }
+
+  .title {
+    font-size: 32px;
+  }
+
+  .body {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 900px) {
+  .page {
+    --hero-scale: 1.15;
+    align-items: center;
+    padding: 40px;
+    background: var(--backgroundColor);
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 64px;
+    max-width: 1120px;
+  }
+
+  .heroPanel {
+    align-items: stretch;
+    min-height: 520px;
+    border-radius: 32px;
+    overflow: hidden;
+    background: var(--ob-surface);
+    border: 1px solid var(--whiteOutline);
+  }
+
+  .heroPanel .viewport {
+    display: flex;
+  }
+
+  .heroPanel .track {
+    width: 100%;
+  }
+
+  .heroSlide {
+    padding: 0;
+  }
+
+  .content {
+    flex: none;
+  }
+
+  .topRow {
+    position: static;
+    margin-bottom: 28px;
+  }
+
+  .counter {
+    display: inline;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--background);
+  }
+
+  .counterTotal {
+    color: var(--ob-muted);
+    font-weight: 500;
+  }
+
+  .textSlide {
+    padding: 0;
+    text-align: left;
+  }
+
+  .title {
+    font-size: 44px;
+    letter-spacing: -1px;
+    line-height: 1.12;
+  }
+
+  .body {
+    margin-top: 18px;
+    font-size: 18px;
+    max-width: 460px;
+  }
+
+  .dots {
+    justify-content: flex-start;
+    margin-top: 40px;
+    padding-top: 0;
+  }
+
+  .actions {
+    margin-top: 32px;
+    max-width: 420px;
+  }
+
+  .actions .backButton {
+    display: inline-flex;
+  }
+}
+
+/* The hero column is ~52% of the shell; keep the scaled 320px stage inside it. */
+@media (min-width: 1100px) {
+  .page {
+    --hero-scale: 1.45;
+  }
+}
+
+@media (min-width: 1300px) {
+  .page {
+    --hero-scale: 1.65;
+  }
+
+  .heroPanel {
+    min-height: 580px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .dot {
+    transition: none;
   }
 }

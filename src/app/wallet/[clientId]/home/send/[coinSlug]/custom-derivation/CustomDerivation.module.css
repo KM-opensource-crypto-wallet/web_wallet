@@ -1,251 +1,439 @@
-.container {
-  background-color: var(--backgroundColor);
-  max-height: calc(var(--app-height) - 70px);
-  overflow-y: auto !important;
+/* Custom derivation: add an address by derive path, add 50 more, and the list
+   of all derived accounts. Same warm surface and glass cards as Home; the
+   accent is the white-label `--background` colour. */
+.page {
+  --cd-ink: #1a1613;
+  --cd-muted: #6e655e;
+  --cd-faint: #8a7f76;
+  --cd-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
+  --cd-glass: rgba(255, 255, 255, 0.65);
+  --cd-glass-strong: rgba(255, 255, 255, 0.92);
+  --cd-glass-border: rgba(255, 255, 255, 0.9);
+  --cd-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --cd-line: rgba(26, 22, 19, 0.07);
+  --cd-field: rgba(26, 22, 19, 0.045);
+  --cd-field-border: rgba(26, 22, 19, 0.08);
+  --cd-hover: rgba(26, 22, 19, 0.05);
+  --cd-chip: rgba(26, 22, 19, 0.06);
+  --cd-placeholder: rgba(26, 22, 19, 0.3);
+  --cd-error: #d92d20;
+  --cd-tint: 10%;
   position: relative;
-  width: 100%;
+  min-height: calc(var(--app-height, 100vh) - 70px);
+  /* clip, not hidden: hidden would make this a scroll container and break
+     the sticky accounts header. */
+  overflow-x: clip;
+  padding: 0 0 40px;
+  background: var(--cd-surface);
 }
 
-.goBack {
-  padding: 20px;
+:global([data-theme='dark']) .page {
+  --cd-ink: #f5f1ec;
+  --cd-muted: #a89c92;
+  --cd-faint: #a89c92;
+  --cd-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
+  --cd-glass: rgba(255, 255, 255, 0.05);
+  --cd-glass-strong: rgba(30, 25, 21, 0.92);
+  --cd-glass-border: rgba(255, 255, 255, 0.1);
+  --cd-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --cd-line: rgba(255, 255, 255, 0.07);
+  --cd-field: rgba(255, 255, 255, 0.06);
+  --cd-field-border: rgba(255, 255, 255, 0.1);
+  --cd-hover: rgba(255, 255, 255, 0.06);
+  --cd-chip: rgba(255, 255, 255, 0.08);
+  --cd-placeholder: rgba(255, 255, 255, 0.3);
+  --cd-error: #f97066;
+  --cd-tint: 16%;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". Only our
+   own line icons; the row menu's dots are drawn with fill. */
+.back svg,
+.add50 svg {
+  fill: none;
+}
+
+.menu svg {
+  fill: var(--cd-muted);
+}
+
+.glow {
+  position: absolute;
+  top: -120px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--background) 13%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.column {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 14px 16px 0;
 }
 
-
-.section {
-  width: 100%;
+/* Top bar */
+.topBar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--cd-ink) 7%, transparent);
 }
 
-
-.dropdownContainer {
-  width: 100%;
-  margin-bottom: 24px;
-  border: 1px solid #989898;
-  border-radius: 4px;
+.back,
+.iconSpacer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--cd-ink);
+  transition: background-color 0.2s;
 }
 
-.inputContainer {
-  padding: 0px 20px 20px 20px;
-  width: 100%;
+.back:hover {
+  background: var(--cd-hover);
+}
+
+.titleBlock {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 4px 0;
+  text-align: center;
+}
+
+.title {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--cd-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--cd-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Cards */
+.card,
+.accounts {
+  border: 1px solid var(--cd-glass-border);
+  border-radius: 22px;
+  background: var(--cd-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--cd-shadow);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 16px;
+}
+
+.cardHeading {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--cd-ink);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cd-faint);
+}
+
+/* The MUI dropdown inside, restyled as one of our fields. */
+.selectBox {
+  border: 1.5px solid var(--cd-field-border);
+  border-radius: 14px;
+  background: var(--cd-field);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.selectBox:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
+}
+
+.selectBox :global(.MuiOutlinedInput-notchedOutline) {
+  border: none;
+}
+
+.selectBox :global(.MuiInputBase-root),
+.selectBox :global(.MuiInputBase-input) {
+  color: var(--cd-ink);
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.inputBox {
+  border: 1.5px solid var(--cd-field-border);
+  border-radius: 14px;
+  background: var(--cd-field);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.inputBox:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
+}
+
+.inputBoxError,
+.inputBoxError:focus-within {
+  border-color: var(--cd-error);
+  box-shadow: none;
 }
 
 .input {
   width: 100%;
-  height: 40px;
-  justify-content: center;
-  background-color: var(--backgroundColor);
-  padding-bottom: 0;
-  font-weight: bold;
-  color: var(--font);
-  flex: 1;
-  margin-bottom: 24px;
-}
-
-.textConfirm {
-  color: red;
-  font-size: 12px;
-  width: 89%;
-  margin-top: 4px;
-}
-
-.hideModule {
-  display: none;
-}
-
-.button {
-  width: 100%;
-  background-color: var(--background);
-  min-height: 60px;
-
-  border-radius: 10px;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--title);
-}
-
-.buttonAdd50 {
-  width: fit-content;
-  background-color: var(--background);
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: 10px;
+  padding: 14px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--title);
+  color: var(--cd-ink);
 }
 
-.exportButton {
-  background-color: var(--backgroundColor);
-  border: 1px solid var(--font);
-  min-height: 50px;
-  padding: 0 16px;
-  border-radius: 10px;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--font);
+.input::placeholder {
+  color: var(--cd-placeholder);
 }
 
-.exportButton:hover {
-  border: 2px solid var(--background);
-  color: var(--background)
-}
-
-.deriveAddressHeader {
-  padding: 0 20px 0 20px;
-  height: 70px;
-  flex-direction: row;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--font);
-  width: 100%;
-  margin-bottom: 8px;
-  background-color: var(--backgroundColor);
-}
-
-.deriveAddressTitle {
-  color: var(--font);
-  font-size: 16px;
-  margin-top: 4px;
-  font-family: var(--font-roboto);
-  font-weight: bold;
-}
-
-.mainItem {
-  align-items: center;
-  flex-direction: row;
-  height: 52px;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.list {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  border-bottom: 1px solid var(--gray);
-  flex: 1;
-  justify-content: space-between;
-}
-
-.box {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  flex: 1;
-}
-
-.rowStyle {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  max-height: 24px;
-}
-
-.item {
-  align-items: flex-start;
-  display: flex;
-  flex-direction: column;
-}
-
-.itemNumber {
-  align-items: flex-end;
-}
-
-.title {
-  color: var(--font);
-  font-size: 14px;
-  font-family: var(--font-roboto);
-  flex-shrink: 1;
-}
-
-.text {
-  color: var(--gray);
-  font-size: 14px;
-  font-family: var(--font-roboto);
-  flex-shrink: 1;
-  text-align: right;
-}
-
-.iconBox {
-  width: 39px;
-  height: 39px;
-  background-color: var(--font);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 10px;
-}
-
-.iconBox>svg {
-  width: 30px;
-  height: 30px;
-  fill: var(--backgroundColor);
-}
-
-.arrow>svg {
-  width: 30px;
-  height: 30px;
-  fill: var(--gray);
-}
-
-.btn {
-  align-self: center;
-}
-
-.chainDisplayName {
-  margin-left: 5px;
-  color: var(--font);
-  font-size: 14px;
-  font-family: var(--font-roboto);
-  flex-shrink: 1;
-  border-radius: 10px;
-  background-color: var(--walletItemColor);
-  text-align: center;
-  padding: 0 10px;
-}
-
-.popoverItemView {
-  padding: 16px 24px;
-  background-color: var(--backgroundColor);
-}
-
-.popoverItemText {
-  color: var(--font);
-  font-size: 14px;
-  font-family: var(--font-roboto);
+.error {
+  margin: 0;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--cd-error);
 }
 
-.itemContainer {
-  padding-top: 20px
+.alert {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--cd-error) 30%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--cd-error) 8%, transparent);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--cd-error);
 }
 
-.sticky {
-  position: fixed;
-  top: 70px;
-  max-width: 900px;
-  width: 900px;
+/* Accounts */
+.accounts {
+  /* No overflow: hidden here, it would break the sticky header. */
+  padding-bottom: 6px;
 }
 
-.sticky+.itemContainer {
-  padding-top: 70px;
+.accountsHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--cd-line);
+  border-radius: 22px 22px 0 0;
+  background: var(--cd-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
-.textConfirm {
-  margin-top: 4;
-  color: 'red';
-  margin-left: 10;
-  font-size: 12;
-  font-family: var(--font-roboto);
+.accountsTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--cd-ink);
+}
+
+.count {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--cd-chip);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cd-muted);
+}
+
+.accountsHeader > .exportChip {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.accountList {
+  margin: 0;
+  padding: 6px 8px 0;
+  list-style: none;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  transition: background-color 0.2s;
+}
+
+.account:hover {
+  background: var(--cd-hover);
+}
+
+.account + .account {
+  margin-top: 2px;
+}
+
+.accountSelected,
+.accountSelected:hover {
+  background: color-mix(in srgb, var(--background) var(--cd-tint), transparent);
+}
+
+.accountIcon {
+  display: flex;
+  flex: none;
+}
+
+/* CoinIcon brings its own margin and dark plate; neutralise both. */
+.accountIcon > div {
+  margin: 0;
+  background: #fff;
+}
+
+.accountMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.accountTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--cd-ink);
+  overflow-wrap: anywhere;
+}
+
+.selectedPill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--background);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.address {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  color: var(--cd-muted);
+}
+
+/* CustomDerivationPopOver's own trigger, as a round icon button. */
+.menu {
+  flex: none;
+}
+
+.menu button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  transition: background-color 0.2s;
+}
+
+.menu button:hover {
+  background: var(--cd-hover);
+}
+
+.menu button > svg {
+  width: 18px;
+  height: 18px;
+}
+
+.empty {
+  margin: 0;
+  padding: 24px 16px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--cd-muted);
+}
+
+.back:focus-visible,
+.menu button:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .topBar {
+    padding: 10px 20px;
+  }
+
+  .column {
+    padding-top: 24px;
+  }
+
+  .card {
+    padding: 22px 20px;
+  }
 }

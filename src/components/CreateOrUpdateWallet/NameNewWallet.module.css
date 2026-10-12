@@ -1,0 +1,73 @@
+/* Name step for a new wallet. Page, heading, field and button styles are the
+   shared auth ones (components/AuthLayout). */
+.avatar {
+  display: flex;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+  color: #fff;
+  font-size: 30px;
+  font-weight: 700;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--background) 82%, #fff) 0%,
+    var(--background) 100%
+  );
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--background) 30%, transparent);
+}
+
+.fieldBlock {
+  margin-top: 26px;
+}
+
+/* Standalone (not on a glass card), so it is the glass itself. */
+.nameField {
+  background: var(--ln-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.hintRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 0 4px;
+  font-size: 12.5px;
+  color: var(--ln-faint);
+}
+
+.hintError {
+  font-weight: 600;
+  color: var(--ln-error);
+}
+
+.count {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.suggestions {
+  margin-top: 20px;
+}
+
+.suggestionsLabel {
+  display: block;
+  margin: 0 0 10px 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ln-faint);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+

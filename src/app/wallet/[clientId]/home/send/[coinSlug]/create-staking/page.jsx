@@ -1,12 +1,6 @@
 'use client';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
-import {
-  FormControl,
-  InputAdornment,
-  InputLabel,
-  OutlinedInput,
-} from '@mui/material';
 import {Formik} from 'formik';
 import {shallowEqual, useSelector} from 'react-redux';
 import {getValidationSchemaForCreateStaking} from 'utils/validationSchema';
@@ -44,7 +38,9 @@ import ModalAllowanceInfo from 'components/ModalAllowanceInfo';
 import Loading from 'components/Loading';
 import {useRouter} from 'next/navigation';
 import styles from './CreateStaking.module.css';
-import PageTitle from 'components/PageTitle';
+import CoinIcon from 'components/CoinIcon';
+import GeneralButton from 'components/Button';
+import {ChevronLeftIcon} from 'components/Home/HomeIcons';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
 
@@ -269,317 +265,241 @@ const CreateStaking = () => {
     [dispatch, navigateToTransfer],
   );
 
-  if (isLoading) {
-    return <Loading />;
-  }
+  const symbol = currentCoin?.symbol?.toUpperCase() ?? '';
+
   return (
-    <>
-      <Formik
-        innerRef={formikRef}
-        enableReinitialize={true}
-        initialValues={{
-          amount: '',
-          currencyAmount: '',
-          validatorPubKey: null,
-          resourceType: isResourceSupport ? resourceData[1] : null,
-        }}
-        validationSchema={getValidationSchemaForCreateStaking(
-          currentCoin?.chain_name,
-          availableAmount,
-        )}
-        onSubmit={handleSubmitForm}>
-        {({
-          handleBlur,
-          handleSubmit,
-          values,
-          errors,
-          isValid,
-          setFieldValue,
-          touched,
-        }) => (
-          <div style={{flex: 1}}>
-            <PageTitle title='Create Staking' />
-            <div className={styles.container} style={{padding: '20px'}}>
-              <div className={styles.formInput}>
-                <span className={styles.title}>
-                  Amount available for staking
-                </span>
-                <div className={styles.box}>
-                  <span className={styles.boxTitle}>{availableAmount}</span>
-                  <span className={styles.boxTitle}>
-                    {' ' + currentCoin?.symbol}
-                  </span>
-                </div>
-                <div className={styles.box}>
-                  <span className={styles.boxBalance}>
-                    {currencySymbol[localCurrency] || ''}
-                    {availableAmountCurrency}
-                  </span>
-                </div>
-                {values?.validatorPubKey?.options?.minAmount != null && (
-                  <div className={styles.listTitle}>
-                    {`Minimum: ${values.validatorPubKey.options.minAmount} ${currentCoin?.symbol}`}
-                  </div>
-                )}
-                <div
-                  style={{
-                    flex: 1,
-                  }}>
-                  <div className={styles.boxInput}>
-                    <div className={styles.listTitle}>Staking Amount</div>
-                    <div className={styles.inputView}>
-                      <FormControl
-                        sx={{m: 0, width: '100%'}}
-                        variant='outlined'>
-                        <InputLabel
-                          sx={{
-                            color:
-                              errors.password && touched.password
-                                ? 'red'
-                                : 'var(--borderActiveColor)',
-                          }}
-                          focused={false}>
-                          Enter amount for staking
-                        </InputLabel>
-                        <OutlinedInput
-                          className={styles.input}
-                          id='amount'
-                          name='amount'
-                          onChange={event => {
-                            const tempValues = validateNumberInInput(
-                              event.target.value,
-                              currentCoin?.decimal,
-                            );
-                            const tempAmount = multiplyBNWithFixed(
-                              tempValues,
-                              currentCoin?.currencyRate,
-                              2,
-                            );
-                            setFieldValue('currencyAmount', tempAmount);
-                            setFieldValue('amount', tempValues);
-                          }}
-                          onBlur={handleBlur('amount')}
-                          value={values.amount}
-                          label='Enter amount for staking'
-                          sx={{
-                            '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor:
-                                errors.amount && touched.amount
-                                  ? 'red'
-                                  : 'var(--sidebarIcon)',
-                            },
-
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor:
-                                errors.amount && touched.amount
-                                  ? 'red'
-                                  : 'var(--borderActiveColor)',
-                            },
-
-                            '& .MuiInputLabel-outlined': {
-                              color:
-                                errors.amount && touched.amount
-                                  ? 'red'
-                                  : 'var(--sidebarIcon)',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: 'var(--sidebarIcon) !important',
-                            },
-                          }}
-                          endAdornment={
-                            <InputAdornment position='end'>
-                              <div
-                                className={styles.btnMax}
-                                hitSlop={{
-                                  top: 12,
-                                  left: 12,
-                                  right: 12,
-                                  bottom: 12,
-                                }}
-                                onClick={() => {
-                                  setFieldValue(
-                                    'currencyAmount',
-                                    availableAmountCurrency,
-                                  );
-                                  setFieldValue('amount', maxAmount + '');
-                                }}>
-                                <span className={styles.btnText}>Max</span>
-                              </div>
-                            </InputAdornment>
-                          }
-                        />
-                      </FormControl>
-                    </div>
-                    {errors.amount && (
-                      <span className={styles.textConfirm}>
-                        {errors.amount}
-                      </span>
-                    )}
-                  </div>
-                  <div className={styles.boxInput}>
-                    <div className={styles.listTitle}>Fiat Staking Amount</div>
-                    <div className={styles.inputView}>
-                      <FormControl
-                        sx={{m: 0, width: '100%'}}
-                        variant='outlined'>
-                        <InputLabel
-                          sx={{
-                            color:
-                              errors.password && touched.password
-                                ? 'red'
-                                : 'var(--borderActiveColor)',
-                          }}
-                          focused={false}>
-                          {`Enter ${localCurrency} amount for staking`}
-                        </InputLabel>
-                        <OutlinedInput
-                          className={styles.input}
-                          id='currencyAmount'
-                          name='currencyAmount'
-                          onChange={event => {
-                            const tempValues = validateNumberInInput(
-                              event.target.value,
-                              2,
-                            );
-                            const tempAmount = new BigNumber(tempValues)
-                              .dividedBy(
-                                new BigNumber(currentCoin?.currencyRate),
-                              )
-                              .toFixed(Number(currentCoin?.decimal));
-                            setFieldValue('currencyAmount', tempValues);
-                            setFieldValue('amount', tempAmount);
-                          }}
-                          onBlur={handleBlur('currencyAmount')}
-                          value={values.currencyAmount}
-                          label={`Enter ${localCurrency} amount for staking`}
-                          sx={{
-                            '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor:
-                                errors.currencyAmount && touched.currencyAmount
-                                  ? 'red'
-                                  : 'var(--sidebarIcon)',
-                            },
-
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor:
-                                errors.currencyAmount && touched.currencyAmount
-                                  ? 'red'
-                                  : 'var(--borderActiveColor)',
-                            },
-
-                            '& .MuiInputLabel-outlined': {
-                              color:
-                                errors.currencyAmount && touched.currencyAmount
-                                  ? 'red'
-                                  : 'var(--sidebarIcon)',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: 'var(--sidebarIcon) !important',
-                            },
-                          }}
-                          endAdornment={
-                            <InputAdornment position='end'>
-                              <div
-                                className={styles.btnMax}
-                                hitSlop={{
-                                  top: 12,
-                                  left: 12,
-                                  right: 12,
-                                  bottom: 12,
-                                }}
-                                onClick={() => {
-                                  setFieldValue(
-                                    'currencyAmount',
-                                    availableAmountCurrency,
-                                  );
-                                  setFieldValue('amount', maxAmount + '');
-                                }}>
-                                <span className={styles.btnText}>Max</span>
-                              </div>
-                            </InputAdornment>
-                          }
-                        />
-                      </FormControl>
-                    </div>
-                    {errors.currencyAmount && (
-                      <span className={styles.textConfirm}>
-                        {errors.currencyAmount}
-                      </span>
-                    )}
-                  </div>
-                  {isValidatorSupport && (
-                    <div className={styles.boxInput}>
-                      <div className={styles.listTitle}>Validator</div>
-                      <div className={styles.addressView}>
-                        <SelectInput
-                          className={styles.selectInput}
-                          placeholder={'Select validator'}
-                          listData={validatorList}
-                          onValueChange={value => {
-                            const selected = validatorList?.find(
-                              item => item?.value === value,
-                            );
-                            setFieldValue('validatorPubKey', selected);
-                          }}
-                          value={values.validatorPubKey?.value}
-                          renderValue={value => {
-                            const selected = validatorList?.find(
-                              item => item?.value === value,
-                            );
-                            return selected?.label || value;
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {isResourceSupport && !!resourceData?.length && (
-                    <div className={styles.boxInput}>
-                      <div className={styles.listTitle}>Resource Type</div>
-                      <div className={styles.addressView}>
-                        <SelectInput
-                          className={styles.selectInput}
-                          placeholder={'Select Resource Type'}
-                          listData={resourceData}
-                          onValueChange={value => {
-                            const selected = resourceData?.find(
-                              item => item?.value === value,
-                            );
-                            setFieldValue('resourceType', selected);
-                          }}
-                          value={values.resourceType?.value}
-                          renderValue={value => {
-                            const selected = resourceData?.find(
-                              item => item?.value === value,
-                            );
-                            return selected?.label || value;
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className={styles.nextContainer}>
-                <button
-                  disabled={!isValid || allowanceLoading}
-                  className={styles.button}
-                  style={{
-                    backgroundColor:
-                      isValid && !allowanceLoading
-                        ? 'var(--background)'
-                        : 'var(--gray)',
-                  }}
-                  onClick={handleSubmit}>
-                  <span className={styles.buttonTitle}>
-                    {allowanceLoading ? 'Checking allowance…' : 'Next'}
-                  </span>
-                </button>
-              </div>
-            </div>
+    <main className={styles.page}>
+      <div className={styles.glow} aria-hidden='true' />
+      <div className={styles.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={styles.back}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <h1 className={styles.title}>Stake {symbol}</h1>
+        <span className={styles.iconSpacer} aria-hidden='true' />
+      </div>
+      <div className={styles.column}>
+        {isLoading ? (
+          <div className={styles.loading}>
+            <Loading />
           </div>
+        ) : (
+          <Formik
+            innerRef={formikRef}
+            enableReinitialize={true}
+            initialValues={{
+              amount: '',
+              currencyAmount: '',
+              validatorPubKey: null,
+              resourceType: isResourceSupport ? resourceData[1] : null,
+            }}
+            validationSchema={getValidationSchemaForCreateStaking(
+              currentCoin?.chain_name,
+              availableAmount,
+            )}
+            onSubmit={handleSubmitForm}>
+            {({
+              handleBlur,
+              handleSubmit,
+              values,
+              errors,
+              isValid,
+              setFieldValue,
+              touched,
+            }) => {
+              const setMax = () => {
+                setFieldValue('currencyAmount', availableAmountCurrency);
+                setFieldValue('amount', maxAmount + '');
+              };
+              const amountError =
+                (touched.amount && errors.amount) ||
+                (touched.currencyAmount && errors.currencyAmount);
+              const minAmount = values?.validatorPubKey?.options?.minAmount;
+              return (
+                <form
+                  className={styles.form}
+                  noValidate
+                  onSubmit={event => {
+                    event.preventDefault();
+                    handleSubmit();
+                  }}>
+                  <section className={styles.balanceCard} aria-label='Balance'>
+                    <span className={styles.coinIcon}>
+                      <CoinIcon item={currentCoin} />
+                    </span>
+                    <div className={styles.balanceText}>
+                      <span className={styles.label}>
+                        Available for staking
+                      </span>
+                      <p className={styles.balance}>
+                        {availableAmount}{' '}
+                        <span className={styles.balanceSymbol}>{symbol}</span>
+                      </p>
+                    </div>
+                    <span className={styles.balanceFiat}>
+                      {currencySymbol[localCurrency] || ''}
+                      {availableAmountCurrency}
+                    </span>
+                  </section>
+
+                  <section className={styles.card}>
+                    <div className={styles.field}>
+                      <div className={styles.labelRow}>
+                        <label htmlFor='amount' className={styles.label}>
+                          Staking amount
+                        </label>
+                        <GeneralButton
+                          variant='chip'
+                          className={styles.maxChip}
+                          onClick={setMax}>
+                          Max
+                        </GeneralButton>
+                      </div>
+                      <div
+                        className={`${styles.amountBox} ${
+                          amountError ? styles.inputBoxError : ''
+                        }`}>
+                        <div className={styles.amountRow}>
+                          <input
+                            id='amount'
+                            className={`${styles.input} ${styles.amountInput}`}
+                            placeholder='0'
+                            inputMode='decimal'
+                            name='amount'
+                            onChange={event => {
+                              const tempValues = validateNumberInInput(
+                                event.target.value,
+                                currentCoin?.decimal,
+                              );
+                              const tempAmount = multiplyBNWithFixed(
+                                tempValues,
+                                currentCoin?.currencyRate,
+                                2,
+                              );
+                              setFieldValue('currencyAmount', tempAmount);
+                              setFieldValue('amount', tempValues);
+                            }}
+                            onBlur={handleBlur('amount')}
+                            value={values.amount}
+                          />
+                          <span className={styles.unit}>{symbol}</span>
+                        </div>
+                        <div className={styles.fiatRow}>
+                          <span className={styles.fiatPrefix}>≈</span>
+                          <input
+                            aria-label={`Staking amount in ${localCurrency}`}
+                            className={`${styles.input} ${styles.fiatInput}`}
+                            placeholder='0.00'
+                            inputMode='decimal'
+                            name='currencyAmount'
+                            onChange={event => {
+                              const tempValues = validateNumberInInput(
+                                event.target.value,
+                                2,
+                              );
+                              const tempAmount = new BigNumber(tempValues)
+                                .dividedBy(
+                                  new BigNumber(currentCoin?.currencyRate),
+                                )
+                                .toFixed(Number(currentCoin?.decimal));
+                              setFieldValue('currencyAmount', tempValues);
+                              setFieldValue('amount', tempAmount);
+                            }}
+                            onBlur={handleBlur('currencyAmount')}
+                            value={values.currencyAmount}
+                          />
+                          <span className={styles.fiatUnit}>
+                            {localCurrency}
+                          </span>
+                        </div>
+                      </div>
+                      {minAmount != null && (
+                        <p className={styles.hint}>
+                          {`Minimum: ${minAmount} ${symbol}`}
+                        </p>
+                      )}
+                      {errors.amount && (
+                        <p className={styles.error} role='alert'>
+                          {errors.amount}
+                        </p>
+                      )}
+                      {errors.currencyAmount && (
+                        <p className={styles.error} role='alert'>
+                          {errors.currencyAmount}
+                        </p>
+                      )}
+                    </div>
+
+                    {isValidatorSupport && (
+                      <div className={styles.field}>
+                        <span className={styles.label}>Validator</span>
+                        <div className={styles.selectBox}>
+                          <SelectInput
+                            className={styles.selectInput}
+                            placeholder={'Select validator'}
+                            listData={validatorList}
+                            onValueChange={value => {
+                              const selected = validatorList?.find(
+                                item => item?.value === value,
+                              );
+                              setFieldValue('validatorPubKey', selected);
+                            }}
+                            value={values.validatorPubKey?.value}
+                            renderValue={value => {
+                              const selected = validatorList?.find(
+                                item => item?.value === value,
+                              );
+                              return selected?.label || value;
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {isResourceSupport && !!resourceData?.length && (
+                      <div className={styles.field}>
+                        <span className={styles.label}>Resource type</span>
+                        <div className={styles.selectBox}>
+                          <SelectInput
+                            className={styles.selectInput}
+                            placeholder={'Select resource type'}
+                            listData={resourceData}
+                            onValueChange={value => {
+                              const selected = resourceData?.find(
+                                item => item?.value === value,
+                              );
+                              setFieldValue('resourceType', selected);
+                            }}
+                            value={values.resourceType?.value}
+                            renderValue={value => {
+                              const selected = resourceData?.find(
+                                item => item?.value === value,
+                              );
+                              return selected?.label || value;
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </section>
+
+                  <GeneralButton
+                    type='submit'
+                    fullWidth
+                    disabled={!isValid}
+                    loading={allowanceLoading}
+                    loadingLabel='Checking allowance…'>
+                    Next
+                  </GeneralButton>
+                </form>
+              );
+            }}
+          </Formik>
         )}
-      </Formik>
+      </div>
       <ModalAllowanceInfo
         visible={allowanceModalVisible}
         onClose={() => {
@@ -596,7 +516,7 @@ const CreateStaking = () => {
         stakingProviderName={pendingStakingProviderName}
         amount={pendingAmount}
       />
-    </>
+    </main>
   );
 };
 

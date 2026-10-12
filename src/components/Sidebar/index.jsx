@@ -32,6 +32,9 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 
+// Order of the dividers-separated groups in the nav.
+const SECTIONS = ['wallet', 'general', 'account'];
+
 const Sidebar = () => {
   const t = useTranslations('home');
 
@@ -75,6 +78,38 @@ const Sidebar = () => {
   const handleCheckMenu = () => {
     setIsOpenMenu(!isOpenMenu);
   };
+  const sections = useMemo(
+    () =>
+      SECTIONS.map(section =>
+        filterSideBarList.filter(item => item.section === section),
+      ).filter(items => items.length > 0),
+    [filterSideBarList],
+  );
+
+  const renderNav = onItemClick => (
+    <nav className={s.nav}>
+      {sections.map((items, index) => (
+        <ul key={index} className={s.group}>
+          {items.map(({key, href, Icon, section}) => (
+            <li key={key} onClick={onItemClick}>
+              <ActiveLink
+                href={href}
+                setModal={setModal}
+                setPage={setPage}
+                className={`${s.item} ${section === 'account' ? s.itemAccount : ''}`}
+                activeClassName={s.itemActive}>
+                <span className={s.itemIcon}>
+                  <Icon />
+                </span>
+                <span className={s.itemLabel}>{t(key)}</span>
+              </ActiveLink>
+            </li>
+          ))}
+        </ul>
+      ))}
+    </nav>
+  );
+
   const shouldDisplayMenu = () =>
     pathname !== '/auth' &&
     pathname !== '/' &&
@@ -82,24 +117,14 @@ const Sidebar = () => {
   return (
     shouldDisplayMenu() && (
       <>
-        <aside className={s.container}>
-          <ul>
-            {filterSideBarList.map(({key, href, item}) => (
-              <li key={key}>
-                <ActiveLink href={href} setModal={setModal} setPage={setPage}>
-                  {item(t)}
-                </ActiveLink>
-              </li>
-            ))}
-          </ul>
-        </aside>
+        <aside className={s.container}>{renderNav()}</aside>
         <Menu
           onOpen={handleToggleMenu}
           onClose={handleToggleMenu}
           isOpen={isOpenMenu}
           disableOverlayClick={handleToggleMenu}
           left
-          width={280}
+          width={288}
           burgerButtonClassName={s.bmBurgerButton}
           burgerBarClassName={s.bmBurgerBars}
           crossButtonClassName={s.bmCrossButton}
@@ -108,15 +133,7 @@ const Sidebar = () => {
           morphShapeClassName={s.bmMorphShape}
           itemListClassName={s.bmItemList}
           overlayClassName={s.bmOverlay}>
-          <ul className={s.navList}>
-            {filterSideBarList.map(({key, href, item}) => (
-              <li key={key} onClick={handleCheckMenu}>
-                <ActiveLink href={href} setModal={setModal} setPage={setPage}>
-                  {item(t)}
-                </ActiveLink>
-              </li>
-            ))}
-          </ul>
+          {renderNav(handleCheckMenu)}
         </Menu>
         <ModalReset
           visible={modal}

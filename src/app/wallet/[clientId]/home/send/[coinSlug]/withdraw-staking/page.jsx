@@ -25,8 +25,9 @@ import StakingItem from 'components/StakingItem';
 import {getRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {useRouter} from 'next/navigation';
-import PageTitle from 'components/PageTitle';
-import InputField from './InputField';
+import CoinIcon from 'components/CoinIcon';
+import GeneralButton from 'components/Button';
+import {ChevronLeftIcon} from 'components/Home/HomeIcons';
 import SelectInput from 'components/SelectInput';
 import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
 
@@ -263,209 +264,233 @@ const WithdrawStaking = () => {
     (isEVMStaking && isMaxCheckbox) ||
     (validateNumber(amount) && amountBN.lte(availableAmountBN));
 
+  const symbol = currentCoin?.symbol?.toUpperCase() ?? '';
+  const amountError = errors.amount || errors.currencyAmount;
+  const setMax = () => {
+    setState({
+      ...state,
+      amount: availableAmount,
+      currencyAmount: availableAmountCurrency,
+    });
+  };
+
   return (
-    <div className={styles.contentContainerStyle}>
-      <div>
-        <PageTitle title={title} />
-        <div style={{flex: 1}}>
-          <div
-            className={styles.container}
-            style={{
-              padding: '20px',
-            }}>
-            <div className={styles.formInput}>
-              <div className={styles.title}>Staking Amount</div>
-              <div className={styles.box}>
-                <div className={styles.boxTitle}>{availableAmount}</div>
-                <div className={styles.boxTitle}>{currentCoin?.symbol}</div>
-              </div>
-              <div className={styles.box}>
-                <div className={styles.boxBalance}>
-                  {currencySymbol[localCurrency] || ''}
-                  {availableAmountCurrency}
-                </div>
+    <main className={styles.page}>
+      <div className={styles.glow} aria-hidden='true' />
+      <div className={styles.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={styles.back}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <h1 className={styles.title}>{title}</h1>
+        <span className={styles.iconSpacer} aria-hidden='true' />
+      </div>
+      <div className={styles.column}>
+        <form
+          className={styles.form}
+          noValidate
+          onSubmit={event => {
+            event.preventDefault();
+            handleSubmitForm();
+          }}>
+          <section className={styles.balanceCard} aria-label='Staked amount'>
+            <span className={styles.coinIcon}>
+              <CoinIcon item={currentCoin} />
+            </span>
+            <div className={styles.balanceText}>
+              <span className={styles.label}>
+                {isStakingRewards ? 'Rewards available' : 'Staked amount'}
+              </span>
+              <p className={styles.balance}>
+                {availableAmount}{' '}
+                <span className={styles.balanceSymbol}>{symbol}</span>
+              </p>
+            </div>
+            <span className={styles.balanceFiat}>
+              {currencySymbol[localCurrency] || ''}
+              {availableAmountCurrency}
+            </span>
+          </section>
+
+          {isEVMStaking && (
+            <GeneralButton
+              variant='unstyled'
+              role='switch'
+              aria-checked={isMaxCheckbox}
+              className={`${styles.toggleCard} ${
+                isMaxCheckbox ? styles.toggleCardOn : ''
+              }`}
+              onClick={() => handleMaxCheckboxToggle(!isMaxCheckbox)}>
+              <span className={styles.toggleText}>
+                <span className={styles.toggleTitle}>
+                  Unstake entire balance
+                </span>
+                <span className={styles.toggleHint}>
+                  Redeem all staked tokens at once
+                </span>
+              </span>
+              <span className={styles.switch} aria-hidden='true'>
+                <span className={styles.switchKnob} />
+              </span>
+            </GeneralButton>
+          )}
+
+          <section className={styles.card}>
+            <div className={styles.field}>
+              <div className={styles.labelRow}>
+                <label htmlFor='amount' className={styles.label}>
+                  Amount
+                </label>
+                {!disableTextInput && (
+                  <GeneralButton
+                    variant='chip'
+                    className={styles.maxChip}
+                    onClick={setMax}>
+                    Max
+                  </GeneralButton>
+                )}
               </div>
               <div
-                style={{
-                  flex: 1,
-                }}>
-                {isEVMStaking && (
-                  <div
-                    className={`${styles.unstakeMaxCard} ${
-                      isMaxCheckbox ? styles.unstakeMaxCardActive : ''
-                    }`}
-                    onClick={() => handleMaxCheckboxToggle(!isMaxCheckbox)}>
-                    <div className={styles.unstakeMaxInfo}>
-                      <div className={styles.unstakeMaxTitle}>
-                        Unstake Entire Balance
-                      </div>
-                      <div className={styles.unstakeMaxSubtitle}>
-                        Redeem all staked tokens at once
-                      </div>
-                    </div>
-                    <input
-                      type='checkbox'
-                      className={styles.unstakeMaxSwitch}
-                      checked={isMaxCheckbox}
-                      onChange={e => handleMaxCheckboxToggle(e.target.checked)}
-                      onClick={e => e.stopPropagation()}
-                    />
-                  </div>
-                )}
-                <div className={styles.boxInput}>
-                  <div className={styles.listTitle}>Staking Amount</div>
-                  <div className={styles.inputView}>
-                    <InputField
-                      label='Enter amount for staking'
-                      name='amount'
-                      inputSx={{
-                        color: errors.amount
-                          ? 'red'
-                          : 'var(--borderActiveColor)',
-                      }}
-                      inputError={errors.amount}
-                      onChange={event => {
-                        const tempValues = validateNumberInInput(
-                          event.target.value,
-                          currentCoin?.decimal,
-                        );
-                        const tempAmount = multiplyBNWithFixed(
-                          tempValues,
-                          currentCoin?.currencyRate,
-                          2,
-                        );
-                        const localErrors = checkError(tempValues, tempAmount);
-                        setState({
-                          ...state,
-                          currencyAmount: tempAmount,
-                          amount: tempValues,
-                          errors: localErrors,
-                        });
-                      }}
-                      disableTextInput={disableTextInput}
-                      value={amount}
-                      maxBtnClick={() => {
-                        setState({
-                          ...state,
-                          currencyAmount: availableAmountCurrency,
-                          amount: availableAmount,
-                        });
-                      }}
-                    />
-                  </div>
-                  {errors.amount && (
-                    <div className={styles.textConfirm}>{errors.amount}</div>
-                  )}
+                className={`${styles.amountBox} ${
+                  amountError ? styles.inputBoxError : ''
+                } ${disableTextInput ? styles.amountBoxLocked : ''}`}>
+                <div className={styles.amountRow}>
+                  <input
+                    id='amount'
+                    className={`${styles.input} ${styles.amountInput}`}
+                    placeholder='0'
+                    inputMode='decimal'
+                    name='amount'
+                    readOnly={disableTextInput}
+                    onChange={event => {
+                      const tempValues = validateNumberInInput(
+                        event.target.value,
+                        currentCoin?.decimal,
+                      );
+                      const tempAmount = multiplyBNWithFixed(
+                        tempValues,
+                        currentCoin?.currencyRate,
+                        2,
+                      );
+                      const localErrors = checkError(tempValues, tempAmount);
+                      setState({
+                        ...state,
+                        currencyAmount: tempAmount,
+                        amount: tempValues,
+                        errors: localErrors,
+                      });
+                    }}
+                    value={amount}
+                  />
+                  <span className={styles.unit}>{symbol}</span>
                 </div>
-                <div className={styles.boxInput}>
-                  <div className={styles.listTitle}>Fiat Staking Amount</div>
-                  <div className={styles.inputView}>
-                    <InputField
-                      label={`Enter ${localCurrency} amount for staking`}
-                      name='currencyAmount'
-                      inputSx={{
-                        color: errors.currencyAmount
-                          ? 'red'
-                          : 'var(--borderActiveColor)',
-                      }}
-                      inputError={errors.currencyAmount}
-                      onChange={event => {
-                        const tempValues = validateNumberInInput(
-                          event.target.value,
-                          2,
+                <div className={styles.fiatRow}>
+                  <span className={styles.fiatPrefix}>≈</span>
+                  <input
+                    aria-label={`Amount in ${localCurrency}`}
+                    className={`${styles.input} ${styles.fiatInput}`}
+                    placeholder='0.00'
+                    inputMode='decimal'
+                    name='currencyAmount'
+                    readOnly={disableTextInput}
+                    onChange={event => {
+                      const tempValues = validateNumberInInput(
+                        event.target.value,
+                        2,
+                      );
+                      const tempAmount = new BigNumber(tempValues)
+                        .dividedBy(new BigNumber(currentCoin?.currencyRate))
+                        .toFixed(
+                          currentCoin?.decimal
+                            ? Number(currentCoin?.decimal)
+                            : 8,
                         );
-                        const tempAmount = new BigNumber(tempValues)
-                          .dividedBy(new BigNumber(currentCoin?.currencyRate))
-                          .toFixed(
-                            currentCoin?.decimal
-                              ? Number(currentCoin?.decimal)
-                              : 8,
-                          );
-                        const localErrors = checkError(tempAmount, tempValues);
-                        setState({
-                          ...state,
-                          amount: tempAmount,
-                          currencyAmount: tempValues,
-                          errors: localErrors,
-                        });
-                      }}
-                      disableTextInput={disableTextInput}
-                      value={currencyAmount}
-                      maxBtnClick={() => {
-                        setState({
-                          ...state,
-                          amount: availableAmount,
-                          currencyAmount: availableAmountCurrency,
-                        });
-                      }}
-                    />
-                  </div>
-                  {errors.amount && (
-                    <div className={styles.textConfirm}>{errors.amount}</div>
-                  )}
+                      const localErrors = checkError(tempAmount, tempValues);
+                      setState({
+                        ...state,
+                        amount: tempAmount,
+                        currencyAmount: tempValues,
+                        errors: localErrors,
+                      });
+                    }}
+                    value={currencyAmount}
+                  />
+                  <span className={styles.fiatUnit}>{localCurrency}</span>
                 </div>
-                {isEVMStaking && stakingProviderList.length > 0 && (
-                  <div className={styles.boxInput}>
-                    <div className={styles.listTitle}>Staking Provider</div>
-                    <StakingItem item={selectedStake} isWithdraw={false} />
-                  </div>
-                )}
-                {isValidatorSupport && !isEVMStaking && (
-                  <div className={styles.boxInput}>
-                    <div className={styles.listTitle}>Validator</div>
-                    <StakingItem
-                      item={selectedStake}
-                      isWithdraw={false}
-                      showReward={false}
-                    />
-                  </div>
-                )}
-                {isResourceSupport &&
-                  !!resourceData?.length &&
-                  !hideResource && (
-                    <div className={styles.boxInput}>
-                      <div className={styles.listTitle}>Resource Type</div>
-                      <div className={styles.addressView}>
-                        <SelectInput
-                          className={styles.selectInput}
-                          placeholder={'Select Resource Type'}
-                          listData={resourceData}
-                          onValueChange={value => {
-                            const selected = resourceData?.find(
-                              item => item?.value === value,
-                            );
-                            setState({...state, resourceType: selected});
-                          }}
-                          value={resourceType?.value}
-                          renderValue={value => {
-                            const selected = resourceData?.find(
-                              item => item?.value === value,
-                            );
-                            return selected?.label || value;
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
               </div>
+              {disableTextInput && !isEVMStaking && (
+                <p className={styles.hint}>
+                  The full amount is used for this action.
+                </p>
+              )}
+              {errors.amount && (
+                <p className={styles.error} role='alert'>
+                  {errors.amount}
+                </p>
+              )}
+              {errors.currencyAmount && (
+                <p className={styles.error} role='alert'>
+                  {errors.currencyAmount}
+                </p>
+              )}
             </div>
-            <div className={styles.nextContainer}>
-              <button
-                disabled={!isValid}
-                className={styles.button}
-                style={{
-                  backgroundColor: isValid
-                    ? 'var(--background)'
-                    : 'var(--gray)',
-                }}
-                onClick={handleSubmitForm}>
-                <div className={styles.buttonTitle}>Next</div>
-              </button>
-            </div>
-          </div>
-        </div>
+
+            {isEVMStaking && stakingProviderList.length > 0 && (
+              <div className={styles.field}>
+                <span className={styles.label}>Staking provider</span>
+                <div className={styles.itemBox}>
+                  <StakingItem item={selectedStake} isWithdraw={false} />
+                </div>
+              </div>
+            )}
+            {isValidatorSupport && !isEVMStaking && (
+              <div className={styles.field}>
+                <span className={styles.label}>Validator</span>
+                <div className={styles.itemBox}>
+                  <StakingItem
+                    item={selectedStake}
+                    isWithdraw={false}
+                    showReward={false}
+                  />
+                </div>
+              </div>
+            )}
+            {isResourceSupport && !!resourceData?.length && !hideResource && (
+              <div className={styles.field}>
+                <span className={styles.label}>Resource type</span>
+                <div className={styles.selectBox}>
+                  <SelectInput
+                    className={styles.selectInput}
+                    placeholder={'Select resource type'}
+                    listData={resourceData}
+                    onValueChange={value => {
+                      const selected = resourceData?.find(
+                        item => item?.value === value,
+                      );
+                      setState({...state, resourceType: selected});
+                    }}
+                    value={resourceType?.value}
+                    renderValue={value => {
+                      const selected = resourceData?.find(
+                        item => item?.value === value,
+                      );
+                      return selected?.label || value;
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+
+          <GeneralButton type='submit' fullWidth disabled={!isValid}>
+            Next
+          </GeneralButton>
+        </form>
       </div>
-    </div>
+    </main>
   );
 };
 

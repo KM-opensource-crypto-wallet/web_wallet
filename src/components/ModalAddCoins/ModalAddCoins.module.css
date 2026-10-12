@@ -1,152 +1,357 @@
-.modalOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+/* "Add coin or token" sheet and its tabs (TabAddCoins, TabAddCoinsGroup,
+   CryptoList rows via CoinItem, CryptoGroupItem). Rendered inside HomeSheet,
+   so everything reads Home's `--hm-*` tokens; the accent is the white-label
+   `--background` colour. */
+.sheet {
+  height: 80vh;
 }
 
-.modalContent {
-    background-color: var(--secondaryBackgroundColor);
-    border-radius: 10px;
-    width: 95%;
-    max-width: 800px;
-    position: relative;
+.segmented {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--hm-field-border);
+  border-radius: 14px;
+  background: var(--hm-field);
 }
 
-.modalDiv {
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
+.segment {
+  min-height: 36px;
+  border-radius: 10px;
+  color: var(--hm-muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
-.modalHeader {
-    padding: 15px;
-    padding-inline: 20px;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--gray);
+.segment:hover {
+  color: var(--hm-ink);
 }
 
-.headerText {
-    font-size: 16px;
-    font-weight: 500;
-    margin: 0;
+.segmentActive {
+  background: var(--hm-glass-strong);
+  box-shadow: 0 2px 8px rgba(63, 40, 22, 0.1);
+  color: var(--hm-ink);
 }
 
-.btnClose {
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--font);
-    font-size: 24px;
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.btnClose:hover {
-    opacity: 0.8;
+.panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.tabBar {
-    display: flex;
-    background-color: var(--secondaryBackgroundColor);
+.panel[hidden] {
+  display: none;
 }
 
+/* Tab content */
 .tab {
-    flex: 1;
-    padding: 12px 24px;
-    background: none;
-    border: none;
-    color: var(--font);
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.tab:first-child {
-    border-right: 1px solid var(--gray);
-}
-
-
-.activeTab {
-    background-color: var(--background);
-    color: white;
-}
-
-.contentBox {
-    flex: 1;
-    overflow: hidden;
-    padding: 0 20px;
-}
-
-.scrollModalDiv {
-    overflow-y: auto;
-    height: 55vh;
-    padding-right: 10px;
-}
-
-.scrollModalDiv::-webkit-scrollbar {
-    width: 6px;
-}
-
-.scrollModalDiv::-webkit-scrollbar-track {
-    background: var(--secondaryBackgroundColor);
-}
-
-.scrollModalDiv::-webkit-scrollbar-thumb {
-    background: var(--gray);
-    border-radius: 3px;
-}
-
-.loader {
-    height: 52px;
-    width: 100%;
-    display: flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-}
-
-.modalBody {
-    width: 100%;
-    margin: 0 auto;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
 }
 
 .search {
-    background-color: var(--secondaryBackgroundColor);
-    font-size: 18px;
-    padding: 0 10px !important;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 8px 0 14px;
+  border: 1.5px solid var(--hm-field-border);
+  border-radius: 14px;
+  background: var(--hm-field);
+  color: var(--hm-faint);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
-@media (min-width: 768px) {
-    .modalContent {
-        width: 50%;
-    }
+.search:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
 }
 
-:global(.dark) .modalContent {
-    background-color: var(--secondaryBackgroundColor);
-    color: var(--font);
+.search > svg {
+  flex: none;
 }
 
-:global(.dark) .tab {
-    color: var(--font);
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14.5px;
+  color: var(--hm-ink);
 }
 
-:global(.dark) .activeTab {
-    color: white;
-    background-color: var(--background);
+.search input::placeholder {
+  color: var(--hm-faint);
 }
 
+.clear {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--hm-chip);
+  color: var(--hm-muted);
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -20px;
+  padding: 0 20px 8px;
+  overflow-y: auto;
+}
+
+.loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 12px 0;
+}
+
+.empty {
+  padding: 36px 12px;
+  font-size: 13.5px;
+  color: var(--hm-faint);
+  text-align: center;
+}
+
+/* Coin rows (CoinItem) */
+.coinRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 2px;
+}
+
+.coinRow + .coinRow {
+  border-top: 1px solid var(--hm-line);
+}
+
+.coinRowDisabled {
+  opacity: 0.45;
+}
+
+.coinIcon {
+  display: flex;
+  flex: none;
+}
+
+/* CoinIcon brings its own margin and dark plate; resize and lighten. */
+.coinIcon > div {
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.coinText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.coinTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.coinSymbol {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--hm-ink);
+}
+
+.chip {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--hm-chip);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hm-muted);
+}
+
+.coinName {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 12.5px;
+  color: var(--hm-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.switch {
+  display: flex;
+  flex: none;
+  justify-content: flex-start;
+  width: 50px;
+  height: 30px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--hm-chip);
+  transition: background-color 0.18s;
+}
+
+:global([data-theme='dark']) .switch:not(.switchOn) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.switchOn {
+  justify-content: flex-end;
+  background: var(--background);
+}
+
+.switch:disabled {
+  cursor: not-allowed;
+}
+
+.knob {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Group rows (CryptoGroupItem) */
+.groupRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--hm-field-border);
+  border-radius: 16px;
+  background: var(--hm-glass);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.groupRow + .groupRow {
+  margin-top: 8px;
+}
+
+.groupRow:hover:not(.groupRowDisabled) {
+  background: var(--hm-hover);
+}
+
+.groupRowDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.groupText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.groupHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.groupName {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--hm-ink);
+}
+
+.groupDescription {
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--hm-faint);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.groupAdd {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 13px;
+  border-radius: 999px;
+  background: var(--background);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: filter 0.2s;
+}
+
+.groupAdd:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.groupAdd:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.groupAdded {
+  background: color-mix(in srgb, #12b76a 14%, transparent);
+  color: #0d8a4e;
+}
+
+:global([data-theme='dark']) .groupAdded {
+  color: #32d583;
+}
+
+.segment:focus-visible,
+.clear:focus-visible,
+.switch:focus-visible,
+.groupRow:focus-visible,
+.groupAdd:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .sheet {
+    height: min(680px, calc(100vh - 64px));
+  }
+
+  .scroll {
+    margin: 0 -24px;
+    padding: 0 24px 8px;
+  }
+}

@@ -1,6 +1,6 @@
 'use client';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   isAdding50MoreAddresses,
@@ -8,7 +8,9 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import * as Yup from 'yup';
 import s from './CustomDerivation.module.css';
-import GoBackButton from 'components/GoBackButton';
+import GeneralButton from 'components/Button';
+import CoinIcon from 'components/CoinIcon';
+import {ChevronLeftIcon, PlusIcon} from 'components/Home/HomeIcons';
 import {
   allDerivePath,
   customObj,
@@ -21,11 +23,7 @@ import {
 } from 'dok-wallet-blockchain-networks/helper';
 import SelectInputExchange from 'components/SelectInputExchange';
 import {useFormik} from 'formik';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import OutlinedInput from '@mui/material/OutlinedInput';
 import {useRouter} from 'next/navigation';
-import Image from 'next/image';
 import AddressTypeBadge from 'components/AddressTypeBadge';
 import CustomDerivationPopOver from 'components/CustomDerivationPopOver';
 import {
@@ -56,7 +54,6 @@ const CustomDerivation = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const routes = useAppRoutes();
-  const headerDivOffset = useRef(0);
   const dispatch = useDispatch();
 
   const derivationData = useMemo(() => {
@@ -189,14 +186,6 @@ const CustomDerivation = () => {
     }
   }, [dispatch]);
 
-  useEffect(() => {
-    const header = document.getElementById('myHeader');
-    const offset = header.offsetTop - 30;
-    if (offset > 100) {
-      headerDivOffset.current = offset;
-    }
-  }, [values.selectedDerivationOptions]);
-
   const onChangeDerivePath = useCallback(
     event => {
       const value = event.target.value;
@@ -208,173 +197,164 @@ const CustomDerivation = () => {
   const isButtonDisabled =
     !values.selectedDerivationOptions || isSubmitting || isAtLimit;
 
-  return (
-    <div
-      className={s.container}
-      onScroll={event => {
-        const scrollTop = event.currentTarget.scrollTop;
-        const sticky = headerDivOffset.current;
-        const header = document.getElementById('myHeader');
-        if (scrollTop > sticky) {
-          header.classList.add(s.sticky);
-        } else {
-          header.classList.remove(s.sticky);
-        }
-      }}>
-      <div className={s.goBack}>
-        <GoBackButton />
-        {!isBitcoinChain(currentCoin?.chain_name) && (
-          <button
-            className={s.buttonAdd50}
-            onClick={onAdd50MoreAddresses}
-            style={
-              isAdding50more
-                ? {
-                    backgroundColor: 'var(--gray)',
-                    cursor: 'not-allowed',
-                    pointerEvents: 'all !important',
-                  }
-                : {}
-            }
-            disabled={isAdding50more}>
-            Add 50 more addresses
-          </button>
-        )}
-      </div>
-      <form className={s.inputContainer} onSubmit={handleSubmit}>
-        <div className={s.dropdownContainer}>
-          <SelectInputExchange
-            listData={derivationData}
-            onValueChange={onChangeDerivePath}
-            selectedValue={values.selectedDerivationOptions}
-            placeholder={'Select Derive path'}
-          />
-        </div>
-        <div className={!isCustom && s.hideModule}>
-          <FormControl variant='outlined' fullWidth>
-            <InputLabel
-              sx={{
-                color:
-                  errors.customDerivePath && touched.customDerivePath
-                    ? 'red'
-                    : 'var(--borderActiveColor)',
-              }}
-              focused={false}>
-              Derive Path
-            </InputLabel>
-            <OutlinedInput
-              fullWidth
-              className={s.input}
-              id='customDerivePath'
-              type={'customDerivePath'}
-              name='customDerivePath'
-              onChange={handleChange('customDerivePath')}
-              onBlur={handleBlur('customDerivePath')}
-              value={values.customDerivePath}
-              placeholder='Enter Derive Path'
-              label='Derive Path'
-              sx={{
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor:
-                    errors.customDerivePath && touched.customDerivePath
-                      ? 'red'
-                      : 'var(--sidebarIcon)',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor:
-                    errors.customDerivePath && touched.customDerivePath
-                      ? 'red'
-                      : 'var(--borderActiveColor)',
-                },
-                '& .MuiInputLabel-outlined': {
-                  color:
-                    errors.customDerivePath && touched.customDerivePath
-                      ? 'red'
-                      : 'var(--sidebarIcon)',
-                },
-                '&:hover fieldset': {
-                  borderColor: 'var(--sidebarIcon) !important',
-                },
-              }}
-            />
-          </FormControl>
-        </div>
-        {isAtLimit && (
-          <div className={s.textConfirm}>
-            {'Maximum limit of 100 accounts reached'}
-          </div>
-        )}
-        {errors.customDerivePath && touched.customDerivePath && (
-          <p className={s.textConfirm}>{errors.customDerivePath}</p>
-        )}
-        <button
-          className={s.button}
-          type={'submit'}
-          style={
-            !!isButtonDisabled
-              ? {
-                  backgroundColor: 'var(--gray)',
-                  cursor: 'not-allowed',
-                  pointerEvents: 'all !important',
-                }
-              : {}
-          }
-          disabled={isButtonDisabled}>
-          Add
-        </button>
-      </form>
-      <div className={s.deriveAddressHeader} id={'myHeader'}>
-        <p className={s.deriveAddressTitle}>{'All Accounts'}</p>
-        <button
-          className={s.exportButton}
-          onClick={() => {
-            downloadCsv(
-              allDeriveAddress.map(item => ({
-                address: item.address,
-                derivePath: item.derivePath,
-              })),
-            );
-          }}>
-          <p className={s.deriveAddressTitle}>{'Export addresses'}</p>
-        </button>
-      </div>
-      <div className={s.itemContainer}>
-        {allDeriveAddress.map((item, index) => (
-          <div
-            key={`custom-address${index?.toString()}`}
-            className={s.mainItem}>
-            <Image
-              className={s.iconBox}
-              src={currentCoin?.icon}
-              alt={'icon'}
-              width={39}
-              height={39}
-            />
+  const customPathError = touched.customDerivePath && errors.customDerivePath;
 
-            <div className={s.list}>
-              <div className={s.box}>
-                <div className={s.item}>
-                  <div className={s.rowStyle}>
-                    <p className={s.title}>{item?.derivePath || 'default'}</p>
-                    <AddressTypeBadge
-                      chain_name={currentCoin?.chain_name}
-                      item={item}
-                    />
-                    {item?.address === currentCoin?.address && (
-                      <p className={s.chainDisplayName}>{'selected'}</p>
-                    )}
-                  </div>
-                  <p className={s.text} title={item?.address}>
-                    {getCustomizePublicAddress(item?.address)}
-                  </p>
-                </div>
-              </div>
-              <CustomDerivationPopOver selectedItem={item} />
+  return (
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.back}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <div className={s.titleBlock}>
+          <h1 className={s.title}>Custom derivation</h1>
+          <span className={s.subtitle}>
+            {currentCoin?.name} ({currentCoin?.symbol})
+          </span>
+        </div>
+        <span className={s.iconSpacer} aria-hidden='true' />
+      </div>
+      <div className={s.column}>
+        <form className={s.card} onSubmit={handleSubmit} noValidate>
+          <h2 className={s.cardHeading}>Add an address</h2>
+          <div className={s.field}>
+            <span className={s.label}>Derivation path</span>
+            <div className={s.selectBox}>
+              <SelectInputExchange
+                listData={derivationData}
+                onValueChange={onChangeDerivePath}
+                selectedValue={values.selectedDerivationOptions}
+                placeholder={'Select derive path'}
+              />
             </div>
           </div>
-        ))}
+
+          {isCustom && (
+            <div className={s.field}>
+              <label htmlFor='customDerivePath' className={s.label}>
+                Custom path
+              </label>
+              <div
+                className={`${s.inputBox} ${
+                  customPathError ? s.inputBoxError : ''
+                }`}>
+                <input
+                  id='customDerivePath'
+                  className={s.input}
+                  name='customDerivePath'
+                  autoComplete='off'
+                  spellCheck={false}
+                  onChange={handleChange('customDerivePath')}
+                  onBlur={handleBlur('customDerivePath')}
+                  value={values.customDerivePath}
+                  placeholder="m/44'/60'/0'/0/0"
+                />
+              </div>
+              {customPathError ? (
+                <p className={s.error} role='alert'>
+                  {errors.customDerivePath}
+                </p>
+              ) : null}
+            </div>
+          )}
+
+          {isAtLimit && (
+            <p className={s.alert} role='alert'>
+              Maximum limit of 100 accounts reached.
+            </p>
+          )}
+
+          <GeneralButton
+            type='submit'
+            fullWidth
+            disabled={isButtonDisabled}
+            loading={isSubmitting}
+            loadingLabel='Adding…'>
+            Add address
+          </GeneralButton>
+        </form>
+
+        {!isBitcoinChain(currentCoin?.chain_name) && (
+          <GeneralButton
+            variant='secondary'
+            fullWidth
+            className={s.add50}
+            loading={isAdding50more}
+            loadingLabel='Adding addresses…'
+            onClick={onAdd50MoreAddresses}>
+            <PlusIcon size={18} />
+            Add 50 more addresses
+          </GeneralButton>
+        )}
+
+        <section className={s.accounts} aria-label='All accounts'>
+          <div className={s.accountsHeader}>
+            <h2 className={s.accountsTitle}>
+              All accounts
+              <span className={s.count}>{allDeriveAddress.length}</span>
+            </h2>
+            <GeneralButton
+              variant='chip'
+              className={s.exportChip}
+              disabled={!allDeriveAddress.length}
+              onClick={() => {
+                downloadCsv(
+                  allDeriveAddress.map(item => ({
+                    address: item.address,
+                    derivePath: item.derivePath,
+                  })),
+                );
+              }}>
+              Export CSV
+            </GeneralButton>
+          </div>
+
+          <ul className={s.accountList}>
+            {allDeriveAddress.map((item, index) => {
+              const isSelected = item?.address === currentCoin?.address;
+              return (
+                <li
+                  key={`custom-address${index?.toString()}`}
+                  className={`${s.account} ${
+                    isSelected ? s.accountSelected : ''
+                  }`}>
+                  <span className={s.accountIcon}>
+                    <CoinIcon item={currentCoin} />
+                  </span>
+                  <div className={s.accountMain}>
+                    <div className={s.accountTop}>
+                      <span className={s.path}>
+                        {item?.derivePath || 'default'}
+                      </span>
+                      <AddressTypeBadge
+                        chain_name={currentCoin?.chain_name}
+                        item={item}
+                      />
+                      {isSelected && (
+                        <span className={s.selectedPill}>Selected</span>
+                      )}
+                    </div>
+                    <span className={s.address} title={item?.address}>
+                      {getCustomizePublicAddress(item?.address)}
+                    </span>
+                  </div>
+                  <div className={s.menu}>
+                    <CustomDerivationPopOver selectedItem={item} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {allDeriveAddress.length === 0 && (
+            <p className={s.empty}>No addresses yet</p>
+          )}
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 

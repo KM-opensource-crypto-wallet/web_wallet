@@ -1,25 +1,30 @@
-const icons = require(`assets/images/screens`).default;
-
+// Onboarding slides. `id` picks the hero illustration in
+// components/CarouselCards/Illustrations.jsx.
 const data = [
   {
-    title: 'Multi-currency Support',
-    body: 'Store, send, receive and exchange primary crypto currencies like BTC, LTC, ETH and more.',
-    src: <>{icons.register1}</>,
+    id: 'wallet',
+    title: 'Your keys, your crypto',
+    body: 'Fully non-custodial. Store, send and receive all your assets in one place — your keys never leave your device.',
   },
   {
-    title: 'Buy Crypto',
-    body: 'Buy crypto directly from the app with a credit/debit card!',
-    src: <>{icons.register2}</>,
+    id: 'trade',
+    title: 'Buy, sell & swap at the best rate',
+    body: 'Every trade compares quotes from multiple providers, so you always see the best price before you commit.',
   },
   {
-    title: 'Convenient biometric authentication login',
-    body: 'Keep all your assets secure with our biometric authentication-based login.',
-    src: <>{icons.register3}</>,
+    id: 'send',
+    title: 'Send on your terms',
+    body: 'Schedule payments ahead of time, send USDC & USDT gas-free on ETH, BSC, Base & Arbitrum — fees paid in the token itself — and use Bitcoin Lightning for instant transfers.',
   },
   {
-    title: 'The best place to store your crypto assets.',
-    body: 'Store all your crypto assets in one place with our user-friendly wallet.',
-    src: <>{icons.register4}</>,
+    id: 'pro',
+    title: 'Pro tools when you need them',
+    body: 'Set custom derivation paths for EVM, Solana, Tron and Bitcoin, and hand-pick UTXOs for full control over BTC payments.',
+  },
+  {
+    id: 'privacy',
+    title: 'Private, safe, backed up',
+    body: 'Hide wallets from prying eyes and keep an encrypted backup of your wallet in your own Google Drive.',
   },
 ];
 

@@ -1,0 +1,166 @@
+/* Manage coins rows. Colours come from the `--mc-*` tokens on the Manage
+   coins page. */
+.list {
+  width: 100%;
+  overflow: hidden;
+}
+
+.list > li + li .row {
+  border-top: 1px solid var(--mc-line);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  transition: opacity 0.2s;
+}
+
+.rowOff .main {
+  opacity: 0.5;
+}
+
+.grip {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 36px;
+  margin-right: -4px;
+  color: var(--mc-faint);
+  cursor: grab;
+  touch-action: none;
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  text-align: left;
+  transition: opacity 0.2s;
+}
+
+.icon {
+  display: flex;
+  flex: none;
+}
+
+/* CoinIcon is 39px with its own margin and dark plate; resize and lighten. */
+.icon > div {
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.symbol {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--mc-ink);
+}
+
+.chip {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--mc-chip);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mc-muted);
+}
+
+.sub {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 12.5px;
+  color: var(--mc-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Show-on-Home switch */
+.switch {
+  display: flex;
+  flex: none;
+  justify-content: flex-start;
+  width: 50px;
+  height: 30px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--mc-track);
+  transition: background-color 0.18s;
+}
+
+.switchOn {
+  justify-content: flex-end;
+  background: var(--background);
+}
+
+.knob {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Reorder arrows */
+.moves {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+
+.move {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid var(--mc-outline);
+  border-radius: 10px;
+  color: var(--mc-ink);
+  transition: background-color 0.2s;
+}
+
+.move:hover:not(:disabled) {
+  background: var(--mc-hover);
+}
+
+.move:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.up {
+  transform: rotate(180deg);
+}
+
+.main:focus-visible,
+.switch:focus-visible,
+.move:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}

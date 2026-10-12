@@ -1,15 +1,21 @@
 'use client';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   selectCurrentCoin,
+  selectCurrentWallet,
   selectTransactionsByType,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import Transactions from 'components/Transactions';
-import ModalSortTransactions from 'components/ModalSortTransactions';
-const copyIcon = require(`assets/images/icons`).default;
+import Transactions, {
+  describeTransaction,
+  fiatValue,
+  formatSignedFiat,
+  txStatus,
+} from 'components/Transactions';
+import ModalSortTransactions, {
+  SORT_OPTIONS,
+} from 'components/ModalSortTransactions';
 import {
   getLocalCurrency,
   getHideSmallTransactions,
@@ -17,14 +23,24 @@ import {
 import {setHideSmallTransactions} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import s from './Transactions.module.css';
 import {refreshCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import Loading from 'components/Loading';
-import PageTitle from 'components/PageTitle';
 import {
   getAddressDetailsUrl,
   isBitcoinChain,
   isPendingTransactionSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
 import {useRouter} from 'next/navigation';
+import BigNumber from 'bignumber.js';
+import {currencySymbol} from 'data/currency';
+import GeneralButton from 'components/Button';
+import WalletSwitcher from 'components/Home/WalletSwitcher';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/useHome';
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  InfoIcon,
+} from 'components/Home/HomeIcons';
+import {SlidersIcon} from 'components/Transactions/TxIcons';
 
 const ALL_TRANSACTION_TYPES = [
   {label: 'All', value: 'all'},
@@ -92,9 +108,11 @@ const TransactionsList = () => {
   const dispatch = useDispatch();
   const localCurrency = useSelector(getLocalCurrency);
   const currentCoin = useSelector(selectCurrentCoin);
+  const currentWallet = useSelector(selectCurrentWallet);
   const hideSmallTx = useSelector(getHideSmallTransactions);
 
   const [modalVisible, setmodalVisible] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const [filter, setFilter] = useState('None');
   const [sort, setSort] = useState('Date Descending');
   const [selectedType, setSelectedType] = useState('all');
@@ -205,128 +223,246 @@ const TransactionsList = () => {
     setFilter('None');
   }, []);
 
+  const onResetFilters = useCallback(() => {
+    setSelectedType('all');
+    setSort('Date Descending');
+    setFilter('None');
+  }, []);
+
+  // Net (settled sends / receives only), count and pending across the
+  // transactions currently shown.
+  const summary = useMemo(() => {
+    let netFiat = 0;
+    let netCoin = new BigNumber(0);
+    let pending = 0;
+    renderList.forEach(item => {
+      const status = txStatus(item);
+      if (status === 'pending') pending += 1;
+      if (status !== 'success') return;
+      const {dir} = describeTransaction(item, currentCoin?.address);
+      const amount = new BigNumber(item?.amount);
+      if (dir === 'in') {
+        netFiat += fiatValue(item);
+        if (amount.isFinite()) netCoin = netCoin.plus(amount);
+      } else if (dir === 'out') {
+        netFiat -= fiatValue(item);
+        if (amount.isFinite()) netCoin = netCoin.minus(amount);
+      }
+    });
+    return {netFiat, netCoin, pending};
+  }, [renderList, currentCoin?.address]);
+
+  const fiatSymbol = currencySymbol[localCurrency] || '';
+  const symbol = currentCoin?.symbol?.toUpperCase() ?? '';
+  const walletName = currentWallet?.walletName || 'Wallet';
+  const filterCount =
+    (selectedType !== 'all' ? 1 : 0) + (filter !== 'None' ? 1 : 0);
+  const sortLabel =
+    SORT_OPTIONS.find(option => option.label === sort)?.title || sort;
+  const filterLabel =
+    filter === 'Send'
+      ? 'Sent'
+      : filter === 'None'
+        ? ''
+        : filter === 'Pending'
+          ? 'Pending'
+          : filter;
+  const netCoinText = `${summary.netCoin.isNegative() ? '−' : '+'}${summary.netCoin
+    .abs()
+    .decimalPlaces(6)
+    .toString()} ${symbol}`;
+
   return (
-    <>
-      {isLoading ? (
-        <Loading />
-      ) : (
-        <>
-          <PageTitle title='Transaction History' />
-          <div className={s.viewAllTransactionContainer}>
-            <div>
-              <div className={s.rowView}>
-                <p className={s.titleTrans}>Transactions</p>
-                {isSupportUpdateTransaction && (
-                  <button
-                    className={s.viewButton}
-                    onClick={onPressUpdateTransaction}>
-                    <p className={s.viewButtonText}>{'Update transaction'}</p>
-                  </button>
-                )}
-              </div>
-              <div className={s.rowView}>
-                <button
-                  className={s.subtitleRow}
-                  onClick={() => setShowInfo(v => !v)}>
-                  <p className={s.address}>Your last 20 transactions</p>
-                  <span className={s.infoIcon}>
-                    <InfoOutlinedIcon style={{fontSize: 16}} />
-                  </span>
-                </button>
-                <button className={s.viewButton} onClick={onPressViewAll}>
-                  <p className={s.viewButtonText}>{'View all'}</p>
-                </button>
-              </div>
-              {showInfo && (
-                <div className={s.infoCard}>
-                  <p className={s.infoCardTitle}>
-                    Why am I missing transactions?
-                  </p>
-                  <p className={s.infoCardLine}>
-                    {'• '}
-                    <span className={s.infoCardBold}>Only the last 20</span>
-                    {' transactions are fetched from the network.'}
-                  </p>
-                  <p className={s.infoCardLine}>
-                    {'• '}
-                    <span className={s.infoCardBold}>
-                      Small transactions ({'<'}$1)
-                    </span>
-                    {' may be hidden. Toggle in '}
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <GeneralButton
+          variant='unstyled'
+          className={s.heading}
+          aria-haspopup='dialog'
+          onClick={() => setSwitcherOpen(true)}>
+          <h1 className={s.headingTitle}>Transactions</h1>
+          <span className={s.headingSub}>
+            <span className={s.walletAvatar}>
+              {walletName[0].toUpperCase()}
+            </span>
+            <span className={s.headingSubText}>
+              {currentCoin?.name ? `${currentCoin.name} · ` : ''}
+              {walletName}
+            </span>
+            <ChevronDownIcon size={12} className={s.headingChevron} />
+          </span>
+        </GeneralButton>
+        <GeneralButton
+          variant='unstyled'
+          className={s.viewAll}
+          onClick={onPressViewAll}>
+          View all
+          <ChevronRightIcon size={12} />
+        </GeneralButton>
+      </div>
+
+      <div className={s.column}>
+        <section className={s.summary} aria-label='Summary'>
+          <span className={s.stat}>
+            <span className={s.statLabel}>Net change</span>
+            <span
+              className={`${s.statValue} ${
+                summary.netFiat > 0 ? s.statPositive : ''
+              }`}>
+              {formatSignedFiat(summary.netFiat, fiatSymbol)}
+            </span>
+            <span className={s.statSub}>{netCoinText}</span>
+          </span>
+          <span className={s.statDivider} aria-hidden='true' />
+          <span className={`${s.stat} ${s.statCenter}`}>
+            <span className={s.statLabel}>Count</span>
+            <span className={s.statValue}>{renderList.length}</span>
+            <span className={s.statSub}>
+              {renderList.length === 1 ? 'transaction' : 'transactions'}
+            </span>
+          </span>
+          <span className={s.statDivider} aria-hidden='true' />
+          <span className={`${s.stat} ${s.statEnd}`}>
+            <span className={s.statLabel}>Pending</span>
+            <span
+              className={`${s.statValue} ${
+                summary.pending ? s.statWarning : ''
+              }`}>
+              {summary.pending}
+            </span>
+            <span className={s.statSub}>awaiting</span>
+          </span>
+        </section>
+
+        {transactionTypes.length > 1 && (
+          <div className={s.chips} role='tablist' aria-label='Type'>
+            {transactionTypes.map(item => (
+              <button
+                key={item.value}
+                type='button'
+                role='tab'
+                aria-selected={selectedType === item.value}
+                className={`${s.chip} ${
+                  selectedType === item.value ? s.chipActive : ''
+                }`}
+                onClick={() => onPressTypeTab(item.value)}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <button
+          type='button'
+          className={s.sortBar}
+          aria-haspopup='dialog'
+          onClick={() => setmodalVisible(true)}>
+          <span className={s.sortText}>
+            {sortLabel}
+            {filterLabel ? (
+              <span className={s.sortFilter}> · {filterLabel}</span>
+            ) : null}
+          </span>
+          {filterCount ? (
+            <span className={s.filterBadge}>{filterCount}</span>
+          ) : null}
+          <SlidersIcon size={18} />
+        </button>
+
+        <div className={s.list}>
+          <Transactions
+            renderList={renderList}
+            currentCoin={currentCoin}
+            localCurrency={localCurrency}
+            isLoading={isLoading}
+            grouped={sort.startsWith('Date')}
+            hasFilters={filterCount > 0}
+            onResetFilters={onResetFilters}
+            onPressViewAll={onPressViewAll}
+          />
+        </div>
+
+        {!isLoading ? (
+          <div className={s.footer}>
+            {isSupportUpdateTransaction ? (
+              <button
+                type='button'
+                className={s.footerButton}
+                onClick={onPressUpdateTransaction}>
+                Update transaction
+              </button>
+            ) : null}
+            <button
+              type='button'
+              className={s.footerNote}
+              aria-expanded={showInfo}
+              onClick={() => setShowInfo(v => !v)}>
+              <InfoIcon size={13} />
+              Showing your last 20 transactions
+            </button>
+            {showInfo && (
+              <div className={s.infoCard}>
+                <p className={s.infoCardTitle}>
+                  Why am I missing transactions?
+                </p>
+                <ul className={s.infoList}>
+                  <li>
+                    <strong>Only the last 20</strong> transactions are fetched
+                    from the network.
+                  </li>
+                  <li>
+                    <strong>Small transactions (&lt;$1)</strong> may be hidden.
+                    Toggle it in{' '}
                     <button
+                      type='button'
                       className={s.infoCardLink}
                       onClick={() => setmodalVisible(true)}>
-                      Sort &amp; Filter
+                      Sort &amp; filter
                     </button>
-                    {'.'}
-                  </p>
-                  <p className={s.infoCardLine}>
-                    {'• A '}
-                    <span className={s.infoCardBold}>status filter</span>
-                    {' may be active.'}
-                  </p>
-                  <p className={s.infoCardLine}>
-                    {'• '}
-                    <button className={s.infoCardLink} onClick={onPressViewAll}>
+                    .
+                  </li>
+                  <li>
+                    A <strong>status filter</strong> may be active.
+                  </li>
+                  <li>
+                    <button
+                      type='button'
+                      className={s.infoCardLink}
+                      onClick={onPressViewAll}>
                       View all
-                    </button>
-                    {' transactions on the explorer.'}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {transactionTypes.length > 1 && (
-              <div className={s.typeFilterRow}>
-                {transactionTypes.map(item => (
-                  <button
-                    key={item.value}
-                    className={
-                      selectedType === item.value
-                        ? s.typeFilterTabActive
-                        : s.typeFilterTab
-                    }
-                    onClick={() => onPressTypeTab(item.value)}>
-                    {item.label}
-                  </button>
-                ))}
+                    </button>{' '}
+                    transactions on the explorer.
+                  </li>
+                </ul>
               </div>
             )}
-
-            <div className={s.borderBox}>
-              <div className={s.sortList}>
-                <div>
-                  <p className={s.sortTitle}>
-                    Sort by: <span className={s.titleItem}>{sort}</span>
-                  </p>
-                  {filter !== 'None' && (
-                    <p className={s.sortTitle}>
-                      Filter by: <span className={s.titleItem}>{filter}</span>
-                    </p>
-                  )}
-                </div>
-                <button onClick={() => setmodalVisible(true)}>
-                  <div style={{fill: 'var(--font)'}}>{copyIcon.filter}</div>
-                </button>
-              </div>
-            </div>
-            <Transactions
-              renderList={renderList}
-              currentCoin={currentCoin}
-              localCurrency={localCurrency}
-            />
-            <ModalSortTransactions
-              visible={modalVisible}
-              hideModal={() => setmodalVisible(false)}
-              onPressAppy={onPressApply}
-              initialHideSmallTx={hideSmallTx}
-              initialSort={sort}
-              initialFilter={filter}
-            />
           </div>
-        </>
-      )}
-    </>
+        ) : null}
+      </div>
+
+      <ModalSortTransactions
+        visible={modalVisible}
+        hideModal={() => setmodalVisible(false)}
+        onPressAppy={onPressApply}
+        initialHideSmallTx={hideSmallTx}
+        initialSort={sort}
+        initialFilter={filter}
+      />
+      <WalletSwitcher
+        visible={switcherOpen}
+        onClose={() => setSwitcherOpen(false)}
+        hidden={switcherOpen && readHideBalances()}
+        localCurrency={localCurrency}
+      />
+    </main>
   );
 };
 

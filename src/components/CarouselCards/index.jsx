@@ -1,96 +1,118 @@
-import React, {useContext, useState} from 'react';
-import data from 'data/carousel';
+import React from 'react';
 import styles from './CarouselCardsStyles.module.css';
-import {Carousel} from 'react-responsive-carousel';
-import 'react-responsive-carousel/lib/styles/carousel.min.css';
-import {useRouter, useSearchParams} from 'next/navigation';
-import {useSelector} from 'react-redux';
-import {getHasAccount} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
-import Image from 'next/image';
-import {getAppAssets} from 'whitelabel/whiteLabelInfo';
-import {ThemeContext} from 'theme/ThemeContext';
+import Illustration from './Illustrations';
+import useCarousel from 'src/hooks/auth/useCarousel';
+import GeneralButton from 'src/components/Button';
 
 const CarouselCards = () => {
-  const [index, setIndex] = useState(0);
-  const router = useRouter();
-  const storePassword = useSelector(getHasAccount);
-  const {themeType} = useContext(ThemeContext);
-  const searchParams = useSearchParams();
+  const {
+    data,
+    index,
+    isLast,
+    last,
+    trackStyle,
+    goTo,
+    handleGetStarted,
+    onPointerDown,
+    onPointerUp,
+    onPointerCancel,
+  } = useCarousel();
 
   return (
-    <div className={styles.container}>
-      <Carousel
-        showIndicators={false}
-        showThumbs={false}
-        selectedItem={index}
-        showArrows={true}
-        onChange={setIndex}
-        emulateTouch={true}
-        className={styles.carouselSection}>
-        {data.map((item, index) => (
-          <div className={styles.carouselList} key={index}>
-            <div className={styles.box}>
-              {getAppAssets()?.[`onboarding_${index + 1}`]?.[themeType] ? (
-                <Image
-                  src={getAppAssets()?.[`onboarding_${index + 1}`]?.[themeType]}
-                  width={200}
-                  height={200}
-                  alt={item.title}
-                />
-              ) : (
-                item.src
-              )}
-            </div>
-            <div className={styles.header}>
-              <p className={styles.title}>{item.title}</p>
-              <p className={styles.body}>{item.body}</p>
+    <div
+      className={styles.page}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}>
+      <div
+        className={styles.shell}
+        role='region'
+        aria-roledescription='carousel'
+        aria-label='Welcome'>
+        <div className={styles.heroPanel}>
+          <div className={styles.viewport}>
+            <div className={styles.track} style={trackStyle}>
+              {data.map((item, i) => (
+                <div
+                  key={item.id}
+                  className={styles.heroSlide}
+                  aria-hidden={i !== index}
+                  inert={i !== index}>
+                  <Illustration id={item.id} />
+                </div>
+              ))}
             </div>
           </div>
-        ))}
-      </Carousel>
-
-      <div className={index === 3 ? styles.hidden : styles.paginationContainer}>
-        <button onClick={() => setIndex(3)} className={styles.btn}>
-          Skip
-        </button>
-
-        <div className={styles.paginationDotsContainer}>
-          {[0, 1, 2, 3].map(item => (
-            <div
-              key={item}
-              className={`${styles.paginationDot} ${
-                index === item ? styles.activeDot : styles.inactiveDot
-              }`}
-            />
-          ))}
         </div>
-        <button
-          onClick={() => setIndex(index + 1)}
-          disabled={index === 3}
-          className={styles.btn}>
-          Next
-        </button>
+
+        <div className={styles.content}>
+          <div className={styles.topRow}>
+            <span className={styles.counter}>
+              {String(index + 1).padStart(2, '0')}
+              <span className={styles.counterTotal}>
+                {' '}
+                / {String(data.length).padStart(2, '0')}
+              </span>
+            </span>
+            <button
+              type='button'
+              onClick={() => goTo(last)}
+              className={`${styles.skip} ${isLast ? styles.invisible : ''}`}
+              tabIndex={isLast ? -1 : undefined}>
+              Skip
+            </button>
+          </div>
+
+          <div className={styles.viewport} aria-live='polite'>
+            <div className={styles.track} style={trackStyle}>
+              {data.map((item, i) => (
+                <div
+                  key={item.id}
+                  className={styles.textSlide}
+                  role='group'
+                  aria-roledescription='slide'
+                  aria-label={`${i + 1} of ${data.length}`}
+                  aria-hidden={i !== index}
+                  inert={i !== index}>
+                  <h1 className={styles.title}>{item.title}</h1>
+                  <p className={styles.body}>{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.dots}>
+            {data.map((item, i) => (
+              <button
+                key={item.id}
+                type='button'
+                onClick={() => goTo(i)}
+                aria-label={`Go to slide ${i + 1}`}
+                aria-current={i === index ? 'step' : undefined}
+                className={`${styles.dot} ${
+                  i === index ? styles.activeDot : ''
+                }`}
+              />
+            ))}
+          </div>
+
+          <div className={styles.actions}>
+            {index > 0 && (
+              <GeneralButton
+                variant='secondary'
+                onClick={() => goTo(index - 1)}
+                className={styles.backButton}>
+                Back
+              </GeneralButton>
+            )}
+            <GeneralButton
+              onClick={isLast ? handleGetStarted : () => goTo(index + 1)}
+              className={styles.nextButton}>
+              {isLast ? 'Get started' : 'Next'}
+            </GeneralButton>
+          </div>
+        </div>
       </div>
-
-      {index === 3 && (
-        <div className={styles.section}>
-          <button
-            className={styles.button}
-            onClick={() => {
-              const searchParamsStr = `${
-                searchParams ? `?${searchParams}` : ''
-              }`;
-
-              if (storePassword) {
-                router.push(`/auth/login${searchParamsStr}`);
-              } else {
-                router.push(`/auth/registration${searchParamsStr}`);
-              }
-            }}>
-            Get Started
-          </button>
-        </div>
-      )}
     </div>
   );
 };

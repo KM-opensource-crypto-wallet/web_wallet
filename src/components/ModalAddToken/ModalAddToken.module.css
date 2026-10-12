@@ -1,116 +1,212 @@
-.centeredView {
+/* "Add custom token" sheet. Rendered inside HomeSheet, so it reads Home's
+   `--hm-*` tokens; the accent is the white-label `--background` colour. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  margin: 0 -20px;
+  padding: 0 20px 2px;
+  overflow-y: auto;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  padding: 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--hm-faint);
+}
+
+.optional {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Network picker */
+.networkButton,
+.inputBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 54px;
+  border: 1.5px solid var(--hm-field-border);
+  border-radius: 14px;
+  background: var(--hm-field);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.networkButton {
+  width: 100%;
+  padding: 0 14px;
+  text-align: left;
+}
+
+.networkLabel {
   flex: 1;
-  justify-content: flex-end;
-  align-items: center;
-  background-color: rgba(240, 240, 240, 0.5);
-}
-
-.modalView {
-  position: relative;
-  width: 100%;
-  background-color: var(--backgroundColor);
-}
-
-.addressViev {
-  border: solid 1px var(--whiteOutline);
-  border-width: 1px;
-  border-radius: 6px;
-  margin-top: 20px;
-}
-
-.button {
-  background-color: var(--background);
-  height: 60px;
-  width: 100%;
-  border-radius: 10px;
-  font-size: 20px;
-  align-items: center;
-  justify-content: center;
-}
-
-.buttonTitle {
-  color: var(--title);
-  font-size: 16px;
-}
-
-.closeBtn {
-  width: 30px;
-  height: 30px;
-  align-items: center;
-  justify-content: center;
-}
-.closeBtn > svg {
-  width: 13px;
-  fill: var(--sidebarIcon);
-}
-
-.text {
-  color: var(--primary);
+  min-width: 0;
   font-size: 15px;
-  margin-bottom: 20px;
+  font-weight: 600;
+  color: var(--hm-ink);
+}
+
+.placeholder {
+  color: var(--hm-faint);
+}
+
+.chevron {
+  flex: none;
+  color: var(--hm-faint);
+  transition: transform 0.2s;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.networkList {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--hm-field-border);
+  border-radius: 14px;
+}
+
+.networkOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 13px 14px;
+  color: var(--hm-ink);
+  font-size: 14.5px;
+  font-weight: 600;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.networkOption + .networkOption {
+  border-top: 1px solid var(--hm-line);
+}
+
+.networkOption:hover {
+  background: color-mix(in srgb, var(--background) 6%, transparent);
+}
+
+.networkOptionOn {
+  background: color-mix(in srgb, var(--background) 8%, transparent);
+  color: var(--background);
+}
+
+/* Inputs */
+.inputBox {
+  padding: 0 8px 0 14px;
+}
+
+.inputBox:focus-within,
+.networkButton:focus-visible {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
+  outline: none;
+}
+
+.inputBoxError,
+.inputBoxError:focus-within {
+  border-color: #d92d20;
+  box-shadow: none;
+}
+
+.inputBoxDisabled {
+  opacity: 0.6;
+}
+
+.inputBoxReadOnly {
+  background: transparent;
+}
+
+.inputBoxReadOnly:focus-within {
+  border-color: var(--hm-field-border);
+  box-shadow: none;
 }
 
 .input {
-  background-color: var(--backgroundColor);
-  width: 100%;
-  height: 60px;
-  border: solid 1px var(--whiteOutline);
-  border-width: 1px;
-  border-radius: 10px;
-  padding: 15px;
-  color: var(--font);
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--hm-ink);
 }
 
-.textStyle {
-  color: white;
-  font-weight: bold;
-  text-align: center;
+.input::placeholder {
+  color: var(--hm-faint);
 }
 
-.modalText {
-  margin-bottom: 15px;
-  text-align: center;
+.input:disabled {
+  cursor: not-allowed;
 }
 
-.modalHeader {
-  padding: 15px 20px;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  border-bottom: solid 1px var(--gray);
+.pasteButton {
+  flex: none;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 9px;
+  background: var(--hm-chip);
+  color: var(--hm-ink);
+  font-size: 12.5px;
+  font-weight: 700;
 }
 
-.headerText {
+.pasteButton:hover {
+  background: var(--hm-hover);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.error {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #d92d20;
+}
+
+:global([data-theme='dark']) .error {
+  color: #f97066;
+}
+
+.submit {
+  min-height: 56px;
+  margin-top: 4px;
   font-size: 16px;
 }
 
-.modalBody {
-  padding: 15px;
+.networkOption:focus-visible,
+.pasteButton:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
 }
 
-.qrContainer {
-  margin-top: 30px;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.qrBtn {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: var(--font);
-}
-
-.errorText {
-  margin-top: 2px;
-  margin-bottom: 10px;
-  color: red;
-  margin-left: 10px;
-  font-size: 12px;
+@media (min-width: 600px) {
+  .form {
+    margin: 0 -24px;
+    padding: 0 24px 2px;
+  }
 }
