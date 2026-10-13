@@ -1,59 +1,29 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-.infoList {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  padding: 10px;
-}
-
-.titleInfo {
-  color: var(--font);
-  font-size: 20px;
-  text-align: center;
-  margin-bottom: 20px;
-  text-transform: uppercase;
-}
-
-.info {
-  color: var(--font);
-  font-size: 16px;
-  text-align: center;
-}
-
-.btnList {
-  align-items: center;
-  border-top: 1px solid var(--gray);
-  display: flex;
-  justify-content: space-around;
-}
-
-.learnBox {
-  justify-content: center;
-  align-items: center;
-  height: 60px;
-  color: var(--background);
-  font-size: 17px;
-  width: 100%;
-}
-
+/* Only the bits ModalReset.module.css doesn't cover; the sheet itself is
+   styled there. */
 .countdown {
   display: flex;
-  justify-content: center;
   align-items: center;
-  font-family: Arial, sans-serif;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  margin: 4px 0;
+  border: 3px solid color-mix(in srgb, var(--background) 22%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--background) 8%, transparent);
 }
 
 .count {
-  font-size: 5rem;
-  font-weight: bold;
-  color: var(--font);
+  font-size: 44px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--mr-ink);
   animation: fadeInScale 1s ease-out;
+}
+
+.action {
+  width: 100%;
+  margin-top: 6px;
 }
 
 @keyframes fadeInScale {
@@ -70,6 +40,9 @@
     transform: scale(1);
   }
 }
-/* .learnBox:first-child {
-  border-right: 1px solid var(--gray);
-} */
+
+@media (prefers-reduced-motion: reduce) {
+  .count {
+    animation: none;
+  }
+}

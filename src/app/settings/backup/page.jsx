@@ -14,13 +14,15 @@ import {
 } from 'utils/googleDriveBackup';
 import {showToast} from 'utils/toast';
 import s from './Backup.module.css';
-import GoBackButton from 'components/GoBackButton';
+import GeneralButton from 'components/Button';
+import {ChevronLeftIcon} from 'components/Home/HomeIcons';
+import {CloudUpIcon} from '../SettingsIcons';
+import WalletPicker from './WalletPicker';
 import UserMenu from 'components/UserMenu';
 import ModalConfirm from 'components/ModalConfirm';
 import DriveGuideModal from 'components/DriveGuideModal';
 import ModalBackupPassword from 'components/ModalBackupPassword';
 import ModalDeleteBackup from 'components/ModalDeleteBackup';
-import WalletSelectionCard from 'components/WalletSelectionCard';
 import {useSession, signIn, signOut} from 'next-auth/react';
 import {useRouter} from 'next/navigation';
 import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
@@ -274,80 +276,84 @@ const BackupPage = () => {
   const renderContent = () => {
     if (!hasMounted) {
       return (
-        <div className={`${s.container}`}>
-          <p className={s.loadingText}>Loading...</p>
+        <div className={s.status} role='status'>
+          <span className={s.spinner} aria-hidden='true' />
+          Loading...
         </div>
       );
     }
 
     return (
       <>
-        <div className={s.selectAllRow}>
-          <button onClick={toggleSelectAll} className={s.selectAllButton}>
-            <input
-              type='checkbox'
-              checked={isAllSelected}
-              readOnly
-              className={s.checkbox}
-              style={{marginRight: '0'}}
-            />
-            {isAllSelected ? 'Deselect All' : 'Select All'}
-          </button>
-          <span className={s.selectionCount}>
-            {selectedWalletIds.length}/{allWallets.length} Selected
-          </span>
-        </div>
-
-        <div className={s.walletSection}>
-          {allWallets.map(wallet => (
-            <WalletSelectionCard
-              key={wallet.clientId}
-              item={wallet}
-              isSelected={selectedWalletIds.includes(wallet.clientId)}
-              toggleSelect={toggleSelect}
-              currencySymbol={symbol}
-            />
-          ))}
-        </div>
+        {allWallets.length > 0 ? (
+          <WalletPicker
+            label='Wallets to back up'
+            wallets={allWallets}
+            selectedWalletIds={selectedWalletIds}
+            isAllSelected={isAllSelected}
+            toggleSelectAll={toggleSelectAll}
+            toggleSelect={toggleSelect}
+            currencySymbol={symbol}
+          />
+        ) : (
+          <p className={s.empty}>No wallets to back up.</p>
+        )}
 
         <div className={s.footer}>
-          <button
-            className={`${s.button} ${
-              selectedWalletIds.length === 0 || isBackingUp
-                ? s.buttonDisabled
-                : ''
-            }`}
-            onClick={handleBackupPress}
-            disabled={isBackingUp || selectedWalletIds.length === 0}>
-            <p className={s.buttonTitle}>
-              {isBackingUp ? 'Backing up...' : 'Backup Selected'}
-            </p>
-          </button>
+          <GeneralButton
+            fullWidth
+            loading={isBackingUp}
+            loadingLabel='Backing up...'
+            disabled={selectedWalletIds.length === 0}
+            onClick={handleBackupPress}>
+            Backup Selected
+          </GeneralButton>
         </div>
       </>
     );
   };
 
   return (
-    <div className={s.container}>
-      <div className={s.headerContainer}>
-        <div className={s.headerLeft}>
-          <GoBackButton onBack={() => router.replace('/settings')} />
-          <div className={s.headerTitleRow}>
-            <p className={s.screenTitle}>Backup Wallets</p>
-            <p className={s.subTitle}>Select the wallets you want to secure.</p>
-          </div>
-        </div>
-        {session && session.user && (
-          <UserMenu
-            user={session.user}
-            onLogout={() => handleLogout()}
-            onDeleteBackup={() => setShowDeleteModal(true)}
-          />
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        {/* replace, not back(): history may end at the Google sign-in page */}
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Back'
+          onClick={() => router.replace('/settings')}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <h1 className={s.title}>Backup Wallets</h1>
+        {session && session.user ? (
+          <span className={s.account}>
+            <UserMenu
+              user={session.user}
+              onLogout={() => handleLogout()}
+              onDeleteBackup={() => setShowDeleteModal(true)}
+            />
+          </span>
+        ) : (
+          <span className={s.iconSpacer} aria-hidden='true' />
         )}
       </div>
 
-      {renderContent()}
+      <div className={s.column}>
+        <section className={s.intro}>
+          <span className={s.introIcon} aria-hidden='true'>
+            <CloudUpIcon size={22} />
+          </span>
+          <div className={s.introText}>
+            <h2 className={s.introTitle}>Google Drive backup</h2>
+            <p className={s.introBody}>
+              Select the wallets you want to secure.
+            </p>
+          </div>
+        </section>
+
+        {renderContent()}
+      </div>
 
       <ModalConfirm
         visible={showWarningModal}
@@ -377,7 +383,7 @@ const BackupPage = () => {
         hideModal={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteBackup}
       />
-    </div>
+    </main>
   );
 };
 

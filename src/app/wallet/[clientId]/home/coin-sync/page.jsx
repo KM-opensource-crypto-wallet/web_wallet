@@ -32,11 +32,18 @@ import CoinSyncItem from 'components/CoinSyncItem';
 import CoinSyncActionButton from 'components/CoinSyncActionButton';
 import CoinSyncEmptyState from 'components/CoinSyncEmptyState';
 import ConfirmationModal from 'components/ConfirmationModal';
-import CheckCircleOutline from '@mui/icons-material/CheckCircleOutline';
 import Modal from '@mui/material/Modal';
 import GeneralButton from 'components/Button';
 import {ChevronLeftIcon} from 'components/Home/HomeIcons';
+import {CheckCircleIcon} from 'components/Transactions/TxIcons';
 import styles from './CoinSync.module.css';
+
+// Line check-circle for the cancel confirmation's info row, at the 18px the
+// MUI icon had. ConfirmationModal renders it in a portal (outside .page), so
+// fill is set inline: globals.css `svg { fill: inherit }` beats the attribute.
+const KeptCoinsIcon = ({style, ...props}) => (
+  <CheckCircleIcon size={18} style={{...style, fill: 'none'}} {...props} />
+);
 
 const CoinSync = () => {
   const dispatch = useDispatch();
@@ -287,15 +294,24 @@ const CoinSync = () => {
         />
       </div>
 
-      <Modal open={isCreatingWallets} disableEscapeKeyDown>
-        <div className={styles.blockerOverlay}>
-          <div className={styles.blockerDialog} role='alertdialog'>
-            <span className={styles.blockerSpinner} aria-hidden='true' />
-            <p className={styles.blockerTitle}>Creating wallets…</p>
-            <p className={styles.blockerSubtitle}>
-              Please wait and keep this page open.
-            </p>
-          </div>
+      {/* No onClose: it can't be dismissed while wallets are created. */}
+      <Modal
+        open={isCreatingWallets}
+        disableEscapeKeyDown
+        aria-labelledby='coin-sync-blocker-title'
+        aria-describedby='coin-sync-blocker-subtitle'
+        slotProps={{backdrop: {className: styles.blockerBackdrop}}}>
+        <div className={styles.blockerDialog} role='alertdialog'>
+          <div className={styles.blockerHandle} aria-hidden='true' />
+          <span className={styles.blockerTile} aria-hidden='true'>
+            <span className={styles.blockerSpinner} />
+          </span>
+          <p id='coin-sync-blocker-title' className={styles.blockerTitle}>
+            Creating wallets…
+          </p>
+          <p id='coin-sync-blocker-subtitle' className={styles.blockerSubtitle}>
+            Please wait and keep this page open.
+          </p>
         </div>
       </Modal>
 
@@ -322,7 +338,7 @@ const CoinSync = () => {
             ? 'Coins found so far will still be available to add to your wallet.'
             : null
         }
-        infoIcon={CheckCircleOutline}
+        infoIcon={KeptCoinsIcon}
         confirmLabel={'Cancel Scan'}
         dismissLabel={'Keep Scanning'}
         onConfirm={handleConfirmCancelScan}

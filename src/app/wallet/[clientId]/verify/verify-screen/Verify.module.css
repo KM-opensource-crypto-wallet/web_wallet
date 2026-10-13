@@ -1,171 +1,507 @@
-.container {
+/* Seed phrase check: numbered slots (three asked for), the word input, the
+   acknowledgement and one pinned action. Same surface and tokens as the
+   backup screen (verify-create). */
+.page {
+  --vs-ink: #1a1613;
+  --vs-muted: #6e655e;
+  --vs-faint: #8a7f76;
+  --vs-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
+  --vs-surface-solid: #f4ede6;
+  --vs-glass: rgba(255, 255, 255, 0.65);
+  --vs-glass-border: rgba(255, 255, 255, 0.9);
+  --vs-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --vs-header-line: rgba(26, 22, 19, 0.07);
+  --vs-chip: rgba(26, 22, 19, 0.06);
+  --vs-word: rgba(26, 22, 19, 0.04);
+  --vs-field: rgba(26, 22, 19, 0.045);
+  --vs-field-border: rgba(26, 22, 19, 0.08);
+  --vs-ring: rgba(26, 22, 19, 0.2);
+  --vs-error: #d92d20;
+  --vs-warning: #b54708;
+  --vs-warning-bg: rgba(247, 144, 9, 0.1);
+  --vs-tint: 10%;
+  position: relative;
   display: flex;
   flex-direction: column;
-  background-color: var(--backgroundColor);
-  justify-content: space-between;
-  padding: 20px 20px;
-  height: calc(var(--app-height) - 70px);
+  min-height: calc(var(--app-height, 100vh) - 70px);
+  overflow: clip;
+  background: var(--vs-surface);
 }
 
-.goBack {
-  margin-bottom: 10px;
+:global([data-theme='dark']) .page {
+  --vs-ink: #f5f1ec;
+  --vs-muted: #c9bfb6;
+  --vs-faint: #a89c92;
+  --vs-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
+  --vs-surface-solid: #100c0a;
+  --vs-glass: rgba(255, 255, 255, 0.05);
+  --vs-glass-border: rgba(255, 255, 255, 0.1);
+  --vs-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --vs-header-line: rgba(255, 255, 255, 0.07);
+  --vs-chip: rgba(255, 255, 255, 0.08);
+  --vs-word: rgba(255, 255, 255, 0.04);
+  --vs-field: rgba(255, 255, 255, 0.06);
+  --vs-field-border: rgba(255, 255, 255, 0.1);
+  --vs-ring: rgba(255, 255, 255, 0.22);
+  --vs-error: #f97066;
+  --vs-warning: #fdb022;
+  --vs-warning-bg: rgba(253, 176, 34, 0.1);
+  --vs-tint: 16%;
 }
 
-.section {
-  padding-bottom: 40px;
+.page svg {
+  fill: none;
 }
 
-.formInput {
-  padding-bottom: 20px;
+.glow {
+  position: absolute;
+  top: -120px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--background) 14%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* Header */
+.topBar {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--vs-header-line);
+}
+
+.iconButton,
+.iconSpacer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--vs-ink);
+  transition: background-color 0.2s;
+}
+
+.iconButton:hover {
+  background: var(--vs-chip);
+}
+
+.heading {
+  display: flex;
   flex: 1;
-  display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 4px 0;
 }
 
 .title {
-  color: var(--font);
-  font-size: 25px;
-  margin-bottom: 10px;
-  text-align: left;
-  font-weight: bold;
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--vs-ink);
 }
 
-.span {
-  color: var(--gray);
-  font-size: 15px;
-  margin-bottom: 5px;
-  text-align: left;
+.subtitle {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--vs-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.textFirst {
-  color: var(--gray);
-  font-size: 15px;
-  text-align: left;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.text {
-  color: var(--gray);
-  font-size: 15px;
-  margin-bottom: 10px;
-  text-align: left;
-}
-
-.formList > div {
-  width: 100%;
-}
-
-.checkbox {
-  display: flex;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.checkText {
-  color: red;
-  font-size: 14px;
-}
-
-.textConfirm {
-  margin-top: 5px;
-  color: red;
-  margin-left: 10px;
-  font-size: 12px;
-}
-
-.btn {
-  width: 100%;
-  border-radius: 10px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-width: 1px;
-  border-color: transparent;
-  color: var(--title);
-  font-size: 16px;
-  margin: 0 auto;
-}
-
-@media (min-width: 768px) {
-  .btn {
-    width: 50%;
-  }
-}
-
-.info {
-  color: var(--theme-font);
-  font-size: 15px;
-  text-align: left;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-
-.wordsList {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-self: center;
-  margin-top: 50px;
-}
-
-.wordsBox {
-  width: 50px;
-  height: 70px;
-  align-items: center;
-  justify-content: center;
+/* Body */
+.column {
   position: relative;
-  margin: 8px 4px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 0;
+  text-align: center;
+}
+
+.introIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 4px;
+  border-radius: 16px;
+  color: var(--background);
+  background: color-mix(in srgb, var(--background) 12%, transparent);
+}
+
+.introTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--vs-ink);
+}
+
+.introText {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--vs-muted);
+}
+
+/* Progress */
+.progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px;
+}
+
+.progressText {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vs-faint);
+}
+
+.progressDots {
+  display: flex;
+  gap: 6px;
+}
+
+.progressDot {
+  width: 22px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--vs-chip);
+  transition: background-color 0.25s;
+}
+
+.progressDotOn {
+  background: var(--background);
+}
+
+/* Word slots */
+.wordsCard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  list-style: none;
+  border: 1px solid var(--vs-glass-border);
+  border-radius: 18px;
+  background: var(--vs-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--vs-shadow);
+}
+
+.wordsCard > li {
+  display: flex;
+  min-width: 0;
+}
+
+.slot {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  background: var(--vs-word);
 }
 
 .number {
-  font-size: 17px;
-  text-align: center;
+  flex: none;
+  min-width: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--vs-faint);
+  text-align: right;
+}
+
+.hidden {
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--vs-ring);
+}
+
+/* Asked-for slot: pending (dashed), selected (accent ring), done, wrong. */
+.slotAsk {
+  justify-content: space-between;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.slotPending {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--background) 55%, transparent);
+  background: color-mix(in srgb, var(--background) 6%, transparent);
+}
+
+.slotSelected {
+  border-style: solid;
+  border-color: var(--background);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--background) var(--vs-tint), transparent);
+}
+
+.slotDone {
+  border-color: var(--background);
+  background: var(--background);
+}
+
+.slotDone .number {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.slotWrong {
+  border-color: var(--vs-error);
+  background: color-mix(in srgb, var(--vs-error) 9%, transparent);
+}
+
+.slotWrong:disabled {
+  cursor: not-allowed;
+}
+
+.slotWrong .number {
+  color: var(--vs-error);
+}
+
+.slotMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--background);
+}
+
+.slotDone .slotMark {
+  color: #fff;
+}
+
+.slotWrong .slotMark {
+  color: var(--vs-error);
+}
+
+/* Word input */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--vs-glass-border);
+  border-radius: 18px;
+  background: var(--vs-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--vs-shadow);
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vs-faint);
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1px solid var(--vs-field-border);
+  border-radius: 14px;
+  background: var(--vs-field);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.inputRow:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--background) var(--vs-tint), transparent);
+}
+
+.inputError,
+.inputError:focus-within {
+  border-color: var(--vs-error);
+  box-shadow: none;
+}
+
+.inputNumber {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--vs-chip);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--vs-muted);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--vs-ink);
+}
+
+.input::placeholder {
+  color: var(--vs-faint);
+  font-weight: 500;
+}
+
+.error {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--vs-error);
+}
+
+/* Acknowledgement with a square tick box. */
+.ack {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   width: 100%;
-  height: 100%;
-  color: var(--gray);
-  background-color: #e6e2e1;
-  padding-top: 20px;
-  border-radius: 5px;
+  padding: 14px;
+  border: 1px solid var(--vs-field-border);
+  border-radius: 14px;
+  background: var(--vs-field);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--vs-ink);
+  text-align: left;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
 }
 
-.numberRandom {
-  font-size: 18px;
-  text-align: center;
-  width: 100%;
-  height: 100%;
-  padding-top: 6px;
-  border-radius: 5px;
-  overflow: hidden;
-  border-radius: 5;
+.ackOn {
+  border-color: color-mix(in srgb, var(--background) 45%, transparent);
+  background: color-mix(in srgb, var(--background) 6%, transparent);
 }
 
-.icon {
-  text-align: center;
-  position: absolute;
-  left: 26%;
-  top: 50%;
-  width: 24px;
-  height: 24px;
+.tick {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border: 2px solid var(--vs-ring);
+  border-radius: 7px;
+  color: #fff;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
 }
 
-.cross {
-  fill: #ff647c;
-  text-align: center;
-  position: absolute;
-  left: 35%;
-  top: 45%;
+.ackOn .tick {
+  border-color: var(--background);
+  background: var(--background);
 }
 
-.check {
-  fill: #ffff;
-  text-align: center;
-  position: absolute;
-  left: 35%;
-  top: 55%;
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: var(--vs-warning);
+  background: var(--vs-warning-bg);
+}
+
+.note svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.note p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* Pinned action */
+.footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: auto -16px 0;
+  padding: 18px 16px 16px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--vs-surface-solid) 18px
+  );
+}
+
+.button {
+  min-height: 54px;
+  font-size: 16px;
+}
+
+.iconButton:focus-visible,
+.slotAsk:focus-visible,
+.ack:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .topBar {
+    padding: 10px 20px;
+  }
+
+  .column {
+    padding-top: 24px;
+  }
+
+  .wordsCard {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }

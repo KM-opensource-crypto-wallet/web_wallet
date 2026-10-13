@@ -1,59 +1,240 @@
-.container {
+/* Address QR: bottom sheet on phones, centred dialog from 600px up. Same
+   surface as the Home sheets and the QR tile from Receive; the accent is the
+   white-label `--background` colour. */
+.sheet {
+  --aq-ink: #1a1613;
+  --aq-muted: #6e655e;
+  --aq-faint: #8a7f76;
+  --aq-handle: rgba(26, 22, 19, 0.2);
+  --aq-field: rgba(26, 22, 19, 0.045);
+  --aq-field-border: rgba(26, 22, 19, 0.08);
+  --aq-tint: 10%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  padding: 16px 20px 20px 20px;
+  align-items: center;
+  gap: 14px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 14px 20px 26px;
+  border-radius: 28px 28px 0 0;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.25);
+  outline: none;
+  animation: pop 0.25s ease;
 }
 
-.headerTitle {
-  color: var(--font);
-  font-size: 16px;
+:global([data-theme='dark']) .sheet {
+  --aq-ink: #f5f1ec;
+  --aq-muted: #a89c92;
+  --aq-faint: #a89c92;
+  --aq-handle: rgba(245, 241, 236, 0.25);
+  --aq-field: rgba(255, 255, 255, 0.06);
+  --aq-field-border: rgba(255, 255, 255, 0.1);
+  --aq-tint: 16%;
+  background: #1f1f23;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.8);
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". The QR
+   code paints with fill, so it is excluded. */
+.sheet svg:not(.qr) {
+  fill: none;
+}
+
+.backdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .backdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+.handle {
+  flex: none;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--aq-handle);
+}
+
+.title {
+  align-self: stretch;
+  margin: 0;
+  font-size: 19px;
   font-weight: 700;
-  padding-bottom: 12px;
+  letter-spacing: -0.4px;
+  color: var(--aq-ink);
 }
 
-/* Explicit white so the QR stays scannable in dark theme. */
-.qrContainer {
-  align-self: center;
+/* Accent-tinted panel the QR tile floats on. */
+.qrStage {
   display: flex;
-  background-color: #ffffff;
-  border-radius: 12px;
-  padding: 16px;
+  flex: none;
+  justify-content: center;
+  align-self: stretch;
+  padding: 22px 16px;
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      circle at 50% 40%,
+      color-mix(in srgb, var(--background) 22%, transparent) 0%,
+      transparent 65%
+    ),
+    color-mix(in srgb, var(--background) 6%, transparent);
 }
 
-.addressText {
-  color: var(--font);
-  font-size: 15px;
-  text-align: center;
-  margin-top: 16px;
-  word-break: break-all;
-}
-
-.derivePathText {
-  color: var(--gray);
-  font-size: 12px;
-  text-align: center;
-  margin-top: 4px;
-}
-
-.copyButton {
+.qrTile {
+  position: relative;
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 52px;
-  margin-top: 16px;
-  padding: 0 16px;
-  border: none;
-  border-radius: 8px;
-  background-color: var(--walletItemColor);
-  color: var(--font);
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
+  width: min(264px, 100%);
+  aspect-ratio: 1;
+  padding: 22px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgba(26, 22, 19, 0.05),
+    0 18px 40px color-mix(in srgb, var(--background) 22%, rgba(0, 0, 0, 0.12));
 }
 
-.copyButton:hover {
-  opacity: 0.85;
+/* Scan-frame corners in the accent colour. */
+.corners {
+  position: absolute;
+  inset: 9px;
+  border-radius: 16px;
+  pointer-events: none;
+  --c: var(--background);
+  --l: 24px;
+  --w: 3px;
+  background:
+    linear-gradient(var(--c), var(--c)) top left / var(--l) var(--w),
+    linear-gradient(var(--c), var(--c)) top left / var(--w) var(--l),
+    linear-gradient(var(--c), var(--c)) top right / var(--l) var(--w),
+    linear-gradient(var(--c), var(--c)) top right / var(--w) var(--l),
+    linear-gradient(var(--c), var(--c)) bottom left / var(--l) var(--w),
+    linear-gradient(var(--c), var(--c)) bottom left / var(--w) var(--l),
+    linear-gradient(var(--c), var(--c)) bottom right / var(--l) var(--w),
+    linear-gradient(var(--c), var(--c)) bottom right / var(--w) var(--l);
+  background-repeat: no-repeat;
+}
+
+.qr {
+  width: 100%;
+  height: auto;
+}
+
+/* Address, monospace, with the derive path underneath. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: stretch;
+  padding: 12px 14px;
+  border: 1px solid var(--aq-field-border);
+  border-radius: 14px;
+  background: var(--aq-field);
+  text-align: center;
+}
+
+.address {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--aq-ink);
+}
+
+.derivePath {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--aq-faint);
+}
+
+.copy {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--background) var(--aq-tint), transparent);
+  color: var(--background);
+  font-size: 15px;
+  font-weight: 700;
+  transition: background-color 0.2s;
+}
+
+.copy:hover {
+  background: color-mix(
+    in srgb,
+    var(--background) calc(var(--aq-tint) + 6%),
+    transparent
+  );
+}
+
+.copy:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .sheet {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(420px, calc(100vw - 32px));
+    max-height: min(720px, calc(100vh - 64px));
+    padding: 24px;
+    border-radius: 24px;
+    transform: translate(-50%, -50%);
+    animation-name: popCentered;
+  }
+
+  :global([data-theme='dark']) .sheet {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .handle {
+    display: none;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
 }

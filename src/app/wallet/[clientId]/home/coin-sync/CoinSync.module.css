@@ -182,40 +182,78 @@
 }
 
 /* "Creating wallets" blocker (MUI Modal portal - outside .page, so it
-   carries its own colours). */
-.blockerOverlay {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  padding: 24px;
-  outline: none;
+   carries its own tokens). Same sheet as ModalReset: bottom sheet on
+   phones, centred dialog from 600px up. */
+.blockerBackdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .blockerBackdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
 }
 
 .blockerDialog {
+  --cb-ink: #1a1613;
+  --cb-text: #4a423b;
+  --cb-surface: rgba(255, 255, 255, 0.94);
+  --cb-handle: rgba(26, 22, 19, 0.2);
+  --cb-tint: 9%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  width: min(340px, 100%);
-  padding: 28px 22px 24px;
-  border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 24px 60px rgba(45, 28, 14, 0.3);
+  gap: 12px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 14px 24px 34px;
+  border-radius: 28px 28px 0 0;
+  background: var(--cb-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.25);
   text-align: center;
+  outline: none;
+  animation: pop 0.25s ease;
 }
 
 :global([data-theme='dark']) .blockerDialog {
-  background: #1f1b17;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  --cb-ink: #f5f1ec;
+  --cb-text: #c9bfb6;
+  --cb-surface: #1f1f23;
+  --cb-handle: rgba(245, 241, 236, 0.25);
+  --cb-tint: 14%;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.8);
+}
+
+.blockerHandle {
+  width: 40px;
+  height: 4px;
+  margin-bottom: 6px;
+  border-radius: 2px;
+  background: var(--cb-handle);
+}
+
+/* Icon tile holding the spinner. */
+.blockerTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--background) var(--cb-tint), transparent);
 }
 
 .blockerSpinner {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 10px;
-  border: 3px solid color-mix(in srgb, var(--background) 22%, transparent);
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid color-mix(in srgb, var(--background) 25%, transparent);
   border-top-color: var(--background);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -229,24 +267,39 @@
 
 .blockerTitle {
   margin: 0;
-  font-size: 17px;
-  font-weight: 800;
-  color: #1a1613;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--cb-ink);
 }
 
 .blockerSubtitle {
   margin: 0;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: #6e655e;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--cb-text);
 }
 
-:global([data-theme='dark']) .blockerTitle {
-  color: #f5f1ec;
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-:global([data-theme='dark']) .blockerSubtitle {
-  color: #a89c92;
+@keyframes popCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 @media (min-width: 600px) {
@@ -257,10 +310,34 @@
   .column {
     padding-top: 24px;
   }
+
+  .blockerDialog {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(400px, calc(100vw - 32px));
+    padding: 28px;
+    border-radius: 24px;
+    transform: translate(-50%, -50%);
+    animation-name: popCentered;
+  }
+
+  :global([data-theme='dark']) .blockerDialog {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .blockerHandle {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .blockerSpinner {
+  .blockerDialog {
     animation: none;
+  }
+
+  .blockerSpinner {
+    animation-duration: 1.6s;
   }
 }

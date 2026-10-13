@@ -8,8 +8,8 @@ import {chainLogoMap} from 'assets/chain_logo';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import MadalWalletConnect from 'components/MadalWalletConnect';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, PlusIcon} from 'components/Home/HomeIcons';
-import {ExternalLinkIcon, UnlinkIcon} from 'components/Transactions/TxIcons';
+import {ChevronLeftIcon, PlusIcon, UnlinkIcon} from 'components/Home/HomeIcons';
+import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import useWalletConnectSessions from 'src/hooks/walletConnect/useWalletConnectSessions';
 import styles from './WalletConnect.module.css';
 

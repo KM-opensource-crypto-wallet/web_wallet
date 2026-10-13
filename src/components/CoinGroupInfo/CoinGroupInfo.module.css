@@ -1,76 +1,160 @@
-.modalDiv {
-  max-height: 75vh;
-  min-height: 75vh;
+/* Coin group info: bottom sheet on phones, centred dialog from 600px up.
+   Same surface and rows as the Home sheets; the accent is the white-label
+   `--background` colour. */
+.sheet {
+  --cg-ink: #1a1613;
+  --cg-text: #4a423b;
+  --cg-muted: #6e655e;
+  --cg-faint: #8a7f76;
+  --cg-handle: rgba(26, 22, 19, 0.2);
+  --cg-field-border: rgba(26, 22, 19, 0.08);
+  --cg-chip: rgba(26, 22, 19, 0.06);
+  --cg-success: #12b76a;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  height: 75vh;
+  max-height: calc(100dvh - 24px);
+  padding: 14px 20px 24px;
+  border-radius: 28px 28px 0 0;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.25);
+  outline: none;
+  animation: pop 0.25s ease;
+}
+
+:global([data-theme='dark']) .sheet {
+  --cg-ink: #f5f1ec;
+  --cg-text: #c9bfb6;
+  --cg-muted: #a89c92;
+  --cg-faint: #a89c92;
+  --cg-handle: rgba(245, 241, 236, 0.25);
+  --cg-field-border: rgba(255, 255, 255, 0.1);
+  --cg-chip: rgba(255, 255, 255, 0.08);
+  --cg-success: #32d583;
+  background: #1f1f23;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.8);
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.sheet svg {
+  fill: none;
+}
+
+.backdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .backdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+.handle {
+  flex: none;
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--cg-handle);
 }
 
 .header {
   display: flex;
-  justify-content: space-between;
+  flex: none;
   align-items: center;
-  margin-bottom: 15px;
-  padding: 10px 2px 0;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--cg-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .headerActions {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: 15px;
+  gap: 14px;
 }
 
 .btnClose {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 0;
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--cg-chip);
+  color: var(--cg-muted);
 }
 
-.contentBox {
+.scroll {
+  display: flex;
   flex: 1;
-  overflow: hidden;
-}
-
-.scrollModalDiv {
-  max-height: 75vh;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
   overflow-y: auto;
-  padding: 0 20px 10px;
-}
-
-.title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
 }
 
 .description {
-  margin: 10px 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--cg-text);
 }
 
 .subTitle {
-  margin: 10px 0;
-  font-size: 16px;
-  font-weight: 500;
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cg-faint);
+}
+
+.coinList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .coinItem {
   display: flex;
   align-items: center;
-  border: 1px solid var(--gray);
-  margin-bottom: 8px;
-  border-radius: 8px;
-  padding: 8px 10px;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--cg-field-border);
+  border-radius: 16px;
 }
 
 .coinIconWrapper {
-  width: 30px;
-  height: 30px;
-  margin-right: 12px;
   position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--cg-field-border);
 }
 
 .coinIcon {
@@ -80,70 +164,125 @@
 
 .coinInfo {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  flex-grow: 1;
-  gap: 4px;
-}
-
-.coinHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  gap: 2px;
+  min-width: 0;
 }
 
 .coinTitleGroup {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .coinSymbol {
-  font-weight: 500;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--cg-ink);
 }
 
 .chainName {
-  background-color: var(--walletItemColor);
-  color: var(--font);
   padding: 2px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-:root[data-theme='light'] .chainName {
-  background-color: var(--walletItemColor);
-  color: black;
-  border-radius: 8px;
+  border-radius: 999px;
+  background: var(--cg-chip);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cg-muted);
+  white-space: nowrap;
 }
 
 .coinName {
-  font-size: 14px;
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--cg-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .addButton {
-  width: 100%;
-  gap: 4px !important;
-  background-color: var(--background) !important;
-  color: #fff !important;
-  border-radius: 6px !important;
-  text-transform: none !important;
-  box-shadow: none !important;
-  height: 50px;
-  font-weight: 500;
-  transition: background-color 0.2s ease !important;
+  flex: none;
 }
 
-.addButton[data-state='added'] {
-  background-color: #4caf50 !important;
+/* Added: green and settled, not the greyed-out disabled look. */
+.sheet .addButton[data-state='added'],
+.sheet .addButton[data-state='added']:disabled {
+  --gb-accent: var(--cg-success);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--gb-accent) 88%, #fff) 0%,
+    var(--gb-accent) 100%
+  );
+  color: #fff;
+  box-shadow: none;
+  cursor: default;
 }
 
-.addButton[data-state='adding'] {
-  background-color: var(--background) !important;
+/* Adding keeps the accent colour while it is busy. */
+.sheet .addButton[data-state='adding']:disabled {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--background) 88%, #fff) 0%,
+    var(--background) 100%
+  );
+  color: #fff;
+  cursor: progress;
 }
 
-.disabledButton {
-  opacity: 0.5;
-  cursor: not-allowed;
+.btnClose:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
 }
 
+@media (min-width: 600px) {
+  .sheet {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(520px, calc(100vw - 32px));
+    height: min(75vh, 720px);
+    max-height: calc(100vh - 64px);
+    padding: 24px;
+    border-radius: 24px;
+    transform: translate(-50%, -50%);
+    animation-name: popCentered;
+  }
+
+  :global([data-theme='dark']) .sheet {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .handle {
+    display: none;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}

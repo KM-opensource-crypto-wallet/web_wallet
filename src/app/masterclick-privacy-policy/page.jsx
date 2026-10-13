@@ -1,12 +1,15 @@
 'use client';
 import s from './PrivacyPolicyPage.module.css';
 
+// Public white-label legal page: a static document on the warm surface,
+// title above one glass card. Copy is legal text, kept verbatim.
 const MasterClickPrivacyPolicyPage = () => {
   return (
-    <div className={s.oneArticle}>
-      <h1>Master Click Privacy policy</h1>
+    <main className={s.oneArticle}>
+      <div className={s.glow} aria-hidden='true' />
       <div className={s.container}>
-        <div className={s.articleContent}>
+        <h1 className={s.title}>Master Click Privacy policy</h1>
+        <article className={s.articleContent}>
           <div className={s.text}>
             <h2>1. PERSONAL DATA WE COLLECT</h2>
             <h4>1.1. Information you give us</h4>
@@ -211,9 +214,9 @@ const MasterClickPrivacyPolicyPage = () => {
               and organizations for the purposes of fraud protection.
             </p>
           </div>
-        </div>
+        </article>
       </div>
-    </div>
+    </main>
   );
 };
 

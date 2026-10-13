@@ -1,48 +1,11 @@
-.list {
-  /* display: flex; */
-  padding: 20px;
-}
+/* Only the bits ModalReset.module.css doesn't cover; the sheet itself is
+   styled there. */
 
-.listfont {
-  color: var(--font);
-  font-size: 25px;
-  margin-bottom: 20px;
-}
-
-.listText {
-  color: var(--font);
-  font-size: 18px;
-}
-
-.listbtn {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  margin-top: 30px;
-  margin-bottom: 10px;
-}
-
-.button {
-  height: 50px;
-  border-radius: 10px;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.btnBuy {
-  color: var(--font);
-  font-size: 18px;
-  text-transform: uppercase;
-}
-
-.btnEx {
-  color: var(--font);
-  font-size: 18px;
-}
-
-.shadow {
-  box-shadow: 5px 5px 0 var(--background); /* Ось як ви можете залишити тінь у звичайному CSS. */
+/* Long coin names ("Buy Binance Smart Chain") stay on one line in the
+   half-width button. */
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

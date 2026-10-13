@@ -118,6 +118,7 @@ const LoginScreen = () => {
         visible={lastAttempt}
         title={Constants.lastAttempt.title}
         message={Constants.lastAttempt.subTitle}
+        tone='danger'
         handleClose={closeLastAttempt}
       />
 

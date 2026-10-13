@@ -1,5 +1,15 @@
+/* Scrolling body of the connected-apps sheet; the shell comes from
+   WalletConnectRequestModal/WalletConnectSheet.module.css and each app row is
+   WalletConnectItem's own. */
 .mainView {
-  padding: 20px 0;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  max-height: 80vh;
+  padding: 4px 0 16px;
+}
+
+@media (min-width: 600px) {
+  .mainView {
+    padding: 8px 0;
+  }
 }

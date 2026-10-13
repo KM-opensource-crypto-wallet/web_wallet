@@ -2,6 +2,7 @@
 
 import React from 'react';
 import {useSelector, useDispatch} from 'react-redux';
+import {useRouter} from 'next/navigation';
 import {
   selectVisibleWallets,
   selectCurrentWallet,
@@ -9,61 +10,97 @@ import {
 import {togglePrivacyMode} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import Image from 'next/image';
 import s from './privacy-mode.module.css';
-import {Switch} from '@mui/material';
-import GoBackButton from 'components/GoBackButton';
+import GeneralButton from 'components/Button';
+import {ChevronLeftIcon} from 'components/Home/HomeIcons';
+import {EyeOffIcon} from 'app/settings/SettingsIcons';
 import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 
 const PrivacyMode = () => {
+  const router = useRouter();
   const currentWalletName = useSelector(selectCurrentWallet)?.walletName;
   const visibleWallets = useSelector(selectVisibleWallets);
   const dispatch = useDispatch();
 
   return (
-    <div className={s.container}>
-      <GoBackButton />
-      <div className={s.walletSection}>
-        <p className={s.title}>
-          {'When you enable Privacy Mode for your wallet:\n' +
-            '\t• The addresses for all coins in the wallet will automatically reset to the default address each time you restart the app.\n' +
-            '\t• This ensures enhanced privacy and security for your transactions.'}
-        </p>
-        <ul>
-          {visibleWallets.map(item => {
-            return (
-              <li className={s.walletBox} key={`pm_wallet_${item.clientId}`}>
-                <div className={s.walletList}>
-                  <div className={s.avatarWrapper}>
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <h1 className={s.title}>Privacy Mode</h1>
+        <span className={s.iconSpacer} aria-hidden='true' />
+      </div>
+
+      <div className={s.column}>
+        <div className={s.info}>
+          <span className={s.infoIcon}>
+            <EyeOffIcon size={20} />
+          </span>
+          <div className={s.infoText}>
+            <p className={s.infoTitle}>
+              When you enable Privacy Mode for your wallet:
+            </p>
+            <ul className={s.bullets}>
+              <li>
+                The addresses for all coins in the wallet will automatically
+                reset to the default address each time you restart the app.
+              </li>
+              <li>
+                This ensures enhanced privacy and security for your
+                transactions.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <section className={s.section} aria-label='Wallets'>
+          <h2 className={s.sectionLabel}>Wallets</h2>
+          <ul className={s.card}>
+            {visibleWallets.map(item => {
+              const isCurrent = item?.walletName === currentWalletName;
+              return (
+                <li className={s.row} key={`pm_wallet_${item.clientId}`}>
+                  <span className={s.avatar}>
                     <Image
-                      className={s.avatarAvatar}
-                      alt='avatar'
-                      width={54}
-                      height={54}
+                      className={s.avatarImage}
+                      alt=''
+                      width={26}
+                      height={26}
                       src={getAppIcon()}
                     />
-
-                    {item?.walletName === currentWalletName && (
-                      <span className={s.badge}>&#10004;</span>
-                    )}
-                  </div>
-
-                  <div className={s.textContainer}>
-                    <p className={s.mainText}>{item?.walletName}</p>
-                    <p className={s.secondaryText}>Multi-Coin Wallet</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={!!item.privacyMode}
-                  onChange={() => {
-                    dispatch(togglePrivacyMode({clientId: item.clientId}));
-                  }}
-                  color='warning'
-                />
-              </li>
-            );
-          })}
-        </ul>
+                  </span>
+                  <span className={s.rowText}>
+                    <span className={s.rowTitle}>
+                      <span className={s.walletName}>{item?.walletName}</span>
+                      {isCurrent && <span className={s.badge}>Current</span>}
+                    </span>
+                    <span className={s.rowHint}>Multi-Coin Wallet</span>
+                  </span>
+                  <button
+                    type='button'
+                    role='switch'
+                    aria-checked={!!item.privacyMode}
+                    aria-label={`Privacy Mode for ${item?.walletName}`}
+                    className={`${s.switch} ${
+                      item.privacyMode ? s.switchOn : ''
+                    }`}
+                    onClick={() => {
+                      dispatch(togglePrivacyMode({clientId: item.clientId}));
+                    }}>
+                    <span className={s.knob} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 

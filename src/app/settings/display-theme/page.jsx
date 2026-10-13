@@ -1,74 +1,96 @@
 'use client';
-// import { View, SafeAreaView } from "react-native";
-// import myStyles from "./DisplayThemeStyles";
-import {useContext, useEffect, useState} from 'react';
-// import { ThemeContext } from "../../../../../ThemeContext";
-
-import DokRadioButton from 'components/DokRadioButton';
-import s from './DisplayTheme.module.css';
+import {useContext} from 'react';
+import {useRouter} from 'next/navigation';
 import {ThemeContext} from 'theme/ThemeContext';
-import {getThemeFromLocalStorage} from 'utils/localStorageData';
-
-const icons = require(`assets/images/icons`).default;
-import GoBackButton from 'components/GoBackButton';
+import GeneralButton from 'components/Button';
+import {CheckIcon, ChevronLeftIcon, InfoIcon} from 'components/Home/HomeIcons';
+import s from './DisplayTheme.module.css';
 
 const themeList = [
-  {label: 'System Default', theme: 'system'},
-  {label: 'Light Theme', theme: 'light'},
-  {label: 'Dark Theme', theme: 'dark'},
+  {
+    label: 'System',
+    hint: 'Match your device',
+    theme: 'system',
+  },
+  {label: 'Light', hint: 'Warm and bright', theme: 'light'},
+  {label: 'Dark', hint: 'Easy on the eyes', theme: 'dark'},
 ];
 
+// Miniature of the wallet in the given theme; `system` shows both halves.
+const Preview = ({theme}) => (
+  <span className={`${s.preview} ${s[`preview_${theme}`]}`} aria-hidden='true'>
+    {theme === 'system' ? <span className={s.previewHalf} /> : null}
+    <span className={s.previewCard}>
+      <span className={s.previewDot} />
+      <span className={s.previewLines}>
+        <span className={s.previewLine} />
+        <span className={`${s.previewLine} ${s.previewLineShort}`} />
+      </span>
+    </span>
+    <span className={s.previewButton} />
+  </span>
+);
+
 const DisplayTheme = () => {
+  const router = useRouter();
   const {theme, changeTheme} = useContext(ThemeContext);
 
-  const [currentTheme, setCurrentTheme] = useState('');
-
-  useEffect(() => {
-    // Anonymous function: the react-hooks compiler lint flags setState calls
-    // made directly in an effect body; the same update here is accepted.
-    (() => {
-      setCurrentTheme(theme);
-    })();
-  }, [theme]);
-
-  const handleChange = value => {
-    changeTheme(value);
-  };
-
   return (
-    <div className={s.container}>
-      <GoBackButton />
-      <div className={s.section}>
-        <p className={s.title}>Select a theme</p>
-
-        {themeList.map((item, index) => (
-          <div
-            className={s.itembox}
-            key={index}
-            onClick={() => {
-              handleChange(item.theme);
-            }}>
-            <input
-              className={s.input}
-              type='checkbox'
-              checked={currentTheme === item.theme}
-              onChange={() => {
-                handleChange(item.theme);
-              }}
-              id={item.theme}
-            />
-            <div>
-              {currentTheme === item.theme ? (
-                <span className={s.markActive}>{icons.checkedRadio}</span>
-              ) : (
-                <span className={s.mark}>{icons.uncheckedRadio}</span>
-              )}
-              <p className={s.item}>{item.label}</p>
-            </div>
-          </div>
-        ))}
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <h1 className={s.title}>Theme</h1>
+        <span className={s.iconSpacer} aria-hidden='true' />
       </div>
-    </div>
+
+      <div className={s.column}>
+        <h2 className={s.sectionLabel}>Appearance</h2>
+        <div className={s.grid} role='radiogroup' aria-label='Theme'>
+          {themeList.map(item => {
+            const selected = theme === item.theme;
+            return (
+              <button
+                key={item.theme}
+                type='button'
+                role='radio'
+                aria-checked={selected}
+                className={`${s.option} ${selected ? s.optionActive : ''}`}
+                onClick={() => {
+                  if (!selected) {
+                    changeTheme(item.theme);
+                  }
+                }}>
+                <Preview theme={item.theme} />
+                <span className={s.optionFoot}>
+                  <span className={s.optionText}>
+                    <span className={s.optionTitle}>{item.label}</span>
+                    <span className={s.optionHint}>{item.hint}</span>
+                  </span>
+                  <span className={s.check} aria-hidden='true'>
+                    {selected ? <CheckIcon size={14} strokeWidth={3} /> : null}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <p className={s.note}>
+          <InfoIcon size={16} />
+          <span>
+            System follows your device setting and switches automatically
+            between light and dark.
+          </span>
+        </p>
+      </div>
+    </main>
   );
 };
 

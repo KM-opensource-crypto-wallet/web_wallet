@@ -1,80 +1,319 @@
-.container {
-  width: 100%;
-  margin: 0 auto;
-  padding: 20px;
-  height: calc(var(--app-height) - 70px);
+/* OTC details: personal and address cards, then Next. Same surface and
+   tokens as Contact us; the accent is the white-label `--background`. */
+.page {
+  --ot-ink: #1a1613;
+  --ot-muted: #6e655e;
+  --ot-faint: #8a7f76;
+  --ot-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
+  --ot-glass: rgba(255, 255, 255, 0.65);
+  --ot-glass-border: rgba(255, 255, 255, 0.9);
+  --ot-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --ot-header-line: rgba(26, 22, 19, 0.07);
+  --ot-field: rgba(26, 22, 19, 0.045);
+  --ot-field-border: rgba(26, 22, 19, 0.08);
+  --ot-hover: rgba(26, 22, 19, 0.04);
+  --ot-error: #d92d20;
+  --ot-tint: 10%;
+  position: relative;
+  min-height: calc(var(--app-height, 100vh) - 70px);
+  overflow: hidden;
+  padding-bottom: 40px;
+  background: var(--ot-surface);
 }
 
-.goBack {
-  margin-bottom: 15px;
+:global([data-theme='dark']) .page {
+  --ot-ink: #f5f1ec;
+  --ot-muted: #a89c92;
+  --ot-faint: #a89c92;
+  --ot-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
+  --ot-glass: rgba(255, 255, 255, 0.05);
+  --ot-glass-border: rgba(255, 255, 255, 0.1);
+  --ot-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --ot-header-line: rgba(255, 255, 255, 0.07);
+  --ot-field: rgba(255, 255, 255, 0.06);
+  --ot-field-border: rgba(255, 255, 255, 0.1);
+  --ot-hover: rgba(255, 255, 255, 0.05);
+  --ot-error: #f97066;
+  --ot-tint: 16%;
 }
-.formInput {
-  width: 100%;
-  margin: 0 auto;
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.page svg,
+.option svg {
+  fill: none;
+}
+
+.glow {
+  position: absolute;
+  top: -120px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--background) 13%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* Top bar: back, centred title, spacer. */
+.topBar {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--ot-header-line);
 }
 
-.formInput > div {
-  margin-bottom: 15px;
+.iconButton,
+.iconSpacer {
+  display: flex;
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+
+.iconButton {
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--ot-ink);
+  transition: background-color 0.2s;
+}
+
+.iconButton:hover {
+  background: var(--ot-hover);
 }
 
 .title {
-  color: var(--font);
-  font-size: 24px;
-  margin-bottom: 10px;
-  text-align: left;
+  flex: 1;
+  margin: 0;
+  font-size: 15.5px;
   font-weight: 700;
+  color: var(--ot-ink);
+  text-align: center;
 }
 
-.text {
-  color: var(--primary);
-  font-size: 15px;
-  margin-bottom: 20px;
-}
-
-.rowSection {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 30px;
-}
-
-.rowSection > div {
-  width: 50%;
-}
-
-.rowBox {
+.column {
+  position: relative;
   display: flex;
   flex-direction: column;
-  height: 80px;
+  gap: 20px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 18px 16px 0;
 }
 
-.rowBox > div {
-  margin-bottom: 20px;
+.lead {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ot-muted);
 }
 
-.button {
-  width: 100%;
-  background-color: var(--background);
-  min-height: 60px;
-  border-radius: 10px;
-  font-size: 20px;
+/* Sections */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionLabel {
+  margin: 0;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ot-faint);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--ot-glass-border);
+  border-radius: 22px;
+  background: var(--ot-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--ot-shadow);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+/* Fields */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ot-faint);
+}
+
+.inputRow,
+.select {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  color: var(--title);
-  font-size: 16px;
+  min-height: 50px;
+  padding: 0 14px;
+  border: 1px solid var(--ot-field-border);
+  border-radius: 14px;
+  background: var(--ot-field);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    background-color 0.2s;
 }
 
-.textConfirm {
-  margin-top: -15px;
-  margin-bottom: 10px;
-  color: red;
-  margin-left: 10px;
-  font-size: 12px;
+.inputRow:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--background) var(--ot-tint), transparent);
+}
+
+.inputError,
+.inputError:focus-within {
+  border-color: var(--ot-error);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--ot-ink);
+}
+
+.input::placeholder {
+  color: var(--ot-faint);
+}
+
+.select {
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.select:hover {
+  background: var(--ot-hover);
+}
+
+.selectValue,
+.selectPlaceholder {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectValue {
+  font-weight: 600;
+  color: var(--ot-ink);
+}
+
+.selectPlaceholder {
+  color: var(--ot-faint);
+}
+
+.chevron {
+  flex: none;
+  color: var(--ot-faint);
+}
+
+.error {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ot-error);
+}
+
+/* Country picker rows; they render in the Home sheet, so use its tokens. */
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--hm-line);
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.option:last-child {
+  border-bottom: none;
+}
+
+.option:hover {
+  background: var(--hm-hover);
+}
+
+.optionActive {
+  background: color-mix(in srgb, var(--background) 7%, transparent);
+}
+
+.optionName {
+  flex: 1;
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--hm-ink);
+}
+
+.optionCheck {
+  flex: none;
+  color: var(--background);
+}
+
+.iconButton:focus-visible,
+.select:focus-visible,
+.option:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: -2px;
+}
+
+/* Narrow phones: city and post code stack. */
+@media (max-width: 380px) {
+  .pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 600px) {
+  .topBar {
+    padding: 10px 20px;
+  }
+
+  .column {
+    padding-top: 26px;
+  }
+
+  .card {
+    padding: 22px;
+  }
+
+  .option {
+    padding: 12px 24px;
+  }
 }

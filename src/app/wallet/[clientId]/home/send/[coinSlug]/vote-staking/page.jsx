@@ -35,11 +35,12 @@ import Loading from 'components/Loading';
 import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
 import ValidatorItem from 'components/ValidatorItem';
 
-import TextField from '@mui/material/TextField';
-import IconButton from '@mui/material/IconButton';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
-import PageTitle from 'components/PageTitle';
+import GeneralButton from 'components/Button';
+import {
+  ChevronLeftIcon,
+  CloseIcon,
+  SearchIcon,
+} from 'components/Home/HomeIcons';
 import InfiniteScroll from 'react-infinite-scroller';
 import {useRouter} from 'next/navigation';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
@@ -195,8 +196,30 @@ const VoteStaking = () => {
     [onChangeText, onPressAdd, onPressMinus, selectedVotes],
   );
 
+  const topBar = (
+    <div className={styles.topBar}>
+      <GeneralButton
+        variant='unstyled'
+        className={styles.back}
+        aria-label='Back'
+        onClick={() => router.back()}>
+        <ChevronLeftIcon size={24} />
+      </GeneralButton>
+      <h1 className={styles.title}>{'Select Validator'}</h1>
+      <span className={styles.iconSpacer} aria-hidden='true' />
+    </div>
+  );
+
   if (isLoading) {
-    return <Loading />;
+    return (
+      <main className={styles.page}>
+        <div className={styles.glow} aria-hidden='true' />
+        {topBar}
+        <div className={styles.loading}>
+          <Loading />
+        </div>
+      </main>
+    );
   }
   const isValid =
     availableAmount >= selectedTotal &&
@@ -204,90 +227,63 @@ const VoteStaking = () => {
     selectedTotal > 0;
 
   return (
-    <div className={styles.container}>
-      <PageTitle title={'Select Validator'} />
-      <div className={styles.textInputContainer}>
-        <TextField
-          placeholder='Search'
-          variant='outlined'
-          id='search-bar'
-          fullWidth
-          value={searchQuery}
-          onChange={handleSearch}
-          sx={{
-            '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
-              {
-                borderColor: 'var(--gray)',
-              },
-            '& .MuiOutlinedInput-root': {
-              border: '1px solid var(--gray)',
-              borderRadius: '10px',
-              marginBottom: '10px',
-              fontSize: '18px',
-            },
-          }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <IconButton type='submit' aria-label='search'>
-                  <SearchIcon
-                    sx={{
-                      color: 'gray',
-                      marginRight: '10px',
-                    }}
-                  />
-                </IconButton>
-              ),
-              endAdornment: searchQuery && (
-                <IconButton
-                  onClick={clearSearch}
-                  size='small'
-                  sx={{
-                    color: 'gray',
-                  }}>
-                  <ClearIcon />
-                </IconButton>
-              ),
-            },
-          }}
-        />
-      </div>
-      <div className={styles.scrollModalDiv}>
-        <InfiniteScroll
-          initialLoad={false}
-          pageStart={1}
-          loadMore={onEndReached}
-          hasMore={validators.length !== validatorsList.length}
-          loader={
-            <div className={styles.loader} key={0}>
-              <Loading />
-            </div>
-          }
-          useWindow={false}>
-          {validatorsList.map((item, index) => renderItem({item}))}
-        </InfiniteScroll>
-      </div>
-      <div className={styles.bottomContainer}>
-        <div className={styles.bottomView}>
+    <main className={styles.page}>
+      <div className={styles.glow} aria-hidden='true' />
+      {topBar}
+      <div className={styles.column}>
+        <div className={styles.search}>
+          <SearchIcon size={18} className={styles.searchIcon} />
+          <input
+            placeholder='Search'
+            id='search-bar'
+            className={styles.searchInput}
+            value={searchQuery}
+            onChange={handleSearch}
+          />
+          {searchQuery && (
+            <GeneralButton
+              variant='unstyled'
+              className={styles.clear}
+              aria-label='Clear search'
+              onClick={clearSearch}>
+              <CloseIcon size={16} />
+            </GeneralButton>
+          )}
+        </div>
+        {/* InfiniteScroll listens to this box's scroll (useWindow={false}),
+            so it keeps a fixed height. */}
+        <div className={styles.scrollModalDiv}>
+          <InfiniteScroll
+            initialLoad={false}
+            pageStart={1}
+            loadMore={onEndReached}
+            hasMore={validators.length !== validatorsList.length}
+            loader={
+              <div className={styles.loader} key={0}>
+                <Loading />
+              </div>
+            }
+            useWindow={false}>
+            {validatorsList.map((item, index) => renderItem({item}))}
+          </InfiniteScroll>
+        </div>
+        <div className={styles.bottomContainer}>
           <p className={styles.itemDescriptionTitle}>
             {'Selected / Total = '}
-            <p
+            <span
               className={
                 styles.itemDescription
-              }>{`${selectedTotal} / ${availableAmount}`}</p>
+              }>{`${selectedTotal} / ${availableAmount}`}</span>
           </p>
+          <GeneralButton
+            fullWidth
+            disabled={!isValid}
+            onClick={handleSubmitForm}>
+            Next
+          </GeneralButton>
         </div>
-        <button
-          disabled={!isValid}
-          style={{
-            backgroundColor: !isValid ? 'var(--gray)' : 'var(--background)',
-          }}
-          className={styles.button}
-          onClick={handleSubmitForm}>
-          <p className={styles.buttonTitle}>Next</p>
-        </button>
       </div>
-    </div>
+    </main>
   );
 };
 

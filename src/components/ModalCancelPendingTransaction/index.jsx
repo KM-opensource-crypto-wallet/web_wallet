@@ -1,28 +1,30 @@
 import React from 'react';
+import shell from 'components/ModalReset/ModalReset.module.css';
 import styles from './ModalConfirmEnableChatModal.module.css';
 import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
+import GeneralButton from 'components/Button';
 import Loading from 'components/Loading';
 import {currencySymbol} from 'data/currency';
 import Spinner from 'components/Spinner';
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '80%',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  '@media (min-width: 500px)': {
-    width: '60%',
-  },
-  '@media (min-width: 768px)': {
-    width: '40%',
-  },
-};
+const Icon = ({children}) => (
+  <svg
+    width='22'
+    height='22'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='2'
+    strokeLinecap='round'
+    strokeLinejoin='round'
+    aria-hidden='true'>
+    {children}
+  </svg>
+);
 
+// Confirms cancelling or speeding up a pending transaction and shows the
+// estimated fee once it loads. Only No / Yes dismiss it (no backdrop / Esc
+// close). Same sheet / dialog look as the Reset Wallet confirmation.
 const ModalCancelPendingTransaction = ({
   visible,
   onPressYes,
@@ -37,49 +39,65 @@ const ModalCancelPendingTransaction = ({
   return (
     <Modal
       open={visible}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={styles.container}>
-          <div className={styles.infoList}>
-            <p className={styles.titleInfo}>{`${
-              isCancelTransaction ? 'Cancel' : 'Speed Up'
-            } Transaction?`}</p>
-            <p className={styles.info}>
-              {`Are you sure you want to ${
-                isCancelTransaction ? 'cancel' : 'speed up'
-              } the pending transaction? Please note that a fee may apply.`}
-            </p>
-            <div>
-              {isLoading ? (
-                <div className={styles.paddingView}>
-                  <Loading size={40} height={'84px'} />
-                </div>
-              ) : success ? (
-                <div>
-                  <div className={styles.feeTitle}>{'Estimate Fees:'}</div>
+      aria-labelledby='modal-cancel-pending-title'
+      aria-describedby='modal-cancel-pending-description'
+      slotProps={{backdrop: {className: shell.backdrop}}}>
+      <div className={shell.sheet}>
+        <div className={shell.handle} />
+        <span
+          className={`${shell.tile} ${
+            isCancelTransaction ? shell.danger : ''
+          }`}>
+          {isCancelTransaction ? (
+            <Icon>
+              <circle cx='12' cy='12' r='9' />
+              <path d='m15 9-6 6M9 9l6 6' />
+            </Icon>
+          ) : (
+            <Icon>
+              <path d='M13 2 3 14h9l-1 8 10-12h-9l1-8z' />
+            </Icon>
+          )}
+        </span>
+        <h2 id='modal-cancel-pending-title' className={shell.title}>{`${
+          isCancelTransaction ? 'Cancel' : 'Speed Up'
+        } Transaction?`}</h2>
+        <div id='modal-cancel-pending-description' className={shell.body}>
+          <p className={shell.text}>
+            {`Are you sure you want to ${
+              isCancelTransaction ? 'cancel' : 'speed up'
+            } the pending transaction? Please note that a fee may apply.`}
+          </p>
+          <div aria-live='polite'>
+            {isLoading ? (
+              <div className={styles.feeCard}>
+                <Loading size={28} height={'56px'} />
+              </div>
+            ) : success ? (
+              <div className={styles.feeCard}>
+                <div className={styles.feeTitle}>{'Estimate Fees:'}</div>
+                <div className={styles.feeValues}>
                   <div
                     className={
                       styles.feeDescription
                     }>{`${transactionFee} ${currentCoin?.chain_symbol}`}</div>
-                  <div className={styles.feeDescription}>
+                  <div className={styles.feeFiat}>
                     {currencySymbol[localCurrency] + fiatEstimateFee}
                   </div>
                 </div>
-              ) : null}
-            </div>
-          </div>
-          <div className={styles.btnList}>
-            <button className={styles.learnBox} onClick={onPressNo}>
-              No
-            </button>
-
-            <button className={styles.learnBox} onClick={onPressYes}>
-              Yes
-            </button>
+              </div>
+            ) : null}
           </div>
         </div>
-      </Box>
+        <div className={shell.actions}>
+          <GeneralButton variant='secondary' fullWidth onClick={onPressNo}>
+            No
+          </GeneralButton>
+          <GeneralButton fullWidth onClick={onPressYes}>
+            Yes
+          </GeneralButton>
+        </div>
+      </div>
     </Modal>
   );
 };

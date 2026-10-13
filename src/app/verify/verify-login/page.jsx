@@ -1,125 +1,26 @@
 'use client';
 import {walletRoutes} from 'utils/routes';
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useContext,
-  useRef,
-} from 'react';
+import React, {useState, useCallback, useRef} from 'react';
 import {Formik} from 'formik';
 import styles from './VerifyLoginScreen.module.css';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import InputAdornment from '@mui/material/InputAdornment';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import IconButton from '@mui/material/IconButton';
 import {validationSchemaLogin} from 'utils/validationSchema';
 import {useRouter} from 'next/navigation';
-// import {
-//   logInSuccess,
-//   fingerprintAuthSuccess,
-//   loadingOff,
-//   loadingOn,
-// } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
-
-// import {validationSchemaLogin} from 'utils/validationSchema';
-// import {isFingerprint} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-// import FingerprintScanner from 'react-native-fingerprint-scanner';
-// import {IS_IOS, useFloatingHeight} from 'dok-wallet-blockchain-networks/service/dimensions';
-// import {ThemeContext} from '../../../../ThemeContext';
-// import myStyles from './LoginScreenStyles';
-import {
-  loadingOff,
-  logInSuccess,
-} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
+import {loadingOff} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {useDispatch, useSelector} from 'react-redux';
 import * as vault from 'dok-wallet-blockchain-networks/security/vault';
-import {
-  selectAllWallets,
-  selectCurrentWalletClientId,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import GoBackButton from 'components/GoBackButton';
+import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {getAppSubTitle} from 'whitelabel/whiteLabelInfo';
-import {ThemeContext} from 'theme/ThemeContext';
-// import RNScreenshotPrevent from 'react-native-screenshot-prevent';
+import GeneralButton from 'components/Button';
+import {ChevronLeftIcon, EyeIcon} from 'components/Home/HomeIcons';
+import {PhraseIcon} from 'app/settings/SettingsIcons';
 
 const VerifyLoginScreen = () => {
   const [hide, setHide] = useState(true);
   const [wrong, setWrong] = useState(false);
   const router = useRouter();
-  //   const {theme} = useContext(ThemeContext);
-  //   const styles = myStyles(theme);
-
   const dispatch = useDispatch();
-  //   const [wrong, setWrong] = useState(false);
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const buttonRef = useRef();
-  //   const fingerprint = useSelector(isFingerprint);
-  //   const isFinger = useSelector(getFingerprintAuth);
-  //   const floatingBtnHeight = useFloatingHeight();
-
-  //   useEffect(() => {
-  //     RNScreenshotPrevent.enabled(true);
-  //     if (IS_IOS && !__DEV__) {
-  //       RNScreenshotPrevent.enableSecurediv();
-  //     }
-  //     return () => {
-
-  //     };
-  //   }, []);
-
-  //   useEffect(() => {
-  //     dispatch(loadingOff());
-  //     setTimeout(() => {
-  //       handleFingerprintAuth();
-  //     }, 200);
-  //   }, [dispatch, handleFingerprintAuth]);
-
-  //   useEffect(() => {
-  //     if (!isFinger) {
-  //       handleFingerprintAuth();
-  //     }
-  //   }, [isFinger, handleFingerprintAuth]);
-
-  //   const handleFingerprintAuth = useCallback(async () => {
-  //     if (fingerprint) {
-  //       try {
-  //         const isAuth = await FingerprintScanner.authenticate({
-  //           description: 'Unlock Dok Wallet with your fingerprint',
-  //         });
-
-  //         dispatch(fingerprintAuthSuccess(isAuth));
-  //         if (hasWallet()) {
-  //           console.log('hasWallet: in login', hasWallet());
-  //           dispatch(loadingOn());
-  //           setTimeout(() => {
-  //             navigation.reset({
-  //               index: 0,
-  //               routes: [{name: 'Sidebar'}],
-  //             });
-  //             dispatch(loadingOff());
-  //           }, 200);
-  //         } else {
-  //           dispatch(loadingOn());
-  //           navigation.reset({
-  //             index: 0,
-  //             routes: [{name: 'ResetWallet', params: {isFromOnBoarding: true}}],
-  //           });
-  //         }
-  //       } catch (error) {
-  //         if (error.name === 'SystemCancel') {
-  //           console.log('Authentication was canceled by the system');
-  //         } else {
-  //           console.log('Error checking fingerprint settings:', error);
-  //         }
-  //       } finally {
-  //         FingerprintScanner.release();
-  //       }
-  //     }
-  //   }, [dispatch, fingerprint, navigation, hasWallet]);
 
   const onClickLogin = useCallback(
     async values => {
@@ -145,13 +46,32 @@ const VerifyLoginScreen = () => {
   }, []);
 
   return (
-    <>
-      <div className={styles.container}>
-        <div className={styles.goBack}>
-          <GoBackButton />
+    <main className={styles.page}>
+      <div className={styles.glow} aria-hidden='true' />
+      <div className={styles.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={styles.iconButton}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <h1 className={styles.title}>Show seed phrase</h1>
+        <span className={styles.iconSpacer} aria-hidden='true' />
+      </div>
+
+      <div className={styles.column}>
+        <div className={styles.intro}>
+          <span className={styles.introIcon}>
+            <PhraseIcon size={26} />
+          </span>
+          <p className={styles.brand}>{getAppSubTitle()}</p>
+          <h2 className={styles.heading}>Sign in</h2>
+          <p className={styles.lead}>
+            Enter your password to view your seed phrase.
+          </p>
         </div>
-        <p className={styles.brand}>{getAppSubTitle()}</p>
-        <p className={styles.title}>Sign in</p>
+
         <Formik
           initialValues={{password: ''}}
           validationSchema={validationSchemaLogin}
@@ -163,89 +83,70 @@ const VerifyLoginScreen = () => {
             values,
             errors,
             touched,
-          }) => (
-            <form className={styles.formInput} onSubmit={handleSubmit}>
-              <FormControl sx={{m: 1, width: '25ch'}} variant='outlined'>
-                <InputLabel
-                  sx={{
-                    color:
-                      errors.password && touched.password
-                        ? 'red'
-                        : 'var(--borderActiveColor)',
-                  }}
-                  focused={false}>
-                  Password
-                </InputLabel>
-                <OutlinedInput
-                  autoFocus={true}
-                  id='password'
-                  onKeyDown={onKeyDown}
-                  type={!hide ? 'text' : 'password'}
-                  name='password'
-                  onChange={handleChange('password')}
-                  onBlur={handleBlur('password')}
-                  value={values.password}
-                  endAdornment={
-                    <InputAdornment position='end'>
-                      <IconButton
-                        aria-label='toggle password visibility'
-                        onClick={() => setHide(!hide)}
-                        edge='end'
-                        sx={{
-                          '&  .MuiSvgIcon-root': {
-                            color: 'var(--borderActiveColor) ',
-                          },
-                        }}>
-                        {!hide ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  }
-                  label='Password'
-                  sx={{
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor:
-                        errors.password && touched.password
-                          ? 'red'
-                          : 'var(--sidebarIcon)',
-                    },
+            isSubmitting,
+          }) => {
+            const hasError = !!(errors.password && touched.password) || wrong;
+            return (
+              <form className={styles.card} onSubmit={handleSubmit} noValidate>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor='password'>
+                    Password
+                  </label>
+                  <div
+                    className={`${styles.inputBox} ${
+                      hasError ? styles.inputBoxError : ''
+                    }`}>
+                    <input
+                      autoFocus={true}
+                      id='password'
+                      className={styles.input}
+                      onKeyDown={onKeyDown}
+                      type={!hide ? 'text' : 'password'}
+                      name='password'
+                      autoComplete='current-password'
+                      placeholder='Enter your password'
+                      aria-invalid={hasError || undefined}
+                      aria-describedby={hasError ? 'password-error' : undefined}
+                      onChange={handleChange('password')}
+                      onBlur={handleBlur('password')}
+                      value={values.password}
+                    />
+                    <button
+                      type='button'
+                      className={styles.reveal}
+                      aria-label={hide ? 'Show password' : 'Hide password'}
+                      aria-pressed={!hide}
+                      onClick={() => setHide(!hide)}>
+                      <EyeIcon size={18} off={!hide} />
+                    </button>
+                  </div>
+                  <div id='password-error' aria-live='polite'>
+                    {errors.password && touched.password ? (
+                      <p className={styles.error}>{errors.password}</p>
+                    ) : null}
+                    {wrong === true && (
+                      <p className={styles.error}>
+                        * You have entered an invalid password
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor:
-                        errors.password && touched.password
-                          ? 'red'
-                          : 'var(--borderActiveColor)',
-                    },
-
-                    '& .MuiInputLabel-outlined': {
-                      color:
-                        errors.password && touched.password
-                          ? 'red'
-                          : 'var(--sidebarIcon)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'var(--sidebarIcon) !important',
-                    },
-                  }}
-                />
-              </FormControl>
-
-              {errors.password && touched.password ? (
-                <p className={styles.textConfirm}>{errors.password}</p>
-              ) : null}
-              {wrong === true && (
-                <p className={styles.textWarning}>
-                  * You have entered an invalid password
-                </p>
-              )}
-
-              <button className={styles.button} type='submit' ref={buttonRef}>
-                Verify
-              </button>
-            </form>
-          )}
+                <GeneralButton
+                  type='submit'
+                  ref={buttonRef}
+                  fullWidth
+                  className={styles.submit}
+                  loading={isSubmitting}
+                  loadingLabel='Verifying'>
+                  Verify
+                </GeneralButton>
+              </form>
+            );
+          }}
         </Formik>
       </div>
-    </>
+    </main>
   );
 };
 

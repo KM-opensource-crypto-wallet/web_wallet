@@ -1,79 +1,174 @@
-.modalOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+/* Same surface as ModalReset / SeedPhraseInfoModal, but its own copy: the
+   body is a scrolling list (BtcLightningUnclaimedData) with its own icons, so
+   no centred text and no `svg { fill: none }` here. Bottom sheet on phones,
+   wide centred dialog from 600px up. */
+
+/* Kept from the old overlay so it stacks the same. */
+.modalRoot {
+  z-index: 1000;
 }
 
-.modalContent {
-    background-color: var(--secondaryBackgroundColor);
-    border-radius: 10px;
-    width: 95%;
-    max-width: 800px;
-    position: relative;
-    overflow: hidden;
+.backdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-.modalDiv {
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+:global([data-theme='dark']) .backdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+.sheet {
+  --ud-ink: #1a1613;
+  --ud-muted: #6e655e;
+  --ud-surface: rgba(255, 255, 255, 0.94);
+  --ud-handle: rgba(26, 22, 19, 0.2);
+  --ud-line: rgba(26, 22, 19, 0.08);
+  --ud-hover: rgba(26, 22, 19, 0.06);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: min(85dvh, calc(100dvh - 24px));
+  overflow: hidden;
+  padding-top: 14px;
+  border-radius: 28px 28px 0 0;
+  background: var(--ud-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.25);
+  color: var(--ud-ink);
+  outline: none;
+  animation: pop 0.25s ease;
+}
+
+:global([data-theme='dark']) .sheet {
+  --ud-ink: #f5f1ec;
+  --ud-muted: #a89c92;
+  --ud-surface: #1f1f23;
+  --ud-handle: rgba(245, 241, 236, 0.25);
+  --ud-line: rgba(255, 255, 255, 0.08);
+  --ud-hover: rgba(255, 255, 255, 0.07);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.8);
+}
+
+.handle {
+  flex: none;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 6px;
+  border-radius: 2px;
+  background: var(--ud-handle);
 }
 
 .modalHeader {
-    padding: 15px;
-    padding-inline: 20px;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--gray);
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 12px 10px 24px;
+  border-bottom: 1px solid var(--ud-line);
 }
 
 .headerText {
-    font-size: 16px;
-    font-weight: 500;
-    margin: 0;
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--ud-ink);
 }
 
 .btnClose {
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--font);
-    font-size: 24px;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--ud-muted);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .btnClose:hover {
-    opacity: 0.8;
+  background: var(--ud-hover);
+  color: var(--ud-ink);
 }
 
-@media (min-width: 768px) {
-    .modalContent {
-        width: 50%;
-    }
-}
-
-:global(.dark) .modalContent {
-    background-color: var(--secondaryBackgroundColor);
-    color: var(--font);
+.btnClose:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
 }
 
 .btcLightningClaims {
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (min-width: 600px) {
+  .sheet {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(640px, calc(100vw - 32px));
+    max-height: 80vh;
+    padding-top: 8px;
+    border-radius: 24px;
+    transform: translate(-50%, -50%);
+    animation-name: popCentered;
+  }
+
+  :global([data-theme='dark']) .sheet {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .handle {
+    display: none;
+  }
+
+  .modalHeader {
+    padding: 10px 14px 12px 24px;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
 }

@@ -1,8 +1,10 @@
 import React from 'react';
-import {Box, Modal} from '@mui/material';
-import VisibilityOffOutlined from '@mui/icons-material/VisibilityOffOutlined';
-import InfoOutlined from '@mui/icons-material/InfoOutlined';
+import Modal from '@mui/material/Modal';
 import {RELOCK_OPTIONS} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import GeneralButton from 'components/Button';
+import {EyeIcon, InfoIcon} from 'components/Home/HomeIcons';
+// Same sheet / dialog look as the Reset Wallet and Log out confirmation.
+import styles from 'components/ModalReset/ModalReset.module.css';
 import s from './ModalHideWalletConfirm.module.css';
 
 const RELOCK_DESCRIPTION = {
@@ -30,22 +32,8 @@ const INFO_CONTENT = {
   info: {title: 'About Hide Wallet', bullets: INFO_BULLETS},
 };
 
-const modalStyle = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '95%',
-  maxHeight: '85%',
-  overflowY: 'auto',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  '@media (min-width: 768px)': {
-    width: '55%',
-  },
-  borderRadius: '24px',
-  outline: 'none',
-};
-
+// 'info' explains Hide Wallet; 'confirm' asks before hiding. Bottom sheet on
+// phones, centred dialog from 600px up.
 const ModalHideWalletConfirm = ({
   visible,
   mode = 'confirm',
@@ -76,45 +64,41 @@ const ModalHideWalletConfirm = ({
           onCancel && onCancel();
         }
       }}
-      aria-labelledby='hide-wallet-confirm-title'>
-      <Box sx={modalStyle}>
-        <div className={s.content}>
-          <div className={s.iconBadge}>
-            {isConfirmMode ? (
-              <VisibilityOffOutlined className={s.badgeIcon} />
-            ) : (
-              <InfoOutlined className={s.badgeIcon} />
-            )}
-          </div>
-          <p className={s.title} id='hide-wallet-confirm-title'>
-            {isConfirmMode ? 'Hide this wallet?' : infoContent.title}
-          </p>
-          <div className={s.bulletList}>
-            {bullets.map((bullet, index) => (
-              <div className={s.bulletRow} key={index}>
-                <span className={s.bulletDot} />
-                <p className={s.bulletText}>{bullet}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      aria-labelledby='hide-wallet-confirm-title'
+      slotProps={{backdrop: {className: styles.backdrop}}}>
+      <div className={styles.sheet}>
+        <div className={styles.handle} />
+        <span className={styles.tile}>
+          {isConfirmMode ? <EyeIcon size={22} off /> : <InfoIcon size={22} />}
+        </span>
+        <h2 className={styles.title} id='hide-wallet-confirm-title'>
+          {isConfirmMode ? 'Hide this wallet?' : infoContent.title}
+        </h2>
+        <ul className={s.bulletList}>
+          {bullets.map((bullet, index) => (
+            <li className={s.bulletRow} key={index}>
+              <span className={s.bulletDot} aria-hidden='true' />
+              <p className={s.bulletText}>{bullet}</p>
+            </li>
+          ))}
+        </ul>
         <div className={s.btnList}>
           {!isConfirmMode ? (
-            <button className={s.primaryBtn} onClick={onCancel}>
-              <span className={s.primaryBtnText}>Got it</span>
-            </button>
+            <GeneralButton variant='primary' fullWidth onClick={onCancel}>
+              Got it
+            </GeneralButton>
           ) : (
             <>
-              <button className={s.primaryBtn} onClick={onConfirm}>
-                <span className={s.primaryBtnText}>Got it, hide wallet</span>
-              </button>
-              <button className={s.secondaryBtn} onClick={onCancel}>
-                <span className={s.secondaryBtnText}>Cancel</span>
-              </button>
+              <GeneralButton variant='primary' fullWidth onClick={onConfirm}>
+                Got it, hide wallet
+              </GeneralButton>
+              <GeneralButton variant='secondary' fullWidth onClick={onCancel}>
+                Cancel
+              </GeneralButton>
             </>
           )}
         </div>
-      </Box>
+      </div>
     </Modal>
   );
 };

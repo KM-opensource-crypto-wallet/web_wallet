@@ -1,9 +1,6 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import styles from './WalletConnectTransactionModal.module.css';
 import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {currencySymbol} from 'data/currency';
 import {
   convertHexToUtf8IfPossible,
@@ -33,7 +30,10 @@ import BigNumber from 'bignumber.js';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {copyToClipboard} from 'utils/copyToClipboard';
 import {showToast} from 'utils/toast';
-import WalletConnectModalHeader from 'components/WalletConnectModalHeader';
+import GeneralButton from 'components/Button';
+// Same sheet and dApp hero as the session-proposal modal.
+import sheet from 'components/WalletConnectRequestModal/WalletConnectSheet.module.css';
+import DappHero from 'components/WalletConnectRequestModal/DappHero';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import {
   BatchCallDataView,
@@ -41,19 +41,20 @@ import {
   stringifyPrimitive,
 } from 'components/WalletConnectMessageTree';
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '95%',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  '@media (min-width: 768px)': {
-    width: '50%',
-  },
-};
+const Icon = ({size = 16, children}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='2'
+    strokeLinecap='round'
+    strokeLinejoin='round'
+    aria-hidden='true'>
+    {children}
+  </svg>
+);
 
 export const ETH_SEND_TRANSACTION = 'eth_sendTransaction';
 export const ETH_SIGN_TRANSACTION = 'eth_signTransaction';
@@ -311,13 +312,16 @@ const WalletConnectTransactionModal = props => {
     const calls =
       getTransactionRequestData?.finaltransactionData?.batchCalls || [];
     return (
-      <div className={styles.contentContainerStyle}>
-        <p
-          className={styles.chainTitle}>{`Batch Calls (${batchCallsTotal})`}</p>
+      <section className={styles.section}>
+        <p className={sheet.label}>{`Batch Calls (${batchCallsTotal})`}</p>
         {isBatchTooLarge && (
-          <div className={styles.batchLimitWarning}>
-            <WarningAmberIcon sx={{fontSize: 16, color: 'var(--warning)'}} />
-            <p className={styles.batchLimitWarningText}>
+          <div className={sheet.notice} role='alert'>
+            <Icon>
+              <path d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z' />
+              <path d='M12 9v4' />
+              <path d='M12 17h.01' />
+            </Icon>
+            <p className={styles.noticeText}>
               {`This request contains ${batchCallsTotal} calls. Only the first ${MAX_BATCH_CALLS} are shown and the batch cannot be approved here.`}
             </p>
           </div>
@@ -345,7 +349,7 @@ const WalletConnectTransactionModal = props => {
             </div>
           ))}
         </div>
-      </div>
+      </section>
     );
   };
 
@@ -365,16 +369,17 @@ const WalletConnectTransactionModal = props => {
     };
 
     return (
-      <div className={styles.contentContainerStyle}>
+      <section className={styles.section}>
         <div className={styles.msgHeaderRow}>
-          <p className={styles.chainTitle} style={{marginTop: 0}}>
-            {'Message'}
-          </p>
+          <p className={sheet.label}>{'Message'}</p>
           <button
             type='button'
             className={styles.msgCopyAllBtn}
             onClick={onCopyAll}>
-            <ContentCopyIcon sx={{fontSize: 14, color: 'var(--gray)'}} />
+            <Icon size={14}>
+              <rect x='9' y='9' width='12' height='12' rx='2' />
+              <path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' />
+            </Icon>
             <span className={styles.msgCopyAllText}>{'Copy'}</span>
           </button>
         </div>
@@ -389,7 +394,7 @@ const WalletConnectTransactionModal = props => {
             </p>
           )}
         </div>
-      </div>
+      </section>
     );
   };
 
@@ -415,74 +420,88 @@ const WalletConnectTransactionModal = props => {
       <Modal
         open={props.visible}
         onClose={() => props.onClose(false)}
-        aria-labelledby='modal-modal-title'
-        aria-describedby='modal-modal-description'>
-        <Box sx={style}>
-          <div className={styles.container}>
-            <WalletConnectModalHeader image={image} title={title} url={url} />
-            {method?.includes('wallet_sendCalls') ? (
-              BatchCallsView()
-            ) : isWalletConnectTransaction(method) ? (
-              <div className={styles.formInput}>
-                <p className={styles.amountTitle}>{`-${amount || 0} ${
-                  walletData?.symbol || ''
-                }`}</p>
-                <div className={styles.boxBalance}>
-                  {currencySymbol[localCurrency] || ''}
-                  {priceValue?.toFixed(2) || '0'}
-                </div>
+        aria-labelledby='wc-tx-title'
+        aria-describedby='wc-tx-details'
+        slotProps={{backdrop: {className: sheet.backdrop}}}>
+        <div className={sheet.sheet}>
+          <div className={sheet.handle} />
+          <div className={sheet.scroll}>
+            <DappHero
+              image={image}
+              title={title}
+              url={url}
+              titleId='wc-tx-title'
+            />
+            <div id='wc-tx-details' className={styles.details}>
+              {method?.includes('wallet_sendCalls') ? (
+                BatchCallsView()
+              ) : isWalletConnectTransaction(method) ? (
+                <div className={styles.formInput}>
+                  <div className={styles.amountBlock}>
+                    <p className={styles.amountTitle}>{`-${amount || 0} ${
+                      walletData?.symbol || ''
+                    }`}</p>
+                    <div className={styles.fiatAmount}>
+                      {currencySymbol[localCurrency] || ''}
+                      {priceValue?.toFixed(2) || '0'}
+                    </div>
+                  </div>
 
-                <div className={styles.box2Balance}>
-                  <DetailRow
-                    label={'Chain'}
-                    value={`${walletData?.chain_display_name}`}
-                  />
-                  <DetailRow
-                    label={'Asset'}
-                    value={`${walletData?.name} (${walletData?.symbol})`}
-                  />
-                  <DetailRow
-                    label={'From'}
-                    value={getCustomizePublicAddress(walletData?.address)}
-                  />
-                  <DetailRow
-                    label={'To'}
-                    value={getCustomizePublicAddress(
-                      getTransactionRequestData?.toAddress,
-                    )}
-                  />
-                </div>
-                <div className={styles.box}>
-                  {!!finalTransactionFee && (
+                  <div className={sheet.card}>
                     <DetailRow
-                      label={'Network Fee'}
-                      value={`${finalTransactionFee} ${walletData?.chain_symbol}`}
+                      label={'Chain'}
+                      value={`${walletData?.chain_display_name}`}
                     />
-                  )}
-                  <DetailRow
-                    label={'Max Total'}
-                    value={`${currencySymbol[localCurrency]}${totalValue || 0}`}
-                  />
+                    <DetailRow
+                      label={'Asset'}
+                      value={`${walletData?.name} (${walletData?.symbol})`}
+                    />
+                    <DetailRow
+                      label={'From'}
+                      value={getCustomizePublicAddress(walletData?.address)}
+                    />
+                    <DetailRow
+                      label={'To'}
+                      value={getCustomizePublicAddress(
+                        getTransactionRequestData?.toAddress,
+                      )}
+                    />
+                  </div>
+                  <div className={sheet.card}>
+                    {!!finalTransactionFee && (
+                      <DetailRow
+                        label={'Network Fee'}
+                        value={`${finalTransactionFee} ${walletData?.chain_symbol}`}
+                      />
+                    )}
+                    <DetailRow
+                      label={'Max Total'}
+                      value={`${currencySymbol[localCurrency]}${totalValue || 0}`}
+                    />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              MessageView()
-            )}
-            <div className={styles.bottomView}>
-              <div className={styles.rowView}>
-                <button className={styles.button} onClick={onPressReject}>
-                  {'Reject'}
-                </button>
-                <button
-                  className={styles.button}
-                  onClick={() => setConfirmVisible(true)}
-                  disabled={isBatchTooLarge}>
-                  {'Approve'}
-                </button>
-              </div>
+              ) : (
+                MessageView()
+              )}
             </div>
           </div>
-        </Box>
+          <div className={sheet.footer}>
+            <div className={sheet.actions}>
+              <GeneralButton
+                variant='secondary'
+                fullWidth
+                onClick={onPressReject}>
+                {'Reject'}
+              </GeneralButton>
+              <GeneralButton
+                fullWidth
+                onClick={() => setConfirmVisible(true)}
+                disabled={isBatchTooLarge}>
+                {'Approve'}
+              </GeneralButton>
+            </div>
+          </div>
+        </div>
       </Modal>
       <ModalConfirmTransaction
         visible={confirmVisible}

@@ -1,7 +1,6 @@
 'use client';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import AddressTypeBadge from 'components/AddressTypeBadge';
-import GoBackButton from 'components/GoBackButton';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import {
   clearSelectedUTXOs,
@@ -14,8 +13,8 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import s from './SelectUTXOs.module.css';
 import Loading from 'src/components/Loading';
-import {Checkbox} from '@mui/material';
-import PageTitle from 'src/components/PageTitle';
+import GeneralButton from 'components/Button';
+import {CheckIcon, ChevronLeftIcon} from 'components/Home/HomeIcons';
 
 const SelectUTXOs = () => {
   const dispatch = useDispatch();
@@ -144,77 +143,101 @@ const SelectUTXOs = () => {
   }, [currentCoin]);
 
   return (
-    <>
-      <PageTitle
-        title='Select UTXOs'
-        extraElement={
-          <div className={s.extraElementContainer}>
-            <button onClick={onSelectAll}>
-              <p className={s.title}>Select All</p>
-            </button>
-          </div>
-        }
-      />
-      <div className={s.contentContainerStyle}>
+    <main className={s.page}>
+      <div className={s.glow} aria-hidden='true' />
+      <div className={s.topBar}>
+        <GeneralButton
+          variant='unstyled'
+          className={s.back}
+          aria-label='Back'
+          onClick={() => router.back()}>
+          <ChevronLeftIcon size={24} />
+        </GeneralButton>
+        <h1 className={s.title}>Select UTXOs</h1>
+        <GeneralButton
+          variant='unstyled'
+          className={s.selectAll}
+          onClick={onSelectAll}>
+          Select All
+        </GeneralButton>
+      </div>
+      <div className={s.column}>
         {isLoading ? (
-          <Loading />
+          <div className={s.loading}>
+            <Loading />
+          </div>
         ) : (
-          <div className={s.container}>
-            <div className={s.subContainer}>
+          <>
+            <div className={s.list}>
               {allUTXOs.map((item, index) => (
-                <div
-                  className={s.item}
+                <section
+                  className={s.group}
                   key={`utxos-address-${index?.toString()}`}>
-                  <div className={s.box}>
-                    <Checkbox
+                  {/* Address row: toggles every UTXO under it. */}
+                  <label
+                    className={`${s.row} ${s.groupRow} ${
+                      item.isSelected ? s.rowOn : ''
+                    }`}>
+                    <input
+                      type='checkbox'
+                      className={s.nativeCheck}
                       checked={item.isSelected}
                       onChange={() => onSelectChange(item.label)}
                     />
-                    <p className={s.textBold} title={item.label}>
+                    <span className={s.tick} aria-hidden='true'>
+                      {item.isSelected ? (
+                        <CheckIcon size={13} strokeWidth={3} />
+                      ) : null}
+                    </span>
+                    <span className={s.textBold} title={item.label}>
                       {getCustomizePublicAddress(item.label)} (
                       {item.data.reduce((acc, e) => (acc += e.value), 0)})
-                    </p>
+                    </span>
                     <AddressTypeBadge
                       chain_name={currentCoin?.chain_name}
                       item={deriveAddressByAddress.get(item.label)}
                     />
-                  </div>
-                  <div className={s.subItem}>
-                    {item.data.map(items => (
-                      <div
-                        className={s.box}
-                        key={`sub-utxos-address-${items?.txid?.toString()}`}>
-                        <Checkbox
-                          checked={items.isSelected}
-                          onChange={() =>
-                            onSelectChange(item.label, items.txid, items.vout)
-                          }
-                        />
-                        <p className={s.text} title={items.fromAddress}>
-                          {getCustomizePublicAddress(items.fromAddress)} (
-                          {items.value})
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                  </label>
+                  {item.data.map(items => (
+                    <label
+                      className={`${s.row} ${s.subRow} ${
+                        items.isSelected ? s.rowOn : ''
+                      }`}
+                      key={`sub-utxos-address-${items?.txid?.toString()}`}>
+                      <input
+                        type='checkbox'
+                        className={s.nativeCheck}
+                        checked={items.isSelected}
+                        onChange={() =>
+                          onSelectChange(item.label, items.txid, items.vout)
+                        }
+                      />
+                      <span className={s.tick} aria-hidden='true'>
+                        {items.isSelected ? (
+                          <CheckIcon size={13} strokeWidth={3} />
+                        ) : null}
+                      </span>
+                      <span className={s.text} title={items.fromAddress}>
+                        {getCustomizePublicAddress(items.fromAddress)} (
+                        {items.value})
+                      </span>
+                    </label>
+                  ))}
+                </section>
               ))}
             </div>
-            <button
-              className={s.button}
-              disabled={disableContinue}
-              onClick={onClickContinue}
-              style={{
-                backgroundColor: disableContinue
-                  ? 'var(--gray)'
-                  : 'var(--background)',
-              }}>
-              <p className={s.buttonTitle}>Continue</p>
-            </button>
-          </div>
+            <div className={s.footer}>
+              <GeneralButton
+                fullWidth
+                disabled={disableContinue}
+                onClick={onClickContinue}>
+                Continue
+              </GeneralButton>
+            </div>
+          </>
         )}
       </div>
-    </>
+    </main>
   );
 };
 

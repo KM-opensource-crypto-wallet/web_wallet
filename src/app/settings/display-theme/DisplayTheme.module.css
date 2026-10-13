@@ -1,51 +1,369 @@
-.container {
-  background-color: var(--backgroundColor);
-  padding: 20px;
+/* Theme: three selectable cards, each with a miniature of the wallet in that
+   theme. Same surface and tokens as Settings; the accent is `--background`. */
+.page {
+  --dt-ink: #1a1613;
+  --dt-muted: #6e655e;
+  --dt-faint: #8a7f76;
+  --dt-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
+  --dt-glass: rgba(255, 255, 255, 0.65);
+  --dt-glass-border: rgba(255, 255, 255, 0.9);
+  --dt-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --dt-header-line: rgba(26, 22, 19, 0.07);
+  --dt-hover: rgba(26, 22, 19, 0.04);
+  --dt-ring: rgba(26, 22, 19, 0.2);
+  --dt-preview-border: rgba(26, 22, 19, 0.08);
+  position: relative;
+  min-height: calc(var(--app-height, 100vh) - 70px);
+  overflow: hidden;
+  padding-bottom: 40px;
+  background: var(--dt-surface);
 }
 
-.section {
-  justify-content: center;
+:global([data-theme='dark']) .page {
+  --dt-ink: #f5f1ec;
+  --dt-muted: #a89c92;
+  --dt-faint: #a89c92;
+  --dt-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
+  --dt-glass: rgba(255, 255, 255, 0.05);
+  --dt-glass-border: rgba(255, 255, 255, 0.1);
+  --dt-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --dt-header-line: rgba(255, 255, 255, 0.07);
+  --dt-hover: rgba(255, 255, 255, 0.05);
+  --dt-ring: rgba(255, 255, 255, 0.22);
+  --dt-preview-border: rgba(255, 255, 255, 0.1);
 }
 
-.title {
-  color: var(--gray);
-  font-size: 16px;
-  margin-bottom: 15px;
-  margin-left: 15px;
-  font-weight: bold;
-  text-transform: uppercase;
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.page svg {
+  fill: none;
 }
 
-.item {
-  color: var(--font);
-  font-size: 16px;
-  margin-left: 25px;
-  cursor: pointer;
+.glow {
+  position: absolute;
+  top: -120px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--background) 13%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
 }
 
-.input {
-  display: none;
-}
-
-.itembox {
+/* Top bar: back, centred title, spacer. */
+.topBar {
   position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
-}
-.mark,
-.markActive {
-  position: absolute;
-  left: -5px;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--dt-header-line);
 }
 
-.mark > svg {
-  fill: var(--font);
-  width: 24px;
-  height: 24px;
+.iconButton,
+.iconSpacer {
+  display: flex;
+  flex: none;
+  width: 44px;
+  height: 44px;
 }
-.markActive > svg {
-  fill: var(--background);
-  width: 24px;
-  height: 24px;
+
+.iconButton {
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--dt-ink);
+  transition: background-color 0.2s;
+}
+
+.iconButton:hover {
+  background: var(--dt-hover);
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--dt-ink);
+  text-align: center;
+}
+
+.column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 18px 16px 0;
+}
+
+.sectionLabel {
+  margin: 0;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dt-faint);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* Option card */
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 8px 12px;
+  border: 1px solid var(--dt-glass-border);
+  border-radius: 20px;
+  background: var(--dt-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--dt-shadow);
+  text-align: left;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+
+.option:hover {
+  transform: translateY(-1px);
+}
+
+.optionActive {
+  border-color: var(--background);
+  box-shadow:
+    0 0 0 1px var(--background),
+    var(--dt-shadow);
+}
+
+.optionFoot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.optionText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.optionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dt-ink);
+}
+
+.optionHint {
+  overflow: hidden;
+  font-size: 11.5px;
+  color: var(--dt-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Radio mark: empty ring, filled accent with a tick when selected. */
+.check {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--dt-ring);
+  border-radius: 50%;
+  color: #fff;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.optionActive .check {
+  border-color: var(--background);
+  background: var(--background);
+}
+
+/* Miniature: fixed colours per theme, whatever the current theme is. */
+.preview {
+  --pv-bg: linear-gradient(165deg, #fbf8f5 0%, #f3ebe3 100%);
+  --pv-card: rgba(255, 255, 255, 0.9);
+  --pv-line: rgba(26, 22, 19, 0.14);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  aspect-ratio: 4 / 3;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid var(--dt-preview-border);
+  border-radius: 14px;
+  background: var(--pv-bg);
+}
+
+.preview_dark {
+  --pv-bg: linear-gradient(165deg, #17130f 0%, #0e0b09 100%);
+  --pv-card: rgba(255, 255, 255, 0.08);
+  --pv-line: rgba(255, 255, 255, 0.2);
+}
+
+/* System: light, with the dark theme clipped over the right half. */
+.previewHalf {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(165deg, #17130f 0%, #0e0b09 100%);
+  clip-path: polygon(60% 0, 100% 0, 100% 100%, 40% 100%);
+}
+
+.previewCard,
+.previewButton {
+  position: relative;
+}
+
+.previewCard {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px;
+  border-radius: 9px;
+  background: var(--pv-card);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.preview_system .previewCard {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.1) 50%
+  );
+}
+
+.previewDot {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--background);
+}
+
+.previewLines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.previewLine {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--pv-line);
+}
+
+.preview_system .previewLine {
+  background: linear-gradient(
+    90deg,
+    rgba(26, 22, 19, 0.14) 40%,
+    rgba(255, 255, 255, 0.22) 40%
+  );
+}
+
+.previewLineShort {
+  width: 60%;
+}
+
+.previewButton {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--background);
+}
+
+.iconButton:focus-visible,
+.option:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+/* Note */
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--dt-muted);
+}
+
+.note > svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* Narrow phones: stack the cards, preview beside the label. */
+@media (max-width: 440px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .option {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 14px 8px 8px;
+  }
+
+  .preview {
+    flex: none;
+    width: 96px;
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .previewCard {
+    padding: 5px;
+  }
+
+  .previewDot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .previewButton {
+    height: 9px;
+  }
+
+  .optionFoot {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (min-width: 600px) {
+  .topBar {
+    padding: 10px 20px;
+  }
+
+  .column {
+    padding-top: 26px;
+  }
+
+  .grid {
+    gap: 14px;
+  }
 }
