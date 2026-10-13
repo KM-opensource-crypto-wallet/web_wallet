@@ -19,29 +19,59 @@ const VerifyCreate = () => {
   const searchParams = useSearchParams();
   const hideButton = searchParams.get('showSeedPhrase');
 
-  if (!targetWallet?.phrase) {
-    return;
+  // Wallet not loaded yet, or not found: the wallet layout redirects to Home.
+  if (!targetWallet) {
+    return null;
   }
+
+  const topBar = (
+    <div className={styles.topBar}>
+      <GeneralButton
+        variant='unstyled'
+        className={styles.iconButton}
+        aria-label='Back'
+        onClick={() => router.back()}>
+        <ChevronLeftIcon size={24} />
+      </GeneralButton>
+      <div className={styles.heading}>
+        <h1 className={styles.title}>Your seed phrase</h1>
+        {targetWallet.walletName ? (
+          <span className={styles.subtitle}>{targetWallet.walletName}</span>
+        ) : null}
+      </div>
+      <span className={styles.iconSpacer} aria-hidden='true' />
+    </div>
+  );
+
+  // Wallets imported with a private key never store a phrase, so there is
+  // nothing to show or back up - explain that instead of a blank page.
+  if (!targetWallet.phrase) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.glow} aria-hidden='true' />
+        {topBar}
+        <div className={styles.column}>
+          <div className={styles.intro}>
+            <span className={styles.introIcon} aria-hidden='true'>
+              <KeyIcon size={22} />
+            </span>
+            <p className={styles.introTitle}>No seed phrase for this wallet</p>
+            <p className={styles.introText}>
+              {targetWallet.isImportWalletWithPrivateKey
+                ? 'This wallet was imported with a private key, so it has no seed phrase. Keep your private key backed up instead.'
+                : "This wallet's seed phrase isn't available on this device."}
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   const words = targetWallet.phrase.split(' ');
   return (
     <main className={styles.page}>
       <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <div className={styles.heading}>
-          <h1 className={styles.title}>Your seed phrase</h1>
-          {targetWallet.walletName ? (
-            <span className={styles.subtitle}>{targetWallet.walletName}</span>
-          ) : null}
-        </div>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
+      {topBar}
 
       <div className={styles.column}>
         <div className={styles.intro}>

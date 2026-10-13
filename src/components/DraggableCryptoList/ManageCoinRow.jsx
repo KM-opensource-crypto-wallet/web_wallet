@@ -14,6 +14,7 @@ import {
   setCurrentWalletCoinsPosition,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import CoinIcon from 'components/CoinIcon';
+import PriceChange from 'components/PriceChange';
 import {ChevronDownIcon} from 'components/Home/HomeIcons';
 import s from './DraggableCryptoList.module.css';
 
@@ -99,6 +100,7 @@ const ManageCoinRow = ({
             {showNetwork && item?.chain_display_name ? (
               <span className={s.chip}>{item.chain_display_name}</span>
             ) : null}
+            <PriceChange value={item?.priceChange24h} className={s.change} />
           </span>
           <span className={s.sub}>
             {item?.name}

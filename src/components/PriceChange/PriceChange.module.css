@@ -1,0 +1,46 @@
+/* 24h change pill: green up, red down, muted when flat. Inherits font size
+   from where it's placed. */
+.change {
+  --pc-up: #12b76a;
+  --pc-down: #d92d20;
+  --pc-flat: #8a7f76;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+:global([data-theme='dark']) .change {
+  --pc-up: #32d583;
+  --pc-down: #f97066;
+  --pc-flat: #a89c92;
+}
+
+.up {
+  color: var(--pc-up);
+}
+
+.down {
+  color: var(--pc-down);
+}
+
+.flat {
+  color: var(--pc-flat);
+}
+
+.arrow {
+  font-size: 0.72em;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

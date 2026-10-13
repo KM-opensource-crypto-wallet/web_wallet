@@ -7,7 +7,6 @@ import AuthLayout, {
   InfoNote,
   NonCustodialNote,
   PasswordInput,
-  SubmitButton,
   authStyles as styles,
 } from 'components/AuthLayout';
 import ModalInfo from 'src/components/ModalInfo';

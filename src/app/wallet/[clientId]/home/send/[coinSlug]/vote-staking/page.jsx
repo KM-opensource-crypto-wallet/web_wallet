@@ -1,38 +1,8 @@
 'use client';
-import {useAppRoutes} from 'src/hooks/useAppRoutes';
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, {useCallback} from 'react';
 import styles from './VoteStaking.module.css';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-
-import {ThemeContext} from 'theme/ThemeContext';
-
-import {
-  calculateEstimateFee,
-  updateCurrentTransferData,
-} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {validateNumber} from 'dok-wallet-blockchain-networks/helper';
-import {
-  fetchValidatorByChain,
-  onAddVotes,
-  onChangeVotes,
-  onMinusVotes,
-} from 'dok-wallet-blockchain-networks/redux/staking/stakingSlice';
-import {
-  countSelectedVotes,
-  getSelectedVotes,
-  getStakingLoading,
-  getStakingValidatorsByChain,
-} from 'dok-wallet-blockchain-networks/redux/staking/stakingSelectors';
+import useStaking from 'src/hooks/protectedRoutes/wallet/home/send/useStaking';
 import Loading from 'components/Loading';
-import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
 import ValidatorItem from 'components/ValidatorItem';
 
 import GeneralButton from 'components/Button';
@@ -42,145 +12,26 @@ import {
   SearchIcon,
 } from 'components/Home/HomeIcons';
 import InfiniteScroll from 'react-infinite-scroller';
-import {useRouter} from 'next/navigation';
-import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 
 const VoteStaking = () => {
-  const currentCoin = useSelector(selectCurrentCoin);
-  const validators = useSelector(getStakingValidatorsByChain, shallowEqual);
-  const [validatorsList, setValidatorsList] = useState(validators.slice(0, 20));
-  const [searchQuery, setSearchQuery] = useState('');
-  const selectedVotes = useSelector(getSelectedVotes);
-  const displayItemRef = useRef(20);
-  const availableAmount = useMemo(() => {
-    const amount = currentCoin?.stakingBalance || '0';
-    const stakingBalanceNumber = validateNumber(amount);
-    if (stakingBalanceNumber) {
-      return Math.floor(stakingBalanceNumber);
-    }
-    return 0;
-  }, [currentCoin]);
-  const [initialSelectedVotes, setInitialSelectedVotes] = useState(null);
-  const router = useRouter();
-  const routes = useAppRoutes();
-
-  useEffect(() => {
-    setValidatorsList(validators.slice(0, displayItemRef.current));
-  }, [validators]);
-
-  const selectedTotal = useSelector(countSelectedVotes);
-
-  const isLoading = useSelector(getStakingLoading);
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    dispatch(fetchValidatorByChain({chain_name: currentCoin?.chain_name}));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch]);
-
-  // Snapshot the votes as first seen once loading is done, so Next only
-  // enables after the user changes something.
-  if (!isLoading && !initialSelectedVotes && selectedVotes) {
-    setInitialSelectedVotes(selectedVotes);
-  }
-
-  const handleSubmitForm = async values => {
-    const selectedValidators = Object.keys(selectedVotes);
-    const displayValidators = [];
-    const finalSelectedVotes = {};
-    selectedValidators.forEach(item => {
-      const tempValidator = validators.find(
-        subItem => subItem?.validatorAddress === item,
-      );
-      if (tempValidator && selectedVotes[item]) {
-        displayValidators.push({
-          ...tempValidator,
-          votes: selectedVotes[item],
-        });
-        finalSelectedVotes[item] = selectedVotes[item];
-      }
-    });
-    dispatch(
-      updateCurrentTransferData({
-        selectedVotes: finalSelectedVotes,
-        currentCoin,
-        amount: values?.amount,
-        displayValidators,
-      }),
-    );
-    dispatch(
-      calculateEstimateFee({
-        isFetchNonce: true,
-        fromAddress: currentCoin?.address,
-        amount: values?.amount,
-        selectedVotes: finalSelectedVotes,
-        balance: availableAmount,
-        isCreateVote: true,
-      }),
-    );
-    dispatch(setExchangeSuccess(false));
-
-    dispatch(
-      setRouteStateData({
-        transfer: {
-          fromScreen: 'VoteStaking',
-          isCreateStaking: false,
-          isCreateVote: true,
-        },
-      }),
-    );
-    router.push(routes.coin.confirmStaking());
-  };
-
-  const handleSearch = useCallback(
-    event => {
-      const value = event?.target.value;
-      setSearchQuery(value);
-      if (value) {
-        setValidatorsList(
-          validators.filter(item =>
-            item?.name?.toLowerCase().includes(value?.toLowerCase()),
-          ),
-        );
-      } else {
-        setValidatorsList(validators.slice(0, displayItemRef.current));
-      }
-    },
-    [validators],
-  );
-
-  const clearSearch = useCallback(() => {
-    setSearchQuery('');
-    setValidatorsList(validators.slice(0, displayItemRef.current));
-  }, [validators]);
-
-  const onEndReached = useCallback(() => {
-    if (!searchQuery && validatorsList.length !== validators.length) {
-      displayItemRef.current += 20;
-      setValidatorsList(validators.slice(0, displayItemRef.current));
-    }
-  }, [searchQuery, validators, validatorsList.length]);
-
-  const onPressAdd = useCallback(
-    address => {
-      dispatch(onAddVotes({address}));
-    },
-    [dispatch],
-  );
-
-  const onPressMinus = useCallback(
-    address => {
-      dispatch(onMinusVotes({address}));
-    },
-    [dispatch],
-  );
-
-  const onChangeText = useCallback(
-    (address, value) => {
-      dispatch(onChangeVotes({address, value}));
-    },
-    [dispatch],
-  );
+  const {
+    goBack,
+    isLoading,
+    voteValidatorsList: validatorsList,
+    hasMoreValidators,
+    voteSearchQuery: searchQuery,
+    handleVoteSearch: handleSearch,
+    clearVoteSearch: clearSearch,
+    onVoteEndReached: onEndReached,
+    selectedVotes,
+    selectedTotal,
+    voteAvailableAmount: availableAmount,
+    onPressAdd,
+    onPressMinus,
+    onChangeText,
+    isVoteValid: isValid,
+    handleVoteSubmit: handleSubmitForm,
+  } = useStaking('vote');
 
   const renderItem = useCallback(
     ({item}) => (
@@ -202,7 +53,7 @@ const VoteStaking = () => {
         variant='unstyled'
         className={styles.back}
         aria-label='Back'
-        onClick={() => router.back()}>
+        onClick={goBack}>
         <ChevronLeftIcon size={24} />
       </GeneralButton>
       <h1 className={styles.title}>{'Select Validator'}</h1>
@@ -221,11 +72,6 @@ const VoteStaking = () => {
       </main>
     );
   }
-  const isValid =
-    availableAmount >= selectedTotal &&
-    JSON.stringify(initialSelectedVotes) !== JSON.stringify(selectedVotes) &&
-    selectedTotal > 0;
-
   return (
     <main className={styles.page}>
       <div className={styles.glow} aria-hidden='true' />
@@ -257,7 +103,7 @@ const VoteStaking = () => {
             initialLoad={false}
             pageStart={1}
             loadMore={onEndReached}
-            hasMore={validators.length !== validatorsList.length}
+            hasMore={hasMoreValidators}
             loader={
               <div className={styles.loader} key={0}>
                 <Loading />

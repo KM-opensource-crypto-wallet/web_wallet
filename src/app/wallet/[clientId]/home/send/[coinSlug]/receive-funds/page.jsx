@@ -6,7 +6,7 @@ import useReceiveFunds from 'src/hooks/protectedRoutes/wallet/home/send/useRecei
 import CoinIcon from 'components/CoinIcon';
 import GeneralButton from 'components/Button';
 import WalletSwitcher from 'components/Home/WalletSwitcher';
-import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/useHome';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {selectCurrentWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {

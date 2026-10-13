@@ -1,9 +1,4 @@
 'use client';
-import {useCallback, useEffect} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import {useParams} from 'next/navigation';
-import dayjs from 'dayjs';
-import {useRouter} from 'next/navigation';
 import GeneralButton from 'components/Button';
 import {ChevronLeftIcon, SwapIcon} from 'components/Home/HomeIcons';
 import {
@@ -15,28 +10,9 @@ import Loading from 'components/Loading';
 import ExchangeStatusBadge from 'components/ExchangeHistory/ExchangeStatusBadge';
 import ExchangeDetailRow from 'components/ExchangeHistory/ExchangeDetailRow';
 import SwapCoinIcon from 'components/ExchangeHistory/SwapCoinIcon';
-import useSwapCoinDisplay from 'components/ExchangeHistory/useSwapCoinDisplay';
-import {
-  truncateExchangeAmount,
-  getExchangeChainNames,
-  TERMINAL_EXCHANGE_STATUSES,
-} from 'components/ExchangeHistory/exchangeFormat';
-import {
-  fetchExchangeTransactionDetails,
-  clearCurrentExchangeTransaction,
-} from 'dok-wallet-blockchain-networks/redux/exchangeHistory/exchangeHistorySlice';
-import {
-  selectCurrentExchangeTransaction,
-  selectExchangeDetailLoading,
-  selectExchangeDetailError,
-} from 'dok-wallet-blockchain-networks/redux/exchangeHistory/exchangeHistorySelectors';
-import {
-  getCustomizePublicAddress,
-  getExplorerTxUrl,
-} from 'dok-wallet-blockchain-networks/helper';
+import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
+import useSwap from 'src/hooks/protectedRoutes/wallet/swap/useSwap';
 import s from './SwapDetails.module.css';
-
-const POLL_INTERVAL_MS = 30_000;
 
 // One leg of the swap: label, coin icon, amount and chain.
 const Side = ({label, icon, symbol, amount, display}) => (
@@ -65,53 +41,18 @@ const Side = ({label, icon, symbol, amount, display}) => (
 // Details of one swap. Polls every 30s while the status is non-terminal —
 // the backend refreshes the transaction from its provider on each fetch.
 const SwapDetails = () => {
-  const dispatch = useDispatch();
-  const router = useRouter();
-  const params = useParams();
-  const transactionId = params?.transactionId
-    ? decodeURIComponent(params.transactionId)
-    : undefined;
-
-  const transaction = useSelector(selectCurrentExchangeTransaction);
-  const loading = useSelector(selectExchangeDetailLoading);
-  const error = useSelector(selectExchangeDetailError);
-
-  const isTerminal = TERMINAL_EXCHANGE_STATUSES.includes(transaction?.status);
-  const {from: fromDisplay, to: toDisplay} = useSwapCoinDisplay(transaction);
-
-  useEffect(() => {
-    if (transactionId) {
-      dispatch(fetchExchangeTransactionDetails({id: transactionId}));
-    }
-    return () => {
-      dispatch(clearCurrentExchangeTransaction());
-    };
-  }, [dispatch, transactionId]);
-
-  useEffect(() => {
-    if (!transactionId || isTerminal) {
-      return;
-    }
-    const interval = setInterval(() => {
-      dispatch(fetchExchangeTransactionDetails({id: transactionId}));
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [dispatch, transactionId, isTerminal]);
-
-  const onRetry = useCallback(() => {
-    if (transactionId) {
-      dispatch(
-        fetchExchangeTransactionDetails({id: transactionId, refresh: true}),
-      );
-    }
-  }, [dispatch, transactionId]);
-
-  const openExplorer = useCallback((chainName, hash) => {
-    const url = getExplorerTxUrl(chainName, hash);
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-  }, []);
+  const {
+    goBack,
+    detailTransaction: transaction,
+    detailLoading: loading,
+    detailError: error,
+    fromDisplay,
+    toDisplay,
+    swapDetails,
+    hasAny,
+    onRetryDetails: onRetry,
+    openExplorer,
+  } = useSwap('details');
 
   const header = (
     <div className={s.topBar}>
@@ -119,7 +60,7 @@ const SwapDetails = () => {
         variant='unstyled'
         className={s.iconButton}
         aria-label='Back'
-        onClick={() => router.back()}>
+        onClick={goBack}>
         <ChevronLeftIcon size={24} />
       </GeneralButton>
       <h1 className={s.title}>Swap details</h1>
@@ -169,26 +110,19 @@ const SwapDetails = () => {
     );
   }
 
-  const metadata = transaction.metadata || {};
-  const {fromChainName, toChainName} = getExchangeChainNames(transaction);
-  const fromAmount = truncateExchangeAmount(transaction.from_amount);
-  const toAmount = truncateExchangeAmount(transaction.to_amount);
-  const fromSymbol = transaction.from_currency?.toUpperCase() || '';
-  const toSymbol = transaction.to_currency?.toUpperCase() || '';
-  const providerName = metadata.providerTitle || transaction.provider;
-  const dateLabel = transaction.created_at
-    ? dayjs(transaction.created_at).format('DD MMM YYYY, hh:mm A')
-    : null;
-  const fromExplorerUrl =
-    fromChainName && transaction.from_tx_hash
-      ? getExplorerTxUrl(fromChainName, transaction.from_tx_hash)
-      : null;
-  const toExplorerUrl =
-    toChainName && transaction.to_tx_hash
-      ? getExplorerTxUrl(toChainName, transaction.to_tx_hash)
-      : null;
-  const hasAny = (...values) =>
-    values.some(value => value !== null && value !== undefined && value !== '');
+  const {
+    metadata,
+    fromChainName,
+    toChainName,
+    fromAmount,
+    toAmount,
+    fromSymbol,
+    toSymbol,
+    providerName,
+    dateLabel,
+    fromExplorerUrl,
+    toExplorerUrl,
+  } = swapDetails;
 
   return (
     <main className={s.page}>

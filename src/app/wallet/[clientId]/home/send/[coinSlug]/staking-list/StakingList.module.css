@@ -340,3 +340,11 @@
     padding: 22px;
   }
 }
+
+/* 24h price change next to the balance label. */
+.labelChange {
+  margin-left: 6px;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+}

@@ -274,6 +274,11 @@
   color: var(--cs-muted);
 }
 
+.heroChange {
+  margin-left: 8px;
+  font-size: 13px;
+}
+
 /* Quick actions */
 .actions {
   display: grid;

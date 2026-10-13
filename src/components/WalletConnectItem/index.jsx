@@ -2,7 +2,7 @@ import styles from './WalletConnectItem.module.css';
 import React from 'react';
 import Image from 'next/image';
 import WalletConnectChainRow from 'components/WalletConnectChainRow';
-import useWalletConnectSessions from 'src/hooks/walletConnect/useWalletConnectSessions';
+import useWalletConnectSessions from 'src/hooks/protectedRoutes/wallet/walletConnect/useWalletConnectSessions';
 
 /////////////////////////////////////////
 

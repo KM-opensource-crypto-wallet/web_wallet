@@ -267,6 +267,10 @@
   color: var(--sf-faint);
 }
 
+.coinChange {
+  font-size: 12px;
+}
+
 .changeChip {
   display: flex;
   flex: none;

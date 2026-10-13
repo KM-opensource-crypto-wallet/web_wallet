@@ -76,6 +76,10 @@
   gap: 7px;
 }
 
+.change {
+  font-size: 12px;
+}
+
 .symbol {
   font-size: 15px;
   font-weight: 700;

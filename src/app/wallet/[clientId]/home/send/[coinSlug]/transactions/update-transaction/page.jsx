@@ -1,83 +1,36 @@
 'use client';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import React from 'react';
 
 import styles from './UpdateTransaction.module.css';
 
 import GeneralButton from 'components/Button';
 import {ChevronLeftIcon, InfoIcon} from 'components/Home/HomeIcons';
 
-import {useRouter} from 'next/navigation';
 import {Formik} from 'formik';
-import {updateTransactionValidation} from 'utils/validationSchema';
-import {getUpdateTransactionData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSelector';
-import {
-  fetchTransactionData,
-  resetUpdateTransactionData,
-} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import {sendPendingTransactions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {
-  getCustomizePublicAddress,
-  isCustomAddressNotSupportedChain,
-} from 'dok-wallet-blockchain-networks/helper';
 import Loading from 'components/Loading';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
+import useTransaction from 'src/hooks/protectedRoutes/wallet/home/send/useTransaction';
 
 const UpdateTransaction = () => {
-  const currentCoin = useSelector(selectCurrentCoin);
-  const transactionData = useSelector(getUpdateTransactionData);
-  const dispatch = useDispatch();
-  const isLoading = transactionData?.isLoading;
-  const isSubmitting = transactionData?.isSubmitting;
-  const success = transactionData?.success;
-  const [showModal, setShowModal] = useState(false);
-  const isCancelTransactionRef = useRef(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    return () => {
-      dispatch(resetUpdateTransactionData());
-    };
-  }, [dispatch]);
-
-  const onSubmit = useCallback(
-    values => {
-      dispatch(fetchTransactionData({txHash: values?.tx}));
-    },
-    [dispatch],
-  );
-
-  const onSuccess = useCallback(() => {
-    setShowModal(false);
-    const tx = transactionData?.transactionData;
-    dispatch(
-      sendPendingTransactions({
-        from: tx?.extraPendingTransactionData?.from,
-        to: tx?.extraPendingTransactionData?.to,
-        value: tx?.extraPendingTransactionData?.value,
-        data: tx?.extraPendingTransactionData?.data,
-        nonce: tx?.extraPendingTransactionData?.nonce,
-        pendingTxHash: tx?.extraPendingTransactionData?.txHash,
-        isCancelTransaction: isCancelTransactionRef.current,
-        router: router,
-        isFromUpdateScreen: true,
-      }),
-    );
-  }, [dispatch, router, transactionData?.transactionData]);
-
-  const onPressCancelTransaction = useCallback(() => {
-    isCancelTransactionRef.current = true;
-    setShowModal(true);
-  }, []);
-
-  const onPressSpeedupTransaction = useCallback(() => {
-    isCancelTransactionRef.current = false;
-    setShowModal(true);
-  }, []);
+  const {
+    goBack,
+    currentCoin,
+    updateTransactionData,
+    isUpdateLoading,
+    isUpdateSubmitting,
+    updateSuccess,
+    updateTransactionValidation,
+    onFetchUpdateTransaction,
+    formatUpdateAddress,
+    onPressSpeedupTransaction,
+    onPressCancelTransaction,
+    showUpdateModal,
+    closeUpdateModal,
+    onUpdateConfirmed,
+  } = useTransaction('update');
 
   const renderBox = () => {
-    const tx = transactionData?.transactionData;
+    const tx = updateTransactionData?.transactionData;
     if (!tx) {
       return null;
     }
@@ -110,21 +63,13 @@ const UpdateTransaction = () => {
           <div className={styles.itemView}>
             <span className={styles.label}>{'From'}</span>
             <span className={styles.boxBalance}>
-              {`${
-                isCustomAddressNotSupportedChain(currentCoin?.chain_name)
-                  ? tx.from
-                  : getCustomizePublicAddress(tx?.from)
-              }`}
+              {`${formatUpdateAddress(tx?.from)}`}
             </span>
           </div>
           <div className={styles.itemView}>
             <span className={styles.label}>{'To'}</span>
             <span className={styles.boxBalance}>
-              {`${
-                isCustomAddressNotSupportedChain(currentCoin?.chain_name)
-                  ? tx?.to
-                  : getCustomizePublicAddress(tx?.to)
-              }`}
+              {`${formatUpdateAddress(tx?.to)}`}
             </span>
           </div>
         </section>
@@ -132,7 +77,7 @@ const UpdateTransaction = () => {
           <div className={styles.itemView}>
             <span className={styles.label}>{'Network Fee'}</span>
             <span className={styles.boxBalance}>
-              {`${transactionData.transactionFee} ${currentCoin?.chain_symbol}`}
+              {`${updateTransactionData.transactionFee} ${currentCoin?.chain_symbol}`}
             </span>
           </div>
         </section>
@@ -148,7 +93,7 @@ const UpdateTransaction = () => {
           variant='unstyled'
           className={styles.back}
           aria-label='Back'
-          onClick={() => router.back()}>
+          onClick={goBack}>
           <ChevronLeftIcon size={24} />
         </GeneralButton>
         <h1 className={styles.pageTitle}>Update Transaction</h1>
@@ -166,7 +111,7 @@ const UpdateTransaction = () => {
             tx: '',
           }}
           validationSchema={updateTransactionValidation}
-          onSubmit={onSubmit}>
+          onSubmit={onFetchUpdateTransaction}>
           {({
             handleChange,
             handleBlur,
@@ -176,7 +121,7 @@ const UpdateTransaction = () => {
             touched,
             isValid,
           }) => {
-            const isDisabledButton = !values.tx || !isValid || isLoading;
+            const isDisabledButton = !values.tx || !isValid || isUpdateLoading;
             const hasError = errors.tx && touched.tx;
             return (
               <section className={styles.card}>
@@ -214,31 +159,29 @@ const UpdateTransaction = () => {
             );
           }}
         </Formik>
-        {isLoading ? <Loading height={300} /> : renderBox()}
-        {!!success && !isLoading && (
+        {isUpdateLoading ? <Loading height={300} /> : renderBox()}
+        {!!updateSuccess && !isUpdateLoading && (
           <div className={styles.actions}>
             <GeneralButton
               fullWidth
               onClick={onPressSpeedupTransaction}
-              disabled={isSubmitting}>
+              disabled={isUpdateSubmitting}>
               Speed up transaction
             </GeneralButton>
             <GeneralButton
               variant='secondary'
               fullWidth
               onClick={onPressCancelTransaction}
-              disabled={isSubmitting}>
+              disabled={isUpdateSubmitting}>
               Cancel transaction
             </GeneralButton>
           </div>
         )}
       </div>
       <ModalConfirmTransaction
-        hideModal={() => {
-          setShowModal(false);
-        }}
-        visible={showModal}
-        onSuccess={onSuccess}
+        hideModal={closeUpdateModal}
+        visible={showUpdateModal}
+        onSuccess={onUpdateConfirmed}
       />
     </main>
   );

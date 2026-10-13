@@ -1,278 +1,48 @@
 'use client';
-import {useAppRoutes} from 'src/hooks/useAppRoutes';
-import React, {useState, useMemo} from 'react';
+import React from 'react';
 import styles from './WithdrawStaking.module.css';
-import {useSelector, useDispatch} from 'react-redux';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {
-  calculateEstimateFee,
-  setCurrentTransferData,
-} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import {currencySymbol} from 'data/currency';
-import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import BigNumber from 'bignumber.js';
-import {
-  isEVMChain,
-  isHaveResourceTypeInCreateStakingScreen,
-  isValidatorSupportCreateStakingScreen,
-  multiplyBNWithFixed,
-  resourcesData,
-  validateBigNumberStr,
-  validateNumber,
-  validateNumberInInput,
-} from 'dok-wallet-blockchain-networks/helper';
+import useStaking from 'src/hooks/protectedRoutes/wallet/home/send/useStaking';
 import StakingItem from 'components/StakingItem';
-import {getRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
-import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
-import {useRouter} from 'next/navigation';
 import CoinIcon from 'components/CoinIcon';
+import PriceChange from 'components/PriceChange';
 import GeneralButton from 'components/Button';
 import {ChevronLeftIcon} from 'components/Home/HomeIcons';
 import SelectInput from 'components/SelectInput';
-import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
-
-const disableTextInputChain = ['solana'];
-
-const isDisableTextInput = chain_name =>
-  disableTextInputChain.includes(chain_name);
 
 const WithdrawStaking = () => {
-  const router = useRouter();
-  const routes = useAppRoutes();
-  const routeData = useSelector(getRouteStateData);
-  const currentRouteData = routeData?.withdrawStaking;
-  const selectedStake = currentRouteData?.selectedStake;
-  const isWithdrawStaking = currentRouteData?.isWithdrawStaking;
-  const isDeactivateStaking = currentRouteData?.isDeactivateStaking;
-  const isStakingRewards = currentRouteData?.isStakingRewards;
-  const hideResource = currentRouteData?.hideResource;
-  const currentCoin = useSelector(selectCurrentCoin);
-  const localCurrency = useSelector(getLocalCurrency);
-  const isValidatorSupport = useMemo(() => {
-    return isValidatorSupportCreateStakingScreen(currentCoin?.chain_name);
-  }, [currentCoin?.chain_name]);
-
-  const isResourceSupport = useMemo(() => {
-    return isHaveResourceTypeInCreateStakingScreen(currentCoin?.chain_name);
-  }, [currentCoin?.chain_name]);
-
-  const resourceData = useMemo(() => {
-    return isResourceSupport ? resourcesData[currentCoin?.chain_name] : null;
-  }, [isResourceSupport, currentCoin?.chain_name]);
-
-  const isEVMStaking =
-    isDeactivateStaking && isEVMChain(currentCoin?.chain_name);
-
-  const coinStaking = currentCoin?.staking;
-  const currencyRate = currentCoin?.currencyRate;
-  const stakingProviderList = useMemo(() => {
-    if (!isEVMStaking) {
-      return [];
-    }
-    const staking = Array.isArray(coinStaking) ? coinStaking : [];
-    return staking.map(item => ({
-      label: item?.validatorInfo?.name,
-      value: item?.validatorInfo?.name,
-      stakedAmount: item?.stakedAmount,
-      fiatAmount: multiplyBNWithFixed(item?.stakedAmount, currencyRate, 2),
-    }));
-  }, [isEVMStaking, coinStaking, currencyRate]);
-
-  const [selectedProvider] = useState(
-    stakingProviderList.find(
-      p =>
-        p.value === selectedStake?.providerName ||
-        p.value === selectedStake?.validatorInfo?.name,
-    ) ||
-      stakingProviderList[0] ||
-      null,
-  );
-
-  const [isMaxCheckbox, setIsMaxCheckbox] = useState(true);
-
-  const [state, setState] = useState({
-    resourceType:
-      isResourceSupport && isDeactivateStaking ? resourceData?.[1] : null,
-    amount: selectedStake?.stakedAmount || selectedStake?.amount || '0',
-    currencyAmount: selectedStake?.fiatAmount || '0',
-    errors: {},
-  });
-  const {amount, currencyAmount, errors, resourceType} = state;
-
-  const availableAmount = useMemo(() => {
-    if (isEVMStaking) {
-      return selectedProvider?.stakedAmount || '0';
-    }
-    return selectedStake?.amount?.toString()
-      ? selectedStake?.amount?.toString()
-      : state?.resourceType?.value === 'ENERGY'
-        ? currentCoin?.energyBalance
-        : currentCoin?.bandwidthBalance;
-  }, [
-    isEVMStaking,
-    selectedProvider?.stakedAmount,
-    currentCoin?.bandwidthBalance,
-    currentCoin?.energyBalance,
-    selectedStake?.amount,
-    state.resourceType?.value,
-  ]);
-
-  const availableAmountCurrency = useMemo(() => {
-    if (selectedStake?.fiatAmount?.toString()) {
-      return selectedStake?.fiatAmount?.toString();
-    } else {
-      const energyBalanceBN = new BigNumber(currentCoin?.energyBalance || 0);
-      const bandwidthBalanceBN = new BigNumber(
-        currentCoin?.bandwidthBalance || 0,
-      );
-      const currencyRateBN = new BigNumber(currentCoin?.currencyRate || 0);
-      return currencyRateBN
-        .multipliedBy(
-          state.resourceType?.value === 'ENERGY'
-            ? energyBalanceBN
-            : bandwidthBalanceBN,
-        )
-        .toFixed(2);
-    }
-  }, [
-    currentCoin?.bandwidthBalance,
-    currentCoin?.currencyRate,
-    currentCoin?.energyBalance,
-    selectedStake?.fiatAmount,
-    state.resourceType?.value,
-  ]);
-  const disableTextInput =
-    isDisableTextInput(currentCoin?.chain_name) ||
-    !isDeactivateStaking ||
-    (isEVMStaking && isMaxCheckbox);
-
-  const handleMaxCheckboxToggle = value => {
-    setIsMaxCheckbox(value);
-    if (value) {
-      setState(prev => ({
-        ...prev,
-        amount: availableAmount,
-        currencyAmount: availableAmountCurrency,
-        errors: {},
-      }));
-    }
-  };
-
-  const dispatch = useDispatch();
-
-  const title = isWithdrawStaking
-    ? 'Withdraw Staking'
-    : isDeactivateStaking
-      ? 'Deactivate Staking'
-      : isStakingRewards
-        ? 'Claim Staking Rewards'
-        : 'Withdraw Staking';
-
-  const handleSubmitForm = async () => {
-    const localErrors =
-      isEVMStaking && isMaxCheckbox ? {} : checkError(amount, currencyAmount);
-    if (Object.keys(localErrors).length === 0) {
-      const stakingProviderName = isEVMStaking
-        ? selectedProvider?.value || selectedStake?.validatorInfo?.name
-        : selectedStake?.providerName || selectedStake?.validatorInfo?.name;
-      dispatch(
-        setCurrentTransferData({
-          validatorPubKey: selectedStake?.validator_address,
-          stakingAddress: selectedStake?.staking_address,
-          validatorName: selectedStake?.validatorInfo?.name,
-          stakingProviderName,
-          currentCoin,
-          amount: validateBigNumberStr(amount),
-          isStakingRewards: isStakingRewards,
-          resourceType: resourceType?.value,
-          isMaxCheckbox: isEVMStaking && isMaxCheckbox,
-        }),
-      );
-      dispatch(
-        calculateEstimateFee({
-          isFetchNonce: true,
-          fromAddress: currentCoin?.address,
-          contractAddress:
-            selectedStake?.validator_address || currentCoin?.contractAddress,
-          amount: validateBigNumberStr(amount),
-          tokenDecimals: currentCoin?.decimal,
-          validatorPubKey: selectedStake?.validator_address,
-          stakingAddress: selectedStake?.staking_address,
-          isWithdrawStaking: isWithdrawStaking,
-          isDeactivateStaking: isDeactivateStaking,
-          isStakingRewards: isStakingRewards,
-          resourceType: resourceType?.value,
-          stakingProviderName,
-          isMaxCheckbox: isEVMStaking && isMaxCheckbox,
-        }),
-      );
-      dispatch(setExchangeSuccess(false));
-      dispatch(
-        setRouteStateData({
-          transfer: {
-            fromScreen: 'Staking',
-            isDeactivateStaking,
-            isWithdrawStaking,
-            isStakingRewards,
-          },
-        }),
-      );
-      router.push(routes.coin.confirmStaking());
-    } else {
-      setState({
-        ...state,
-        errors: localErrors,
-      });
-    }
-  };
-
-  const checkError = (localAmount, localCurrencyAmount) => {
-    const error = {};
-    const numLocalAmount = validateNumber(localAmount);
-    const numLocalCurrencyAmount = validateNumber(localCurrencyAmount);
-
-    if (
-      !numLocalAmount ||
-      !numLocalCurrencyAmount ||
-      numLocalAmount < 0 ||
-      numLocalCurrencyAmount < 0
-    ) {
-      if (!numLocalAmount || numLocalAmount < 0) {
-        error.amount = 'Amount is required and must be a positive number';
-      }
-      if (numLocalCurrencyAmount < 0) {
-        error.currencyAmount =
-          'Currency Amount is required and must be a positive number';
-      }
-      return error;
-    }
-    const amountBN = new BigNumber(localAmount || 0);
-    const currencyAmountBN = new BigNumber(localCurrencyAmount || 0);
-    const availableAmountBN = new BigNumber(availableAmount || 0);
-    const availableCurrencyAmountBN = new BigNumber(localCurrencyAmount || 0);
-    if (amountBN.gt(availableAmountBN)) {
-      error.amount = 'Amount is greater than available amount';
-    }
-    if (currencyAmountBN.gt(availableCurrencyAmountBN)) {
-      error.currencyAmount = 'Currency Amount is greater than available amount';
-    }
-    return error;
-  };
-  const amountBN = new BigNumber(amount);
-  const availableAmountBN = new BigNumber(availableAmount);
-  const isValid =
-    (isEVMStaking && isMaxCheckbox) ||
-    (validateNumber(amount) && amountBN.lte(availableAmountBN));
-
-  const symbol = currentCoin?.symbol?.toUpperCase() ?? '';
-  const amountError = errors.amount || errors.currencyAmount;
-  const setMax = () => {
-    setState({
-      ...state,
-      amount: availableAmount,
-      currencyAmount: availableAmountCurrency,
-    });
-  };
+  const {
+    goBack,
+    currentCoin,
+    localCurrency,
+    symbol,
+    isValidatorSupport,
+    isResourceSupport,
+    resourceData,
+    renderResourceValue,
+    withdrawTitle: title,
+    isStakingRewards,
+    withdrawAvailableAmount: availableAmount,
+    withdrawAvailableAmountCurrency: availableAmountCurrency,
+    withdrawAmount: amount,
+    withdrawCurrencyAmount: currencyAmount,
+    withdrawResourceType: resourceType,
+    withdrawErrors: errors,
+    withdrawAmountError: amountError,
+    isEVMUnstaking: isEVMStaking,
+    isMaxCheckbox,
+    toggleMaxCheckbox,
+    disableTextInput,
+    setWithdrawMax: setMax,
+    onWithdrawAmountChange,
+    onWithdrawCurrencyAmountChange,
+    onWithdrawResourceTypeChange,
+    handleWithdrawSubmit: handleSubmitForm,
+    isWithdrawValid: isValid,
+    selectedStake,
+    stakingProviderList,
+    hideResource,
+  } = useStaking('withdraw');
 
   return (
     <main className={styles.page}>
@@ -282,7 +52,7 @@ const WithdrawStaking = () => {
           variant='unstyled'
           className={styles.back}
           aria-label='Back'
-          onClick={() => router.back()}>
+          onClick={goBack}>
           <ChevronLeftIcon size={24} />
         </GeneralButton>
         <h1 className={styles.title}>{title}</h1>
@@ -303,6 +73,10 @@ const WithdrawStaking = () => {
             <div className={styles.balanceText}>
               <span className={styles.label}>
                 {isStakingRewards ? 'Rewards available' : 'Staked amount'}
+                <PriceChange
+                  value={currentCoin?.priceChange24h}
+                  className={styles.labelChange}
+                />
               </span>
               <p className={styles.balance}>
                 {availableAmount}{' '}
@@ -323,7 +97,7 @@ const WithdrawStaking = () => {
               className={`${styles.toggleCard} ${
                 isMaxCheckbox ? styles.toggleCardOn : ''
               }`}
-              onClick={() => handleMaxCheckboxToggle(!isMaxCheckbox)}>
+              onClick={toggleMaxCheckbox}>
               <span className={styles.toggleText}>
                 <span className={styles.toggleTitle}>
                   Unstake entire balance
@@ -365,24 +139,7 @@ const WithdrawStaking = () => {
                     inputMode='decimal'
                     name='amount'
                     readOnly={disableTextInput}
-                    onChange={event => {
-                      const tempValues = validateNumberInInput(
-                        event.target.value,
-                        currentCoin?.decimal,
-                      );
-                      const tempAmount = multiplyBNWithFixed(
-                        tempValues,
-                        currentCoin?.currencyRate,
-                        2,
-                      );
-                      const localErrors = checkError(tempValues, tempAmount);
-                      setState({
-                        ...state,
-                        currencyAmount: tempAmount,
-                        amount: tempValues,
-                        errors: localErrors,
-                      });
-                    }}
+                    onChange={onWithdrawAmountChange}
                     value={amount}
                   />
                   <span className={styles.unit}>{symbol}</span>
@@ -396,26 +153,7 @@ const WithdrawStaking = () => {
                     inputMode='decimal'
                     name='currencyAmount'
                     readOnly={disableTextInput}
-                    onChange={event => {
-                      const tempValues = validateNumberInInput(
-                        event.target.value,
-                        2,
-                      );
-                      const tempAmount = new BigNumber(tempValues)
-                        .dividedBy(new BigNumber(currentCoin?.currencyRate))
-                        .toFixed(
-                          currentCoin?.decimal
-                            ? Number(currentCoin?.decimal)
-                            : 8,
-                        );
-                      const localErrors = checkError(tempAmount, tempValues);
-                      setState({
-                        ...state,
-                        amount: tempAmount,
-                        currencyAmount: tempValues,
-                        errors: localErrors,
-                      });
-                    }}
+                    onChange={onWithdrawCurrencyAmountChange}
                     value={currencyAmount}
                   />
                   <span className={styles.fiatUnit}>{localCurrency}</span>
@@ -466,19 +204,9 @@ const WithdrawStaking = () => {
                     className={styles.selectInput}
                     placeholder={'Select resource type'}
                     listData={resourceData}
-                    onValueChange={value => {
-                      const selected = resourceData?.find(
-                        item => item?.value === value,
-                      );
-                      setState({...state, resourceType: selected});
-                    }}
+                    onValueChange={onWithdrawResourceTypeChange}
                     value={resourceType?.value}
-                    renderValue={value => {
-                      const selected = resourceData?.find(
-                        item => item?.value === value,
-                      );
-                      return selected?.label || value;
-                    }}
+                    renderValue={renderResourceValue}
                   />
                 </div>
               </div>

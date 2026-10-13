@@ -21,7 +21,7 @@ import {
   UnlinkIcon,
 } from 'components/Home/HomeIcons';
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
-import useWalletConnectSessions from 'src/hooks/walletConnect/useWalletConnectSessions';
+import useWalletConnectSessions from 'src/hooks/protectedRoutes/wallet/walletConnect/useWalletConnectSessions';
 import {MailIcon, TelegramIcon} from './ContactIcons';
 
 const hostOf = url => {

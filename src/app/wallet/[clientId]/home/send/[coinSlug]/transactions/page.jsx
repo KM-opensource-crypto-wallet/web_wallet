@@ -1,39 +1,10 @@
 'use client';
-import {useAppRoutes} from 'src/hooks/useAppRoutes';
-import {useCallback, useEffect, useMemo, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import {
-  selectCurrentCoin,
-  selectCurrentWallet,
-  selectTransactionsByType,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import Transactions, {
-  describeTransaction,
-  fiatValue,
-  formatSignedFiat,
-  txStatus,
-} from 'components/Transactions';
-import ModalSortTransactions, {
-  SORT_OPTIONS,
-} from 'components/ModalSortTransactions';
-import {
-  getLocalCurrency,
-  getHideSmallTransactions,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {setHideSmallTransactions} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
+import Transactions, {formatSignedFiat} from 'components/Transactions';
+import ModalSortTransactions from 'components/ModalSortTransactions';
 import s from './Transactions.module.css';
-import {refreshCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {
-  getAddressDetailsUrl,
-  isBitcoinChain,
-  isPendingTransactionSupportedChain,
-} from 'dok-wallet-blockchain-networks/helper';
-import {useRouter} from 'next/navigation';
-import BigNumber from 'bignumber.js';
-import {currencySymbol} from 'data/currency';
 import GeneralButton from 'components/Button';
 import WalletSwitcher from 'components/Home/WalletSwitcher';
-import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/useHome';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -41,236 +12,43 @@ import {
   InfoIcon,
 } from 'components/Home/HomeIcons';
 import {SlidersIcon} from 'components/Transactions/TxIcons';
-
-const ALL_TRANSACTION_TYPES = [
-  {label: 'All', value: 'all'},
-  {label: 'Regular', value: 'regular'},
-  {label: 'Stake', value: 'stake'},
-  {label: 'Unstake', value: 'unstake'},
-  {label: 'Withdraw', value: 'withdraw'},
-  {label: 'Batch', value: 'batch'},
-];
-
-function computeRenderList(
-  transactions,
-  hideSmallTx,
-  currencyRate,
-  filter,
-  sort,
-  mineAddress,
-) {
-  const list = Array.isArray(transactions) ? [...transactions] : [];
-  const filtered = list.filter(tx => {
-    const isRegularTx = tx?.transactionType === 'regular';
-    if (hideSmallTx && isRegularTx) {
-      const usdValue =
-        tx.totalCourse != null
-          ? parseFloat(tx.totalCourse)
-          : parseFloat(tx.amount) * (currencyRate || 0);
-      if (usdValue < 1) return false;
-    }
-    if (!filter || filter === 'None') return true;
-    if (filter === 'Received')
-      return mineAddress?.toUpperCase() === tx?.to?.toUpperCase();
-    if (filter === 'Send')
-      return mineAddress?.toUpperCase() === tx?.from?.toUpperCase();
-    if (filter === 'Pending') return tx.status?.toUpperCase() !== 'SUCCESS';
-    return true;
-  });
-  return filtered.sort((a, b) => {
-    if (sort === 'Date Ascending') return new Date(a.date) - new Date(b.date);
-    if (sort === 'Amount Ascending') return Number(a.amount) - Number(b.amount);
-    if (sort === 'Amount Descending')
-      return Number(b.amount) - Number(a.amount);
-    return new Date(b.date) - new Date(a.date);
-  });
-}
-
-const ALL_ONLY_CHAINS = [
-  'ton',
-  'stellar',
-  'aptos',
-  'cardano',
-  'cosmos',
-  'filecoin',
-  'hedera',
-  'polkadot',
-  'ripple',
-  'tezos',
-  'thorchain',
-  'bitcoin_lightning',
-  'litecoin',
-  'dogecoin',
-  'bitcoin_cash',
-];
+import useTransaction from 'src/hooks/protectedRoutes/wallet/home/send/useTransaction';
 
 const TransactionsList = () => {
-  const dispatch = useDispatch();
-  const localCurrency = useSelector(getLocalCurrency);
-  const currentCoin = useSelector(selectCurrentCoin);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const hideSmallTx = useSelector(getHideSmallTransactions);
-
-  const [modalVisible, setmodalVisible] = useState(false);
-  const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [filter, setFilter] = useState('None');
-  const [sort, setSort] = useState('Date Descending');
-  const [selectedType, setSelectedType] = useState('all');
-  const [renderList, setRenderList] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showInfo, setShowInfo] = useState(false);
-  const router = useRouter();
-  const routes = useAppRoutes();
-
-  const coinId =
-    currentCoin?.address + currentCoin?.name + currentCoin?.chain_name;
-
-  const transactionsSelector = useMemo(
-    () => selectTransactionsByType(selectedType),
-    [selectedType],
-  );
-  const typedTransactions = useSelector(transactionsSelector);
-
-  const transactionTypes = useMemo(() => {
-    const chain = currentCoin?.chain_name;
-    if (chain === 'tron') {
-      return ALL_TRANSACTION_TYPES.filter(t => t.value !== 'batch');
-    }
-    if (chain === 'solana') {
-      return ALL_TRANSACTION_TYPES.filter(t =>
-        ['all', 'stake', 'unstake', 'withdraw'].includes(t.value),
-      );
-    }
-    if (ALL_ONLY_CHAINS.includes(chain) || isBitcoinChain(chain)) {
-      return ALL_TRANSACTION_TYPES.filter(t => t.value === 'all');
-    }
-    return ALL_TRANSACTION_TYPES;
-  }, [currentCoin?.chain_name]);
-
-  const isSupportUpdateTransaction = useMemo(() => {
-    return (
-      isPendingTransactionSupportedChain(currentCoin?.chain_name) &&
-      currentCoin?.type === 'coin'
-    );
-  }, [currentCoin?.chain_name, currentCoin?.type]);
-
-  const onPressUpdateTransaction = useCallback(() => {
-    router.push(routes.coin.updateTransaction());
-  }, [router, routes]);
-
-  useEffect(() => {
-    if (currentCoin?.address) {
-      dispatch(refreshCurrentCoin({fetchTransaction: true}))
-        .unwrap()
-        .then(() => {
-          setIsLoading(false);
-        })
-        .catch(e => {
-          setIsLoading(false);
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coinId, dispatch]);
-
-  useEffect(() => {
-    // Anonymous function: the react-hooks compiler lint flags setState calls
-    // made directly in an effect body; the same update here is accepted.
-    (() => {
-      setRenderList(
-        computeRenderList(
-          typedTransactions,
-          hideSmallTx,
-          currentCoin?.currencyRate,
-          filter,
-          sort,
-          currentCoin?.address,
-        ),
-      );
-    })();
-  }, [
-    typedTransactions,
-    hideSmallTx,
-    currentCoin?.currencyRate,
-    currentCoin?.address,
-    filter,
+  const {
+    goBack,
+    walletName,
+    currentCoin,
+    localCurrency,
+    switcherOpen,
+    openSwitcher,
+    closeSwitcher,
+    onPressViewAll,
+    summary,
+    fiatSymbol,
+    netCoinText,
+    transactionTypes,
+    selectedType,
+    onPressTypeTab,
     sort,
-  ]);
-
-  const onPressViewAll = useCallback(() => {
-    const chain_name = currentCoin?.chain_name;
-    const type = currentCoin?.type;
-    const address = currentCoin?.address;
-    if (chain_name && type && address) {
-      const url = getAddressDetailsUrl(chain_name, type, address);
-      if (url) {
-        window.open(url, '_blank', 'noopener,noreferrer');
-      }
-    }
-  }, [currentCoin?.address, currentCoin?.chain_name, currentCoin?.type]);
-
-  const onPressApply = useCallback(
-    (sortValue, filterValue, hideSmallTxValue) => {
-      setSort(sortValue);
-      setFilter(filterValue);
-      dispatch(setHideSmallTransactions(hideSmallTxValue));
-    },
-    [dispatch],
-  );
-
-  const onPressTypeTab = useCallback(value => {
-    setSelectedType(value);
-    setSort('Date Descending');
-    setFilter('None');
-  }, []);
-
-  const onResetFilters = useCallback(() => {
-    setSelectedType('all');
-    setSort('Date Descending');
-    setFilter('None');
-  }, []);
-
-  // Net (settled sends / receives only), count and pending across the
-  // transactions currently shown.
-  const summary = useMemo(() => {
-    let netFiat = 0;
-    let netCoin = new BigNumber(0);
-    let pending = 0;
-    renderList.forEach(item => {
-      const status = txStatus(item);
-      if (status === 'pending') pending += 1;
-      if (status !== 'success') return;
-      const {dir} = describeTransaction(item, currentCoin?.address);
-      const amount = new BigNumber(item?.amount);
-      if (dir === 'in') {
-        netFiat += fiatValue(item);
-        if (amount.isFinite()) netCoin = netCoin.plus(amount);
-      } else if (dir === 'out') {
-        netFiat -= fiatValue(item);
-        if (amount.isFinite()) netCoin = netCoin.minus(amount);
-      }
-    });
-    return {netFiat, netCoin, pending};
-  }, [renderList, currentCoin?.address]);
-
-  const fiatSymbol = currencySymbol[localCurrency] || '';
-  const symbol = currentCoin?.symbol?.toUpperCase() ?? '';
-  const walletName = currentWallet?.walletName || 'Wallet';
-  const filterCount =
-    (selectedType !== 'all' ? 1 : 0) + (filter !== 'None' ? 1 : 0);
-  const sortLabel =
-    SORT_OPTIONS.find(option => option.label === sort)?.title || sort;
-  const filterLabel =
-    filter === 'Send'
-      ? 'Sent'
-      : filter === 'None'
-        ? ''
-        : filter === 'Pending'
-          ? 'Pending'
-          : filter;
-  const netCoinText = `${summary.netCoin.isNegative() ? '−' : '+'}${summary.netCoin
-    .abs()
-    .decimalPlaces(6)
-    .toString()} ${symbol}`;
+    filter,
+    hideSmallTx,
+    sortLabel,
+    filterLabel,
+    filterCount,
+    modalVisible,
+    openSortModal,
+    closeSortModal,
+    onPressApply,
+    onResetFilters,
+    renderList,
+    isLoading,
+    isGrouped,
+    isSupportUpdateTransaction,
+    onPressUpdateTransaction,
+    showInfo,
+    toggleInfo,
+  } = useTransaction('list');
 
   return (
     <main className={s.page}>
@@ -280,14 +58,14 @@ const TransactionsList = () => {
           variant='unstyled'
           className={s.iconButton}
           aria-label='Back'
-          onClick={() => router.back()}>
+          onClick={goBack}>
           <ChevronLeftIcon size={24} />
         </GeneralButton>
         <GeneralButton
           variant='unstyled'
           className={s.heading}
           aria-haspopup='dialog'
-          onClick={() => setSwitcherOpen(true)}>
+          onClick={openSwitcher}>
           <h1 className={s.headingTitle}>Transactions</h1>
           <span className={s.headingSub}>
             <span className={s.walletAvatar}>
@@ -364,7 +142,7 @@ const TransactionsList = () => {
           type='button'
           className={s.sortBar}
           aria-haspopup='dialog'
-          onClick={() => setmodalVisible(true)}>
+          onClick={openSortModal}>
           <span className={s.sortText}>
             {sortLabel}
             {filterLabel ? (
@@ -383,7 +161,7 @@ const TransactionsList = () => {
             currentCoin={currentCoin}
             localCurrency={localCurrency}
             isLoading={isLoading}
-            grouped={sort.startsWith('Date')}
+            grouped={isGrouped}
             hasFilters={filterCount > 0}
             onResetFilters={onResetFilters}
             onPressViewAll={onPressViewAll}
@@ -404,7 +182,7 @@ const TransactionsList = () => {
               type='button'
               className={s.footerNote}
               aria-expanded={showInfo}
-              onClick={() => setShowInfo(v => !v)}>
+              onClick={toggleInfo}>
               <InfoIcon size={13} />
               Showing your last 20 transactions
             </button>
@@ -424,7 +202,7 @@ const TransactionsList = () => {
                     <button
                       type='button'
                       className={s.infoCardLink}
-                      onClick={() => setmodalVisible(true)}>
+                      onClick={openSortModal}>
                       Sort &amp; filter
                     </button>
                     .
@@ -450,7 +228,7 @@ const TransactionsList = () => {
 
       <ModalSortTransactions
         visible={modalVisible}
-        hideModal={() => setmodalVisible(false)}
+        hideModal={closeSortModal}
         onPressAppy={onPressApply}
         initialHideSmallTx={hideSmallTx}
         initialSort={sort}
@@ -458,7 +236,7 @@ const TransactionsList = () => {
       />
       <WalletSwitcher
         visible={switcherOpen}
-        onClose={() => setSwitcherOpen(false)}
+        onClose={closeSwitcher}
         hidden={switcherOpen && readHideBalances()}
         localCurrency={localCurrency}
       />

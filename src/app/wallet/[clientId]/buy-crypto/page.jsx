@@ -1,27 +1,14 @@
 'use client';
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React from 'react';
 import {Formik} from 'formik';
 import styles from './CryptoProviders.module.css';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {useRouter} from 'next/navigation';
-import {
-  getUserCoinsOptions,
-  selectCurrentWallet,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {getBuyCryptoUrl} from 'dok-wallet-blockchain-networks/service/dokApi';
 import Image from 'next/image';
-import {
-  validateNumber,
-  validateNumberInInput,
-} from 'dok-wallet-blockchain-networks/helper';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {amountValidation} from 'utils/validationSchema';
-import {toast} from 'react-toastify';
+import {validateNumberInInput} from 'dok-wallet-blockchain-networks/helper';
 import {currencySymbol} from 'data/currency';
 import GeneralButton from 'components/Button';
 import HomeSheet from 'components/Home/HomeSheet';
 import WalletSwitcher from 'components/Home/WalletSwitcher';
-import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/useHome';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -32,21 +19,10 @@ import {
   PlusIcon,
   SearchIcon,
 } from 'components/Home/HomeIcons';
-import {
-  getCryptoProviders,
-  getCryptoProvidersLoading,
-} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
-import {
-  debounceFetchBuyCryptoQuote,
-  fetchBuyCryptoQuote,
-  setCryptoProviderLoading,
-} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
 import Loading from 'components/Loading';
 import ModalAddCoins from 'components/ModalAddCoins';
-import {isUsdtNotSupportedWL} from 'src/whitelabel/whiteLabelInfo';
-import ModalRedirect from 'components/ModalRedirect';
+import useBuyCrypto from 'src/hooks/protectedRoutes/wallet/buyCrypto/useBuyCrypto';
 
-const CURRENCIES = ['USD', 'EUR'];
 const PRESETS = ['100', '250', '500'];
 
 const RefreshIcon = props => (
@@ -69,200 +45,41 @@ const RefreshIcon = props => (
 const formatNumber = (value, max = 6) =>
   Number(value).toLocaleString('en-US', {maximumFractionDigits: max});
 
-// Quote cards: the best rate is the largest amount received; the others show
-// how far below it they are.
-const rankQuotes = providers => {
-  const list = Array.isArray(providers) ? providers : [];
-  const best = list.reduce((max, item) => {
-    const got = Number(item?.toAmount);
-    return got > max ? got : max;
-  }, 0);
-  return list.map((item, index) => {
-    const got = Number(item?.toAmount);
-    const hasQuote = got > 0 && Number(item?.fromAmount) > 0;
-    return {
-      item,
-      index,
-      key: item?.title || String(index),
-      hasQuote,
-      got,
-      isBest: hasQuote && best > 0 && got === best,
-      diff: hasQuote && best > 0 && got < best ? (got - best) / best : null,
-    };
-  });
-};
-
 const CryptoProviders = () => {
-  const router = useRouter();
-  const localCurrency = useSelector(getLocalCurrency);
-  const coinOptions = useSelector(getUserCoinsOptions, shallowEqual);
-  const cryptoProviders = useSelector(getCryptoProviders);
-  const isLoading = useSelector(getCryptoProvidersLoading);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const dispatch = useDispatch();
-  const formikRef = useRef();
-  const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
-  const [modalInfoVisible, setModalInfoVisible] = useState(false);
-  const [buyCryptoUrl, setBuyCryptoUrl] = useState(null);
-  const [loadingIndex, setLoadingIndex] = useState(null);
-  const [selectedProvider, setSelectedProvider] = useState(null);
-  const [addressCopied, setAddressCopied] = useState(false);
-  const [coinSheetOpen, setCoinSheetOpen] = useState(false);
-  const [coinQuery, setCoinQuery] = useState('');
-  const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [pickedKey, setPickedKey] = useState(null);
-  const copiedTimerRef = useRef(null);
-
-  useEffect(() => () => clearTimeout(copiedTimerRef.current), []);
-
-  const copyAddress = useCallback(address => {
-    navigator.clipboard.writeText(address || '');
-    setAddressCopied(true);
-    clearTimeout(copiedTimerRef.current);
-    copiedTimerRef.current = setTimeout(() => setAddressCopied(false), 1500);
-  }, []);
-
-  const quotes = useMemo(() => rankQuotes(cryptoProviders), [cryptoProviders]);
-  // The picked provider, else the best rate, else the first one.
-  const activeQuote =
-    quotes.find(q => q.key === pickedKey) ||
-    quotes.find(q => q.isBest) ||
-    quotes[0] ||
-    null;
-
-  const walletName = currentWallet?.walletName || 'Wallet';
-  const eurOnly = isUsdtNotSupportedWL();
-
-  const finalCoinOptions = useMemo(() => {
-    if (isUsdtNotSupportedWL()) {
-      return coinOptions.filter(
-        item =>
-          !(
-            item.options?.symbol?.toUpperCase() === 'USDT' ||
-            (item.options?.symbol?.toUpperCase() === 'USDC' &&
-              item.options?.chain_name === 'tron')
-          ),
-      );
-    }
-    return coinOptions;
-  }, [coinOptions]);
-
-  const handleNewTabClose = useCallback(() => {
-    setBuyCryptoUrl(null);
-    setModalInfoVisible(false);
-  }, []);
-
-  const handleNewTabLaunch = useCallback(() => {
-    if (!buyCryptoUrl) return;
-
-    const anchor = document.createElement('a');
-    anchor.href = buyCryptoUrl;
-    anchor.target = '_blank';
-    anchor.rel = 'noopener';
-    anchor.referrerPolicy = 'origin';
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-
-    handleNewTabClose();
-  }, [buyCryptoUrl, handleNewTabClose]);
-
-  const onPressItem = useCallback(async (item, index) => {
-    let pendingTab = null;
-    try {
-      const selectedCoin = formikRef.current?.values?.selectedCoin?.options;
-      const amount = formikRef.current?.values?.amount;
-      const fiatCurrency = formikRef.current?.values?.fiatCurrency;
-      if (!selectedCoin) {
-        formikRef?.current?.setFieldError(
-          'selectedCoin',
-          'Please select a coin',
-        );
-        formikRef?.current?.setFieldTouched('selectedCoin', true);
-        return;
-      }
-      if (isNaN(Number(amount)) || !Number(amount)) {
-        formikRef?.current?.setFieldError(
-          'amount',
-          'Please enter a valid amount',
-        );
-        formikRef?.current?.setFieldTouched('amount', true);
-        return;
-      }
-
-      const url = item?.extraData?.url;
-      setSelectedProvider(item);
-      if (item.title?.toLowerCase() === 'castor24') {
-        return window.open('https://www.castor24.com/login', '_blank');
-      }
-      if (item.title?.toLowerCase() === '51pegasi') {
-        return window.open('https://www.51pegasi.com/login', '_blank');
-      } else if (url) {
-        return window.open(url, '_blank');
-      } else {
-        pendingTab = window.open('about:blank', '_blank');
-        if (!pendingTab) {
-          toast.error('Please allow pop-ups to continue');
-          return;
-        }
-        pendingTab.opener = null;
-        setLoadingIndex(index);
-        const resp = await getBuyCryptoUrl({
-          ...item,
-          selectedCoin,
-          fiatCurrency,
-          amount,
-          appVersion: 'web',
-          from_device: 'web',
-        });
-        const redirectUrl = resp?.data;
-        if (!redirectUrl) {
-          pendingTab.close();
-          toast.error('Unable to generate provider link');
-          return;
-        }
-        pendingTab.location.replace(redirectUrl);
-      }
-    } catch (e) {
-      pendingTab?.close();
-      toast.error('Something went wrong');
-      console.error('Error in press item', e);
-    } finally {
-      setLoadingIndex(null);
-    }
-  }, []);
-
-  const submitQuote = useCallback(
-    async (values, {isDebounce = false} = {}) => {
-      const chainDetails = values?.selectedCoin?.options;
-      if (!chainDetails || !values.amount || values?.amount === '0') {
-        return;
-      }
-      const payload = {
-        fiatCurrency: values?.fiatCurrency,
-        amount: validateNumber(values?.amount) || '0',
-        chain_name: chainDetails?.chain_name,
-        type: chainDetails?.type,
-        symbol: chainDetails?.symbol,
-        walletAddress: chainDetails?.walletAddress,
-        from_device: 'web',
-      };
-      if (isDebounce) {
-        dispatch(setCryptoProviderLoading(true));
-        dispatch(debounceFetchBuyCryptoQuote(payload));
-      } else {
-        dispatch(fetchBuyCryptoQuote(payload));
-      }
-    },
-    [dispatch],
-  );
-
-  const onSubmit = useCallback(
-    async values => {
-      submitQuote(values, {isDebounce: false});
-    },
-    [submitQuote],
-  );
+  const {
+    goBack,
+    walletName,
+    switcherOpen,
+    openSwitcher,
+    closeSwitcher,
+    localCurrency,
+    formikRef,
+    initialValues,
+    amountValidation,
+    onSubmit,
+    eurOnly,
+    changeAmount,
+    cycleCurrency,
+    coinSheetOpen,
+    openCoinSheet,
+    closeCoinSheet,
+    coinQuery,
+    onCoinQueryChange,
+    coinList,
+    pickCoin,
+    openAddCoins,
+    addressCopied,
+    copyAddress,
+    isLoading,
+    quotes,
+    activeQuote,
+    pickQuote,
+    refreshQuote,
+    loadingIndex,
+    continueWithActiveQuote,
+    modalAddCoinsVisible,
+    setModalAddCoinsVisible,
+  } = useBuyCrypto();
 
   return (
     <main className={styles.page}>
@@ -272,14 +89,14 @@ const CryptoProviders = () => {
           variant='unstyled'
           className={styles.iconButton}
           aria-label='Back'
-          onClick={() => router.back()}>
+          onClick={goBack}>
           <ChevronLeftIcon size={24} />
         </GeneralButton>
         <GeneralButton
           variant='unstyled'
           className={styles.heading}
           aria-haspopup='dialog'
-          onClick={() => setSwitcherOpen(true)}>
+          onClick={openSwitcher}>
           <h1 className={styles.headingTitle}>Buy</h1>
           <span className={styles.headingSub}>
             <span className={styles.walletAvatar}>
@@ -294,11 +111,7 @@ const CryptoProviders = () => {
 
       <Formik
         innerRef={formikRef}
-        initialValues={{
-          amount: '100',
-          selectedCoin: null,
-          fiatCurrency: eurOnly ? 'EUR' : localCurrency,
-        }}
+        initialValues={initialValues}
         validationSchema={amountValidation}
         onSubmit={onSubmit}>
         {({handleBlur, values, errors, touched, setFieldValue}) => {
@@ -307,39 +120,10 @@ const CryptoProviders = () => {
           const fiatSymbol = currencySymbol[values.fiatCurrency] || '';
           const amountError = touched.amount && errors.amount;
           const coinError = touched.selectedCoin && errors.selectedCoin;
-          const q = coinQuery.trim().toLowerCase();
-          const coinList = q
-            ? finalCoinOptions.filter(item =>
-                `${item.label} ${item.options?.symbol || ''} ${
-                  item.options?.chain_display_name || ''
-                }`
-                  .toLowerCase()
-                  .includes(q),
-              )
-            : finalCoinOptions;
           const canQuote = !!coin && Number(values.amount) > 0;
           const showQuotes = canQuote && !isLoading && quotes.length > 0;
 
-          const setAmount = next => {
-            setFieldValue('amount', next);
-            submitQuote({...values, amount: next}, {isDebounce: true});
-          };
-          const cycleCurrency = () => {
-            const next =
-              CURRENCIES[
-                (CURRENCIES.indexOf(values.fiatCurrency) + 1) %
-                  CURRENCIES.length
-              ];
-            setFieldValue('fiatCurrency', next);
-            submitQuote({...values, fiatCurrency: next});
-          };
-          const pickCoin = item => {
-            setCoinSheetOpen(false);
-            setCoinQuery('');
-            setPickedKey(null);
-            setFieldValue('selectedCoin', item);
-            submitQuote({...values, selectedCoin: item});
-          };
+          const setAmount = next => changeAmount(next, values, setFieldValue);
 
           return (
             <div className={styles.column}>
@@ -376,7 +160,7 @@ const CryptoProviders = () => {
                           ? `Paying in ${values.fiatCurrency}`
                           : `Paying in ${values.fiatCurrency}, change currency`
                       }
-                      onClick={cycleCurrency}>
+                      onClick={() => cycleCurrency(values, setFieldValue)}>
                       {values.fiatCurrency}
                       {eurOnly ? null : <ChevronDownIcon size={12} />}
                     </button>
@@ -411,7 +195,7 @@ const CryptoProviders = () => {
                     coinError ? styles.inputBoxError : ''
                   }`}
                   aria-haspopup='dialog'
-                  onClick={() => setCoinSheetOpen(true)}>
+                  onClick={openCoinSheet}>
                   <span className={styles.coinIcon}>
                     {coin?.icon ? (
                       <Image src={coin.icon} alt='' width={40} height={40} />
@@ -491,7 +275,7 @@ const CryptoProviders = () => {
                       type='button'
                       className={styles.refresh}
                       disabled={isLoading}
-                      onClick={() => submitQuote(values)}>
+                      onClick={() => refreshQuote(values)}>
                       <RefreshIcon
                         className={isLoading ? styles.spinning : ''}
                       />
@@ -538,7 +322,7 @@ const CryptoProviders = () => {
                           className={`${styles.quote} ${
                             on ? styles.quoteOn : ''
                           }`}
-                          onClick={() => setPickedKey(quote.key)}>
+                          onClick={() => pickQuote(quote.key)}>
                           <span className={styles.providerLogo}>
                             <Image
                               src={item.src}
@@ -594,10 +378,7 @@ const CryptoProviders = () => {
                   disabled={!showQuotes || !activeQuote}
                   loading={loadingIndex !== null}
                   loadingLabel='Opening provider…'
-                  onClick={() =>
-                    activeQuote &&
-                    onPressItem(activeQuote.item, activeQuote.index)
-                  }>
+                  onClick={continueWithActiveQuote}>
                   {showQuotes && activeQuote
                     ? `Continue with ${activeQuote.item.title}`
                     : 'Continue'}
@@ -606,17 +387,14 @@ const CryptoProviders = () => {
 
               <HomeSheet
                 visible={coinSheetOpen}
-                onClose={() => {
-                  setCoinSheetOpen(false);
-                  setCoinQuery('');
-                }}
+                onClose={closeCoinSheet}
                 title='Buy which coin?'
                 labelId='buy-coin-title'>
                 <label className={styles.sheetSearch}>
                   <SearchIcon size={16} />
                   <input
                     value={coinQuery}
-                    onChange={e => setCoinQuery(e.target.value)}
+                    onChange={onCoinQueryChange}
                     placeholder='Search'
                     aria-label='Search coins'
                   />
@@ -632,7 +410,7 @@ const CryptoProviders = () => {
                           className={`${styles.sheetCoin} ${
                             on ? styles.sheetCoinOn : ''
                           }`}
-                          onClick={() => pickCoin(item)}>
+                          onClick={() => pickCoin(item, values, setFieldValue)}>
                           <span className={styles.sheetCoinIcon}>
                             {item.options?.icon ? (
                               <Image
@@ -667,10 +445,7 @@ const CryptoProviders = () => {
                 <button
                   type='button'
                   className={styles.sheetAdd}
-                  onClick={() => {
-                    setCoinSheetOpen(false);
-                    setModalAddCoinsVisible(true);
-                  }}>
+                  onClick={openAddCoins}>
                   <PlusIcon size={16} />
                   Add more coins to this wallet
                 </button>
@@ -686,18 +461,9 @@ const CryptoProviders = () => {
           hideModal={setModalAddCoinsVisible}
         />
       )}
-      {modalInfoVisible && (
-        <ModalRedirect
-          visible={modalInfoVisible}
-          handleClose={handleNewTabClose}
-          title={`Redirect to the ${selectedProvider?.title || 'provider'}`}
-          message={'You will be automatically redirect in'}
-          onOkay={handleNewTabLaunch}
-        />
-      )}
       <WalletSwitcher
         visible={switcherOpen}
-        onClose={() => setSwitcherOpen(false)}
+        onClose={closeSwitcher}
         hidden={switcherOpen && readHideBalances()}
         localCurrency={localCurrency}
       />

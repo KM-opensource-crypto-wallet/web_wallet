@@ -1,18 +1,7 @@
 'use client';
-import {walletRoutes} from 'utils/routes';
 import styles from './OTC2Screen.module.css';
-import React, {useContext, useState, useCallback, useMemo} from 'react';
-import {useParams, useRouter} from 'next/navigation';
-
-import {shallowEqual, useSelector} from 'react-redux';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {addOTC} from 'dok-wallet-blockchain-networks/service/dokApi';
-import {getUserCoinsOptions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {ThemeContext} from 'theme/ThemeContext';
-import {getOTCData} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
+import React from 'react';
 import {currencySymbol} from 'data/currency';
-import {toast} from 'react-toastify';
-import {getAppIcon, getAppIconDark} from 'whitelabel/whiteLabelInfo';
 import CoinIcon from 'components/CoinIcon';
 import GeneralButton from 'components/Button';
 import HomeSheet from 'components/Home/HomeSheet';
@@ -24,6 +13,7 @@ import {
 } from 'components/Home/HomeIcons';
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import hs from 'components/Home/Home.module.css';
+import useBuyCrypto from 'src/hooks/protectedRoutes/wallet/buyCrypto/useBuyCrypto';
 
 // Provider documents the two consents link to.
 const CONSENTS = [
@@ -68,148 +58,32 @@ const sourceOfFundList = [
 ];
 
 const OTC2Screen = () => {
-  const [state, setState] = useState({
-    isBuy: true,
-    selectedCryptoCoin: {},
-    selectedAmount: '',
-    sourceOfFund: '',
-    terms: false,
-    risk: false,
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [coinPickerOpen, setCoinPickerOpen] = useState(false);
-  const [coinQuery, setCoinQuery] = useState('');
-  const {themeType} = useContext(ThemeContext);
-  const router = useRouter();
-  const {clientId} = useParams();
-
-  const coinOptions = useSelector(getUserCoinsOptions, shallowEqual);
-  const otcData = useSelector(getOTCData);
-
-  const localCurrency = useSelector(getLocalCurrency);
-
-  const otherOptions = {
-    label: 'Other',
-    value: 'Other',
-    options: {
-      icon: themeType === 'light' ? getAppIcon() : getAppIconDark(),
-      title: 'Other',
-    },
-  };
-
-  const [dropDownList, setDropDownList] = useState(
-    Array.isArray(coinOptions)
-      ? [...coinOptions, otherOptions]
-      : [otherOptions],
-  );
-
-  const onChangeCryptoCoin = useCallback(
-    value => {
-      const foundItem = dropDownList.find(item => item.value === value);
-      if (foundItem) {
-        setState(prevState => ({
-          ...prevState,
-          selectedCryptoCoin: foundItem,
-        }));
-      }
-    },
-    [dropDownList],
-  );
-
-  const onChangeAmount = useCallback(value => {
-    setState(prevState => ({
-      ...prevState,
-      selectedAmount: value,
-    }));
-  }, []);
-
-  const {isBuy, risk, selectedAmount, selectedCryptoCoin, sourceOfFund, terms} =
-    state;
-  const selectedChainName = selectedCryptoCoin?.options?.chain_name;
-  const selectedSymbol = selectedCryptoCoin?.options?.symbol;
-  const selectedWalletAddress = selectedCryptoCoin?.options?.walletAddress;
-
-  const onSubmit = useCallback(async () => {
-    const toastId = toast.loading('OTC Request Submitting', {
-      autoClose: false,
-    });
-    try {
-      const previousOTCData = otcData;
-      if (previousOTCData) {
-        setIsSubmitting(true);
-        const postCode = previousOTCData?.zipcode;
-        const payload = {
-          fullName: previousOTCData?.fullname,
-          email: previousOTCData?.email,
-          address1: previousOTCData?.address1,
-          city: previousOTCData?.city,
-          postCode: postCode,
-          country: previousOTCData?.country,
-          fundSource: sourceOfFund?.toLowerCase(),
-          chain: selectedChainName,
-          asset: selectedSymbol,
-          type: isBuy ? 'buy' : 'sell',
-          amount: `${selectedAmount} ${localCurrency}`,
-          walletAddress: selectedWalletAddress,
-        };
-        if (previousOTCData?.address2) {
-          payload.address2 = previousOTCData?.address2;
-        }
-        const resp = await addOTC(payload);
-        setIsSubmitting(false);
-        if (resp?.status === 200) {
-          toast.dismiss(toastId);
-          toast.success('OTC Request submitted successfully');
-          router.push(walletRoutes.home(clientId));
-        } else {
-          toast.dismiss(toastId);
-          toast.error('Something went wrong');
-        }
-      }
-    } catch (e) {
-      console.error(' Error in add OTC', e);
-      setIsSubmitting(false);
-      toast.dismiss(toastId);
-      toast.error('Something went wrong');
-    }
-  }, [
-    otcData,
-    sourceOfFund,
-    selectedChainName,
-    selectedSymbol,
-    selectedWalletAddress,
-    isBuy,
-    selectedAmount,
+  const {
+    goBack,
     localCurrency,
-    router,
-    clientId,
-  ]);
-
-  const isDisabled =
-    !risk ||
-    !selectedAmount ||
-    !selectedCryptoCoin?.value ||
-    !sourceOfFund ||
-    !terms ||
-    isSubmitting;
+    isBuy,
+    setIsBuy,
+    selectedCryptoCoin,
+    selectedAmount,
+    onChangeOtcAmount,
+    sourceOfFund,
+    setSourceOfFund,
+    otcConsents,
+    toggleOtcConsent,
+    isOtcDisabled,
+    isOtcSubmitting,
+    onOtcSubmit,
+    otcCoinPickerOpen,
+    openOtcCoinPicker,
+    closeOtcCoinPicker,
+    otcCoinQuery,
+    onOtcCoinQueryChange,
+    otcCoinResults,
+    pickOtcCoin,
+  } = useBuyCrypto();
 
   const fiatSymbol = currencySymbol[localCurrency] || '';
   const selectedCoin = selectedCryptoCoin?.options;
-  const coinResults = useMemo(() => {
-    const q = coinQuery.trim().toLowerCase();
-    return q
-      ? dropDownList.filter(
-          item =>
-            item?.options?.title?.toLowerCase().includes(q) ||
-            item?.options?.symbol?.toLowerCase().includes(q),
-        )
-      : dropDownList;
-  }, [coinQuery, dropDownList]);
-
-  const closeCoinPicker = () => {
-    setCoinQuery('');
-    setCoinPickerOpen(false);
-  };
 
   return (
     <main className={styles.page}>
@@ -219,7 +93,7 @@ const OTC2Screen = () => {
           variant='unstyled'
           className={styles.iconButton}
           aria-label='Back'
-          onClick={() => router.back()}>
+          onClick={goBack}>
           <ChevronLeftIcon size={24} />
         </GeneralButton>
         <h1 className={styles.title}>OTC order</h1>
@@ -243,9 +117,7 @@ const OTC2Screen = () => {
               className={`${styles.segment} ${
                 isBuy === option.buy ? styles.segmentActive : ''
               }`}
-              onClick={() =>
-                setState(prevState => ({...prevState, isBuy: option.buy}))
-              }>
+              onClick={() => setIsBuy(option.buy)}>
               {option.label}
             </button>
           ))}
@@ -261,7 +133,7 @@ const OTC2Screen = () => {
               className={styles.coinButton}
               aria-haspopup='dialog'
               aria-labelledby='otc-coin-label'
-              onClick={() => setCoinPickerOpen(true)}>
+              onClick={openOtcCoinPicker}>
               {selectedCoin ? (
                 <>
                   <span className={styles.coinIcon}>
@@ -307,7 +179,7 @@ const OTC2Screen = () => {
                   className={`${styles.chip} ${
                     selectedAmount === item.value ? styles.chipActive : ''
                   }`}
-                  onClick={() => onChangeAmount(item.value)}>
+                  onClick={() => onChangeOtcAmount(item.value)}>
                   {fiatSymbol}
                   {item.label}
                 </button>
@@ -332,12 +204,7 @@ const OTC2Screen = () => {
                   className={`${styles.chip} ${
                     sourceOfFund === item.label ? styles.chipActive : ''
                   }`}
-                  onClick={() =>
-                    setState(prevState => ({
-                      ...prevState,
-                      sourceOfFund: item.label,
-                    }))
-                  }>
+                  onClick={() => setSourceOfFund(item.label)}>
                   {item.label}
                 </button>
               ))}
@@ -354,7 +221,7 @@ const OTC2Screen = () => {
           </p>
           <div className={styles.consentCard}>
             {CONSENTS.map(consent => {
-              const checked = state[consent.key];
+              const checked = otcConsents[consent.key];
               return (
                 <div key={consent.key} className={styles.consent}>
                   <button
@@ -363,12 +230,7 @@ const OTC2Screen = () => {
                     aria-checked={checked}
                     aria-label={`I accept the ${consent.label}`}
                     className={`${styles.tick} ${checked ? styles.tickOn : ''}`}
-                    onClick={() =>
-                      setState(prevState => ({
-                        ...prevState,
-                        [consent.key]: !prevState[consent.key],
-                      }))
-                    }>
+                    onClick={() => toggleOtcConsent(consent.key)}>
                     {checked ? <CheckIcon size={13} strokeWidth={3} /> : null}
                   </button>
                   <span className={styles.consentText}>
@@ -390,31 +252,31 @@ const OTC2Screen = () => {
 
         <GeneralButton
           fullWidth
-          disabled={isDisabled}
-          loading={isSubmitting}
+          disabled={isOtcDisabled}
+          loading={isOtcSubmitting}
           loadingLabel='Submitting…'
-          onClick={onSubmit}>
+          onClick={onOtcSubmit}>
           Next
         </GeneralButton>
       </div>
 
       <HomeSheet
-        visible={coinPickerOpen}
-        onClose={closeCoinPicker}
+        visible={otcCoinPickerOpen}
+        onClose={closeOtcCoinPicker}
         title={isBuy ? 'Buy which coin?' : 'Sell which coin?'}
         labelId='otc-coin-picker-title'>
         <label className={hs.sheetSearch}>
           <SearchIcon size={17} />
           <input
             autoFocus={true}
-            value={coinQuery}
-            onChange={e => setCoinQuery(e.target.value)}
+            value={otcCoinQuery}
+            onChange={onOtcCoinQueryChange}
             placeholder='Search coins'
             aria-label='Search coins'
           />
         </label>
         <div className={hs.pickerList} role='listbox' aria-label='Coins'>
-          {coinResults.map(item => {
+          {otcCoinResults.map(item => {
             const active = item.value === selectedCryptoCoin?.value;
             return (
               <button
@@ -425,10 +287,7 @@ const OTC2Screen = () => {
                 className={`${styles.option} ${
                   active ? styles.optionActive : ''
                 }`}
-                onClick={() => {
-                  onChangeCryptoCoin(item.value);
-                  closeCoinPicker();
-                }}>
+                onClick={() => pickOtcCoin(item.value)}>
                 <span className={styles.coinIcon}>
                   <CoinIcon item={item.options} />
                 </span>
@@ -453,7 +312,7 @@ const OTC2Screen = () => {
               </button>
             );
           })}
-          {coinResults.length === 0 ? (
+          {otcCoinResults.length === 0 ? (
             <p className={hs.sheetEmpty}>No coins found</p>
           ) : null}
         </div>

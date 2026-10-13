@@ -10,7 +10,7 @@ import MadalWalletConnect from 'components/MadalWalletConnect';
 import GeneralButton from 'components/Button';
 import {ChevronLeftIcon, PlusIcon, UnlinkIcon} from 'components/Home/HomeIcons';
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
-import useWalletConnectSessions from 'src/hooks/walletConnect/useWalletConnectSessions';
+import useWalletConnectSessions from 'src/hooks/protectedRoutes/wallet/walletConnect/useWalletConnectSessions';
 import styles from './WalletConnect.module.css';
 
 const WalletConnectImage = require(`assets/images/WalletConnect.png`).default;

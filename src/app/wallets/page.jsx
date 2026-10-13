@@ -48,7 +48,7 @@ import {MASK} from 'components/Home/AssetRow';
 import {
   readHideBalances,
   writeHideBalances,
-} from 'src/hooks/protectedRoutes/wallet/useHome';
+} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {
   CheckIcon,
   ChevronDownIcon,

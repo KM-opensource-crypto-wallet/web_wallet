@@ -350,6 +350,10 @@ const appConfig = (_, argv) => {
       new MiniCssExtractPlugin({
         filename: '[name].css',
         chunkFilename: 'chunks/[name].[contenthash:8].css',
+        // Pages import shared CSS Modules in different orders. Their class
+        // names are scoped, so order between them doesn't matter (Next.js
+        // sets the same for the web build).
+        ignoreOrder: true,
       }),
       new HtmlWebpackPlugin({
         template: './src/app/app.html',

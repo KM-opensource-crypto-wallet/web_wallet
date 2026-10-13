@@ -3,6 +3,7 @@ import {isBitcoinChain} from 'dok-wallet-blockchain-networks/helper';
 import {currencySymbol} from 'data/currency';
 import CoinIcon from 'components/CoinIcon';
 import GeneralButton from 'components/Button';
+import PriceChange from 'components/PriceChange';
 import {ChevronRightIcon} from './HomeIcons';
 import s from './Home.module.css';
 
@@ -28,7 +29,10 @@ const AssetRow = ({item, hidden, localCurrency, onPick}) => {
             <span className={s.assetNetwork}>{item.chain_display_name}</span>
           ) : null}
         </span>
-        <span className={s.assetName}>{item?.name}</span>
+        <span className={s.assetSub}>
+          <span className={s.assetName}>{item?.name}</span>
+          <PriceChange value={item?.priceChange24h} className={s.assetChange} />
+        </span>
       </span>
       <span className={s.assetAmounts}>
         <span className={s.assetBalance}>

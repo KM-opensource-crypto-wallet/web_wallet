@@ -1,22 +1,12 @@
 'use client';
-import React, {useState, useMemo, useCallback} from 'react';
-import {useRouter} from 'next/navigation';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
+import React from 'react';
 import s from './ManageCoins.module.css';
 import ModalAddCoins from 'components/ModalAddCoins';
 import ModalAddToken from 'components/ModalAddToken';
-import {
-  selectCoinsForCurrentWallet,
-  selectCurrentWallet,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {addOrToggleCoinInWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {validateSupportedChain} from 'dok-wallet-blockchain-networks/helper';
-import {isValidBrowser} from 'utils/common';
 import DraggableCryptoList from 'components/DraggableCryptoList';
 import GeneralButton from 'components/Button';
 import WalletSwitcher from 'components/Home/WalletSwitcher';
-import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/useHome';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -25,6 +15,7 @@ import {
   PlusIcon,
   SearchIcon,
 } from 'components/Home/HomeIcons';
+import useManageCoin from 'src/hooks/protectedRoutes/wallet/manageCoin/useManageCoin';
 
 const MoreIcon = () => (
   <svg width='20' height='20' viewBox='0 0 24 24' aria-hidden='true'>
@@ -34,70 +25,36 @@ const MoreIcon = () => (
   </svg>
 );
 
-const isShownHere = item =>
-  validateSupportedChain(item?.chain_name) &&
-  (item?.chain_name !== 'thorchain' || isValidBrowser());
-
-const isZeroBalance = item =>
-  !(Number(item?.totalAmount ?? item?.totalBalance) > 0);
-
 const ManageCoins = () => {
-  const router = useRouter();
-  const dispatch = useDispatch();
-  const allCoins = useSelector(selectCoinsForCurrentWallet, shallowEqual);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const localCurrency = useSelector(getLocalCurrency);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
-  const [modalAddTokenVisible, setModalAddTokenVisible] = useState(false);
-  const [isSortSelected, setIsSortSelected] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [switcherOpen, setSwitcherOpen] = useState(false);
-
-  const coins = useMemo(
-    () => (Array.isArray(allCoins) ? allCoins.filter(isShownHere) : []),
-    [allCoins],
-  );
-
-  const query = searchQuery.trim().toLowerCase();
-  // Without a search the full wallet list goes down unfiltered: reordering
-  // replaces the wallet's coin array and moves by index into it, so dropping
-  // unsupported coins here would delete them. Rows hide those themselves.
-  const list = useMemo(
-    () =>
-      query
-        ? coins.filter(
-            item =>
-              item?.name?.toLowerCase()?.includes(query) ||
-              item?.symbol?.toLowerCase()?.includes(query) ||
-              item?.chain_display_name?.toLowerCase()?.includes(query),
-          )
-        : Array.isArray(allCoins)
-          ? allCoins
-          : [],
-    [allCoins, coins, query],
-  );
-
-  const shownCount = coins.filter(item => item?.isInWallet).length;
-  const hiddenCount = coins.length - shownCount;
-  const walletName = currentWallet?.walletName || 'Wallet';
-  // Reordering works on the full list only.
-  const sorting = isSortSelected && !query;
-
-  // Toggling a coin already in the wallet only flips isInWallet.
-  const showAll = useCallback(() => {
-    setMenuOpen(false);
-    coins
-      .filter(item => !item?.isInWallet)
-      .forEach(item => dispatch(addOrToggleCoinInWallet(item)));
-  }, [coins, dispatch]);
-
-  const hideZeroBalances = useCallback(() => {
-    setMenuOpen(false);
-    coins
-      .filter(item => item?.isInWallet && isZeroBalance(item))
-      .forEach(item => dispatch(addOrToggleCoinInWallet(item)));
-  }, [coins, dispatch]);
+  const {
+    goBack,
+    walletName,
+    switcherOpen,
+    openSwitcher,
+    closeSwitcher,
+    localCurrency,
+    menuOpen,
+    toggleMenu,
+    closeMenu,
+    hideZeroBalances,
+    showAll,
+    startReorder,
+    sorting,
+    finishReorder,
+    searchQuery,
+    onSearchChange,
+    clearSearch,
+    shownCount,
+    hiddenCount,
+    list,
+    hasVisibleCoins,
+    modalAddCoinsVisible,
+    setModalAddCoinsVisible,
+    openAddCoins,
+    modalAddTokenVisible,
+    setModalAddTokenVisible,
+    openAddToken,
+  } = useManageCoin();
 
   return (
     <main className={s.page}>
@@ -107,14 +64,14 @@ const ManageCoins = () => {
           variant='unstyled'
           className={s.iconButton}
           aria-label='Back'
-          onClick={() => router.back()}>
+          onClick={goBack}>
           <ChevronLeftIcon size={24} />
         </GeneralButton>
         <GeneralButton
           variant='unstyled'
           className={s.heading}
           aria-haspopup='dialog'
-          onClick={() => setSwitcherOpen(true)}>
+          onClick={openSwitcher}>
           <h1 className={s.headingTitle}>Manage coins</h1>
           <span className={s.headingSub}>
             <span className={s.walletAvatar}>
@@ -131,7 +88,7 @@ const ManageCoins = () => {
             aria-label='More'
             aria-haspopup='menu'
             aria-expanded={menuOpen}
-            onClick={() => setMenuOpen(v => !v)}>
+            onClick={toggleMenu}>
             <MoreIcon />
           </GeneralButton>
           {menuOpen ? (
@@ -140,7 +97,7 @@ const ManageCoins = () => {
                 type='button'
                 className={s.menuBackdrop}
                 aria-label='Close menu'
-                onClick={() => setMenuOpen(false)}
+                onClick={closeMenu}
               />
               <div className={s.menu} role='menu'>
                 <button
@@ -161,11 +118,7 @@ const ManageCoins = () => {
                   type='button'
                   role='menuitem'
                   className={s.menuItem}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setSearchQuery('');
-                    setIsSortSelected(true);
-                  }}>
+                  onClick={startReorder}>
                   Reorder coins
                 </button>
               </div>
@@ -181,7 +134,7 @@ const ManageCoins = () => {
             <button
               type='button'
               className={s.sortDone}
-              onClick={() => setIsSortSelected(false)}>
+              onClick={finishReorder}>
               Done
             </button>
           </div>
@@ -191,7 +144,7 @@ const ManageCoins = () => {
               <SearchIcon size={18} />
               <input
                 value={searchQuery}
-                onChange={event => setSearchQuery(event.target.value)}
+                onChange={onSearchChange}
                 placeholder='Search coins in this wallet'
                 aria-label='Search coins'
               />
@@ -200,7 +153,7 @@ const ManageCoins = () => {
                   type='button'
                   className={s.clear}
                   aria-label='Clear search'
-                  onClick={() => setSearchQuery('')}>
+                  onClick={clearSearch}>
                   <CloseIcon size={12} />
                 </button>
               ) : null}
@@ -219,7 +172,7 @@ const ManageCoins = () => {
         )}
 
         <section className={s.card} aria-label='Coins'>
-          {list.some(isShownHere) ? (
+          {hasVisibleCoins ? (
             <DraggableCryptoList list={list} isSortSelected={sorting} />
           ) : (
             <div className={s.empty}>
@@ -232,10 +185,7 @@ const ManageCoins = () => {
         {!sorting ? (
           <div className={s.addDock}>
             <section className={s.card} aria-label='Add coins'>
-              <button
-                type='button'
-                className={s.addRow}
-                onClick={() => setModalAddCoinsVisible(true)}>
+              <button type='button' className={s.addRow} onClick={openAddCoins}>
                 <span className={s.addIcon}>
                   <PlusIcon size={17} />
                 </span>
@@ -247,10 +197,7 @@ const ManageCoins = () => {
                 </span>
                 <ChevronRightIcon size={16} className={s.addChevron} />
               </button>
-              <button
-                type='button'
-                className={s.addRow}
-                onClick={() => setModalAddTokenVisible(true)}>
+              <button type='button' className={s.addRow} onClick={openAddToken}>
                 <span className={`${s.addIcon} ${s.addIconAccent}`}>
                   <PlusIcon size={17} />
                 </span>
@@ -277,7 +224,7 @@ const ManageCoins = () => {
       />
       <WalletSwitcher
         visible={switcherOpen}
-        onClose={() => setSwitcherOpen(false)}
+        onClose={closeSwitcher}
         hidden={switcherOpen && readHideBalances()}
         localCurrency={localCurrency}
       />

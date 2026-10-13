@@ -1,38 +1,12 @@
 'use client';
 import styles from './ReceivePaymentUrl.module.css';
-import React, {useCallback, useMemo, useRef, useState} from 'react';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {useRouter} from 'next/navigation';
-import {
-  getUserCoinsOptions,
-  selectCurrentWallet,
-  selectUserCoins,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import React from 'react';
 import {Formik} from 'formik';
-import {
-  setPaymentUrlAmount,
-  setPaymentUrlCoin,
-  setPaymentUrlCurrencyAmount,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
-import {
-  getLocalCurrency,
-  getPaymentUrlAmount,
-  getPaymentUrlCoin,
-  getPaymentUrlCurrencyAmount,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {getDesktopWalletUrl} from 'whitelabel/whiteLabelInfo';
-import {getCoinSlug} from 'utils/common';
-import {paymentLinkPath} from 'utils/routes';
-import {
-  multiplyBNWithFixed,
-  validateNumberInInput,
-} from 'dok-wallet-blockchain-networks/helper';
-import BigNumber from 'bignumber.js';
 import CoinIcon from 'components/CoinIcon';
 import GeneralButton from 'components/Button';
 import CoinPicker from 'components/Home/CoinPicker';
 import WalletSwitcher from 'components/Home/WalletSwitcher';
-import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/useHome';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -40,62 +14,32 @@ import {
   CopyIcon,
   InfoIcon,
 } from 'components/Home/HomeIcons';
-import {currencySymbol} from 'data/currency';
-
-const coinKey = item => `${item?.chain_name}_${item?.symbol}`;
+import useReceivePaymentUrl from 'src/hooks/protectedRoutes/wallet/receivePaymentUrl/useReceivePaymentUrl';
 
 // Payment link: pick a coin and an amount, then share a link the payer opens
 // on their own wallet to send it.
 const ReceivePaymentUrl = () => {
-  const router = useRouter();
-  const coinOptions = useSelector(getUserCoinsOptions, shallowEqual);
-  const userCoins = useSelector(selectUserCoins);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const paymentUrlCoin = useSelector(getPaymentUrlCoin);
-  const paymentUrlAmount = useSelector(getPaymentUrlAmount);
-  const paymentUrlCurrencyAmount = useSelector(getPaymentUrlCurrencyAmount);
-  const dispatch = useDispatch();
-  const formikRef = useRef();
-  const localCurrency = useSelector(getLocalCurrency);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const walletName = currentWallet?.walletName || 'Wallet';
-  const fiatSymbol = currencySymbol[localCurrency] || '';
-
-  // The picker sheet lists full coin objects; keep only the ones that have a
-  // payment-link option (one per chain + symbol).
-  const pickerCoins = useMemo(() => {
-    const keys = new Set(coinOptions.map(item => item.value));
-    const seen = new Set();
-    return (userCoins || []).filter(item => {
-      const key = coinKey(item);
-      if (!keys.has(key) || seen.has(key)) {
-        return false;
-      }
-      seen.add(key);
-      return true;
-    });
-  }, [coinOptions, userCoins]);
-
-  const onPickCoin = useCallback(
-    coin => {
-      setPickerOpen(false);
-      const foundItem = coinOptions.find(item => item.value === coinKey(coin));
-      if (foundItem) {
-        dispatch(setPaymentUrlCoin(foundItem));
-        formikRef?.current?.setFieldValue('coin', foundItem);
-      }
-    },
-    [coinOptions, dispatch],
-  );
-
-  const copyUrl = useCallback(url => {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  }, []);
+  const {
+    goBack,
+    walletName,
+    switcherOpen,
+    openSwitcher,
+    closeSwitcher,
+    localCurrency,
+    fiatSymbol,
+    formikRef,
+    initialValues,
+    getPaymentLink,
+    changeAmount,
+    changeCurrencyAmount,
+    pickerOpen,
+    openPicker,
+    closePicker,
+    pickerCoins,
+    onPickCoin,
+    copied,
+    copyUrl,
+  } = useReceivePaymentUrl();
 
   return (
     <main className={styles.page}>
@@ -105,14 +49,14 @@ const ReceivePaymentUrl = () => {
           variant='unstyled'
           className={styles.iconButton}
           aria-label='Back'
-          onClick={() => router.back()}>
+          onClick={goBack}>
           <ChevronLeftIcon size={24} />
         </GeneralButton>
         <GeneralButton
           variant='unstyled'
           className={styles.heading}
           aria-haspopup='dialog'
-          onClick={() => setSwitcherOpen(true)}>
+          onClick={openSwitcher}>
           <h1 className={styles.headingTitle}>Payment link</h1>
           <span className={styles.headingSub}>
             <span className={styles.walletAvatar}>
@@ -128,28 +72,12 @@ const ReceivePaymentUrl = () => {
       <div className={styles.column}>
         <Formik
           enableReinitialize={true}
-          initialValues={{
-            coin: paymentUrlCoin,
-            amount: paymentUrlAmount || '',
-            currencyAmount: paymentUrlCurrencyAmount || '',
-          }}
+          initialValues={initialValues}
           innerRef={formikRef}
           onSubmit={() => {}}>
           {({handleBlur, values, errors, setFieldValue}) => {
-            // Wallet-agnostic on purpose: the payer opens this on their own
-            // wallet, and the /wallet/home forwarder resolves the coin from
-            // the slug in the path.
-            const selectedCoin = values?.coin?.options;
-            const symbol = selectedCoin?.symbol || '';
-            const pickedCoin = pickerCoins.find(
-              item => coinKey(item) === values?.coin?.value,
-            );
-            const url = `${getDesktopWalletUrl()}${paymentLinkPath(
-              getCoinSlug(selectedCoin),
-            )}?address=${encodeURIComponent(
-              selectedCoin?.walletAddress ?? '',
-            )}&amount=${encodeURIComponent(values?.amount ?? '')}`;
-            const hasLink = !!(values?.amount && selectedCoin?.chain_name);
+            const {selectedCoin, symbol, pickedCoin, url, hasLink} =
+              getPaymentLink(values);
             return (
               <>
                 <section className={styles.card} aria-label='Payment details'>
@@ -159,7 +87,7 @@ const ReceivePaymentUrl = () => {
                       type='button'
                       className={styles.coinCard}
                       aria-haspopup='dialog'
-                      onClick={() => setPickerOpen(true)}>
+                      onClick={openPicker}>
                       {selectedCoin ? (
                         <>
                           <span className={styles.coinIcon}>
@@ -208,21 +136,9 @@ const ReceivePaymentUrl = () => {
                         inputMode='decimal'
                         name='amount'
                         disabled={!selectedCoin}
-                        onChange={e => {
-                          const tempValues = validateNumberInInput(
-                            e.target.value,
-                            selectedCoin?.decimal,
-                          );
-                          dispatch(setPaymentUrlAmount(tempValues));
-                          const tempAmount = multiplyBNWithFixed(
-                            tempValues,
-                            selectedCoin?.currencyRate,
-                            2,
-                          );
-                          setFieldValue('amount', tempValues);
-                          setFieldValue('currencyAmount', tempAmount);
-                          dispatch(setPaymentUrlCurrencyAmount(tempAmount));
-                        }}
+                        onChange={e =>
+                          changeAmount(e, selectedCoin, setFieldValue)
+                        }
                         onBlur={handleBlur('amount')}
                         value={values.amount}
                         type='number'
@@ -256,21 +172,9 @@ const ReceivePaymentUrl = () => {
                         inputMode='decimal'
                         name='currencyAmount'
                         disabled={!selectedCoin}
-                        onChange={e => {
-                          const tempValues = validateNumberInInput(
-                            e.target.value,
-                            2,
-                          );
-                          setFieldValue('currencyAmount', tempValues);
-                          dispatch(setPaymentUrlCurrencyAmount(tempValues));
-                          const tempAmount = new BigNumber(tempValues)
-                            .dividedBy(
-                              new BigNumber(selectedCoin?.currencyRate),
-                            )
-                            .toFixed(Number(selectedCoin?.decimal));
-                          dispatch(setPaymentUrlAmount(tempAmount));
-                          setFieldValue('amount', tempAmount);
-                        }}
+                        onChange={e =>
+                          changeCurrencyAmount(e, selectedCoin, setFieldValue)
+                        }
                         onBlur={handleBlur('currencyAmount')}
                         value={values.currencyAmount}
                         type='number'
@@ -333,7 +237,7 @@ const ReceivePaymentUrl = () => {
 
       <CoinPicker
         visible={pickerOpen}
-        onClose={() => setPickerOpen(false)}
+        onClose={closePicker}
         title='Request which coin?'
         coins={pickerCoins}
         hidden={pickerOpen && readHideBalances()}
@@ -342,7 +246,7 @@ const ReceivePaymentUrl = () => {
       />
       <WalletSwitcher
         visible={switcherOpen}
-        onClose={() => setSwitcherOpen(false)}
+        onClose={closeSwitcher}
         hidden={switcherOpen && readHideBalances()}
         localCurrency={localCurrency}
       />

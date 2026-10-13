@@ -29,6 +29,12 @@ export function resolveWhiteLabelHost(host) {
   if (process.env.NODE_ENV === 'development' && devDomain) {
     return devDomain;
   }
+  // A local production build (`yarn build && yarn start`) honours it too,
+  // but only for localhost requests, so a deployed host is never overridden.
+  const hostname = (host ?? '').toLowerCase().split(':')[0];
+  if (devDomain && ['localhost', '127.0.0.1'].includes(hostname)) {
+    return devDomain;
+  }
   return host;
 }
 
