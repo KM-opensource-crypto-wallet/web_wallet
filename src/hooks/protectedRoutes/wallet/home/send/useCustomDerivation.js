@@ -1,13 +1,9 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
-import {
-  isAdding50MoreAddresses,
-  selectCurrentCoin,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
   allDerivePath,
   customObj,
@@ -22,6 +18,7 @@ import {
   addCustomDeriveAddress,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {downloadCsv} from 'utils/common';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 const generatePaths = (chain, label) => {
   const config = DERIVATION_CONFIG[chain];
@@ -41,8 +38,7 @@ const generatePaths = (chain, label) => {
 
 // Logic for the Custom Derivation screen.
 export const useCustomDerivation = () => {
-  const currentCoin = useSelector(selectCurrentCoin);
-  const isAdding50more = useSelector(isAdding50MoreAddresses);
+  const {currentCoin, isAdding50more} = useWallet();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const routes = useAppRoutes();
@@ -201,7 +197,6 @@ export const useCustomDerivation = () => {
   };
 
   return {
-    goBack: () => router.back(),
     currentCoin,
 
     // Add-an-address form

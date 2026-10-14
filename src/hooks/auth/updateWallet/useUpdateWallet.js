@@ -1,25 +1,15 @@
 import {useCallback, useState} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {toast} from 'react-toastify';
 import * as Yup from 'yup';
 import {walletRoutes} from 'utils/routes';
 import {
-  selectCurrentWalletClientId,
-  selectAllWalletName,
-  selectAllWallets,
-  selectCurrentWallet,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {
   deleteWallet,
   updateWalletName,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {
-  selectIsSyncing,
-  selectSyncingWalletClientId,
-  selectSyncingWalletName,
-} from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSelectors';
 import useCoinScanCooldown from 'src/hooks/useCoinScanCooldown';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 // Wallet settings (rename, backups, hide, scan) for `?walletName=`.
 export const useUpdateWallet = () => {
@@ -29,10 +19,15 @@ export const useUpdateWallet = () => {
   const walletName = searchParams.get('walletName');
   const walletClientId = searchParams.get('walletClientId');
 
-  const currentWallet = useSelector(selectCurrentWallet);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
-  const allWalletName = useSelector(selectAllWalletName, shallowEqual);
-  const allWallets = useSelector(selectAllWallets);
+  const {
+    currentWallet,
+    currentWalletClientId,
+    allWalletName,
+    allWallets,
+    isSyncing: isCoinSyncRunning,
+    syncingWalletClientId,
+    syncingWalletName,
+  } = useWallet();
   // The other wallets' names, captured once at mount (the schema below is
   // rebuilt every render, so this must not be a ref read during render).
   const [finalAllWallets] = useState(() =>
@@ -55,9 +50,6 @@ export const useUpdateWallet = () => {
   const scanWallet = editingWallet ?? currentWallet;
   const {isAvailable: isScanAvailable, remainingLabel: scanRemainingLabel} =
     useCoinScanCooldown(scanWallet?.lastCoinsScanTimestamp);
-  const isCoinSyncRunning = useSelector(selectIsSyncing);
-  const syncingWalletClientId = useSelector(selectSyncingWalletClientId);
-  const syncingWalletName = useSelector(selectSyncingWalletName);
   const isScanningThisWallet =
     isCoinSyncRunning && syncingWalletClientId === scanTargetClientId;
   // Only one scan can run at a time - lock the row while another wallet scans

@@ -13,10 +13,10 @@ import {
 } from 'components/Home/HomeIcons';
 import {SlidersIcon} from 'components/Transactions/TxIcons';
 import useTransaction from 'src/hooks/protectedRoutes/wallet/home/send/useTransaction';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const TransactionsList = () => {
   const {
-    goBack,
     walletName,
     currentCoin,
     localCurrency,
@@ -49,6 +49,7 @@ const TransactionsList = () => {
     showInfo,
     toggleInfo,
   } = useTransaction('list');
+  const {goBack} = useNavigation();
 
   return (
     <main className={s.page}>

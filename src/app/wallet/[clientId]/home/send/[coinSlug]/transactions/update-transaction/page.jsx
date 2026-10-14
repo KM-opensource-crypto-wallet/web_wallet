@@ -10,10 +10,10 @@ import {Formik} from 'formik';
 import Loading from 'components/Loading';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import useTransaction from 'src/hooks/protectedRoutes/wallet/home/send/useTransaction';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const UpdateTransaction = () => {
   const {
-    goBack,
     currentCoin,
     updateTransactionData,
     isUpdateLoading,
@@ -28,6 +28,7 @@ const UpdateTransaction = () => {
     closeUpdateModal,
     onUpdateConfirmed,
   } = useTransaction('update');
+  const {goBack} = useNavigation();
 
   const renderBox = () => {
     const tx = updateTransactionData?.transactionData;

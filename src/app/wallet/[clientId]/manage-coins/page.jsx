@@ -16,6 +16,7 @@ import {
   SearchIcon,
 } from 'components/Home/HomeIcons';
 import useManageCoin from 'src/hooks/protectedRoutes/wallet/manageCoin/useManageCoin';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const MoreIcon = () => (
   <svg width='20' height='20' viewBox='0 0 24 24' aria-hidden='true'>
@@ -27,7 +28,6 @@ const MoreIcon = () => (
 
 const ManageCoins = () => {
   const {
-    goBack,
     walletName,
     switcherOpen,
     openSwitcher,
@@ -55,6 +55,7 @@ const ManageCoins = () => {
     setModalAddTokenVisible,
     openAddToken,
   } = useManageCoin();
+  const {goBack} = useNavigation();
 
   return (
     <main className={s.page}>

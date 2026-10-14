@@ -1,14 +1,7 @@
 'use client';
 import {walletRoutes} from 'utils/routes';
 import React from 'react';
-import {useSelector, useDispatch} from 'react-redux';
-import {
-  getLocalCurrency,
-  getLockTime,
-  isWalletReset,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {getTutorialVideos} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
+import {useDispatch} from 'react-redux';
 import {setResetWallet} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import s from './Settings.module.css';
 import Link from 'next/link';
@@ -23,6 +16,7 @@ import {getWebLockTimeLabel} from 'utils/autoLock';
 import GeneralButton from 'components/Button';
 import {ChevronLeftIcon, ChevronRightIcon} from 'components/Home/HomeIcons';
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
+import useWallet from 'src/hooks/wallet/useWallet';
 import {
   BranchesIcon,
   BugIcon,
@@ -113,11 +107,14 @@ const Section = ({title, children}) => (
 const Settings = () => {
   const dispatch = useDispatch();
   const router = useRouter();
-  const localCurrency = useSelector(getLocalCurrency);
-  const lockTimeDisplay = getWebLockTimeLabel(useSelector(getLockTime));
-  const rateLimitCheck = useSelector(isWalletReset);
-  const tutorialVideos = useSelector(getTutorialVideos);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
+  const {
+    localCurrency,
+    lockTime,
+    rateLimitCheck,
+    tutorialVideos,
+    currentWalletClientId,
+  } = useWallet();
+  const lockTimeDisplay = getWebLockTimeLabel(lockTime);
   // Before a wallet exists (password set, wallets reset or all deleted) the
   // legacy /manage-coins forwarder resolves this once one does, instead of
   // linking at /wallet/undefined/manage-coins.

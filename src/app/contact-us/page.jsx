@@ -9,10 +9,8 @@ import {
   getContactUsEmail,
 } from 'src/whitelabel/whiteLabelInfo';
 import {ThemeContext} from 'theme/ThemeContext';
-import {useSelector} from 'react-redux';
-import {currencySymbol} from 'data/currency';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import cards from 'data/cards';
+import {currencySymbol} from 'src/data/lists/currency';
+import cards from 'src/data/lists/cards';
 import {useRouter} from 'next/navigation';
 import GeneralButton from 'components/Button';
 import {
@@ -22,6 +20,7 @@ import {
 } from 'components/Home/HomeIcons';
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import useWalletConnectSessions from 'src/hooks/protectedRoutes/wallet/walletConnect/useWalletConnectSessions';
+import useWallet from 'src/hooks/wallet/useWallet';
 import {MailIcon, TelegramIcon} from './ContactIcons';
 
 const hostOf = url => {
@@ -35,7 +34,7 @@ const hostOf = url => {
 const ContactUs = () => {
   const router = useRouter();
   const {themeType} = useContext(ThemeContext);
-  const localCurrency = useSelector(getLocalCurrency);
+  const {localCurrency} = useWallet();
   const {sessions, disconnect, isDisconnecting} = useWalletConnectSessions();
   const contactEmail = getContactUsEmail();
 

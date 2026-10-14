@@ -4,7 +4,7 @@ import {Formik} from 'formik';
 import styles from './CryptoProviders.module.css';
 import Image from 'next/image';
 import {validateNumberInInput} from 'dok-wallet-blockchain-networks/helper';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import GeneralButton from 'components/Button';
 import HomeSheet from 'components/Home/HomeSheet';
 import WalletSwitcher from 'components/Home/WalletSwitcher';
@@ -22,6 +22,7 @@ import {
 import Loading from 'components/Loading';
 import ModalAddCoins from 'components/ModalAddCoins';
 import useBuyCrypto from 'src/hooks/protectedRoutes/wallet/buyCrypto/useBuyCrypto';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const PRESETS = ['100', '250', '500'];
 
@@ -47,7 +48,6 @@ const formatNumber = (value, max = 6) =>
 
 const CryptoProviders = () => {
   const {
-    goBack,
     walletName,
     switcherOpen,
     openSwitcher,
@@ -80,6 +80,7 @@ const CryptoProviders = () => {
     modalAddCoinsVisible,
     setModalAddCoinsVisible,
   } = useBuyCrypto();
+  const {goBack} = useNavigation();
 
   return (
     <main className={styles.page}>

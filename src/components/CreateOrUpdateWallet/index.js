@@ -1,7 +1,7 @@
 import React from 'react';
 import {Formik} from 'formik';
 import {useRouter, useSearchParams} from 'next/navigation';
-import {wallet} from 'data/data';
+import {wallet} from 'src/data/lists/data';
 import ModalDelete from 'components/ModalDelete';
 import useUpdateWallet from 'src/hooks/auth/updateWallet/useUpdateWallet';
 import GeneralButton from 'src/components/Button';

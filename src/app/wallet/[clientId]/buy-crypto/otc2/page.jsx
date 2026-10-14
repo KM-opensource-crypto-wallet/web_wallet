@@ -1,7 +1,8 @@
 'use client';
 import styles from './OTC2Screen.module.css';
 import React from 'react';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
+import {CONSENTS, amountOptions, sourceOfFundList} from 'src/data/lists/otc';
 import CoinIcon from 'components/CoinIcon';
 import GeneralButton from 'components/Button';
 import HomeSheet from 'components/Home/HomeSheet';
@@ -14,52 +15,10 @@ import {
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import hs from 'components/Home/Home.module.css';
 import useBuyCrypto from 'src/hooks/protectedRoutes/wallet/buyCrypto/useBuyCrypto';
-
-// Provider documents the two consents link to.
-const CONSENTS = [
-  {
-    key: 'terms',
-    label: 'terms and conditions',
-    url: 'https://ozaraglobal.com/terms.php',
-  },
-  {
-    key: 'risk',
-    label: 'Risk disclaimer',
-    url: 'https://ozaraglobal.com/policy.php',
-  },
-];
-
-const amountOptions = [
-  {
-    label: '5,000 to 10,000',
-    value: '5,000 to 10,000',
-  },
-  {
-    label: '10,000 to 20,000',
-    value: '10,000 to 20,000',
-  },
-  {
-    label: '20,000 to 50,000',
-    value: '20,000 to 50,000',
-  },
-  {
-    label: '50,000 to 100,000',
-    value: '50,000 to 100,000',
-  },
-  {
-    label: 'More than 100,000',
-    value: 'More than 100,000',
-  },
-];
-const sourceOfFundList = [
-  {label: 'Employment'},
-  {label: 'Investment'},
-  {label: 'Other'},
-];
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const OTC2Screen = () => {
   const {
-    goBack,
     localCurrency,
     isBuy,
     setIsBuy,
@@ -81,6 +40,7 @@ const OTC2Screen = () => {
     otcCoinResults,
     pickOtcCoin,
   } = useBuyCrypto();
+  const {goBack} = useNavigation();
 
   const fiatSymbol = currencySymbol[localCurrency] || '';
   const selectedCoin = selectedCryptoCoin?.options;

@@ -1,10 +1,6 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {useParams, useRouter} from 'next/navigation';
-import {
-  selectAllWalletName,
-  selectAllWallets,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
   clearWalletHideSettings,
   isSecretCodeInUseByOtherWallet,
@@ -21,7 +17,8 @@ import {
   SECRET_CODE_MAX_LENGTH,
   SECRET_CODE_MIN_LENGTH,
 } from 'utils/hideWallet';
-import {RELOCK_OPTIONS_UI} from 'data/relockOptions';
+import {RELOCK_OPTIONS_UI} from 'src/data/lists/relockOptions';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 // Logic for the Hide wallet screen.
 export const useWallets = () => {
@@ -30,8 +27,7 @@ export const useWallets = () => {
   // Wallet being hidden - always the wallet named in the URL (may not be the
   // currently active wallet, e.g. hiding another wallet from its Edit screen)
   const {clientId: walletClientId} = useParams();
-  const allWallets = useSelector(selectAllWallets);
-  const allWalletName = useSelector(selectAllWalletName, shallowEqual);
+  const {allWallets, allWalletName} = useWallet();
   const editingWallet = allWallets.find(
     item => item?.clientId === walletClientId,
   );
@@ -267,7 +263,6 @@ export const useWallets = () => {
 
   return {
     // Top bar
-    goBack: () => router.back(),
     walletName: editingWallet?.walletName,
     openInfoModal: () => setHideModal('info'),
 

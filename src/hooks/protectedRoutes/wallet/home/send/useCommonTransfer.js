@@ -6,21 +6,13 @@ import {
   useEffect,
   useMemo,
 } from 'react';
-import {useSelector, useDispatch} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {useRouter} from 'next/navigation';
 import BigNumber from 'bignumber.js';
 import dayjs from 'dayjs';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {sendFunds} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {
-  getTransferData,
-  getTransferDataCustomError,
-  getTransferDataFeeSuccess,
-  getTransferDataLoading,
-  getTransferDataSubmitting,
-} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSelector';
 import {calculateEstimateFee} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import {
   delay,
   getCustomizePublicAddress,
@@ -29,41 +21,38 @@ import {
   isEVMChain,
   isFeesOptionChain,
 } from 'dok-wallet-blockchain-networks/helper';
-import {
-  getBalanceForNativeCoin,
-  getCurrentWalletPhrase,
-  getFailedTransaction,
-  selectCurrentWallet,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {getRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
-import {
-  selectExchangeAmountFrom,
-  selectExchangeAmountTo,
-  selectExchangeFromAsset,
-  selectExchangeFromWallet,
-  selectExchangeLoading,
-  selectExchangeToAddress,
-  selectExchangeToAsset,
-  selectExchangeToName,
-  selectSelectedExchangeChain,
-} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
-import {getSellCryptoRequestDetails} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 import useAdvancedFees from 'src/hooks/useAdvancedFees';
 import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 // Logic for the shared confirm screen (components/CommonTransfer), used by
 // send funds, staking, swap, sell crypto, NFT, vote and batch transactions.
 // The flow comes from routeStateData.fromScreen.
 export const useCommonTransfer = () => {
-  const localCurrency = useSelector(getLocalCurrency);
-  const transferData = useSelector(getTransferData);
-  const isSubmitting = useSelector(getTransferDataSubmitting);
-  const isLoading = useSelector(getTransferDataLoading);
-  const feeSuccess = useSelector(getTransferDataFeeSuccess);
-  const customError = useSelector(getTransferDataCustomError);
-  const balance = useSelector(getBalanceForNativeCoin);
-  const phrase = useSelector(getCurrentWalletPhrase);
+  const {
+    localCurrency,
+    transferData,
+    transferDataSubmitting: isSubmitting,
+    transferDataLoading: isLoading,
+    feeSuccess,
+    customError,
+    nativeCoinBalance: balance,
+    currentPhrase: phrase,
+    failedTransaction,
+    sellCryptoRequestDetails,
+    currentWallet,
+    routeStateData: routeData,
+    selectedFromAsset,
+    selectedFromWallet,
+    selectedToAsset,
+    amountFrom,
+    amountTo,
+    isExchangeLoading,
+    exchangeToName,
+    exchangeToAddress,
+    selectedExchangeChain,
+  } = useWallet();
   // Hedera: the recipient's ledger account id; a missing id means the
   // transfer will auto-create the account (sender pays).
   const hederaToAddress =
@@ -79,31 +68,18 @@ export const useCommonTransfer = () => {
       address: hederaToAddress,
       getHederaChain,
     });
-  const failedTransaction = useSelector(getFailedTransaction);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isFetchingFeesAgain, setIsFetchingFeesAgain] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [isAdvancedOptionsOpen, setIsAdvancedOptionsOpen] = useState(false);
-  const sellCryptoRequestDetails = useSelector(getSellCryptoRequestDetails);
   const isFetchingRef = useRef(false);
   const isPauseCalculateFees = useRef(false);
 
   const [estimateStatus, setEstimateStatus] = useState('pending'); // 'pending' | 'success' | 'failed'
   const dispatch = useDispatch();
-  const currentWallet = useSelector(selectCurrentWallet);
-  const routeData = useSelector(getRouteStateData);
   const routeStateData = routeData?.transfer;
   const fromScreen = routeStateData?.fromScreen;
   const isCreateVote = routeStateData?.isCreateVote;
-  const selectedFromAsset = useSelector(selectExchangeFromAsset);
-  const selectedFromWallet = useSelector(selectExchangeFromWallet);
-  const selectedToAsset = useSelector(selectExchangeToAsset);
-  const amountFrom = useSelector(selectExchangeAmountFrom);
-  const amountTo = useSelector(selectExchangeAmountTo);
-  const isExchangeLoading = useSelector(selectExchangeLoading);
-  const exchangeToName = useSelector(selectExchangeToName);
-  const exchangeToAddress = useSelector(selectExchangeToAddress);
-  const selectedExchangeChain = useSelector(selectSelectedExchangeChain);
 
   const isExchangeScreen = fromScreen === 'Exchange';
   const isSendFundScreen = fromScreen === 'SendFunds';
@@ -661,7 +637,6 @@ export const useCommonTransfer = () => {
   return {
     // Screen
     title,
-    goBack: () => router.back(),
     isLoading,
     isExchangeLoading,
     ready,

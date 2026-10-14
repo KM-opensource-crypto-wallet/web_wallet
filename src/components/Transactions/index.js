@@ -1,6 +1,6 @@
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import React, {useState, useRef, useCallback, useMemo} from 'react';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import s from './Transactions.module.css';
 import dayjs from 'dayjs';
 import {useRouter} from 'next/navigation';

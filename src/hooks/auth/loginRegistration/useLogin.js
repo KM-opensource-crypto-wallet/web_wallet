@@ -1,6 +1,6 @@
 import {useCallback, useState} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {
   handleAttempts,
   loadingOff,
@@ -8,9 +8,7 @@ import {
   resetAttempts,
   setLastAttempt,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
-import {getLastAttempt} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
 import {refreshCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {isWalletReset} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {
   UNLOCK_ERROR_CODES,
   isInvalidPassword,
@@ -22,23 +20,20 @@ import {resolvePostUnlockRoute} from 'utils/postUnlockRoute';
 import {validationSchemaLogin} from 'utils/validationSchema';
 import {setLastActiveTime} from 'utils/localStorageData';
 import {skipLockOnNextLoad} from 'utils/lockScreen';
-
-const INITIAL_VALUES = {password: ''};
-
-// Long enough for the replayed navigation to settle (or hard-reload), short
-// enough that a later manual reload still locks.
-const REPLAY_SKIP_LOCK_TTL_MS = 10000;
+import useWallet from 'src/hooks/wallet/useWallet';
+import {
+  LOGIN_INITIAL_VALUES,
+  REPLAY_SKIP_LOCK_TTL_MS,
+} from 'src/data/constants';
 
 export const useLogin = () => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [wrong, setWrong] = useState(false);
-  // A problem that must not be dismissed as "wrong password": wallets without
-  // keys in the vault, or secure storage unavailable.
   const [blocked, setBlocked] = useState(null);
+
   const router = useRouter();
   const dispatch = useDispatch();
-  const rateLimitCheck = useSelector(isWalletReset);
-  const lastAttempt = useSelector(getLastAttempt);
+  const {rateLimitCheck, lastAttempt} = useWallet();
   const searchParams = useSearchParams();
 
   const openResetModal = useCallback(() => setShowResetModal(true), []);
@@ -105,7 +100,7 @@ export const useLogin = () => {
   );
 
   return {
-    initialValues: INITIAL_VALUES,
+    initialValues: LOGIN_INITIAL_VALUES,
     validationSchema: validationSchemaLogin,
     handleSubmit,
     wrong,

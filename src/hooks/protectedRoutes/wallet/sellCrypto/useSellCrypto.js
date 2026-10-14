@@ -1,20 +1,8 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {useParams, useRouter} from 'next/navigation';
 import {toast} from 'react-toastify';
 import {walletRoutes} from 'utils/routes';
-import {
-  getSellCryptoError,
-  getSellCryptoLoading,
-  getSellCryptoProviders,
-} from 'dok-wallet-blockchain-networks/redux/sellCrypto/sellCryptoSelectors';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {
-  getUserCoinsOptions,
-  selectCurrentWallet,
-  selectCurrentWalletClientId,
-  selectVisibleWallets,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {validateNumber} from 'dok-wallet-blockchain-networks/helper';
 import {
   debounceFetchSellCryptoQuote,
@@ -30,6 +18,7 @@ import {setCurrentTransferSuccess} from 'dok-wallet-blockchain-networks/redux/cu
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {sellCryptoValidation} from 'src/utils/validationSchema';
 import {popupCenter} from 'src/utils/common';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 // Sell quotes: the best payout is the largest fiat amount; the others show
 // how far below it they are.
@@ -56,11 +45,16 @@ const rankQuotes = providers => {
 
 // Logic for the Sell crypto screen.
 export const useSellCrypto = () => {
-  const localCurrency = useSelector(getLocalCurrency);
-  const coinOptions = useSelector(getUserCoinsOptions, shallowEqual);
-  const cryptoProviders = useSelector(getSellCryptoProviders);
-  const isLoading = useSelector(getSellCryptoLoading);
-  const currentWallet = useSelector(selectCurrentWallet);
+  const {
+    localCurrency,
+    coinOptions,
+    sellCryptoProviders: cryptoProviders,
+    sellCryptoLoading: isLoading,
+    currentWallet,
+    visibleWallets: allWallets,
+    currentWalletClientId,
+    sellCryptoError,
+  } = useWallet();
   const dispatch = useDispatch();
   const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
   const [pageLoading, setPageLoading] = useState(false);
@@ -71,11 +65,6 @@ export const useSellCrypto = () => {
   const [pickedKey, setPickedKey] = useState(null);
   const [addressCopied, setAddressCopied] = useState(false);
   const copiedTimerRef = useRef(null);
-
-  const allWallets = useSelector(selectVisibleWallets);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
-
-  const sellCryptoError = useSelector(getSellCryptoError);
 
   useEffect(() => () => clearTimeout(copiedTimerRef.current), []);
 
@@ -332,7 +321,6 @@ export const useSellCrypto = () => {
 
   return {
     // Top bar
-    goBack: () => router.back(),
     walletName,
     switcherOpen,
     openSwitcher: () => setSwitcherOpen(true),

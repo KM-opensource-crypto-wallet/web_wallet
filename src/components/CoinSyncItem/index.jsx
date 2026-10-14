@@ -3,7 +3,7 @@ import React, {memo, useCallback} from 'react';
 import {useSelector} from 'react-redux';
 import {isBitcoinChain} from 'dok-wallet-blockchain-networks/helper';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import CoinIcon from 'components/CoinIcon';
 import {CheckIcon} from 'components/Home/HomeIcons';
 import styles from './CoinSyncItem.module.css';

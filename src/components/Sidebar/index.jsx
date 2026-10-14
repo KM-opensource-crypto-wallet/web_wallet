@@ -1,7 +1,7 @@
 'use client';
 import React, {useMemo, useState} from 'react';
 import s from './Sidebar.module.css';
-import sidebarList from 'data/sidebarList';
+import sidebarList from 'src/data/lists/sidebarList';
 import ActiveLink from 'components/ActiveLink';
 import {usePathname} from 'next/navigation';
 import ModalReset from 'components/ModalReset';

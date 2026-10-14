@@ -2,7 +2,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
 import BigNumber from 'bignumber.js';
 import {v4} from 'uuid';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import {reportThunkRejection} from 'utils/thunkErrors';
 import {copyToClipboard} from 'utils/copyToClipboard';
@@ -10,14 +10,7 @@ import {showToast} from 'src/utils/toast';
 import {validationSchemaSendFunds} from 'utils/validationSchema';
 import {coinRoutes} from 'utils/routes';
 import {getCoinSlug, isValidBrowser} from 'utils/common';
-import {currencySymbol} from 'data/currency';
-import {
-  getCurrentWalletIsAddMoreAddressPopupHidden,
-  isImportWalletWithPrivateKey,
-  selectCurrentCoin,
-  selectCurrentWallet,
-  selectUserCoins,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {currencySymbol} from 'src/data/lists/currency';
 import {
   addEVMAndTronDeriveAddresses,
   refreshCurrentCoin,
@@ -27,24 +20,14 @@ import {
   setSelectedDeriveAddress,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {
-  getCryptoProviders,
-  getExchangeProviders,
-} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {
   calculateEstimateFee,
   clearSelectedUTXOs,
   updateCurrentTransferData,
 } from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import {getTransferData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSelector';
 import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {addBatchTransaction} from 'dok-wallet-blockchain-networks/redux/batchTransaction/batchTransactionSlice';
-import {
-  getCustomRPCWithData,
-  selectAllCustomRpc,
-} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
-import {getSentAddressHistory} from 'dok-wallet-blockchain-networks/redux/sentAddressHistory/sentAddressHistorySelectors';
+import {getCustomRPCWithData} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 import {findLookalikeAddress} from 'dok-wallet-blockchain-networks/helper/addressPoisoning';
 import {getBolt11InvoiceAmount} from 'dok-wallet-blockchain-networks/helper/bolt11';
@@ -65,10 +48,9 @@ import {
   validateSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
 import {getVisibleDeriveAddresses} from 'dok-wallet-blockchain-networks/service/bitcoinHdAddress';
-import {QUICK_ACTIONS} from 'data/quickActions';
-
-// How many recent recipients Send Funds offers.
-const MAX_RECENTS = 6;
+import {QUICK_ACTIONS} from 'src/data/lists/quickActions';
+import useWallet from 'src/hooks/wallet/useWallet';
+import {MAX_RECENTS} from 'src/data/constants';
 
 // Logic for the coin screens. `screen` is 'coin' (the coin's Send screen,
 // components/Send) or 'sendFunds' (components/SendFunds); it decides which
@@ -77,15 +59,19 @@ export const useSend = screen => {
   const router = useRouter();
   const routes = useAppRoutes();
   const dispatch = useDispatch();
-  const localCurrency = useSelector(getLocalCurrency);
-  const currentCoin = useSelector(selectCurrentCoin);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const buyProviders = useSelector(getCryptoProviders);
-  const swapProviders = useSelector(getExchangeProviders);
-  const isAddMoreAddressPopupHide = useSelector(
-    getCurrentWalletIsAddMoreAddressPopupHidden,
-  );
-  const isImportWithPrivateKey = useSelector(isImportWalletWithPrivateKey);
+  const {
+    localCurrency,
+    currentCoin,
+    currentWallet,
+    cryptoProviders: buyProviders,
+    exchangeProviders: swapProviders,
+    isAddMoreAddressPopupHide,
+    isImportWithPrivateKey,
+    transferData,
+    allCustomRPC,
+    sentAddressHistory,
+    userCoins,
+  } = useWallet();
 
   const [modalUnclaimDepositVisible, setModalUnclaimDepositVisible] =
     useState(false);
@@ -256,10 +242,6 @@ export const useSend = screen => {
   const searchParams = useSearchParams();
   const qrAddress = searchParams.get('address');
   const qrAmount = searchParams.get('amount');
-  const transferData = useSelector(getTransferData);
-  const allCustomRPC = useSelector(selectAllCustomRpc);
-  const sentAddressHistory = useSelector(getSentAddressHistory);
-  const userCoins = useSelector(selectUserCoins);
   const isLightning = currentCoin?.chain_name === 'bitcoin_lightning';
   const isHedera = currentCoin?.chain_name === 'hedera';
   const [poisonWarning, setPoisonWarning] = useState(null);
@@ -697,7 +679,6 @@ export const useSend = screen => {
 
   return {
     // Top bar
-    goBack: () => router.back(),
     walletName,
     switcherOpen,
     openSwitcher: () => setSwitcherOpen(true),

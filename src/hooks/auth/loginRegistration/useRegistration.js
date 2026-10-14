@@ -7,23 +7,11 @@ import {
   loadingOn,
   signUpSuccess,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
+import {PASSWORD_RULES} from 'src/data/lists/passwordRules';
 import {UNLOCK_ERROR_CODES, createAccount} from 'security/unlockFlow';
 import {captureError} from 'services/logger';
 import {validationSchemaRegistration} from 'utils/validationSchema';
-
-const INITIAL_VALUES = {password: '', passConfirm: ''};
-
-// The rules of validationSchemaRegistration (still the one that decides),
-// shown as a live checklist. Upper and lower case share a line.
-const PASSWORD_RULES = [
-  {label: 'At least 8 characters', test: v => v.length >= 8},
-  {
-    label: 'Upper & lowercase letters',
-    test: v => /[A-Z]/.test(v) && /[a-z]/.test(v),
-  },
-  {label: 'Contains a number', test: v => /[0-9]/.test(v)},
-  {label: 'Contains a symbol (!@#$%^&*)', test: v => /[!@#$%^&*]/.test(v)},
-];
+import {REGISTRATION_INITIAL_VALUES} from 'src/data/constants';
 
 // Weak until every rule passes (Create stays disabled), Good once it does,
 // Strong from 12 characters.
@@ -94,7 +82,7 @@ export const useRegistration = () => {
   );
 
   return {
-    initialValues: INITIAL_VALUES,
+    initialValues: REGISTRATION_INITIAL_VALUES,
     validationSchema: validationSchemaRegistration,
     handleSubmit,
     getPasswordState,

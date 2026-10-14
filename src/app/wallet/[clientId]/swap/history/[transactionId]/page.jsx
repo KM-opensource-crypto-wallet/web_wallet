@@ -13,6 +13,7 @@ import SwapCoinIcon from 'components/ExchangeHistory/SwapCoinIcon';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import useSwap from 'src/hooks/protectedRoutes/wallet/swap/useSwap';
 import s from './SwapDetails.module.css';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 // One leg of the swap: label, coin icon, amount and chain.
 const Side = ({label, icon, symbol, amount, display}) => (
@@ -42,7 +43,6 @@ const Side = ({label, icon, symbol, amount, display}) => (
 // the backend refreshes the transaction from its provider on each fetch.
 const SwapDetails = () => {
   const {
-    goBack,
     detailTransaction: transaction,
     detailLoading: loading,
     detailError: error,
@@ -53,6 +53,7 @@ const SwapDetails = () => {
     onRetryDetails: onRetry,
     openExplorer,
   } = useSwap('details');
+  const {goBack} = useNavigation();
 
   const header = (
     <div className={s.topBar}>

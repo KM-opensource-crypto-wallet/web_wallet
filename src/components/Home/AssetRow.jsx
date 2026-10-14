@@ -1,6 +1,6 @@
 import React, {memo} from 'react';
 import {isBitcoinChain} from 'dok-wallet-blockchain-networks/helper';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import CoinIcon from 'components/CoinIcon';
 import GeneralButton from 'components/Button';
 import PriceChange from 'components/PriceChange';

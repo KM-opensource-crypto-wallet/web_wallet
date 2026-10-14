@@ -3,7 +3,7 @@ import styles from './WalletConnectTransactionModal.module.css';
 import Modal from '@mui/material/Modal';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import GppMaybeOutlinedIcon from '@mui/icons-material/GppMaybeOutlined';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import {
   convertHexToUtf8IfPossible,
   decodeSolMessage,

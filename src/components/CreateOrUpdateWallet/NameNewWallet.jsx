@@ -1,10 +1,10 @@
 import React from 'react';
-import useNameNewWallet, {
-  MAX_LENGTH,
-} from 'src/hooks/auth/updateWallet/useNameNewWallet';
+import useNameNewWallet from 'src/hooks/auth/updateWallet/useNameNewWallet';
+import {WALLET_NAME_MAX_LENGTH} from 'src/data/constants';
 import AuthLayout, {BackBar, authStyles} from 'components/AuthLayout';
 import GeneralButton from 'src/components/Button';
 import s from './NameNewWallet.module.css';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const NameNewWallet = () => {
   const {
@@ -19,9 +19,9 @@ const NameNewWallet = () => {
     isSubmitting,
     canSubmit,
     suggestions,
-    goBack,
     handleSubmit,
   } = useNameNewWallet();
+  const {goBack} = useNavigation();
 
   return (
     <AuthLayout
@@ -54,7 +54,7 @@ const NameNewWallet = () => {
               value={name}
               onChange={onNameChange}
               placeholder='e.g. Main Wallet'
-              maxLength={MAX_LENGTH}
+              maxLength={WALLET_NAME_MAX_LENGTH}
               autoComplete='off'
               autoFocus={true}
               aria-invalid={isDuplicate || undefined}
@@ -88,7 +88,7 @@ const NameNewWallet = () => {
               <span>Only visible to you</span>
             )}
             <span className={s.count}>
-              {name.length}/{MAX_LENGTH}
+              {name.length}/{WALLET_NAME_MAX_LENGTH}
             </span>
           </div>
         </div>

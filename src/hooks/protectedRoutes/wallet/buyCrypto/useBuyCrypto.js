@@ -6,24 +6,14 @@ import {
   useRef,
   useState,
 } from 'react';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {useParams, useRouter} from 'next/navigation';
 import {toast} from 'react-toastify';
-import {
-  getUserCoinsOptions,
-  selectCurrentWallet,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
   addOTC,
   getBuyCryptoUrl,
 } from 'dok-wallet-blockchain-networks/service/dokApi';
-import {getOTCData} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
 import {validateNumber} from 'dok-wallet-blockchain-networks/helper';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {
-  getCryptoProviders,
-  getCryptoProvidersLoading,
-} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 import {
   debounceFetchBuyCryptoQuote,
   fetchBuyCryptoQuote,
@@ -34,12 +24,8 @@ import {isUsdtNotSupportedWL} from 'src/whitelabel/whiteLabelInfo';
 import {getAppIcon, getAppIconDark} from 'whitelabel/whiteLabelInfo';
 import {ThemeContext} from 'theme/ThemeContext';
 import {walletRoutes} from 'utils/routes';
-
-// First OTC step: collects the personal details OTC2 submits.
-const OTC_DETAILS_ROUTE = '/contact-us/otc';
-
-// Fiat currencies the "You pay" chip cycles through.
-const CURRENCIES = ['USD', 'EUR'];
+import useWallet from 'src/hooks/wallet/useWallet';
+import {BUY_CRYPTO_CURRENCIES, OTC_DETAILS_ROUTE} from 'src/data/constants';
 
 // Quote cards: the best rate is the largest amount received; the others show
 // how far below it they are.
@@ -68,11 +54,14 @@ const rankQuotes = providers => {
 // screen (app/.../buy-crypto/otc2).
 export const useBuyCrypto = () => {
   const router = useRouter();
-  const localCurrency = useSelector(getLocalCurrency);
-  const coinOptions = useSelector(getUserCoinsOptions, shallowEqual);
-  const cryptoProviders = useSelector(getCryptoProviders);
-  const isLoading = useSelector(getCryptoProvidersLoading);
-  const currentWallet = useSelector(selectCurrentWallet);
+  const {
+    localCurrency,
+    coinOptions,
+    cryptoProviders,
+    cryptoProvidersLoading: isLoading,
+    currentWallet,
+    otcData,
+  } = useWallet();
   const dispatch = useDispatch();
   const formikRef = useRef();
   const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
@@ -241,8 +230,9 @@ export const useBuyCrypto = () => {
 
   const cycleCurrency = (values, setFieldValue) => {
     const next =
-      CURRENCIES[
-        (CURRENCIES.indexOf(values.fiatCurrency) + 1) % CURRENCIES.length
+      BUY_CRYPTO_CURRENCIES[
+        (BUY_CRYPTO_CURRENCIES.indexOf(values.fiatCurrency) + 1) %
+          BUY_CRYPTO_CURRENCIES.length
       ];
     setFieldValue('fiatCurrency', next);
     submitQuote({...values, fiatCurrency: next});
@@ -271,7 +261,6 @@ export const useBuyCrypto = () => {
   const [otcCoinQuery, setOtcCoinQuery] = useState('');
   const {themeType} = useContext(ThemeContext);
   const {clientId} = useParams();
-  const otcData = useSelector(getOTCData);
 
   const otherOptions = {
     label: 'Other',
@@ -402,7 +391,6 @@ export const useBuyCrypto = () => {
 
   return {
     // Top bar
-    goBack: () => router.back(),
     walletName,
     switcherOpen,
     openSwitcher: () => setSwitcherOpen(true),

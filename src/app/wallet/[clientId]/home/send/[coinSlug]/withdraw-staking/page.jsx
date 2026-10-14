@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import styles from './WithdrawStaking.module.css';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import useStaking from 'src/hooks/protectedRoutes/wallet/home/send/useStaking';
 import StakingItem from 'components/StakingItem';
 import CoinIcon from 'components/CoinIcon';
@@ -9,10 +9,10 @@ import PriceChange from 'components/PriceChange';
 import GeneralButton from 'components/Button';
 import {ChevronLeftIcon} from 'components/Home/HomeIcons';
 import SelectInput from 'components/SelectInput';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const WithdrawStaking = () => {
   const {
-    goBack,
     currentCoin,
     localCurrency,
     symbol,
@@ -43,6 +43,7 @@ const WithdrawStaking = () => {
     stakingProviderList,
     hideResource,
   } = useStaking('withdraw');
+  const {goBack} = useNavigation();
 
   return (
     <main className={styles.page}>

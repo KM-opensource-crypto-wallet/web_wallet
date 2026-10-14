@@ -21,6 +21,7 @@ import useSend from 'src/hooks/protectedRoutes/wallet/home/send/useSend';
 import s from './SendFunds.module.css';
 import ModalAddressPoisoningWarning from 'components/ModalAddressPoisoningWarning';
 import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const shortAddress = address =>
   address && address.length > 14
@@ -61,7 +62,6 @@ const HederaRecipientHint = ({address, getHederaChain}) => {
 
 const SendFunds = () => {
   const {
-    goBack,
     walletName,
     switcherOpen,
     openSwitcher,
@@ -109,6 +109,7 @@ const SendFunds = () => {
     cancelPoisonWarning,
     continuePoisonWarning,
   } = useSend('sendFunds');
+  const {goBack} = useNavigation();
 
   return (
     <main className={s.page}>

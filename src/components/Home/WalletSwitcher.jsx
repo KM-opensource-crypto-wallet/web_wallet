@@ -2,7 +2,7 @@ import React, {useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
 import {walletRoutes} from 'utils/routes';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import {
   selectCurrentWalletClientId,
   selectVisibleWallets,

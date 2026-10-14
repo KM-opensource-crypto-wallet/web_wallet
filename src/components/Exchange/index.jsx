@@ -24,10 +24,10 @@ import CoinSelectorSheet from './components/CoinSelectorSheet';
 import ProviderList from './components/ProviderList';
 import SlippageEditor from './components/SlippageEditor';
 import useSwap from 'src/hooks/protectedRoutes/wallet/swap/useSwap';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const Exchange = () => {
   const {
-    goBack,
     walletName,
     switcherOpen,
     openSwitcher,
@@ -96,6 +96,7 @@ const Exchange = () => {
     exchangePermitApproveLoading,
     onPermitAllowanceContinue,
   } = useSwap('swap');
+  const {goBack} = useNavigation();
 
   return (
     <main className={s.page}>

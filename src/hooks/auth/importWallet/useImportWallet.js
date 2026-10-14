@@ -9,22 +9,20 @@ import {
   setPrivateKey,
 } from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {fetchWordsStartingWith} from 'dok-wallet-blockchain-networks/helper';
+import {MAX_SUGGESTIONS, VALID_WORD_COUNTS, WORD_SET} from 'src/data/constants';
 import useImportWalletByPrivateKey from './useImportWalletByPrivateKey';
-
-export const WORD_SET = new Set(englishMnemonics);
-const VALID_WORD_COUNTS = [12, 15, 18, 21, 24];
-const MAX_SUGGESTIONS = 6;
 
 // Import with a seed phrase or a private key (`initialMode`: 'seed' | 'key').
 // Either way the secret goes to the store and the name step follows.
 export const useImportWallet = ({initialMode = 'seed'} = {}) => {
+  const [mode, setMode] = useState(initialMode);
+  const [seed, setSeed] = useState('');
+  const [seedError, setSeedError] = useState('');
+
   const router = useRouter();
   const dispatch = useDispatch();
   const path = usePathname();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState(initialMode);
-  const [seed, setSeed] = useState('');
-  const [seedError, setSeedError] = useState('');
   const seedRef = useRef(null);
 
   const goToNameStep = () => {
@@ -118,7 +116,6 @@ export const useImportWallet = ({initialMode = 'seed'} = {}) => {
     isSeed,
     selectSeedMode: () => setMode('seed'),
     selectKeyMode: () => setMode('key'),
-    goBack: () => router.back(),
     seed,
     seedRef,
     seedError,

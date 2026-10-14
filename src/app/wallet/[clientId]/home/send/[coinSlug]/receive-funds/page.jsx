@@ -17,6 +17,7 @@ import {
   InfoIcon,
 } from 'components/Home/HomeIcons';
 import s from './RecieveFunds.module.css';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 // Read-only value with a copy button; used for the address and, on Hedera,
 // the ledger account id.
@@ -42,7 +43,6 @@ const ReceiveFunds = () => {
     coin,
     symbol,
     networkName,
-    goBack,
     qrValue,
     address,
     copyAddress,
@@ -59,6 +59,7 @@ const ReceiveFunds = () => {
     copyAccountId,
     accountIdCopied,
   } = useReceiveFunds();
+  const {goBack} = useNavigation();
   const currentWallet = useSelector(selectCurrentWallet);
   const localCurrency = useSelector(getLocalCurrency);
   const [switcherOpen, setSwitcherOpen] = useState(false);

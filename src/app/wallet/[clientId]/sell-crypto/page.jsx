@@ -6,7 +6,7 @@ import ModalAddCoins from 'src/components/ModalAddCoins';
 import Loading from 'src/components/Loading';
 import Image from 'next/image';
 import {validateNumberInInput} from 'dok-wallet-blockchain-networks/helper';
-import {currencySymbol} from 'src/data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import ModalLoad from 'src/components/ModalLoad';
 import GeneralButton from 'components/Button';
 import HomeSheet from 'components/Home/HomeSheet';
@@ -22,6 +22,7 @@ import {
   SearchIcon,
 } from 'components/Home/HomeIcons';
 import useSellCrypto from 'src/hooks/protectedRoutes/wallet/sellCrypto/useSellCrypto';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const CURRENCIES = ['USD', 'EUR'];
 
@@ -50,7 +51,6 @@ const formatFiat = value =>
 
 const SellCrypto = () => {
   const {
-    goBack,
     walletName,
     switcherOpen,
     openSwitcher,
@@ -83,6 +83,7 @@ const SellCrypto = () => {
     modalAddCoinsVisible,
     setModalAddCoinsVisible,
   } = useSellCrypto();
+  const {goBack} = useNavigation();
 
   return (
     <main className={styles.page}>

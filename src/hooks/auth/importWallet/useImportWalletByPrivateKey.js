@@ -6,8 +6,7 @@ import {
   setPrivateKey,
 } from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
-
-const INVALID_KEY = 'This private key is not valid for the selected network.';
+import {INVALID_KEY} from 'src/data/constants';
 
 // The "Private key" tab of the import screen: once the key is valid for the
 // picked network it goes to the store and `onImported` runs.

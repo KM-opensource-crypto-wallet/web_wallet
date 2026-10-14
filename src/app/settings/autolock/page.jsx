@@ -2,19 +2,20 @@
 import React, {useCallback} from 'react';
 import {useRouter} from 'next/navigation';
 import {useTranslations} from 'next-intl';
-import {useSelector, useDispatch} from 'react-redux';
-import {getLockTime} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {useDispatch} from 'react-redux';
 import {updateLockTime} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import {WEB_AUTO_LOCK, getWebLockTimeLabel} from 'utils/autoLock';
 import GeneralButton from 'components/Button';
 import {CheckIcon, ChevronLeftIcon, InfoIcon} from 'components/Home/HomeIcons';
+import useWallet from 'src/hooks/wallet/useWallet';
 import {LockIcon, TimerIcon} from '../SettingsIcons';
 import s from './AutoLock.module.css';
 
 const AutoLock = () => {
   const router = useRouter();
   const t = useTranslations('settings');
-  const lockTimeDisplay = getWebLockTimeLabel(useSelector(getLockTime));
+  const {lockTime} = useWallet();
+  const lockTimeDisplay = getWebLockTimeLabel(lockTime);
   const dispatch = useDispatch();
 
   const onChangeLockTime = useCallback(

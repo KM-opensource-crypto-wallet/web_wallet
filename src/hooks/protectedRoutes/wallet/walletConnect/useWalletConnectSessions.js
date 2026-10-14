@@ -1,5 +1,5 @@
 import {useCallback, useMemo, useState} from 'react';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {getSdkError} from '@walletconnect/utils';
 import {getWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
 import {resetWalletConnect} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSlice';
@@ -7,17 +7,14 @@ import {
   removeAllWalletConnectSession,
   removeWalletConnectSession,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {
-  selectWalletConnectData,
-  selectWalletConnectSessions,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {clearWalletConnectStorageCache} from 'utils/localStorageData';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 // Connected WalletConnect sessions (each with its chains) and disconnecting
 // one. Shared by WalletConnectItem and the WalletConnect page.
 const useWalletConnectSessions = ({onLastDisconnected} = {}) => {
-  const sessions = useSelector(selectWalletConnectSessions, shallowEqual);
-  const walletData = useSelector(selectWalletConnectData, shallowEqual);
+  const {walletConnectSessions: sessions, walletConnectData: walletData} =
+    useWallet();
   const dispatch = useDispatch();
   const [deletingSession, setDeletingSession] = useState([]);
 

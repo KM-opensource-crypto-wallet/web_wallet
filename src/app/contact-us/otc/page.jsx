@@ -5,9 +5,8 @@ import {Formik} from 'formik';
 import {validationSchemaOTC} from 'utils/validationSchema';
 import styles from './OTCScreen.module.css';
 import {useRouter} from 'next/navigation';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {setOTCData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
-import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import GeneralButton from 'components/Button';
 import HomeSheet from 'components/Home/HomeSheet';
 import {
@@ -17,6 +16,7 @@ import {
   SearchIcon,
 } from 'components/Home/HomeIcons';
 import hs from 'components/Home/Home.module.css';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 // Labelled text input with its validation message.
 const Field = ({id, label, error, className, ...inputProps}) => (
@@ -48,7 +48,7 @@ const OTCScreen = () => {
   const [countryQuery, setCountryQuery] = useState('');
   const router = useRouter();
   const dispatch = useDispatch();
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
+  const {currentWalletClientId} = useWallet();
 
   const onSubmit = useCallback(
     values => {

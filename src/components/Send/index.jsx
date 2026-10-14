@@ -1,5 +1,5 @@
 import React from 'react';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import useSend from 'src/hooks/protectedRoutes/wallet/home/send/useSend';
 
 import s from './Send.module.css';
@@ -30,6 +30,7 @@ import AddressSelectorSheet from 'components/AddressSelectorSheet';
 import AddressTypeBadge from 'components/AddressTypeBadge';
 import SendPopOver from 'components/SendPopOver';
 import ModalUnclaimedDeposit from 'components/ModalUnclaimedDeposit';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 // Glass card row used for history / staking, and (flat) inside Advanced.
 const ActionRow = ({icon, tone, title, hint, onClick, chevron = true}) => (
@@ -45,7 +46,6 @@ const ActionRow = ({icon, tone, title, hint, onClick, chevron = true}) => (
 
 const SendScreen = () => {
   const {
-    goBack,
     walletName,
     switcherOpen,
     openSwitcher,
@@ -90,6 +90,7 @@ const SendScreen = () => {
     modalUnclaimDepositVisible,
     hideModal,
   } = useSend('coin');
+  const {goBack} = useNavigation();
 
   return (
     <>

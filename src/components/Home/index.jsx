@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import useHome from 'src/hooks/protectedRoutes/wallet/home/useHome';
-import {COIN_SORT_OPTIONS} from 'data/coinSortOptions';
+import {COIN_SORT_OPTIONS} from 'src/data/lists/coinSortOptions';
 import WalletConnectStatus from 'components/WalletConnectStatus';
 import SortMenu from 'components/SortMenu';
 import GeneralButton from 'components/Button';

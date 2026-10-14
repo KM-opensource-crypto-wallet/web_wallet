@@ -1,18 +1,6 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {useParams, useRouter} from 'next/navigation';
-import {
-  selectCoinSyncStatus,
-  selectCoinSyncProgress,
-  selectCurrentSyncingCoin,
-  selectCoinsWithBalance,
-  selectCoinsWithBalanceCount,
-  selectIsCreatingWallets,
-  selectIsSyncing,
-  selectSelectedCount,
-  selectSyncingWalletClientId,
-  selectSyncingWalletName,
-} from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSelectors';
 import {
   syncAllCoins,
   cancelSyncWithCooldown,
@@ -20,12 +8,9 @@ import {
   toggleCoinSelection,
 } from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSlice';
 import {addCoinsToWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {
-  selectAllWallets,
-  selectCurrentWalletClientId,
-  isCoinScanAvailableForTimestamp,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {isCoinScanAvailableForTimestamp} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {showToast} from 'src/utils/toast';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 // Logic for the Scan coins (coin sync) screen.
 export const useCoinSync = () => {
@@ -35,18 +20,20 @@ export const useCoinSync = () => {
   // currently active wallet, e.g. scanning another wallet from its Edit screen)
   const {clientId: resolvedWalletClientId} = useParams();
 
-  const status = useSelector(selectCoinSyncStatus);
-  const progress = useSelector(selectCoinSyncProgress);
-  const currentCoin = useSelector(selectCurrentSyncingCoin);
-  const coinsWithBalance = useSelector(selectCoinsWithBalance);
-  const coinsWithBalanceCount = useSelector(selectCoinsWithBalanceCount);
-  const isCreatingWallets = useSelector(selectIsCreatingWallets);
-  const isSyncing = useSelector(selectIsSyncing);
-  const selectedCount = useSelector(selectSelectedCount);
-  const syncingWalletClientId = useSelector(selectSyncingWalletClientId);
-  const syncingWalletName = useSelector(selectSyncingWalletName);
-  const allWallets = useSelector(selectAllWallets);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
+  const {
+    coinSyncStatus: status,
+    coinSyncProgress: progress,
+    currentSyncingCoin: currentCoin,
+    coinsWithBalance,
+    coinsWithBalanceCount,
+    isCreatingWallets,
+    isSyncing,
+    selectedCount,
+    syncingWalletClientId,
+    syncingWalletName,
+    allWallets,
+    currentWalletClientId,
+  } = useWallet();
 
   const resolvedWallet = allWallets?.find(
     item => item?.clientId === resolvedWalletClientId,

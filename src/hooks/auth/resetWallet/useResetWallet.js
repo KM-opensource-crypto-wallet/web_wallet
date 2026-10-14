@@ -2,16 +2,17 @@ import {useCallback, useEffect, useState, useTransition} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
 
 export const useResetWallet = () => {
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [picked, setPicked] = useState(null);
+
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [infoOpen, setInfoOpen] = useState(false);
   const query = searchParams?.toString() ? `?${searchParams}` : '';
   const createPath = `/auth/create-wallet${query}`;
   const importPath = `/auth/import-wallet${query}`;
   // Navigation finishes only once the next page's code has loaded; until then
   // the picked card shows a spinner instead of looking unresponsive.
   const [isNavigating, startNavigation] = useTransition();
-  const [picked, setPicked] = useState(null);
 
   // Load both next pages while the user reads, so the click is instant.
   useEffect(() => {

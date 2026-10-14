@@ -12,10 +12,10 @@ import {
   SearchIcon,
 } from 'components/Home/HomeIcons';
 import InfiniteScroll from 'react-infinite-scroller';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const VoteStaking = () => {
   const {
-    goBack,
     isLoading,
     voteValidatorsList: validatorsList,
     hasMoreValidators,
@@ -32,6 +32,7 @@ const VoteStaking = () => {
     isVoteValid: isValid,
     handleVoteSubmit: handleSubmitForm,
   } = useStaking('vote');
+  const {goBack} = useNavigation();
 
   const renderItem = useCallback(
     ({item}) => (

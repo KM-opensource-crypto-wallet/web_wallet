@@ -41,7 +41,7 @@ import {closestCenter, DndContext} from '@dnd-kit/core';
 import {restrictToParentElement} from '@dnd-kit/modifiers';
 import {SortableContext, verticalListSortingStrategy} from '@dnd-kit/sortable';
 import SortableItem from 'components/Sortable/sortable';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import GeneralButton from 'components/Button';
 import HomeSheet from 'components/Home/HomeSheet';
 import {MASK} from 'components/Home/AssetRow';

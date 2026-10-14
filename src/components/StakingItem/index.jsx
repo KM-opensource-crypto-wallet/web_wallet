@@ -1,7 +1,7 @@
 'use client';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import React from 'react';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import Icons from '../../assets/images/icons';
 import {useRouter} from 'next/navigation';
 import {useDispatch, useSelector} from 'react-redux';

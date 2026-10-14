@@ -26,27 +26,9 @@ const CheckIcon = ({size}) => (
   </svg>
 );
 
-// import {loadingOn, signUpSuccess} from 'redux/auth/authSlice';
-// import myStyles from './RegistrationScreenStyles';
-// import {ThemeContext} from '../../../../ThemeContext';
-// import {useDispatch} from 'redux/utils/useDispatch';
-// import RNScreenshotPrevent from 'react-native-screenshot-prevent';
-// import {useIsFocused} from '@react-navigation/native';
-
 const RegistrationScreen = () => {
   const {initialValues, validationSchema, handleSubmit, getPasswordState} =
     useRegistration();
-
-  // useEffect(() => {
-  //   if (isFocused) {
-  //     RNScreenshotPrevent.enabled(true);
-  //     if (IS_IOS && !__DEV__) {
-  //       RNScreenshotPrevent.enableSecureView();
-  //     }
-  //   } else {
-  //     RNScreenshotPrevent.enabled(false);
-  //   }
-  // }, [isFocused]);
 
   return (
     <AuthLayout

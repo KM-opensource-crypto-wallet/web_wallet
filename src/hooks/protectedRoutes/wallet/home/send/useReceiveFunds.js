@@ -1,29 +1,15 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {useRouter} from 'next/navigation';
-import {useSelector} from 'react-redux';
-import {
-  selectCurrentCoin,
-  getCurrentWalletPhrase,
-  selectCurrentWallet,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {
-  getCustomRPCWithData,
-  selectAllCustomRpc,
-} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
+import {getCustomRPCWithData} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 import {isBitcoinChain} from 'dok-wallet-blockchain-networks/helper';
 import {useHederaAccountId} from 'src/hooks/useHederaAccount';
 import {copyToClipboard} from 'utils/copyToClipboard';
-import {LIGHTNING_MODES} from 'data/lightningModes';
-
-const COPIED_RESET_MS = 2000;
+import {LIGHTNING_MODES} from 'src/data/lists/lightningModes';
+import useWallet from 'src/hooks/wallet/useWallet';
+import {COPIED_RESET_MS} from 'src/data/constants';
 
 export const useReceiveFunds = () => {
-  const router = useRouter();
-  const currentCoin = useSelector(selectCurrentCoin);
-  const currentPhrase = useSelector(getCurrentWalletPhrase);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const allCustomRPC = useSelector(selectAllCustomRpc);
+  const {currentCoin, currentPhrase, currentWallet, allCustomRPC} = useWallet();
 
   const [lightningMode, setLightningMode] = useState(LIGHTNING_MODES[0].value);
   // Address generated for the selected Lightning mode; '' = the coin's own.
@@ -134,7 +120,6 @@ export const useReceiveFunds = () => {
     coin: currentCoin,
     symbol,
     networkName: showNetwork ? networkName : '',
-    goBack: () => router.back(),
 
     // QR + address
     qrValue,

@@ -1,34 +1,16 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {coinRoutes, walletRoutes} from 'utils/routes';
-import {currencySymbol} from 'data/currency';
-import {HOME_ACTIONS} from 'data/homeActions';
+import {currencySymbol} from 'src/data/lists/currency';
+import {HOME_ACTIONS} from 'src/data/lists/homeActions';
 import {getCoinSlug, isValidBrowser} from 'utils/common';
 import {validateSupportedChain} from 'dok-wallet-blockchain-networks/helper';
-import {
-  countTotalAssets,
-  selectCurrentWallet,
-  selectCurrentWalletSortOption,
-  selectIsBackedUp,
-  selectUserCoins,
-  isImportWalletWithPrivateKey,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
   setCurrentCoin,
   sortCurrentWalletCoins,
   syncCoinsWithServer,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {
-  getCryptoProviders,
-  getExchangeProviders,
-} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
-import {
-  getNewsMessage,
-  isAskedBackedUpModal,
-  selectAllNewCoins,
-} from 'dok-wallet-blockchain-networks/redux/currency/currencySelectors';
 import {
   setIsAskedBackupModal,
   setNewCoins,
@@ -37,9 +19,10 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
 import {MASK} from 'components/Home/AssetRow';
 import {formatMoney} from 'components/Home/WalletSwitcher';
+import useWallet from 'src/hooks/wallet/useWallet';
+import {HIDE_BALANCES_KEY} from 'src/data/constants';
 
 // Per-browser preference: show balances as dots.
-const HIDE_BALANCES_KEY = 'home.hideBalances';
 export const readHideBalances = () => {
   try {
     return window.localStorage.getItem(HIDE_BALANCES_KEY) === '1';
@@ -69,18 +52,20 @@ export const useHome = () => {
   const [hidden, setHidden] = useState(readHideBalances);
   const sortButtonRef = useRef(null);
 
-  const userCoins = useSelector(selectUserCoins, shallowEqual);
-  const localCurrency = useSelector(getLocalCurrency);
-  const totalAssets = useSelector(countTotalAssets);
-  const allNewCoins = useSelector(selectAllNewCoins);
-  const isBackup = useSelector(selectIsBackedUp);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const isAskedBackup = useSelector(isAskedBackedUpModal);
-  const isImportWithPrivateKey = useSelector(isImportWalletWithPrivateKey);
-  const newsMessage = useSelector(getNewsMessage);
-  const coinsSortOption = useSelector(selectCurrentWalletSortOption);
-  const buyProviders = useSelector(getCryptoProviders);
-  const swapProviders = useSelector(getExchangeProviders);
+  const {
+    userCoins,
+    localCurrency,
+    totalAssets,
+    allNewCoins,
+    isBackup,
+    currentWallet,
+    isAskedBackup,
+    isImportWithPrivateKey,
+    newsMessage,
+    coinsSortOption,
+    cryptoProviders: buyProviders,
+    exchangeProviders: swapProviders,
+  } = useWallet();
 
   useEffect(() => {
     if (!isBackup && !isAskedBackup[currentWallet?.walletName]) {

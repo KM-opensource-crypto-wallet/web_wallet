@@ -2,7 +2,7 @@
 import {useEffect, useRef} from 'react';
 import {useRouter} from 'next/navigation';
 
-import {currencySymbol, localCurrencyList} from 'data/currency';
+import {currencySymbol, localCurrencyList} from 'src/data/lists/currency';
 import {useSelector, useDispatch} from 'react-redux';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {setLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';

@@ -9,10 +9,10 @@ import SelectInputExchange from 'components/SelectInputExchange';
 import AddressTypeBadge from 'components/AddressTypeBadge';
 import CustomDerivationPopOver from 'components/CustomDerivationPopOver';
 import useCustomDerivation from 'src/hooks/protectedRoutes/wallet/home/send/useCustomDerivation';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const CustomDerivation = () => {
   const {
-    goBack,
     currentCoin,
     derivationData,
     values,
@@ -32,6 +32,7 @@ const CustomDerivation = () => {
     allDeriveAddress,
     exportCsv,
   } = useCustomDerivation();
+  const {goBack} = useNavigation();
 
   return (
     <main className={s.page}>

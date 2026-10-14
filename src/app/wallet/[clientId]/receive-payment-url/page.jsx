@@ -15,12 +15,12 @@ import {
   InfoIcon,
 } from 'components/Home/HomeIcons';
 import useReceivePaymentUrl from 'src/hooks/protectedRoutes/wallet/receivePaymentUrl/useReceivePaymentUrl';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 // Payment link: pick a coin and an amount, then share a link the payer opens
 // on their own wallet to send it.
 const ReceivePaymentUrl = () => {
   const {
-    goBack,
     walletName,
     switcherOpen,
     openSwitcher,
@@ -40,6 +40,7 @@ const ReceivePaymentUrl = () => {
     copied,
     copyUrl,
   } = useReceivePaymentUrl();
+  const {goBack} = useNavigation();
 
   return (
     <main className={styles.page}>

@@ -1,7 +1,7 @@
 'use client';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
-import {aboutList} from 'data/aboutList';
+import {aboutList} from 'src/data/lists/aboutList';
 import {APP_VERSION} from 'utils/common';
 import {getAppIcon, getAppTitle} from 'whitelabel/whiteLabelInfo';
 import GeneralButton from 'components/Button';

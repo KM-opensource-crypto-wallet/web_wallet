@@ -6,28 +6,12 @@ import {
   useRef,
   useState,
 } from 'react';
-import {shallowEqual, useSelector, useDispatch} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {useParams, useRouter} from 'next/navigation';
 import dayjs from 'dayjs';
 import BigNumber from 'bignumber.js';
 import {walletRoutes} from 'utils/routes';
 import {showToast} from 'utils/toast';
-import {
-  selectCurrentWallet,
-  selectCurrentWalletClientId,
-  getCoinsOptions,
-  selectVisibleWallets,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {
-  getExchange,
-  getExchangeApproveLoading,
-  getExchangePermitApproveLoading,
-  selectProviderRows,
-  selectIsQuoteFetching,
-  selectQuoteError,
-  selectQuoteFetchedAt,
-  selectLowestPairMinimum,
-} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
 import {
   approveExchangePermit2,
   approveSwapAllowance,
@@ -55,37 +39,26 @@ import {
   createDebounced,
   getSmartDefaultAmount,
 } from 'dok-wallet-blockchain-networks/helper/exchangeHelpers';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import {setCurrentTransferSuccess} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
-import {getExchangeProviders} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 import {
   clearCurrentExchangeTransaction,
   fetchExchangeTransactionDetails,
   fetchExchangeTransactions,
   fetchMoreExchangeTransactions,
 } from 'dok-wallet-blockchain-networks/redux/exchangeHistory/exchangeHistorySlice';
-import {
-  selectCurrentExchangeTransaction,
-  selectExchangeDetailError,
-  selectExchangeDetailLoading,
-  selectExchangeHistoryError,
-  selectExchangeHistoryLoading,
-  selectExchangeHistoryLoadingMore,
-  selectExchangeHistoryMeta,
-  selectExchangeHistoryRefreshing,
-  selectExchangeTransactions,
-} from 'dok-wallet-blockchain-networks/redux/exchangeHistory/exchangeHistorySelectors';
 import useSwapCoinDisplay from 'components/ExchangeHistory/useSwapCoinDisplay';
 import {
   getExchangeChainNames,
   TERMINAL_EXCHANGE_STATUSES,
   truncateExchangeAmount,
 } from 'components/ExchangeHistory/exchangeFormat';
-
-const QUOTE_DEBOUNCE_MS = 700;
-const POLL_INTERVAL_MS = 30_000;
+import useWallet from 'src/hooks/wallet/useWallet';
+import {
+  SWAP_POLL_INTERVAL_MS,
+  SWAP_QUOTE_DEBOUNCE_MS,
+} from 'src/data/constants';
 
 // Swap History: group label for a transaction date.
 const dayLabel = date => {
@@ -141,39 +114,48 @@ export const useSwap = screen => {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const exchangeProvidersText = useSelector(getExchangeProviders);
-  const coinOptions = useSelector(getCoinsOptions, shallowEqual);
-  const allWallets = useSelector(selectVisibleWallets);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const [switcherOpen, setSwitcherOpen] = useState(false);
   const {
-    selectedCoinToOptions,
-    selectedFromAsset,
-    selectedCoinFromOptions,
-    possibleFromCoin,
-    selectedToAsset,
-    possibleToCoins,
-    amountFrom,
-    amountTo,
-    customOption,
-    customAddress,
-    selectedExchangeChain,
-    slippage,
-    lastQuotedAmount,
-    selectedFromWallet,
-    fromBalanceLoading,
-  } = useSelector(getExchange);
-  const providerRows = useSelector(selectProviderRows);
-  const isQuoteFetching = useSelector(selectIsQuoteFetching);
-  const quoteError = useSelector(selectQuoteError);
-  const quoteFetchedAt = useSelector(selectQuoteFetchedAt);
-  const lowestPairMinimum = useSelector(selectLowestPairMinimum);
-  const exchangeApproveLoading = useSelector(getExchangeApproveLoading);
-  const exchangePermitApproveLoading = useSelector(
-    getExchangePermitApproveLoading,
-  );
-  const localCurrency = useSelector(getLocalCurrency);
+    exchangeProviders: exchangeProvidersText,
+    allCoinsOptions: coinOptions,
+    visibleWallets: allWallets,
+    currentWalletClientId,
+    currentWallet,
+    exchange: {
+      selectedCoinToOptions,
+      selectedFromAsset,
+      selectedCoinFromOptions,
+      possibleFromCoin,
+      selectedToAsset,
+      possibleToCoins,
+      amountFrom,
+      amountTo,
+      customOption,
+      customAddress,
+      selectedExchangeChain,
+      slippage,
+      lastQuotedAmount,
+      selectedFromWallet,
+      fromBalanceLoading,
+    },
+    providerRows,
+    isQuoteFetching,
+    quoteError,
+    quoteFetchedAt,
+    lowestPairMinimum,
+    exchangeApproveLoading,
+    exchangePermitApproveLoading,
+    localCurrency,
+    historyTransactions,
+    historyLoading,
+    historyRefreshing,
+    historyLoadingMore,
+    historyError,
+    historyMeta,
+    detailTransaction,
+    detailLoading,
+    detailError,
+  } = useWallet();
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const fiatSymbol = currencySymbol[localCurrency] || '$';
 
   const [isPreparingAllowance, setIsPreparingAllowance] = useState(false);
@@ -206,7 +188,7 @@ export const useSwap = screen => {
     () =>
       createDebounced(amount => {
         dispatch(fetchExchangeQuotes({amount}));
-      }, QUOTE_DEBOUNCE_MS),
+      }, SWAP_QUOTE_DEBOUNCE_MS),
     [dispatch],
   );
   useEffect(() => () => debouncedFetchQuotes.cancel(), [debouncedFetchQuotes]);
@@ -802,12 +784,6 @@ export const useSwap = screen => {
   // pending statuses on each fetch.
 
   const {clientId} = useParams();
-  const historyTransactions = useSelector(selectExchangeTransactions);
-  const historyLoading = useSelector(selectExchangeHistoryLoading);
-  const historyRefreshing = useSelector(selectExchangeHistoryRefreshing);
-  const historyLoadingMore = useSelector(selectExchangeHistoryLoadingMore);
-  const historyError = useSelector(selectExchangeHistoryError);
-  const historyMeta = useSelector(selectExchangeHistoryMeta);
   const endReachedThrottleRef = useRef(0);
 
   useEffect(() => {
@@ -862,9 +838,6 @@ export const useSwap = screen => {
   const transactionId = params?.transactionId
     ? decodeURIComponent(params.transactionId)
     : undefined;
-  const detailTransaction = useSelector(selectCurrentExchangeTransaction);
-  const detailLoading = useSelector(selectExchangeDetailLoading);
-  const detailError = useSelector(selectExchangeDetailError);
   const isTerminal = TERMINAL_EXCHANGE_STATUSES.includes(
     detailTransaction?.status,
   );
@@ -889,7 +862,7 @@ export const useSwap = screen => {
     }
     const interval = setInterval(() => {
       dispatch(fetchExchangeTransactionDetails({id: transactionId}));
-    }, POLL_INTERVAL_MS);
+    }, SWAP_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [screen, dispatch, transactionId, isTerminal]);
 
@@ -914,7 +887,6 @@ export const useSwap = screen => {
 
   return {
     // Top bar
-    goBack: () => router.back(),
     walletName,
     switcherOpen,
     openSwitcher: () => setSwitcherOpen(true),

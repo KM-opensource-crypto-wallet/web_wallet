@@ -6,10 +6,10 @@ import Loading from 'src/components/Loading';
 import GeneralButton from 'components/Button';
 import {CheckIcon, ChevronLeftIcon} from 'components/Home/HomeIcons';
 import useSelectUTXOS from 'src/hooks/protectedRoutes/wallet/home/send/useSelectUTXOS';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const SelectUTXOs = () => {
   const {
-    goBack,
     currentCoin,
     isLoading,
     allUTXOs,
@@ -19,6 +19,7 @@ const SelectUTXOs = () => {
     disableContinue,
     onClickContinue,
   } = useSelectUTXOS();
+  const {goBack} = useNavigation();
 
   return (
     <main className={s.page}>

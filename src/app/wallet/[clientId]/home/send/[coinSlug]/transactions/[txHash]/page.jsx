@@ -8,6 +8,7 @@ import {CheckIcon, ChevronLeftIcon, CopyIcon} from 'components/Home/HomeIcons';
 import {EmptyIcon, ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import useTransaction from 'src/hooks/protectedRoutes/wallet/home/send/useTransaction';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 // Shortened value with a copy button; the full value goes to the clipboard.
 const CopyValue = ({value}) => {
@@ -38,13 +39,13 @@ const CopyValue = ({value}) => {
 
 const TransactionDetails = () => {
   const {
-    goBack,
     transaction,
     transactionDetails,
     refreshing,
     nftImageError,
     onNftImageError,
   } = useTransaction('details');
+  const {goBack} = useNavigation();
 
   const topBar = (title, onViewExplorer) => (
     <div className={s.topBar}>

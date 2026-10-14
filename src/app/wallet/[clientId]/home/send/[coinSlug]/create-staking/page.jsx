@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import {Formik} from 'formik';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import useStaking from 'src/hooks/protectedRoutes/wallet/home/send/useStaking';
 import SelectInput from 'components/SelectInput';
 import ModalAllowanceInfo from 'components/ModalAllowanceInfo';
@@ -11,10 +11,10 @@ import CoinIcon from 'components/CoinIcon';
 import PriceChange from 'components/PriceChange';
 import GeneralButton from 'components/Button';
 import {ChevronLeftIcon} from 'components/Home/HomeIcons';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const CreateStaking = () => {
   const {
-    goBack,
     isLoading,
     currentCoin,
     localCurrency,
@@ -44,6 +44,7 @@ const CreateStaking = () => {
     pendingStakingProviderName,
     onAllowanceContinue,
   } = useStaking('create');
+  const {goBack} = useNavigation();
 
   return (
     <main className={styles.page}>

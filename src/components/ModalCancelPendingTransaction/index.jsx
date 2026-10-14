@@ -4,7 +4,7 @@ import styles from './ModalConfirmEnableChatModal.module.css';
 import Modal from '@mui/material/Modal';
 import GeneralButton from 'components/Button';
 import Loading from 'components/Loading';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import Spinner from 'components/Spinner';
 
 const Icon = ({children}) => (

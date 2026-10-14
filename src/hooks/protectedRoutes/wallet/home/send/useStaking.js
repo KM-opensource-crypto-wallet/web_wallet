@@ -1,16 +1,14 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import BigNumber from 'bignumber.js';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import {getValidationSchemaForCreateStaking} from 'utils/validationSchema';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {
   calculateEstimateFee,
   setCurrentTransferData,
   updateCurrentTransferData,
 } from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {refreshCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {
   isEVMChain,
@@ -34,27 +32,18 @@ import {
   onMinusVotes,
   setSelectedVotes,
 } from 'dok-wallet-blockchain-networks/redux/staking/stakingSlice';
-import {
-  countSelectedVotes,
-  getSelectedVotes,
-  getStakingLoading,
-  getStakingValidatorsByChain,
-  getStakingAllowanceLoading,
-} from 'dok-wallet-blockchain-networks/redux/staking/stakingSelectors';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
-import {getRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
 import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
 import ValidatorOptionItem from 'components/ValidatorOptionItem';
+import useWallet from 'src/hooks/wallet/useWallet';
+import {STAKING_DISABLED_INPUT_CHAINS} from 'src/data/constants';
 
 // Label shown in a SelectInput for the option whose value is `value`.
 const findLabel = (list, value) =>
   list?.find(item => item?.value === value)?.label || value;
 
-// Chains where the withdraw amount can't be edited.
-const disableTextInputChain = ['solana'];
-
 const isDisableTextInput = chain_name =>
-  disableTextInputChain.includes(chain_name);
+  STAKING_DISABLED_INPUT_CHAINS.includes(chain_name);
 
 // Shared logic for the staking screens. `screen` is 'create' (Create Staking),
 // 'list' (Staking List), 'withdraw' (Withdraw Staking) or 'vote' (Vote
@@ -64,11 +53,16 @@ export const useStaking = screen => {
   const routes = useAppRoutes();
   const dispatch = useDispatch();
 
-  const currentCoin = useSelector(selectCurrentCoin);
-  const localCurrency = useSelector(getLocalCurrency);
-  const isStakingLoading = useSelector(getStakingLoading);
-  const allowanceLoading = useSelector(getStakingAllowanceLoading);
-  const validators = useSelector(getStakingValidatorsByChain, shallowEqual);
+  const {
+    currentCoin,
+    localCurrency,
+    isStakingLoading,
+    allowanceLoading,
+    validators,
+    routeStateData: routeData,
+    selectedVotes,
+    selectedVotesTotal: selectedTotal,
+  } = useWallet();
 
   const [isListLoading, setIsListLoading] = useState(true);
   const [maxAmount, setMaxAmount] = useState('0.00000');
@@ -451,7 +445,6 @@ export const useStaking = screen => {
 
   // ---- Withdraw Staking ----
 
-  const routeData = useSelector(getRouteStateData);
   const currentRouteData = routeData?.withdrawStaking;
   const selectedStake = currentRouteData?.selectedStake;
   const isWithdrawStaking = currentRouteData?.isWithdrawStaking;
@@ -716,8 +709,6 @@ export const useStaking = screen => {
 
   // ---- Vote Staking ----
 
-  const selectedVotes = useSelector(getSelectedVotes);
-  const selectedTotal = useSelector(countSelectedVotes);
   const [voteValidatorsList, setVoteValidatorsList] = useState(
     validators.slice(0, 20),
   );
@@ -863,7 +854,6 @@ export const useStaking = screen => {
 
   return {
     // Shared
-    goBack: () => router.back(),
     // Create Staking only fetches validators on chains that pick one (not
     // Tron), and the staking slice's `loading` starts as true, so don't wait
     // on it otherwise.

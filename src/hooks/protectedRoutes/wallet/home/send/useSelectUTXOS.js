@@ -1,15 +1,15 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
 import {setCurrentTransferData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {refreshCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 // Logic for the Select UTXOs screen (Bitcoin coin control).
 export const useSelectUTXOS = () => {
   const dispatch = useDispatch();
-  const currentCoin = useSelector(selectCurrentCoin);
+  const {currentCoin} = useWallet();
   const [allUTXOs, setAllUTXOs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -134,7 +134,6 @@ export const useSelectUTXOS = () => {
   }, [currentCoin]);
 
   return {
-    goBack: () => router.back(),
     currentCoin,
     isLoading,
     allUTXOs,

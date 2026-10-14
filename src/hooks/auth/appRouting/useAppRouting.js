@@ -1,29 +1,15 @@
 import {useCallback, useContext, useEffect, useState} from 'react';
 import {usePathname, useRouter, useSearchParams} from 'next/navigation';
 import ReactGA from 'react-ga4';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {
-  getHasAccount,
-  getIsVaultUnlocked,
-} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import {useDispatch} from 'react-redux';
 import {
   checkNewsAvailable,
   fetchCurrencies,
 } from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
-import {isReduxStoreLoaded} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
-import {
-  getMasterClientId,
-  selectWalletConnectSessions,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {resetIsAdding50MoreAddresses} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {getLockTime} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {initWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
 import {setIsWalletConnectInitialized} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {fetchSupportedBuyCryptoCurrency} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
-import {
-  getDisableMessage,
-  getGoogleAnalyticsKey,
-} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 import {fetchRPCUrl} from 'dok-wallet-blockchain-networks/rpcUrls/rpcUrls';
 import {persistor, vaultSync} from 'redux/store';
 import {lockSession} from 'security/unlockFlow';
@@ -51,8 +37,15 @@ import {
   getWalletConnectDetails,
   setWhiteLabelInfo,
 } from 'whitelabel/whiteLabelInfo';
-
-const KIML_WALLET_ID = '65efefca5f95b9f06cc8f9eb';
+import useWallet from 'src/hooks/wallet/useWallet';
+import {
+  ACTIVITY_EVENTS,
+  ACTIVITY_THROTTLE_MS,
+  AUTO_LOCK_CHECK_INTERVAL_MS,
+  DOK_WALLET_COLOR_CODE,
+  KIML_WALLET_COLOR_CODE,
+  KIML_WALLET_ID,
+} from 'src/data/constants';
 
 // App-wide boot and session housekeeping behind AppRouting: initial routing
 // (registration / lock screen / public pages), auto-lock, WalletConnect
@@ -60,24 +53,22 @@ const KIML_WALLET_ID = '65efefca5f95b9f06cc8f9eb';
 export const useAppRouting = ({wlData}) => {
   // Routing keys off "has an account", never off a stored password (there is
   // none any more); wallet data is sealed until the vault unlocks.
-  const hasAccount = useSelector(getHasAccount);
-  const isVaultUnlocked = useSelector(getIsVaultUnlocked);
+  const {
+    hasAccount,
+    isVaultUnlocked,
+    isStoreLoaded: isReduxStoreLoad,
+    walletConnectSessions,
+    disableMessage,
+    googleAnalyticsKey,
+    lockTime,
+    masterClientId,
+  } = useWallet();
   const routing = useRouter();
   const dispatch = useDispatch();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const {themeType} = useContext(ThemeContext);
-  const isReduxStoreLoad = useSelector(isReduxStoreLoaded);
-  const walletConnectSessions = useSelector(
-    selectWalletConnectSessions,
-    shallowEqual,
-  );
   const [routingDone, setRoutingDone] = useState(false);
-
-  const disableMessage = useSelector(getDisableMessage);
-  const googleAnalyticsKey = useSelector(getGoogleAnalyticsKey);
-  const lockTime = useSelector(getLockTime);
-  const masterClientId = useSelector(getMasterClientId);
 
   useEffect(() => {
     if (googleAnalyticsKey) {
@@ -104,7 +95,6 @@ export const useAppRouting = ({wlData}) => {
     if (typeof window === 'undefined') {
       return;
     }
-    const ACTIVITY_THROTTLE_MS = 5000;
     let lastWrite = 0;
     const isReloadShortcut = e =>
       e.type === 'keydown' &&
@@ -120,12 +110,11 @@ export const useAppRouting = ({wlData}) => {
         setLastActiveTime();
       }
     };
-    const activityEvents = ['mousedown', 'keydown', 'touchstart', 'wheel'];
-    activityEvents.forEach(event =>
+    ACTIVITY_EVENTS.forEach(event =>
       window.addEventListener(event, handleActivity, {passive: true}),
     );
     return () => {
-      activityEvents.forEach(event =>
+      ACTIVITY_EVENTS.forEach(event =>
         window.removeEventListener(event, handleActivity),
       );
     };
@@ -172,7 +161,6 @@ export const useAppRouting = ({wlData}) => {
     if (!isProtectedRoute) {
       return;
     }
-    const AUTO_LOCK_CHECK_INTERVAL_MS = 5000;
     const intervalId = setInterval(() => {
       const lastActiveTime = getLastActiveTime();
       const elapsedMinutesSinceLastActive = lastActiveTime
@@ -349,7 +337,10 @@ export const useAppRouting = ({wlData}) => {
     routingDone,
     disableMessage,
     themeType,
-    themeColor: wlData?._id === KIML_WALLET_ID ? '#4F8DD8' : '#F44D03',
+    themeColor:
+      wlData?._id === KIML_WALLET_ID
+        ? KIML_WALLET_COLOR_CODE
+        : DOK_WALLET_COLOR_CODE,
   };
 };
 

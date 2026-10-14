@@ -1,14 +1,9 @@
 import {useCallback, useMemo, useState} from 'react';
-import {useRouter} from 'next/navigation';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {
-  selectCoinsForCurrentWallet,
-  selectCurrentWallet,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import {useDispatch} from 'react-redux';
 import {addOrToggleCoinInWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {validateSupportedChain} from 'dok-wallet-blockchain-networks/helper';
 import {isValidBrowser} from 'utils/common';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 const isShownHere = item =>
   validateSupportedChain(item?.chain_name) &&
@@ -19,16 +14,14 @@ const isZeroBalance = item =>
 
 // Logic for the Manage coins screen.
 export const useManageCoin = () => {
-  const router = useRouter();
   const dispatch = useDispatch();
-  const allCoins = useSelector(selectCoinsForCurrentWallet, shallowEqual);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const localCurrency = useSelector(getLocalCurrency);
-  const [searchQuery, setSearchQuery] = useState('');
+  const {allCoins, currentWallet, localCurrency} = useWallet();
+
   const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
   const [modalAddTokenVisible, setModalAddTokenVisible] = useState(false);
   const [isSortSelected, setIsSortSelected] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
   const coins = useMemo(
@@ -78,7 +71,6 @@ export const useManageCoin = () => {
 
   return {
     // Top bar
-    goBack: () => router.back(),
     walletName,
     switcherOpen,
     openSwitcher: () => setSwitcherOpen(true),

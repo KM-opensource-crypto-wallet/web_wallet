@@ -20,6 +20,7 @@ import BatchTransactionItem from 'components/BatchTransactionItem';
 import DuplicateTransactionModal from 'components/DuplicateTransactionModal';
 import AdvancedFeesSheet from 'components/AdvancedFeesSheet';
 import useCommonTransfer from 'src/hooks/protectedRoutes/wallet/home/send/useCommonTransfer';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 // One label/value line of a details card. `mono` for addresses.
 const InfoRow = ({label, value, mono = false, capitalize = false}) => (
@@ -101,7 +102,6 @@ const Journey = ({from, to, link}) => (
 const CommonTransfer = () => {
   const {
     title,
-    goBack,
     isLoading,
     isExchangeLoading,
     ready,
@@ -159,6 +159,7 @@ const CommonTransfer = () => {
     showDuplicateModal,
     closeDuplicateModal,
   } = useCommonTransfer();
+  const {goBack} = useNavigation();
 
   const renderSendFundUI = () => {
     const coin = transferData?.currentCoin;

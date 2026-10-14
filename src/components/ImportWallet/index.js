@@ -1,9 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import Image from 'next/image';
 import {PrivateKeyList} from 'dok-wallet-blockchain-networks/helper';
-import useImportWallet, {
-  WORD_SET,
-} from 'src/hooks/auth/importWallet/useImportWallet';
+import useImportWallet from 'src/hooks/auth/importWallet/useImportWallet';
+import {WORD_SET} from 'src/data/constants';
 import {chainLogoMap} from 'assets/chain_logo';
 import AuthLayout, {
   BackBar,
@@ -12,6 +11,7 @@ import AuthLayout, {
 } from 'components/AuthLayout';
 import GeneralButton from 'src/components/Button';
 import s from './ImportWallet.module.css';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const LockIcon = () => (
   <svg
@@ -207,7 +207,6 @@ const ImportWallet = ({initialMode = 'seed'}) => {
     isSeed,
     selectSeedMode,
     selectKeyMode,
-    goBack,
     seed,
     seedRef,
     seedError,
@@ -229,6 +228,7 @@ const ImportWallet = ({initialMode = 'seed'}) => {
     canImport,
     onSubmit,
   } = useImportWallet({initialMode});
+  const {goBack} = useNavigation();
   const subTitle = isSeed
     ? 'Usually 12 or 24 words, separated by spaces, in the correct order.'
     : 'Import a single address from its exported private key.';

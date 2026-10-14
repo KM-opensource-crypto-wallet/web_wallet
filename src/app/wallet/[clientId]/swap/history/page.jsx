@@ -7,12 +7,12 @@ import {ResetIcon} from 'components/Transactions/TxIcons';
 import ExchangeTransactionItem from 'components/ExchangeHistory/ExchangeTransactionItem';
 import useSwap from 'src/hooks/protectedRoutes/wallet/swap/useSwap';
 import s from './SwapHistory.module.css';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 // Swap history for the current wallet: newest first, header refresh,
 // infinite scroll. The backend refreshes pending statuses on each fetch.
 const SwapHistory = () => {
   const {
-    goBack,
     goToSwap,
     historyTransactions: transactions,
     historyLoading: loading,
@@ -25,6 +25,7 @@ const SwapHistory = () => {
     onHistoryEndReached: onEndReached,
     onPressHistoryItem: onPressItem,
   } = useSwap('history');
+  const {goBack} = useNavigation();
 
   return (
     <main className={s.page}>

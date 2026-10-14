@@ -12,10 +12,10 @@ import {
 import {SECRET_CODE_MAX_LENGTH, SECRET_CODE_MIN_LENGTH} from 'utils/hideWallet';
 import useWallets from 'src/hooks/protectedRoutes/wallet/wallets/useWallets';
 import s from './HideWallet.module.css';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const HideWallet = () => {
   const {
-    goBack,
     walletName,
     openInfoModal,
     isHideEnabled,
@@ -39,6 +39,7 @@ const HideWallet = () => {
     onCancelHideModal,
     onConfirmHideAndSave,
   } = useWallets();
+  const {goBack} = useNavigation();
 
   return (
     <main className={s.page}>

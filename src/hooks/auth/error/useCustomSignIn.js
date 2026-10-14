@@ -1,7 +1,6 @@
 import {useEffect} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
-
-const FALLBACK_PATH = '/auth/login';
+import {FALLBACK_PATH} from 'src/data/constants';
 
 // Where "Go back" (or the automatic redirect) leads: `callbackUrl` when it
 // stays on this app, the login page otherwise.

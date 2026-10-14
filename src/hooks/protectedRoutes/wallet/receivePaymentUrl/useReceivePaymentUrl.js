@@ -1,23 +1,11 @@
 import {useCallback, useMemo, useRef, useState} from 'react';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {useRouter} from 'next/navigation';
+import {useDispatch} from 'react-redux';
 import BigNumber from 'bignumber.js';
-import {
-  getUserCoinsOptions,
-  selectCurrentWallet,
-  selectUserCoins,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
   setPaymentUrlAmount,
   setPaymentUrlCoin,
   setPaymentUrlCurrencyAmount,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
-import {
-  getLocalCurrency,
-  getPaymentUrlAmount,
-  getPaymentUrlCoin,
-  getPaymentUrlCurrencyAmount,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {getDesktopWalletUrl} from 'whitelabel/whiteLabelInfo';
 import {getCoinSlug} from 'utils/common';
 import {paymentLinkPath} from 'utils/routes';
@@ -25,23 +13,25 @@ import {
   multiplyBNWithFixed,
   validateNumberInInput,
 } from 'dok-wallet-blockchain-networks/helper';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 const coinKey = item => `${item?.chain_name}_${item?.symbol}`;
 
 // Logic for the Payment link screen: pick a coin and an amount, then share a
 // link the payer opens on their own wallet to send it.
 export const useReceivePaymentUrl = () => {
-  const router = useRouter();
-  const coinOptions = useSelector(getUserCoinsOptions, shallowEqual);
-  const userCoins = useSelector(selectUserCoins);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const paymentUrlCoin = useSelector(getPaymentUrlCoin);
-  const paymentUrlAmount = useSelector(getPaymentUrlAmount);
-  const paymentUrlCurrencyAmount = useSelector(getPaymentUrlCurrencyAmount);
+  const {
+    coinOptions,
+    userCoins,
+    currentWallet,
+    paymentUrlCoin,
+    paymentUrlAmount,
+    paymentUrlCurrencyAmount,
+    localCurrency,
+  } = useWallet();
   const dispatch = useDispatch();
   const formikRef = useRef();
-  const localCurrency = useSelector(getLocalCurrency);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -143,7 +133,6 @@ export const useReceivePaymentUrl = () => {
 
   return {
     // Top bar
-    goBack: () => router.back(),
     walletName,
     switcherOpen,
     openSwitcher: () => setSwitcherOpen(true),

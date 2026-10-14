@@ -4,25 +4,14 @@ import dayjs from 'dayjs';
 import {useDispatch, useSelector} from 'react-redux';
 import BigNumber from 'bignumber.js';
 import {useAppRoutes} from 'src/hooks/useAppRoutes';
-import {
-  selectCurrentCoin,
-  selectCurrentCoinRecentTransaction,
-  selectCurrentWallet,
-  selectTransactionsByType,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {
-  getLocalCurrency,
-  getHideSmallTransactions,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {selectTransactionsByType} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {setHideSmallTransactions} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import {
   fetchTransactionByHash,
   refreshCurrentCoin,
   sendPendingTransactions,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {getRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
-import {getUpdateTransactionData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSelector';
 import {
   fetchTransactionData,
   resetUpdateTransactionData,
@@ -35,7 +24,7 @@ import {
   isCustomAddressNotSupportedChain,
   isPendingTransactionSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import {
   describeTransaction,
   fiatValue,
@@ -55,7 +44,12 @@ import {
   TrendDownIcon,
   TrendUpIcon,
 } from 'components/Transactions/TxIcons';
-import {ALL_ONLY_CHAINS, ALL_TRANSACTION_TYPES} from 'data/transactionTypes';
+import {
+  ALL_ONLY_CHAINS,
+  ALL_TRANSACTION_TYPES,
+} from 'src/data/lists/transactionTypes';
+import useWallet from 'src/hooks/wallet/useWallet';
+import {TRANSACTION_STATUS_LABEL} from 'src/data/constants';
 
 function computeRenderList(
   transactions,
@@ -91,8 +85,6 @@ function computeRenderList(
     return new Date(b.date) - new Date(a.date);
   });
 }
-
-const STATUS_LABEL = {success: 'Success', pending: 'Pending', failed: 'Failed'};
 
 // Transaction Details: works out the transaction's type and builds the hero,
 // the detail rows and the optional item list shown for it.
@@ -144,7 +136,9 @@ function buildTransactionDetails(transaction, currentCoin, symbol, fiatSymbol) {
     : false;
 
   const status = txStatus(transaction);
-  const statusLabel = transaction?.status ? STATUS_LABEL[status] : '—';
+  const statusLabel = transaction?.status
+    ? TRANSACTION_STATUS_LABEL[status]
+    : '—';
 
   const pageTitle = isNFT
     ? 'NFT Transfer'
@@ -337,10 +331,15 @@ function buildTransactionDetails(transaction, currentCoin, symbol, fiatSymbol) {
 // which data each page fetches on mount.
 export const useTransaction = screen => {
   const dispatch = useDispatch();
-  const localCurrency = useSelector(getLocalCurrency);
-  const currentCoin = useSelector(selectCurrentCoin);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const hideSmallTx = useSelector(getHideSmallTransactions);
+  const {
+    localCurrency,
+    currentCoin,
+    currentWallet,
+    hideSmallTx,
+    reduxRecentTransaction,
+    routeStateData,
+    updateTransactionData,
+  } = useWallet();
 
   const [modalVisible, setmodalVisible] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -507,13 +506,9 @@ export const useTransaction = screen => {
 
   const params = useParams();
   const txHash = params?.txHash ? decodeURIComponent(params.txHash) : null;
-  const reduxRecentTransaction = useSelector(
-    selectCurrentCoinRecentTransaction,
-  );
   const [refreshing, setRefreshing] = useState(false);
   const [nftImageError, setNftImageError] = useState(false);
   const statusRef = useRef(null);
-  const routeStateData = useSelector(getRouteStateData);
   const [savedRouteTransaction] = useState(
     () => routeStateData?.TransactionDetails?.transaction ?? null,
   );
@@ -607,7 +602,6 @@ export const useTransaction = screen => {
 
   // ---- Update Transaction ----
 
-  const updateTransactionData = useSelector(getUpdateTransactionData);
   const isUpdateLoading = updateTransactionData?.isLoading;
   const isUpdateSubmitting = updateTransactionData?.isSubmitting;
   const updateSuccess = updateTransactionData?.success;
@@ -666,7 +660,6 @@ export const useTransaction = screen => {
 
   return {
     // Top bar
-    goBack: () => router.back(),
     walletName,
     currentCoin,
     localCurrency,

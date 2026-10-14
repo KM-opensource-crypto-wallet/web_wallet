@@ -8,10 +8,10 @@ import CoinIcon from 'components/CoinIcon';
 import PriceChange from 'components/PriceChange';
 import GeneralButton from 'components/Button';
 import {ChevronLeftIcon, PlusIcon} from 'components/Home/HomeIcons';
+import useNavigation from 'src/hooks/navigation/useNavigation';
 
 const StakingList = () => {
   const {
-    goBack,
     isLoading,
     currentCoin,
     symbol,
@@ -28,6 +28,7 @@ const StakingList = () => {
     estimateEpochTimestamp,
     handleClaimReward,
   } = useStaking('list');
+  const {goBack} = useNavigation();
 
   const renderBoxItem = (title, value, buttonLabel, buttonValue, type) => {
     if (type === 'hidden') {
