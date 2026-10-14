@@ -12,12 +12,8 @@ import {ThemeContext} from 'theme/ThemeContext';
 import {currencySymbol} from 'src/data/lists/currency';
 import cards from 'src/data/lists/cards';
 import {useRouter} from 'next/navigation';
-import GeneralButton from 'components/Button';
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  UnlinkIcon,
-} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {ChevronRightIcon, UnlinkIcon} from 'components/Home/HomeIcons';
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import useWalletConnectSessions from 'src/hooks/protectedRoutes/wallet/walletConnect/useWalletConnectSessions';
 import useWallet from 'src/hooks/wallet/useWallet';
@@ -61,20 +57,7 @@ const ContactUs = () => {
   }, [router]);
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={styles.title}>Contact us</h1>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={styles.page} title='Contact us'>
       <div className={styles.column}>
         <p className={styles.lead}>
           Have questions or feedback? Reach out to us! Our team is here to
@@ -196,7 +179,7 @@ const ContactUs = () => {
           </section>
         ) : null}
       </div>
-    </main>
+    </Screen>
   );
 };
 

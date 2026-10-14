@@ -5,7 +5,6 @@ import {useDispatch} from 'react-redux';
 import {setResetWallet} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import s from './Settings.module.css';
 import Link from 'next/link';
-import {useRouter} from 'next/navigation';
 import {getPrivacyUrl, getTermsUrl} from 'whitelabel/whiteLabelInfo';
 import {useLocale, useTranslations} from 'next-intl';
 import {setUserLocale} from 'src/utils/updateLocale';
@@ -13,8 +12,8 @@ import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
 import {addBreadcrumb, captureError, logger} from 'services/logger';
 import {showToast} from 'utils/toast';
 import {getWebLockTimeLabel} from 'utils/autoLock';
-import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, ChevronRightIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {ChevronRightIcon} from 'components/Home/HomeIcons';
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import useWallet from 'src/hooks/wallet/useWallet';
 import {
@@ -106,7 +105,6 @@ const Section = ({title, children}) => (
 
 const Settings = () => {
   const dispatch = useDispatch();
-  const router = useRouter();
   const {
     localCurrency,
     lockTime,
@@ -165,20 +163,7 @@ const Settings = () => {
   };
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Settings</h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title='Settings'>
       <div className={s.column}>
         <Section title='Account'>
           <Row
@@ -334,7 +319,7 @@ const Settings = () => {
           />
         </Section>
       </div>
-    </main>
+    </Screen>
   );
 };
 

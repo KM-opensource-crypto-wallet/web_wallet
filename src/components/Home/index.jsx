@@ -20,6 +20,7 @@ import {
   SortIcon,
 } from './HomeIcons';
 import s from './Home.module.css';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 const Notice = ({children, actionLabel, onAction, onClose}) => (
   <div className={s.notice}>
@@ -77,6 +78,14 @@ const Home = () => {
     closeBackupModal,
   } = useHome();
 
+  // const {
+  //   coins,
+  //   walletName,
+  //   searchQuery,
+  //   onSearchChange,
+  //   clearSearch,
+  //   newCoinsMessage,
+  // } = useWallet();
   return (
     <>
       <main className={s.page}>

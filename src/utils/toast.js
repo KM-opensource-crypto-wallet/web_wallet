@@ -8,41 +8,26 @@ const TOAST_BREADCRUMB_LEVEL = {
   rpcError: 'error',
 };
 
-const customView = (title, message, onViewTransaction) => {
-  return (
-    <div style={{display: 'flex', flexDirection: 'column'}}>
-      <div style={{fontSize: 14}}>{title}</div>
-      {!!message && <div style={{fontSize: 12}}>{message}</div>}
-      {!!onViewTransaction && (
-        <button
-          onClick={onViewTransaction}
-          style={{
-            marginTop: 6,
-            fontSize: 12,
-            fontWeight: 600,
-            color: 'var(--primary, #6c63ff)',
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            textDecoration: 'underline',
-            cursor: 'pointer',
-            textAlign: 'left',
-          }}>
-          View Transaction Details →
-        </button>
-      )}
-    </div>
-  );
+// Stroke glyphs drawn inside the accent chip, keyed by toast type.
+const ICON_PATHS = {
+  default: 'M5 12.5l4.5 4.5L19 7.5',
+  success: 'M5 12.5l4.5 4.5L19 7.5',
+  error: 'M7 7l10 10M17 7L7 17',
+  warning: 'M12 7v6.5M12 17.5h.01',
+  info: 'M12 11v6M12 7h.01',
 };
 
-// Copy confirmation in the redesigned style. `props.warning` adds a caution
-// line, used when the copied text is a secret (private key, phrase).
-const CopyToastView = ({title, message, warning}) => (
-  <div className={styles.body}>
+// Icon for every toast, passed to <ToastContainer icon>. The chip colour
+// comes from the card's `--tt-accent`, set per type in app/toast.css.
+export const ToastIcon = ({type, isLoading}) => {
+  if (isLoading) {
+    return <span className={styles.spinner} aria-hidden='true' />;
+  }
+  return (
     <span className={styles.icon} aria-hidden='true'>
       <svg width='18' height='18' viewBox='0 0 24 24'>
         <path
-          d='M5 12.5l4.5 4.5L19 7.5'
+          d={ICON_PATHS[type] || ICON_PATHS.default}
           stroke='currentColor'
           strokeWidth='2.4'
           strokeLinecap='round'
@@ -50,25 +35,46 @@ const CopyToastView = ({title, message, warning}) => (
         />
       </svg>
     </span>
-    <div className={styles.text}>
-      <span className={styles.title}>{title}</span>
-      {!!message && <span className={styles.message}>{message}</span>}
-      {!!warning && (
-        <span className={styles.warning}>
-          <svg width='13' height='13' viewBox='0 0 24 24' aria-hidden='true'>
-            <path
-              d='M12 9v4m0 4h.01M10.3 3.9L2.4 17.5A2 2 0 004.1 20.5h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z'
-              stroke='currentColor'
-              strokeWidth='2'
-              strokeLinecap='round'
-              strokeLinejoin='round'
-            />
-          </svg>
-          {warning}
-        </span>
-      )}
-    </div>
+  );
+};
+
+const ToastText = ({title, message, children}) => (
+  <div className={styles.text}>
+    <span className={styles.title}>{title}</span>
+    {!!message && <span className={styles.message}>{message}</span>}
+    {children}
   </div>
+);
+
+const customView = (title, message, onViewTransaction) => (
+  <ToastText title={title} message={message}>
+    {!!onViewTransaction && (
+      <button className={styles.action} onClick={onViewTransaction}>
+        View transaction details →
+      </button>
+    )}
+  </ToastText>
+);
+
+// Copy confirmation. `props.warning` adds a caution line, used when the
+// copied text is a secret (private key, phrase).
+const CopyToastView = ({title, message, warning}) => (
+  <ToastText title={title} message={message}>
+    {!!warning && (
+      <span className={styles.warning}>
+        <svg width='13' height='13' viewBox='0 0 24 24' aria-hidden='true'>
+          <path
+            d='M12 9v4m0 4h.01M10.3 3.9L2.4 17.5A2 2 0 004.1 20.5h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z'
+            stroke='currentColor'
+            strokeWidth='2'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+          />
+        </svg>
+        {warning}
+      </span>
+    )}
+  </ToastText>
 );
 
 const RpcErrorMsg = ({chain_name, toastId}) => {
@@ -88,27 +94,13 @@ const RpcErrorMsg = ({chain_name, toastId}) => {
   };
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
-      <div style={{fontSize: 14, fontWeight: 600}}>Custom RPC Error</div>
-      <div style={{fontSize: 12}}>
-        {`Your custom RPC for ${displayName} is not responding.`}
-      </div>
-      <button
-        onClick={onPress}
-        style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: 'var(--primary, #6c63ff)',
-          background: 'none',
-          border: 'none',
-          padding: 0,
-          textDecoration: 'underline',
-          cursor: 'pointer',
-          textAlign: 'left',
-        }}>
-        Change to Default RPC
+    <ToastText
+      title='Custom RPC Error'
+      message={`Your custom RPC for ${displayName} is not responding.`}>
+      <button className={styles.action} onClick={onPress}>
+        Change to default RPC
       </button>
-    </div>
+    </ToastText>
   );
 };
 
@@ -144,12 +136,10 @@ export const showToast = ({type, title, message, props, ...options}) => {
         warning={props?.warning}
       />,
       {
-        className: styles.copyToast,
         position: 'top-center',
         autoClose: 2500,
         hideProgressBar: true,
         closeButton: false,
-        icon: false,
         ...options,
       },
     );

@@ -4,8 +4,8 @@ import {useRouter} from 'next/navigation';
 import {aboutList} from 'src/data/lists/aboutList';
 import {APP_VERSION} from 'utils/common';
 import {getAppIcon, getAppTitle} from 'whitelabel/whiteLabelInfo';
-import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, ChevronRightIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {ChevronRightIcon} from 'components/Home/HomeIcons';
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import {DocIcon, ShieldIcon} from '../settings/SettingsIcons';
 import s from './About.module.css';
@@ -20,20 +20,7 @@ const AboutScreen = () => {
   const router = useRouter();
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>About</h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title='About'>
       <div className={s.column}>
         <section className={s.hero} aria-label='App'>
           <span className={s.appIcon}>
@@ -78,7 +65,7 @@ const AboutScreen = () => {
           </div>
         </section>
       </div>
-    </main>
+    </Screen>
   );
 };
 

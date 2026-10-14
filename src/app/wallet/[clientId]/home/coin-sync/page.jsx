@@ -6,8 +6,7 @@ import CoinSyncActionButton from 'components/CoinSyncActionButton';
 import CoinSyncEmptyState from 'components/CoinSyncEmptyState';
 import ConfirmationModal from 'components/ConfirmationModal';
 import Modal from '@mui/material/Modal';
-import GeneralButton from 'components/Button';
-import {ChevronLeftIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
 import {CheckCircleIcon} from 'components/Transactions/TxIcons';
 import useCoinSync from 'src/hooks/protectedRoutes/wallet/home/coin-sync/useCoinSync';
 import styles from './CoinSync.module.css';
@@ -48,26 +47,12 @@ const CoinSync = () => {
   } = useCoinSync();
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.iconButton}
-          aria-label='Back'
-          disabled={isCreatingWallets}
-          onClick={handleGoBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <div className={styles.heading}>
-          <h1 className={styles.title}>Scan coins</h1>
-          {headerWalletName ? (
-            <span className={styles.subtitle}>{headerWalletName}</span>
-          ) : null}
-        </div>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen
+      className={styles.page}
+      topBarClassName={styles.topBar}
+      title='Scan coins'
+      subtitle={headerWalletName}
+      onBack={handleGoBack}>
       <div className={styles.column}>
         <CoinSyncProgress
           progress={progress}
@@ -166,7 +151,7 @@ const CoinSync = () => {
         onConfirm={handleConfirmCancelScan}
         onDismiss={handleDismissCancelScan}
       />
-    </main>
+    </Screen>
   );
 };
 

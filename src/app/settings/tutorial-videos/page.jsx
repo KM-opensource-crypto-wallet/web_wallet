@@ -3,11 +3,9 @@
 import React, {useState, useCallback} from 'react';
 import {useSelector} from 'react-redux';
 import Image from 'next/image';
-import {useRouter} from 'next/navigation';
 import {getTutorialVideos} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 import VideoPlayer from 'components/VideoPlayer';
-import GeneralButton from 'components/Button';
-import {ChevronLeftIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
 import {PlayIcon} from 'app/settings/SettingsIcons';
 import {resolveThumbnail, getYouTubeId} from 'utils/videoUtils';
 import s from './TutorialVideos.module.css';
@@ -52,7 +50,6 @@ const VideoTile = ({item, onClick}) => {
 };
 
 const TutorialVideos = () => {
-  const router = useRouter();
   const videos = useSelector(getTutorialVideos);
   const [activeVideo, setActiveVideo] = useState(null);
 
@@ -60,20 +57,7 @@ const TutorialVideos = () => {
   const onClosePlayer = useCallback(() => setActiveVideo(null), []);
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Tutorial Videos</h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title='Tutorial Videos'>
       <div className={s.column}>
         <p className={s.lead}>Learn how to use wallet features.</p>
         {videos?.length ? (
@@ -95,7 +79,7 @@ const TutorialVideos = () => {
       </div>
 
       <VideoPlayer item={activeVideo} onClose={onClosePlayer} />
-    </main>
+    </Screen>
   );
 };
 

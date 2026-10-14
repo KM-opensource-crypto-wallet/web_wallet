@@ -4,13 +4,11 @@
   --rf-ink: #1a1613;
   --rf-muted: #6e655e;
   --rf-faint: #8a7f76;
-  --rf-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
   --rf-glass: rgba(255, 255, 255, 0.65);
   --rf-glass-strong: rgba(255, 255, 255, 0.85);
   --rf-glass-border: rgba(255, 255, 255, 0.9);
   --rf-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
   --rf-line: rgba(26, 22, 19, 0.06);
-  --rf-header-line: rgba(26, 22, 19, 0.07);
   --rf-field: rgba(26, 22, 19, 0.045);
   --rf-field-border: rgba(26, 22, 19, 0.08);
   --rf-hover: rgba(26, 22, 19, 0.06);
@@ -21,24 +19,17 @@
   --rf-warning-border: rgba(247, 144, 9, 0.3);
   --rf-warning-ink: #93520a;
   --rf-tint: 10%;
-  position: relative;
-  min-height: calc(var(--app-height, 100vh) - 70px);
-  overflow: hidden;
-  padding-bottom: 40px;
-  background: var(--rf-surface);
 }
 
 :global([data-theme='dark']) .page {
   --rf-ink: #f5f1ec;
   --rf-muted: #a89c92;
   --rf-faint: #a89c92;
-  --rf-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
   --rf-glass: rgba(255, 255, 255, 0.05);
   --rf-glass-strong: rgba(255, 255, 255, 0.08);
   --rf-glass-border: rgba(255, 255, 255, 0.1);
   --rf-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
   --rf-line: rgba(255, 255, 255, 0.06);
-  --rf-header-line: rgba(255, 255, 255, 0.07);
   --rf-field: rgba(255, 255, 255, 0.06);
   --rf-field-border: rgba(255, 255, 255, 0.1);
   --rf-hover: rgba(255, 255, 255, 0.08);
@@ -57,21 +48,6 @@
   fill: none;
 }
 
-.glow {
-  position: absolute;
-  top: -120px;
-  right: -140px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--background) 13%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
 .column {
   position: relative;
   display: flex;
@@ -82,33 +58,7 @@
   padding: 16px 16px 0;
 }
 
-/* Top bar: back, title with the wallet switcher, spacer to keep it centred. */
-.topBar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--rf-header-line);
-}
-
-.iconButton,
-.iconSpacer {
-  display: flex;
-  flex: none;
-  width: 44px;
-  height: 44px;
-}
-
-.iconButton {
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  color: var(--rf-ink);
-  transition: background-color 0.2s;
-}
-
-.iconButton:hover,
+/* Header (in TopBar): title with the wallet switcher. */
 .heading:hover {
   background: var(--rf-hover);
 }
@@ -464,7 +414,6 @@
   color: var(--rf-success);
 }
 
-.iconButton:focus-visible,
 .heading:focus-visible,
 .segment:focus-visible,
 .copy:focus-visible {
@@ -499,10 +448,6 @@
 }
 
 @media (min-width: 600px) {
-  .topBar {
-    padding: 10px 20px;
-  }
-
   .column {
     padding-top: 24px;
   }

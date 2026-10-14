@@ -13,7 +13,8 @@ import {showToast} from 'utils/toast';
 import {useRouter} from 'next/navigation';
 import s from './Restore.module.css';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, InfoIcon} from 'components/Home/HomeIcons';
+import {InfoIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
 import {CloudDownIcon, LockIcon} from '../SettingsIcons';
 import WalletPicker from '../backup/WalletPicker';
 import UserMenu from 'components/UserMenu';
@@ -416,19 +417,14 @@ const RestorePage = () => {
   };
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        {/* replace, not back(): history may end at the Google sign-in page */}
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.replace('/settings')}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Restore Wallets</h1>
-        {session && session.user ? (
+    <Screen
+      className={s.page}
+      title='Restore Wallets'
+      // replace, not back(): history may end at the Google sign-in page
+      onBack={() => router.replace('/settings')}
+      right={
+        session &&
+        session.user && (
           <span className={s.account}>
             <UserMenu
               user={session.user}
@@ -436,11 +432,8 @@ const RestorePage = () => {
               onDeleteBackup={() => setShowDeleteModal(true)}
             />
           </span>
-        ) : (
-          <span className={s.iconSpacer} aria-hidden='true' />
-        )}
-      </div>
-
+        )
+      }>
       <div className={s.column}>
         <p className={s.lead}>Recover your wallets from Google Drive.</p>
         {renderContent()}
@@ -464,7 +457,7 @@ const RestorePage = () => {
         hideModal={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteBackup}
       />
-    </main>
+    </Screen>
   );
 };
 

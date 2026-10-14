@@ -129,9 +129,14 @@ import {
   isReduxStoreLoaded,
   selectWalletConnectTransactionData,
 } from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
+import {validateSupportedChain} from 'dok-wallet-blockchain-networks/helper';
+import {isValidBrowser} from 'src/utils/common';
+import {useMemo, useState} from 'react';
 
 // Every store value the hooks read.
 export const useWallet = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+
   // App and auth
   const isStoreLoaded = useSelector(isReduxStoreLoaded);
   const hasAccount = useSelector(getHasAccount);
@@ -269,6 +274,46 @@ export const useWallet = () => {
   const selectedVotes = useSelector(getSelectedVotes);
   const selectedVotesTotal = useSelector(countSelectedVotes);
 
+  // Coins this browser can show (same rules as the old list rows).
+  const coins = useMemo(
+    () =>
+      (userCoins || []).filter(
+        item =>
+          validateSupportedChain(item?.chain_name) &&
+          (item?.chain_name !== 'thorchain' || isValidBrowser()),
+      ),
+    [userCoins],
+  );
+
+  const visibleCoins = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return q
+      ? coins.filter(
+          item =>
+            item?.name?.toLowerCase().includes(q) ||
+            item?.symbol?.toLowerCase().includes(q),
+        )
+      : coins;
+  }, [coins, searchQuery]);
+
+  const coinsNames = useMemo(
+    () =>
+      (Array.isArray(allNewCoins) ? allNewCoins : [])
+        .map(item => item.name)
+        .join(', '),
+    [allNewCoins],
+  );
+
+  const newCoinsMessage =
+    coinsNames && !isImportWithPrivateKey
+      ? `New ${
+          allNewCoins?.length === 1 ? 'cryptocurrency' : 'cryptocurrencies'
+        }, such as ${coinsNames} ${
+          allNewCoins?.length === 1 ? 'is' : 'are'
+        } now accessible.`
+      : '';
+
+  const walletName = currentWallet?.walletName || 'Wallet';
   return {
     // App and auth
     isStoreLoaded,
@@ -395,6 +440,14 @@ export const useWallet = () => {
     allowanceLoading,
     selectedVotes,
     selectedVotesTotal,
+
+    walletName,
+    coins,
+    visibleCoins,
+    newCoinsMessage,
+    searchQuery,
+    onSearchChange: e => setSearchQuery(e.target.value),
+    clearSearch: () => setSearchQuery(''),
   };
 };
 

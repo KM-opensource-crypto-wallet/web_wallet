@@ -2,7 +2,6 @@
 
 import React from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import {useRouter} from 'next/navigation';
 import {
   selectVisibleWallets,
   selectCurrentWallet,
@@ -13,15 +12,14 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import Image from 'next/image';
 import s from './DeriveAddress.module.css';
-import GeneralButton from 'components/Button';
-import {CheckIcon, ChevronLeftIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {CheckIcon} from 'components/Home/HomeIcons';
 import {BranchesIcon} from '../SettingsIcons';
 import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 
 // Derive addresses: one switch per wallet that adds or removes the extra
 // EVM, SOL and TRX addresses.
 const DeriveAddress = () => {
-  const router = useRouter();
   const currentWalletName = useSelector(selectCurrentWallet)?.walletName;
   const visibleWallets = useSelector(selectVisibleWallets);
   const dispatch = useDispatch();
@@ -40,20 +38,7 @@ const DeriveAddress = () => {
   };
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>EVM, SOL &amp; TRX addresses</h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title='EVM, SOL & TRX addresses'>
       <div className={s.column}>
         <div className={s.intro}>
           <span className={s.introIcon}>
@@ -106,7 +91,7 @@ const DeriveAddress = () => {
           </ul>
         </section>
       </div>
-    </main>
+    </Screen>
   );
 };
 

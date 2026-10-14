@@ -6,7 +6,8 @@ import React from 'react';
 import {useSelector} from 'react-redux';
 import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, InfoIcon, KeyIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {InfoIcon, KeyIcon} from 'components/Home/HomeIcons';
 
 const VerifyCreate = () => {
   const router = useRouter();
@@ -24,32 +25,15 @@ const VerifyCreate = () => {
     return null;
   }
 
-  const topBar = (
-    <div className={styles.topBar}>
-      <GeneralButton
-        variant='unstyled'
-        className={styles.iconButton}
-        aria-label='Back'
-        onClick={() => router.back()}>
-        <ChevronLeftIcon size={24} />
-      </GeneralButton>
-      <div className={styles.heading}>
-        <h1 className={styles.title}>Your seed phrase</h1>
-        {targetWallet.walletName ? (
-          <span className={styles.subtitle}>{targetWallet.walletName}</span>
-        ) : null}
-      </div>
-      <span className={styles.iconSpacer} aria-hidden='true' />
-    </div>
-  );
-
   // Wallets imported with a private key never store a phrase, so there is
   // nothing to show or back up - explain that instead of a blank page.
   if (!targetWallet.phrase) {
     return (
-      <main className={styles.page}>
-        <div className={styles.glow} aria-hidden='true' />
-        {topBar}
+      <Screen
+        className={styles.page}
+        topBarClassName={styles.topBar}
+        title='Your seed phrase'
+        subtitle={targetWallet.walletName}>
         <div className={styles.column}>
           <div className={styles.intro}>
             <span className={styles.introIcon} aria-hidden='true'>
@@ -63,16 +47,17 @@ const VerifyCreate = () => {
             </p>
           </div>
         </div>
-      </main>
+      </Screen>
     );
   }
 
   const words = targetWallet.phrase.split(' ');
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      {topBar}
-
+    <Screen
+      className={styles.page}
+      topBarClassName={styles.topBar}
+      title='Your seed phrase'
+      subtitle={targetWallet.walletName}>
       <div className={styles.column}>
         <div className={styles.intro}>
           <span className={styles.introIcon} aria-hidden='true'>
@@ -120,7 +105,7 @@ const VerifyCreate = () => {
           </div>
         )}
       </div>
-    </main>
+    </Screen>
   );
 };
 

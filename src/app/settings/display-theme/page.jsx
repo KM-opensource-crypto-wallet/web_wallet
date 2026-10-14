@@ -1,9 +1,8 @@
 'use client';
 import {useContext} from 'react';
-import {useRouter} from 'next/navigation';
 import {ThemeContext} from 'theme/ThemeContext';
-import GeneralButton from 'components/Button';
-import {CheckIcon, ChevronLeftIcon, InfoIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {CheckIcon, InfoIcon} from 'components/Home/HomeIcons';
 import s from './DisplayTheme.module.css';
 
 const themeList = [
@@ -32,24 +31,10 @@ const Preview = ({theme}) => (
 );
 
 const DisplayTheme = () => {
-  const router = useRouter();
   const {theme, changeTheme} = useContext(ThemeContext);
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Theme</h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title='Theme'>
       <div className={s.column}>
         <h2 className={s.sectionLabel}>Appearance</h2>
         <div className={s.grid} role='radiogroup' aria-label='Theme'>
@@ -90,7 +75,7 @@ const DisplayTheme = () => {
           </span>
         </p>
       </div>
-    </main>
+    </Screen>
   );
 };
 

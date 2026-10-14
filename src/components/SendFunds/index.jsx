@@ -9,7 +9,6 @@ import PriceChange from 'components/PriceChange';
 import GeneralButton from 'components/Button';
 import {
   ChevronDownIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
   CloseIcon,
   SwapIcon,
@@ -21,7 +20,7 @@ import useSend from 'src/hooks/protectedRoutes/wallet/home/send/useSend';
 import s from './SendFunds.module.css';
 import ModalAddressPoisoningWarning from 'components/ModalAddressPoisoningWarning';
 import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const shortAddress = address =>
   address && address.length > 14
@@ -109,36 +108,23 @@ const SendFunds = () => {
     cancelPoisonWarning,
     continuePoisonWarning,
   } = useSend('sendFunds');
-  const {goBack} = useNavigation();
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.heading}
+      aria-haspopup='dialog'
+      onClick={openSwitcher}>
+      <h1 className={s.headingTitle}>Send</h1>
+      <span className={s.headingSub}>
+        <span className={s.walletAvatar}>{walletName[0].toUpperCase()}</span>
+        <span className={s.headingSubText}>{walletName}</span>
+        <ChevronDownIcon size={12} className={s.headingChevron} />
+      </span>
+    </GeneralButton>
+  );
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <GeneralButton
-          variant='unstyled'
-          className={s.heading}
-          aria-haspopup='dialog'
-          onClick={openSwitcher}>
-          <h1 className={s.headingTitle}>Send</h1>
-          <span className={s.headingSub}>
-            <span className={s.walletAvatar}>
-              {walletName[0].toUpperCase()}
-            </span>
-            <span className={s.headingSubText}>{walletName}</span>
-            <ChevronDownIcon size={12} className={s.headingChevron} />
-          </span>
-        </GeneralButton>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} center={center}>
       <div className={s.column}>
         <Formik
           innerRef={formikRef}
@@ -458,7 +444,7 @@ const SendFunds = () => {
         onCancel={cancelPoisonWarning}
         onContinue={continuePoisonWarning}
       />
-    </main>
+    </Screen>
   );
 };
 

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import {useRouter} from 'next/navigation';
 import {
   selectVisibleWallets,
   selectCurrentWallet,
@@ -10,32 +9,17 @@ import {
 import {togglePrivacyMode} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import Image from 'next/image';
 import s from './privacy-mode.module.css';
-import GeneralButton from 'components/Button';
-import {ChevronLeftIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
 import {EyeOffIcon} from 'app/settings/SettingsIcons';
 import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 
 const PrivacyMode = () => {
-  const router = useRouter();
   const currentWalletName = useSelector(selectCurrentWallet)?.walletName;
   const visibleWallets = useSelector(selectVisibleWallets);
   const dispatch = useDispatch();
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Privacy Mode</h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title='Privacy Mode'>
       <div className={s.column}>
         <div className={s.info}>
           <span className={s.infoIcon}>
@@ -100,7 +84,7 @@ const PrivacyMode = () => {
           </ul>
         </section>
       </div>
-    </main>
+    </Screen>
   );
 };
 

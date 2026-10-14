@@ -1,18 +1,16 @@
 'use client';
 import React, {useCallback} from 'react';
-import {useRouter} from 'next/navigation';
 import {useTranslations} from 'next-intl';
 import {useDispatch} from 'react-redux';
 import {updateLockTime} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import {WEB_AUTO_LOCK, getWebLockTimeLabel} from 'utils/autoLock';
-import GeneralButton from 'components/Button';
-import {CheckIcon, ChevronLeftIcon, InfoIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {CheckIcon, InfoIcon} from 'components/Home/HomeIcons';
 import useWallet from 'src/hooks/wallet/useWallet';
 import {LockIcon, TimerIcon} from '../SettingsIcons';
 import s from './AutoLock.module.css';
 
 const AutoLock = () => {
-  const router = useRouter();
   const t = useTranslations('settings');
   const {lockTime} = useWallet();
   const lockTimeDisplay = getWebLockTimeLabel(lockTime);
@@ -28,20 +26,7 @@ const AutoLock = () => {
   );
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>{t('autoLock')}</h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title={t('autoLock')}>
       <div className={s.column}>
         <p className={s.sectionLabel} id='autolock-label'>
           Lock the wallet
@@ -84,7 +69,7 @@ const AutoLock = () => {
           </span>
         </p>
       </div>
-    </main>
+    </Screen>
   );
 };
 

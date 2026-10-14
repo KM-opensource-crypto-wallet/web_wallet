@@ -1,6 +1,5 @@
 'use client';
-import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, SwapIcon} from 'components/Home/HomeIcons';
+import {SwapIcon} from 'components/Home/HomeIcons';
 import {
   ArrowDownIcon,
   EmptyIcon,
@@ -13,7 +12,7 @@ import SwapCoinIcon from 'components/ExchangeHistory/SwapCoinIcon';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import useSwap from 'src/hooks/protectedRoutes/wallet/swap/useSwap';
 import s from './SwapDetails.module.css';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 // One leg of the swap: label, coin icon, amount and chain.
 const Side = ({label, icon, symbol, amount, display}) => (
@@ -53,43 +52,25 @@ const SwapDetails = () => {
     onRetryDetails: onRetry,
     openExplorer,
   } = useSwap('details');
-  const {goBack} = useNavigation();
 
-  const header = (
-    <div className={s.topBar}>
-      <GeneralButton
-        variant='unstyled'
-        className={s.iconButton}
-        aria-label='Back'
-        onClick={goBack}>
-        <ChevronLeftIcon size={24} />
-      </GeneralButton>
-      <h1 className={s.title}>Swap details</h1>
-      {loading && transaction ? (
-        <span className={s.refreshing} aria-label='Refreshing' />
-      ) : (
-        <span className={s.iconSpacer} aria-hidden='true' />
-      )}
-    </div>
+  // Refreshing indicator while a poll runs on an already-loaded swap.
+  const right = loading && transaction && (
+    <span className={s.refreshing} aria-label='Refreshing' />
   );
 
   if (loading && !transaction) {
     return (
-      <main className={s.page}>
-        <div className={s.glow} aria-hidden='true' />
-        {header}
+      <Screen className={s.page} title='Swap details' right={right}>
         <div className={s.loading}>
           <Loading />
         </div>
-      </main>
+      </Screen>
     );
   }
 
   if (!transaction) {
     return (
-      <main className={s.page}>
-        <div className={s.glow} aria-hidden='true' />
-        {header}
+      <Screen className={s.page} title='Swap details' right={right}>
         <div className={s.column}>
           <div className={s.empty}>
             <span className={s.emptyIcon}>
@@ -107,7 +88,7 @@ const SwapDetails = () => {
             )}
           </div>
         </div>
-      </main>
+      </Screen>
     );
   }
 
@@ -126,9 +107,7 @@ const SwapDetails = () => {
   } = swapDetails;
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      {header}
+    <Screen className={s.page} title='Swap details' right={right}>
       <div className={s.column}>
         <section className={s.hero} aria-label='Swap'>
           <div className={s.heroHead}>
@@ -261,7 +240,7 @@ const SwapDetails = () => {
           </section>
         )}
       </div>
-    </main>
+    </Screen>
   );
 };
 

@@ -5,11 +5,7 @@ import {CircularProgress, TextField} from '@mui/material';
 import GeneralButton from 'components/Button';
 import WalletSwitcher from 'components/Home/WalletSwitcher';
 import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
-import {
-  ChevronDownIcon,
-  ChevronLeftIcon,
-  HistoryIcon,
-} from 'components/Home/HomeIcons';
+import {ChevronDownIcon, HistoryIcon} from 'components/Home/HomeIcons';
 
 import s from './Exchange.module.css';
 
@@ -24,7 +20,7 @@ import CoinSelectorSheet from './components/CoinSelectorSheet';
 import ProviderList from './components/ProviderList';
 import SlippageEditor from './components/SlippageEditor';
 import useSwap from 'src/hooks/protectedRoutes/wallet/swap/useSwap';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const Exchange = () => {
   const {
@@ -96,41 +92,33 @@ const Exchange = () => {
     exchangePermitApproveLoading,
     onPermitAllowanceContinue,
   } = useSwap('swap');
-  const {goBack} = useNavigation();
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.heading}
+      aria-haspopup='dialog'
+      onClick={openSwitcher}>
+      <h1 className={s.headingTitle}>Swap</h1>
+      <span className={s.headingSub}>
+        <span className={s.walletAvatar}>{walletName[0].toUpperCase()}</span>
+        <span className={s.headingSubText}>{walletName}</span>
+        <ChevronDownIcon size={12} className={s.headingChevron} />
+      </span>
+    </GeneralButton>
+  );
+
+  const right = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.iconButton}
+      aria-label='Swap history'
+      onClick={goToSwapHistory}>
+      <HistoryIcon size={21} />
+    </GeneralButton>
+  );
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <GeneralButton
-          variant='unstyled'
-          className={s.heading}
-          aria-haspopup='dialog'
-          onClick={openSwitcher}>
-          <h1 className={s.headingTitle}>Swap</h1>
-          <span className={s.headingSub}>
-            <span className={s.walletAvatar}>
-              {walletName[0].toUpperCase()}
-            </span>
-            <span className={s.headingSubText}>{walletName}</span>
-            <ChevronDownIcon size={12} className={s.headingChevron} />
-          </span>
-        </GeneralButton>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Swap history'
-          onClick={goToSwapHistory}>
-          <HistoryIcon size={21} />
-        </GeneralButton>
-      </div>
+    <Screen className={s.page} center={center} right={right}>
       <div className={s.container}>
         <SwapCard
           label='You pay'
@@ -336,7 +324,7 @@ const Exchange = () => {
         hidden={switcherOpen && readHideBalances()}
         localCurrency={localCurrency}
       />
-    </main>
+    </Screen>
   );
 };
 

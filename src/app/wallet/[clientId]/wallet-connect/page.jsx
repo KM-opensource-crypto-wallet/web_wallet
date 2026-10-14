@@ -1,15 +1,16 @@
 'use client';
 import React, {useState} from 'react';
 import Image from 'next/image';
-import {useRouter} from 'next/navigation';
-import {useSelector} from 'react-redux';
-import {selectCurrentWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {chainLogoMap} from 'assets/chain_logo';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import MadalWalletConnect from 'components/MadalWalletConnect';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, PlusIcon, UnlinkIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import WalletSwitcher from 'components/Home/WalletSwitcher';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
+import {ChevronDownIcon, PlusIcon, UnlinkIcon} from 'components/Home/HomeIcons';
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
+import useWallet from 'src/hooks/wallet/useWallet';
 import useWalletConnectSessions from 'src/hooks/protectedRoutes/wallet/walletConnect/useWalletConnectSessions';
 import styles from './WalletConnect.module.css';
 
@@ -26,37 +27,40 @@ const hostOf = url => {
 // WalletConnect: start a new dApp connection, and see / disconnect the apps
 // already connected to this wallet.
 const WalletConnect = () => {
-  const router = useRouter();
-  const currentWallet = useSelector(selectCurrentWallet);
+  const {walletName, localCurrency} = useWallet();
   const [modalOpen, setModalOpen] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const {sessions, disconnect, isDisconnecting} = useWalletConnectSessions();
 
-  return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <div className={styles.heading}>
-          <h1 className={styles.title}>WalletConnect</h1>
-          {currentWallet?.walletName ? (
-            <span className={styles.subtitle}>{currentWallet.walletName}</span>
-          ) : null}
-        </div>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.iconButton}
-          aria-label='New connection'
-          onClick={() => setModalOpen(true)}>
-          <PlusIcon size={22} />
-        </GeneralButton>
-      </div>
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={styles.heading}
+      aria-haspopup='dialog'
+      onClick={() => setSwitcherOpen(true)}>
+      <h1 className={styles.headingTitle}>WalletConnect</h1>
+      <span className={styles.headingSub}>
+        <span className={styles.walletAvatar}>
+          {walletName[0].toUpperCase()}
+        </span>
+        <span className={styles.headingSubText}>{walletName}</span>
+        <ChevronDownIcon size={12} className={styles.headingChevron} />
+      </span>
+    </GeneralButton>
+  );
 
+  const right = (
+    <GeneralButton
+      variant='unstyled'
+      className={styles.iconButton}
+      aria-label='New connection'
+      onClick={() => setModalOpen(true)}>
+      <PlusIcon size={22} />
+    </GeneralButton>
+  );
+
+  return (
+    <Screen className={styles.page} center={center} right={right}>
       <div className={styles.column}>
         <section className={styles.hero} aria-label='Connect a dApp'>
           <span className={styles.heroLogo}>
@@ -157,8 +161,8 @@ const WalletConnect = () => {
                     </div>
                   ) : null}
 
-                  <button
-                    type='button'
+                  <GeneralButton
+                    variant='unstyled'
                     className={styles.disconnect}
                     disabled={busy}
                     onClick={() =>
@@ -170,7 +174,7 @@ const WalletConnect = () => {
                       <UnlinkIcon size={16} />
                     )}
                     {busy ? 'Disconnecting…' : 'Disconnect'}
-                  </button>
+                  </GeneralButton>
                 </article>
               );
             })
@@ -186,7 +190,13 @@ const WalletConnect = () => {
       </div>
 
       <MadalWalletConnect visible={modalOpen} onClose={setModalOpen} />
-    </main>
+      <WalletSwitcher
+        visible={switcherOpen}
+        onClose={() => setSwitcherOpen(false)}
+        hidden={switcherOpen && readHideBalances()}
+        localCurrency={localCurrency}
+      />
+    </Screen>
   );
 };
 

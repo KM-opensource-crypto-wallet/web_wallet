@@ -264,19 +264,3 @@ input[type='number']::-webkit-outer-spin-button {
   display: none;
 }
 
-/* toastify.css */
-.Toastify__toast--success .Toastify__toast-icon svg {
-  fill: green; /* Change to your desired color */
-}
-
-.Toastify__toast--error .Toastify__toast-icon svg {
-  fill: red; /* Change to your desired color */
-}
-
-.Toastify__toast--warning .Toastify__toast-icon svg {
-  fill: orange; /* Change to your desired color */
-}
-
-.Toastify__toast--info .Toastify__toast-icon svg {
-  fill: blue; /* Change to your desired color */
-}

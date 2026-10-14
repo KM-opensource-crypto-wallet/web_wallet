@@ -15,6 +15,7 @@ import {captchaRef} from 'utils/apiCaptcha';
 import DisabledView from 'components/DisabledView';
 import CoinSyncWidget from 'components/CoinSyncWidget';
 import {createDynamicTheme} from 'src/theme';
+import {ToastIcon} from 'utils/toast';
 
 const CaptchaSetup = () => {
   const {executeRecaptcha} = useGoogleReCaptcha();
@@ -62,6 +63,7 @@ function AppRouting({children, wlData}) {
           position='bottom-right'
           draggable
           pauseOnHover
+          icon={ToastIcon}
           theme={themeType === 'light' ? 'light' : 'dark'}
         />
       </ThemeProvider>

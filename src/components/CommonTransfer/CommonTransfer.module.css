@@ -7,7 +7,6 @@
   --ct-ink: #1a1613;
   --ct-muted: #6e655e;
   --ct-faint: #8a7f76;
-  --ct-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
   --ct-glass: rgba(255, 255, 255, 0.65);
   --ct-glass-border: rgba(255, 255, 255, 0.9);
   --ct-shadow: 0 8px 28px rgba(63, 40, 22, 0.06);
@@ -18,18 +17,13 @@
   --ct-error: #b3261e;
   --ct-error-bg: rgba(217, 45, 32, 0.08);
   --ct-error-border: rgba(217, 45, 32, 0.25);
-  position: relative;
-  min-height: calc(var(--app-height, 100vh) - 70px);
-  overflow: hidden;
-  padding-bottom: 40px;
-  background: var(--ct-surface);
+  --glow-strength: 14%;
 }
 
 :global([data-theme='dark']) .page {
   --ct-ink: #f5f1ec;
   --ct-muted: #c9bfb6;
   --ct-faint: #a89c92;
-  --ct-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
   --ct-glass: rgba(255, 255, 255, 0.05);
   --ct-glass-border: rgba(255, 255, 255, 0.1);
   --ct-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
@@ -45,61 +39,6 @@
 /* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
 .page svg {
   fill: none;
-}
-
-.glow {
-  position: absolute;
-  top: -120px;
-  right: -140px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--background) 14%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
-/* Header */
-.topBar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--ct-line);
-}
-
-.iconButton,
-.iconSpacer {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  color: var(--ct-ink);
-  transition: background-color 0.2s;
-}
-
-.iconButton:hover {
-  background: var(--ct-hover);
-}
-
-.title {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  font-size: 15.5px;
-  font-weight: 700;
-  color: var(--ct-ink);
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Body */
@@ -553,7 +492,6 @@
   color: var(--ct-faint);
 }
 
-.iconButton:focus-visible,
 .tier:focus-visible,
 .editFees:focus-visible {
   outline: 2px solid var(--background);
@@ -561,10 +499,6 @@
 }
 
 @media (min-width: 600px) {
-  .topBar {
-    padding: 10px 20px;
-  }
-
   .column {
     padding-top: 24px;
   }

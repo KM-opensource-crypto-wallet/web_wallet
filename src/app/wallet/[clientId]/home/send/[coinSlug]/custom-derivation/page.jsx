@@ -3,13 +3,13 @@ import React from 'react';
 import s from './CustomDerivation.module.css';
 import GeneralButton from 'components/Button';
 import CoinIcon from 'components/CoinIcon';
-import {ChevronLeftIcon, PlusIcon} from 'components/Home/HomeIcons';
+import {PlusIcon} from 'components/Home/HomeIcons';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import SelectInputExchange from 'components/SelectInputExchange';
 import AddressTypeBadge from 'components/AddressTypeBadge';
 import CustomDerivationPopOver from 'components/CustomDerivationPopOver';
 import useCustomDerivation from 'src/hooks/protectedRoutes/wallet/home/send/useCustomDerivation';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const CustomDerivation = () => {
   const {
@@ -32,27 +32,12 @@ const CustomDerivation = () => {
     allDeriveAddress,
     exportCsv,
   } = useCustomDerivation();
-  const {goBack} = useNavigation();
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.back}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <div className={s.titleBlock}>
-          <h1 className={s.title}>Custom derivation</h1>
-          <span className={s.subtitle}>
-            {currentCoin?.name} ({currentCoin?.symbol})
-          </span>
-        </div>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
+    <Screen
+      className={s.page}
+      title='Custom derivation'
+      subtitle={`${currentCoin?.name} (${currentCoin?.symbol})`}>
       <div className={s.column}>
         <form className={s.card} onSubmit={handleSubmit} noValidate>
           <h2 className={s.cardHeading}>Add an address</h2>
@@ -182,7 +167,7 @@ const CustomDerivation = () => {
           )}
         </section>
       </div>
-    </main>
+    </Screen>
   );
 };
 

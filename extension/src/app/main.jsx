@@ -7,6 +7,7 @@ import {Buffer} from 'buffer';
 import React from 'react';
 import {createRoot} from 'react-dom/client';
 import '@web-original/src/app/globals.css';
+import '@web-original/src/app/toast.css';
 import 'utils/bigNumberConfig';
 import './extension.css';
 import Root from './Root';

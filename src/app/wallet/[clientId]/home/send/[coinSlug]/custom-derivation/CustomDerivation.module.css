@@ -5,7 +5,6 @@
   --cd-ink: #1a1613;
   --cd-muted: #6e655e;
   --cd-faint: #8a7f76;
-  --cd-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
   --cd-glass: rgba(255, 255, 255, 0.65);
   --cd-glass-strong: rgba(255, 255, 255, 0.92);
   --cd-glass-border: rgba(255, 255, 255, 0.9);
@@ -18,20 +17,16 @@
   --cd-placeholder: rgba(26, 22, 19, 0.3);
   --cd-error: #d92d20;
   --cd-tint: 10%;
-  position: relative;
-  min-height: calc(var(--app-height, 100vh) - 70px);
-  /* clip, not hidden: hidden would make this a scroll container and break
-     the sticky accounts header. */
+  /* Clip sideways only (Screen clips both axes), so row menus near the
+     bottom can still overflow the page. */
   overflow-x: clip;
-  padding: 0 0 40px;
-  background: var(--cd-surface);
+  overflow-y: visible;
 }
 
 :global([data-theme='dark']) .page {
   --cd-ink: #f5f1ec;
   --cd-muted: #a89c92;
   --cd-faint: #a89c92;
-  --cd-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
   --cd-glass: rgba(255, 255, 255, 0.05);
   --cd-glass-strong: rgba(30, 25, 21, 0.92);
   --cd-glass-border: rgba(255, 255, 255, 0.1);
@@ -48,28 +43,12 @@
 
 /* globals.css sets `svg { fill: inherit }`, which beats fill="none". Only our
    own line icons; the row menu's dots are drawn with fill. */
-.back svg,
 .add50 svg {
   fill: none;
 }
 
 .menu svg {
   fill: var(--cd-muted);
-}
-
-.glow {
-  position: absolute;
-  top: -120px;
-  right: -140px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--background) 13%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
 }
 
 .column {
@@ -80,65 +59,6 @@
   max-width: 600px;
   margin: 0 auto;
   padding: 14px 16px 0;
-}
-
-/* Top bar */
-.topBar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--cd-ink) 7%, transparent);
-}
-
-.back,
-.iconSpacer {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  color: var(--cd-ink);
-  transition: background-color 0.2s;
-}
-
-.back:hover {
-  background: var(--cd-hover);
-}
-
-.titleBlock {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  min-width: 0;
-  padding: 4px 0;
-  text-align: center;
-}
-
-.title {
-  max-width: 100%;
-  margin: 0;
-  overflow: hidden;
-  font-size: 15.5px;
-  font-weight: 700;
-  color: var(--cd-ink);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.subtitle {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--cd-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Cards */
@@ -418,17 +338,12 @@
   color: var(--cd-muted);
 }
 
-.back:focus-visible,
 .menu button:focus-visible {
   outline: 2px solid var(--background);
   outline-offset: 2px;
 }
 
 @media (min-width: 600px) {
-  .topBar {
-    padding: 10px 20px;
-  }
-
   .column {
     padding-top: 24px;
   }

@@ -12,12 +12,11 @@ import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/se
 import {
   CheckIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
   CopyIcon,
   InfoIcon,
 } from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
 import s from './RecieveFunds.module.css';
-import useNavigation from 'src/hooks/navigation/useNavigation';
 
 // Read-only value with a copy button; used for the address and, on Hedera,
 // the ledger account id.
@@ -59,40 +58,28 @@ const ReceiveFunds = () => {
     copyAccountId,
     accountIdCopied,
   } = useReceiveFunds();
-  const {goBack} = useNavigation();
   const currentWallet = useSelector(selectCurrentWallet);
   const localCurrency = useSelector(getLocalCurrency);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const walletName = currentWallet?.walletName || 'Wallet';
 
-  return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <GeneralButton
-          variant='unstyled'
-          className={s.heading}
-          aria-haspopup='dialog'
-          onClick={() => setSwitcherOpen(true)}>
-          <h1 className={s.headingTitle}>Receive {symbol}</h1>
-          <span className={s.headingSub}>
-            <span className={s.walletAvatar}>
-              {walletName[0].toUpperCase()}
-            </span>
-            <span className={s.headingSubText}>{walletName}</span>
-            <ChevronDownIcon size={12} className={s.headingChevron} />
-          </span>
-        </GeneralButton>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.heading}
+      aria-haspopup='dialog'
+      onClick={() => setSwitcherOpen(true)}>
+      <h1 className={s.headingTitle}>Receive {symbol}</h1>
+      <span className={s.headingSub}>
+        <span className={s.walletAvatar}>{walletName[0].toUpperCase()}</span>
+        <span className={s.headingSubText}>{walletName}</span>
+        <ChevronDownIcon size={12} className={s.headingChevron} />
+      </span>
+    </GeneralButton>
+  );
 
+  return (
+    <Screen className={s.page} center={center}>
       <div className={s.column}>
         <div className={s.coinChip}>
           <span className={s.coinIcon}>
@@ -213,7 +200,7 @@ const ReceiveFunds = () => {
         hidden={switcherOpen && readHideBalances()}
         localCurrency={localCurrency}
       />
-    </main>
+    </Screen>
   );
 };
 

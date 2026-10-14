@@ -6,7 +6,6 @@
   --sk-ink: #1a1613;
   --sk-muted: #6e655e;
   --sk-faint: #8a7f76;
-  --sk-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
   --sk-glass: rgba(255, 255, 255, 0.65);
   --sk-glass-border: rgba(255, 255, 255, 0.9);
   --sk-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
@@ -16,18 +15,12 @@
   --sk-hover: rgba(26, 22, 19, 0.05);
   --sk-placeholder: rgba(26, 22, 19, 0.3);
   --sk-error: #d92d20;
-  position: relative;
-  min-height: calc(var(--app-height, 100vh) - 70px);
-  overflow: hidden;
-  padding: 0 0 40px;
-  background: var(--sk-surface);
 }
 
 :global([data-theme='dark']) .page {
   --sk-ink: #f5f1ec;
   --sk-muted: #a89c92;
   --sk-faint: #a89c92;
-  --sk-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
   --sk-glass: rgba(255, 255, 255, 0.05);
   --sk-glass-border: rgba(255, 255, 255, 0.1);
   --sk-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
@@ -39,26 +32,6 @@
   --sk-error: #f97066;
 }
 
-/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
-.back svg {
-  fill: none;
-}
-
-.glow {
-  position: absolute;
-  top: -120px;
-  right: -140px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--background) 13%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
 .column {
   position: relative;
   display: flex;
@@ -67,46 +40,6 @@
   max-width: 560px;
   margin: 0 auto;
   padding: 14px 16px 0;
-}
-
-/* Top bar */
-.topBar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--sk-ink) 7%, transparent);
-}
-
-.back,
-.iconSpacer {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  color: var(--sk-ink);
-  transition: background-color 0.2s;
-}
-
-.back:hover {
-  background: var(--sk-hover);
-}
-
-.title {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  font-size: 15.5px;
-  font-weight: 700;
-  color: var(--sk-ink);
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .loading {
@@ -339,16 +272,7 @@
   color: var(--sk-error);
 }
 
-.back:focus-visible {
-  outline: 2px solid var(--background);
-  outline-offset: 2px;
-}
-
 @media (min-width: 600px) {
-  .topBar {
-    padding: 10px 20px;
-  }
-
   .column {
     padding-top: 24px;
   }

@@ -8,11 +8,11 @@ import {useRouter} from 'next/navigation';
 import {useDispatch} from 'react-redux';
 import {setOTCData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import GeneralButton from 'components/Button';
+import Screen from 'components/Screen';
 import HomeSheet from 'components/Home/HomeSheet';
 import {
   CheckIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
   SearchIcon,
 } from 'components/Home/HomeIcons';
 import hs from 'components/Home/Home.module.css';
@@ -86,20 +86,7 @@ const OTCScreen = () => {
   };
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={styles.title}>OTC</h1>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={styles.page} title='OTC'>
       <Formik
         initialValues={{
           fullname: '',
@@ -315,7 +302,7 @@ const OTCScreen = () => {
           );
         }}
       </Formik>
-    </main>
+    </Screen>
   );
 };
 

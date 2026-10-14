@@ -7,9 +7,8 @@ import StakingItem from 'components/StakingItem';
 import CoinIcon from 'components/CoinIcon';
 import PriceChange from 'components/PriceChange';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon} from 'components/Home/HomeIcons';
 import SelectInput from 'components/SelectInput';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const WithdrawStaking = () => {
   const {
@@ -43,22 +42,9 @@ const WithdrawStaking = () => {
     stakingProviderList,
     hideResource,
   } = useStaking('withdraw');
-  const {goBack} = useNavigation();
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.back}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={styles.title}>{title}</h1>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
+    <Screen className={styles.page} title={title}>
       <div className={styles.column}>
         <form
           className={styles.form}
@@ -219,7 +205,7 @@ const WithdrawStaking = () => {
           </GeneralButton>
         </form>
       </div>
-    </main>
+    </Screen>
   );
 };
 

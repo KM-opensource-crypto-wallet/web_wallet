@@ -6,13 +6,11 @@
   --hw-ink: #1a1613;
   --hw-muted: #6e655e;
   --hw-faint: #8a7f76;
-  --hw-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
   --hw-surface-solid: #f4ede6;
   --hw-glass: rgba(255, 255, 255, 0.65);
   --hw-glass-border: rgba(255, 255, 255, 0.9);
   --hw-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
   --hw-line: rgba(26, 22, 19, 0.06);
-  --hw-header-line: rgba(26, 22, 19, 0.07);
   --hw-field: rgba(26, 22, 19, 0.045);
   --hw-field-border: rgba(26, 22, 19, 0.08);
   --hw-hover: rgba(26, 22, 19, 0.05);
@@ -22,23 +20,20 @@
   --hw-danger: #d92d20;
   --hw-danger-bg: rgba(217, 45, 32, 0.08);
   --hw-tint: 10%;
-  position: relative;
-  min-height: calc(var(--app-height, 100vh) - 70px);
-  overflow: clip;
-  background: var(--hw-surface);
+  --glow-strength: 14%;
+  /* Screen adds 40px; this page never had bottom padding. */
+  padding-bottom: 0;
 }
 
 :global([data-theme='dark']) .page {
   --hw-ink: #f5f1ec;
   --hw-muted: #c9bfb6;
   --hw-faint: #a89c92;
-  --hw-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
   --hw-surface-solid: #100c0a;
   --hw-glass: rgba(255, 255, 255, 0.05);
   --hw-glass-border: rgba(255, 255, 255, 0.1);
   --hw-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
   --hw-line: rgba(255, 255, 255, 0.06);
-  --hw-header-line: rgba(255, 255, 255, 0.07);
   --hw-field: rgba(255, 255, 255, 0.06);
   --hw-field-border: rgba(255, 255, 255, 0.1);
   --hw-hover: rgba(255, 255, 255, 0.06);
@@ -55,31 +50,7 @@
   fill: none;
 }
 
-.glow {
-  position: absolute;
-  top: -120px;
-  right: -140px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--background) 14%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
-/* Header */
-.topBar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--hw-header-line);
-}
-
+/* Header (in TopBar): info button */
 .iconButton {
   display: flex;
   flex: none;
@@ -94,33 +65,6 @@
 
 .iconButton:hover {
   background: var(--hw-hover);
-}
-
-.heading {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  min-width: 0;
-  padding: 4px 0;
-}
-
-.headingTitle {
-  margin: 0;
-  font-size: 15.5px;
-  font-weight: 700;
-  color: var(--hw-ink);
-}
-
-.headingSub {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--hw-faint);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Body */
@@ -434,10 +378,6 @@
 }
 
 @media (min-width: 600px) {
-  .topBar {
-    padding: 10px 20px;
-  }
-
   .column {
     padding-top: 24px;
   }

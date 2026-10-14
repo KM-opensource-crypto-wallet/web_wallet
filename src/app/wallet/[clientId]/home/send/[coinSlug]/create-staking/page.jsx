@@ -10,8 +10,7 @@ import styles from './CreateStaking.module.css';
 import CoinIcon from 'components/CoinIcon';
 import PriceChange from 'components/PriceChange';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon} from 'components/Home/HomeIcons';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const CreateStaking = () => {
   const {
@@ -44,22 +43,9 @@ const CreateStaking = () => {
     pendingStakingProviderName,
     onAllowanceContinue,
   } = useStaking('create');
-  const {goBack} = useNavigation();
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.back}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={styles.title}>Stake {symbol}</h1>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
+    <Screen className={styles.page} title={<>Stake {symbol}</>}>
       <div className={styles.column}>
         {isLoading ? (
           <div className={styles.loading}>
@@ -248,7 +234,7 @@ const CreateStaking = () => {
         stakingProviderName={pendingStakingProviderName}
         amount={pendingAmount}
       />
-    </main>
+    </Screen>
   );
 };
 

@@ -4,9 +4,9 @@ import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import s from './SelectUTXOs.module.css';
 import Loading from 'src/components/Loading';
 import GeneralButton from 'components/Button';
-import {CheckIcon, ChevronLeftIcon} from 'components/Home/HomeIcons';
+import {CheckIcon} from 'components/Home/HomeIcons';
 import useSelectUTXOS from 'src/hooks/protectedRoutes/wallet/home/send/useSelectUTXOS';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const SelectUTXOs = () => {
   const {
@@ -19,27 +19,22 @@ const SelectUTXOs = () => {
     disableContinue,
     onClickContinue,
   } = useSelectUTXOS();
-  const {goBack} = useNavigation();
+
+  const selectAll = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.selectAll}
+      onClick={onSelectAll}>
+      Select All
+    </GeneralButton>
+  );
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.back}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Select UTXOs</h1>
-        <GeneralButton
-          variant='unstyled'
-          className={s.selectAll}
-          onClick={onSelectAll}>
-          Select All
-        </GeneralButton>
-      </div>
+    <Screen
+      className={s.page}
+      topBarClassName={s.topBar}
+      title='Select UTXOs'
+      right={selectAll}>
       <div className={s.column}>
         {isLoading ? (
           <div className={s.loading}>
@@ -116,7 +111,7 @@ const SelectUTXOs = () => {
           </>
         )}
       </div>
-    </main>
+    </Screen>
   );
 };
 

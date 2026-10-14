@@ -2,12 +2,12 @@
 import InfiniteScroll from 'react-infinite-scroller';
 import Loading from 'components/Loading';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, SwapIcon} from 'components/Home/HomeIcons';
+import {SwapIcon} from 'components/Home/HomeIcons';
 import {ResetIcon} from 'components/Transactions/TxIcons';
 import ExchangeTransactionItem from 'components/ExchangeHistory/ExchangeTransactionItem';
 import useSwap from 'src/hooks/protectedRoutes/wallet/swap/useSwap';
 import s from './SwapHistory.module.css';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 // Swap history for the current wallet: newest first, header refresh,
 // infinite scroll. The backend refreshes pending statuses on each fetch.
@@ -25,34 +25,24 @@ const SwapHistory = () => {
     onHistoryEndReached: onEndReached,
     onPressHistoryItem: onPressItem,
   } = useSwap('history');
-  const {goBack} = useNavigation();
+
+  const right = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.iconButton}
+      aria-label='Refresh'
+      disabled={refreshing}
+      onClick={onRefresh}>
+      {refreshing ? <span className={s.spinner} /> : <ResetIcon size={19} />}
+    </GeneralButton>
+  );
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Swap history</h1>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Refresh'
-          disabled={refreshing}
-          onClick={onRefresh}>
-          {refreshing ? (
-            <span className={s.spinner} />
-          ) : (
-            <ResetIcon size={19} />
-          )}
-        </GeneralButton>
-      </div>
-
+    <Screen
+      className={s.page}
+      topBarClassName={s.topBar}
+      title='Swap history'
+      right={right}>
       <div className={s.scrollContainer}>
         {loading && !transactions.length ? (
           <div className={s.loading}>
@@ -116,7 +106,7 @@ const SwapHistory = () => {
           </InfiniteScroll>
         )}
       </div>
-    </main>
+    </Screen>
   );
 };
 

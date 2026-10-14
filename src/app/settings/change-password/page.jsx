@@ -12,7 +12,8 @@ import {useRouter} from 'next/navigation';
 import {useTranslations} from 'next-intl';
 import {changePasswordSuccess} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, EyeIcon, InfoIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {EyeIcon, InfoIcon} from 'components/Home/HomeIcons';
 
 // One password input with its label, show/hide toggle and error line.
 const PasswordField = ({
@@ -120,20 +121,7 @@ const ChangePassword = () => {
   }, []);
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>{t('changePassword')}</h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title={t('changePassword')}>
       <div className={s.column}>
         <Formik
           enableReinitialize={true}
@@ -236,7 +224,7 @@ const ChangePassword = () => {
           )}
         </Formik>
       </div>
-    </main>
+    </Screen>
   );
 };
 

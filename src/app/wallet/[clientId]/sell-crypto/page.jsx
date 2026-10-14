@@ -15,14 +15,13 @@ import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {
   CheckIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
   CopyIcon,
   InfoIcon,
   PlusIcon,
   SearchIcon,
 } from 'components/Home/HomeIcons';
 import useSellCrypto from 'src/hooks/protectedRoutes/wallet/sellCrypto/useSellCrypto';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const CURRENCIES = ['USD', 'EUR'];
 
@@ -83,36 +82,26 @@ const SellCrypto = () => {
     modalAddCoinsVisible,
     setModalAddCoinsVisible,
   } = useSellCrypto();
-  const {goBack} = useNavigation();
+
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={styles.heading}
+      aria-haspopup='dialog'
+      onClick={openSwitcher}>
+      <h1 className={styles.headingTitle}>Sell</h1>
+      <span className={styles.headingSub}>
+        <span className={styles.walletAvatar}>
+          {walletName[0].toUpperCase()}
+        </span>
+        <span className={styles.headingSubText}>{walletName}</span>
+        <ChevronDownIcon size={12} className={styles.headingChevron} />
+      </span>
+    </GeneralButton>
+  );
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.heading}
-          aria-haspopup='dialog'
-          onClick={openSwitcher}>
-          <h1 className={styles.headingTitle}>Sell</h1>
-          <span className={styles.headingSub}>
-            <span className={styles.walletAvatar}>
-              {walletName[0].toUpperCase()}
-            </span>
-            <span className={styles.headingSubText}>{walletName}</span>
-            <ChevronDownIcon size={12} className={styles.headingChevron} />
-          </span>
-        </GeneralButton>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={styles.page} center={center}>
       <Formik
         innerRef={formikRef}
         initialValues={initialValues}
@@ -459,7 +448,7 @@ const SellCrypto = () => {
         hidden={switcherOpen && readHideBalances()}
         localCurrency={localCurrency}
       />
-    </main>
+    </Screen>
   );
 };
 

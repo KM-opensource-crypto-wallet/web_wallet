@@ -6,13 +6,9 @@ import Loading from 'components/Loading';
 import ValidatorItem from 'components/ValidatorItem';
 
 import GeneralButton from 'components/Button';
-import {
-  ChevronLeftIcon,
-  CloseIcon,
-  SearchIcon,
-} from 'components/Home/HomeIcons';
+import {CloseIcon, SearchIcon} from 'components/Home/HomeIcons';
 import InfiniteScroll from 'react-infinite-scroller';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const VoteStaking = () => {
   const {
@@ -32,7 +28,6 @@ const VoteStaking = () => {
     isVoteValid: isValid,
     handleVoteSubmit: handleSubmitForm,
   } = useStaking('vote');
-  const {goBack} = useNavigation();
 
   const renderItem = useCallback(
     ({item}) => (
@@ -48,35 +43,17 @@ const VoteStaking = () => {
     [onChangeText, onPressAdd, onPressMinus, selectedVotes],
   );
 
-  const topBar = (
-    <div className={styles.topBar}>
-      <GeneralButton
-        variant='unstyled'
-        className={styles.back}
-        aria-label='Back'
-        onClick={goBack}>
-        <ChevronLeftIcon size={24} />
-      </GeneralButton>
-      <h1 className={styles.title}>{'Select Validator'}</h1>
-      <span className={styles.iconSpacer} aria-hidden='true' />
-    </div>
-  );
-
   if (isLoading) {
     return (
-      <main className={styles.page}>
-        <div className={styles.glow} aria-hidden='true' />
-        {topBar}
+      <Screen className={styles.page} title={'Select Validator'}>
         <div className={styles.loading}>
           <Loading />
         </div>
-      </main>
+      </Screen>
     );
   }
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      {topBar}
+    <Screen className={styles.page} title={'Select Validator'}>
       <div className={styles.column}>
         <div className={styles.search}>
           <SearchIcon size={18} className={styles.searchIcon} />
@@ -130,7 +107,7 @@ const VoteStaking = () => {
           </GeneralButton>
         </div>
       </div>
-    </main>
+    </Screen>
   );
 };
 

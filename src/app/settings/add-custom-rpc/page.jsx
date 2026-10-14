@@ -6,11 +6,11 @@ import HomeSheet from 'components/Home/HomeSheet';
 import {
   CheckIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
   InfoIcon,
   SearchIcon,
 } from 'components/Home/HomeIcons';
 import {ServerIcon} from '../SettingsIcons';
+import Screen from 'components/Screen';
 import hs from 'components/Home/Home.module.css';
 import useCustomRpcSettings from 'src/hooks/settings/customRPC/useCustomRpcSettings';
 import s from './AddCustomRpc.module.css';
@@ -31,7 +31,6 @@ const ChainLogo = ({chain, size = 36}) => {
 
 const AddCustomRpc = () => {
   const {
-    goBack,
     isEdit,
     selectedChain,
     selectedChainEntry,
@@ -57,22 +56,9 @@ const AddCustomRpc = () => {
   } = useCustomRpcSettings();
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>
-          {isEdit ? 'Edit Custom RPC' : 'Add Custom RPC'}
-        </h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen
+      className={s.page}
+      title={isEdit ? 'Edit Custom RPC' : 'Add Custom RPC'}>
       <div className={s.column}>
         <p className={s.lead}>
           Select a wallet and network, then enter a custom RPC URL to override
@@ -233,7 +219,7 @@ const AddCustomRpc = () => {
           ) : null}
         </div>
       </HomeSheet>
-    </main>
+    </Screen>
   );
 };
 

@@ -7,8 +7,8 @@ import StakingItem from 'components/StakingItem';
 import CoinIcon from 'components/CoinIcon';
 import PriceChange from 'components/PriceChange';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, PlusIcon} from 'components/Home/HomeIcons';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import {PlusIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
 
 const StakingList = () => {
   const {
@@ -28,7 +28,6 @@ const StakingList = () => {
     estimateEpochTimestamp,
     handleClaimReward,
   } = useStaking('list');
-  const {goBack} = useNavigation();
 
   const renderBoxItem = (title, value, buttonLabel, buttonValue, type) => {
     if (type === 'hidden') {
@@ -58,19 +57,7 @@ const StakingList = () => {
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.back}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={styles.title}>Staking</h1>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
+    <Screen className={styles.page} title='Staking'>
       <div className={styles.column}>
         {isLoading ? (
           <div className={styles.loading}>
@@ -166,7 +153,7 @@ const StakingList = () => {
           </>
         )}
       </div>
-    </main>
+    </Screen>
   );
 };
 

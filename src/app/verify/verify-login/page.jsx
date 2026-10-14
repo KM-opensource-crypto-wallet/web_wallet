@@ -11,7 +11,8 @@ import * as vault from 'dok-wallet-blockchain-networks/security/vault';
 import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {getAppSubTitle} from 'whitelabel/whiteLabelInfo';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, EyeIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {EyeIcon} from 'components/Home/HomeIcons';
 import {PhraseIcon} from 'app/settings/SettingsIcons';
 
 const VerifyLoginScreen = () => {
@@ -46,20 +47,7 @@ const VerifyLoginScreen = () => {
   }, []);
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={styles.title}>Show seed phrase</h1>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={styles.page} title='Show seed phrase'>
       <div className={styles.column}>
         <div className={styles.intro}>
           <span className={styles.introIcon}>
@@ -146,7 +134,7 @@ const VerifyLoginScreen = () => {
           }}
         </Formik>
       </div>
-    </main>
+    </Screen>
   );
 };
 

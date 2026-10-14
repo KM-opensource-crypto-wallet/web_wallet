@@ -4,11 +4,11 @@ import Image from 'next/image';
 import {showToast} from 'utils/toast';
 import s from './TransactionDetails.module.css';
 import GeneralButton from 'components/Button';
-import {CheckIcon, ChevronLeftIcon, CopyIcon} from 'components/Home/HomeIcons';
+import {CheckIcon, CopyIcon} from 'components/Home/HomeIcons';
 import {EmptyIcon, ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import useTransaction from 'src/hooks/protectedRoutes/wallet/home/send/useTransaction';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 // Shortened value with a copy button; the full value goes to the clipboard.
 const CopyValue = ({value}) => {
@@ -45,21 +45,13 @@ const TransactionDetails = () => {
     nftImageError,
     onNftImageError,
   } = useTransaction('details');
-  const {goBack} = useNavigation();
 
-  const topBar = (title, onViewExplorer) => (
-    <div className={s.topBar}>
-      <GeneralButton
-        variant='unstyled'
-        className={s.iconButton}
-        aria-label='Back'
-        onClick={goBack}>
-        <ChevronLeftIcon size={24} />
-      </GeneralButton>
-      <h1 className={s.title}>{title}</h1>
-      {refreshing ? (
-        <span className={s.refreshing} aria-label='Refreshing' />
-      ) : onViewExplorer ? (
+  // TopBar's right slot: a spinner while refreshing, else the explorer link.
+  const topBarRight = onViewExplorer =>
+    refreshing ? (
+      <span className={s.refreshing} aria-label='Refreshing' />
+    ) : (
+      onViewExplorer && (
         <GeneralButton
           variant='unstyled'
           className={s.iconButton}
@@ -67,17 +59,15 @@ const TransactionDetails = () => {
           onClick={onViewExplorer}>
           <ExternalLinkIcon size={19} />
         </GeneralButton>
-      ) : (
-        <span className={s.iconSpacer} aria-hidden='true' />
-      )}
-    </div>
-  );
+      )
+    );
 
   if (!transaction) {
     return (
-      <main className={s.page}>
-        <div className={s.glow} aria-hidden='true' />
-        {topBar('Transaction details')}
+      <Screen
+        className={s.page}
+        title='Transaction details'
+        right={topBarRight()}>
         <div className={s.column}>
           <div className={s.empty}>
             <span className={s.emptyIcon}>
@@ -90,7 +80,7 @@ const TransactionDetails = () => {
             </p>
           </div>
         </div>
-      </main>
+      </Screen>
     );
   }
 
@@ -106,9 +96,10 @@ const TransactionDetails = () => {
   } = transactionDetails;
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      {topBar(pageTitle, onViewExplorer)}
+    <Screen
+      className={s.page}
+      title={pageTitle}
+      right={topBarRight(onViewExplorer)}>
       <div className={s.column}>
         <section className={s.hero} aria-label='Summary'>
           {showImage ? (
@@ -189,7 +180,7 @@ const TransactionDetails = () => {
           </GeneralButton>
         ) : null}
       </div>
-    </main>
+    </Screen>
   );
 };
 

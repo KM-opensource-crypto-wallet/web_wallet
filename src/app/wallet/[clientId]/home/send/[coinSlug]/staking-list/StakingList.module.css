@@ -6,7 +6,6 @@
   --sl-ink: #1a1613;
   --sl-muted: #6e655e;
   --sl-faint: #8a7f76;
-  --sl-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
   --sl-glass: rgba(255, 255, 255, 0.65);
   --sl-glass-strong: rgba(255, 255, 255, 0.85);
   --sl-glass-border: rgba(255, 255, 255, 0.9);
@@ -17,18 +16,12 @@
   --sl-warning-bg: rgba(247, 144, 9, 0.1);
   --sl-warning-border: rgba(247, 144, 9, 0.3);
   --sl-warning-ink: #93520a;
-  position: relative;
-  min-height: calc(var(--app-height, 100vh) - 70px);
-  overflow: hidden;
-  padding: 0 0 40px;
-  background: var(--sl-surface);
 }
 
 :global([data-theme='dark']) .page {
   --sl-ink: #f5f1ec;
   --sl-muted: #a89c92;
   --sl-faint: #a89c92;
-  --sl-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
   --sl-glass: rgba(255, 255, 255, 0.05);
   --sl-glass-strong: rgba(255, 255, 255, 0.08);
   --sl-glass-border: rgba(255, 255, 255, 0.1);
@@ -43,24 +36,8 @@
 
 /* globals.css sets `svg { fill: inherit }`, which beats fill="none". Only our
    own line icons; StakingItem keeps its own. */
-.back svg,
 .actions svg {
   fill: none;
-}
-
-.glow {
-  position: absolute;
-  top: -120px;
-  right: -140px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--background) 13%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
 }
 
 .column {
@@ -71,46 +48,6 @@
   max-width: 600px;
   margin: 0 auto;
   padding: 14px 16px 0;
-}
-
-/* Top bar */
-.topBar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--sl-ink) 7%, transparent);
-}
-
-.back,
-.iconSpacer {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  color: var(--sl-ink);
-  transition: background-color 0.2s;
-}
-
-.back:hover {
-  background: var(--sl-hover);
-}
-
-.title {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  font-size: 15.5px;
-  font-weight: 700;
-  color: var(--sl-ink);
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .loading {
@@ -322,16 +259,7 @@
   color: var(--sl-muted);
 }
 
-.back:focus-visible {
-  outline: 2px solid var(--background);
-  outline-offset: 2px;
-}
-
 @media (min-width: 600px) {
-  .topBar {
-    padding: 10px 20px;
-  }
-
   .column {
     padding-top: 24px;
   }

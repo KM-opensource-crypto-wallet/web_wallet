@@ -6,39 +6,32 @@
   --mc-ink: #1a1613;
   --mc-muted: #6e655e;
   --mc-faint: #8a7f76;
-  --mc-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
   --mc-surface-solid: #f4ede6;
   --mc-glass: rgba(255, 255, 255, 0.6);
   --mc-glass-strong: rgba(255, 255, 255, 0.97);
   --mc-glass-border: rgba(255, 255, 255, 0.9);
   --mc-shadow: 0 8px 28px rgba(63, 40, 22, 0.06);
   --mc-line: rgba(26, 22, 19, 0.06);
-  --mc-header-line: rgba(26, 22, 19, 0.07);
   --mc-outline: rgba(26, 22, 19, 0.15);
   --mc-hover: rgba(26, 22, 19, 0.05);
   --mc-chip: rgba(26, 22, 19, 0.06);
   --mc-track: rgba(26, 22, 19, 0.18);
   --mc-placeholder: #9a8f86;
-  position: relative;
-  min-height: calc(var(--app-height, 100vh) - 70px);
-  /* clip, not hidden: hidden would make .page the scroll container and stop
-     the add-coin dock from sticking. */
-  overflow: clip;
-  background: var(--mc-surface);
+  --glow-strength: 14%;
+  /* Screen adds 40px; this page never had bottom padding. */
+  padding-bottom: 0;
 }
 
 :global([data-theme='dark']) .page {
   --mc-ink: #f5f1ec;
   --mc-muted: #c9bfb6;
   --mc-faint: #a89c92;
-  --mc-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
   --mc-surface-solid: #100c0a;
   --mc-glass: rgba(255, 255, 255, 0.05);
   --mc-glass-strong: #1f1b17;
   --mc-glass-border: rgba(255, 255, 255, 0.1);
   --mc-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
   --mc-line: rgba(255, 255, 255, 0.06);
-  --mc-header-line: rgba(255, 255, 255, 0.07);
   --mc-outline: rgba(255, 255, 255, 0.18);
   --mc-hover: rgba(255, 255, 255, 0.07);
   --mc-chip: rgba(255, 255, 255, 0.08);
@@ -52,32 +45,7 @@
   fill: none;
 }
 
-.glow {
-  position: absolute;
-  top: -120px;
-  right: -140px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--background) 14%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
-/* Header */
-.topBar {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--mc-header-line);
-}
-
+/* Header (in TopBar): title with the wallet switcher, ⋯ menu */
 .iconButton {
   display: flex;
   flex: none;
@@ -431,10 +399,6 @@
 }
 
 @media (min-width: 600px) {
-  .topBar {
-    padding: 10px 20px;
-  }
-
   .column {
     padding-top: 24px;
   }

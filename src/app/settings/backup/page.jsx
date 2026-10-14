@@ -2,7 +2,7 @@
 import React from 'react';
 import s from './Backup.module.css';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
 import {CloudUpIcon} from '../SettingsIcons';
 import WalletPicker from './WalletPicker';
 import UserMenu from 'components/UserMenu';
@@ -83,19 +83,14 @@ const BackupPage = () => {
   };
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        {/* replace, not back(): history may end at the Google sign-in page */}
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Backup Wallets</h1>
-        {session && session.user ? (
+    <Screen
+      className={s.page}
+      title='Backup Wallets'
+      // replace, not back(): history may end at the Google sign-in page
+      onBack={goBack}
+      right={
+        session &&
+        session.user && (
           <span className={s.account}>
             <UserMenu
               user={session.user}
@@ -103,11 +98,8 @@ const BackupPage = () => {
               onDeleteBackup={openDeleteModal}
             />
           </span>
-        ) : (
-          <span className={s.iconSpacer} aria-hidden='true' />
-        )}
-      </div>
-
+        )
+      }>
       <div className={s.column}>
         <section className={s.intro}>
           <span className={s.introIcon} aria-hidden='true'>
@@ -152,7 +144,7 @@ const BackupPage = () => {
         hideModal={closeDeleteModal}
         onConfirm={handleDeleteBackup}
       />
-    </main>
+    </Screen>
   );
 };
 

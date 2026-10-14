@@ -9,13 +9,12 @@ import HomeSheet from 'components/Home/HomeSheet';
 import {
   CheckIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
   SearchIcon,
 } from 'components/Home/HomeIcons';
 import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import hs from 'components/Home/Home.module.css';
 import useBuyCrypto from 'src/hooks/protectedRoutes/wallet/buyCrypto/useBuyCrypto';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const OTC2Screen = () => {
   const {
@@ -40,26 +39,12 @@ const OTC2Screen = () => {
     otcCoinResults,
     pickOtcCoin,
   } = useBuyCrypto();
-  const {goBack} = useNavigation();
 
   const fiatSymbol = currencySymbol[localCurrency] || '';
   const selectedCoin = selectedCryptoCoin?.options;
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={styles.title}>OTC order</h1>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={styles.page} title='OTC order'>
       <div className={styles.column}>
         <div
           className={styles.segmented}
@@ -277,7 +262,7 @@ const OTC2Screen = () => {
           ) : null}
         </div>
       </HomeSheet>
-    </main>
+    </Screen>
   );
 };
 

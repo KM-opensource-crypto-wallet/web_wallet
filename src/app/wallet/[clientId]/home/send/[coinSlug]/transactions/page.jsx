@@ -7,13 +7,12 @@ import WalletSwitcher from 'components/Home/WalletSwitcher';
 import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {
   ChevronDownIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
   InfoIcon,
 } from 'components/Home/HomeIcons';
 import {SlidersIcon} from 'components/Transactions/TxIcons';
 import useTransaction from 'src/hooks/protectedRoutes/wallet/home/send/useTransaction';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const TransactionsList = () => {
   const {
@@ -49,45 +48,37 @@ const TransactionsList = () => {
     showInfo,
     toggleInfo,
   } = useTransaction('list');
-  const {goBack} = useNavigation();
+
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.heading}
+      aria-haspopup='dialog'
+      onClick={openSwitcher}>
+      <h1 className={s.headingTitle}>Transactions</h1>
+      <span className={s.headingSub}>
+        <span className={s.walletAvatar}>{walletName[0].toUpperCase()}</span>
+        <span className={s.headingSubText}>
+          {currentCoin?.name ? `${currentCoin.name} · ` : ''}
+          {walletName}
+        </span>
+        <ChevronDownIcon size={12} className={s.headingChevron} />
+      </span>
+    </GeneralButton>
+  );
+
+  const right = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.viewAll}
+      onClick={onPressViewAll}>
+      View all
+      <ChevronRightIcon size={12} />
+    </GeneralButton>
+  );
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <GeneralButton
-          variant='unstyled'
-          className={s.heading}
-          aria-haspopup='dialog'
-          onClick={openSwitcher}>
-          <h1 className={s.headingTitle}>Transactions</h1>
-          <span className={s.headingSub}>
-            <span className={s.walletAvatar}>
-              {walletName[0].toUpperCase()}
-            </span>
-            <span className={s.headingSubText}>
-              {currentCoin?.name ? `${currentCoin.name} · ` : ''}
-              {walletName}
-            </span>
-            <ChevronDownIcon size={12} className={s.headingChevron} />
-          </span>
-        </GeneralButton>
-        <GeneralButton
-          variant='unstyled'
-          className={s.viewAll}
-          onClick={onPressViewAll}>
-          View all
-          <ChevronRightIcon size={12} />
-        </GeneralButton>
-      </div>
-
+    <Screen className={s.page} center={center} right={right}>
       <div className={s.column}>
         <section className={s.summary} aria-label='Summary'>
           <span className={s.stat}>
@@ -241,7 +232,7 @@ const TransactionsList = () => {
         hidden={switcherOpen && readHideBalances()}
         localCurrency={localCurrency}
       />
-    </main>
+    </Screen>
   );
 };
 

@@ -3,16 +3,11 @@
 import React from 'react';
 import ModalHideWalletConfirm from 'components/ModalHideWalletConfirm';
 import GeneralButton from 'components/Button';
-import {
-  ChevronLeftIcon,
-  EyeIcon,
-  InfoIcon,
-  SearchIcon,
-} from 'components/Home/HomeIcons';
+import {EyeIcon, InfoIcon, SearchIcon} from 'components/Home/HomeIcons';
 import {SECRET_CODE_MAX_LENGTH, SECRET_CODE_MIN_LENGTH} from 'utils/hideWallet';
 import useWallets from 'src/hooks/protectedRoutes/wallet/wallets/useWallets';
 import s from './HideWallet.module.css';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const HideWallet = () => {
   const {
@@ -39,34 +34,23 @@ const HideWallet = () => {
     onCancelHideModal,
     onConfirmHideAndSave,
   } = useWallets();
-  const {goBack} = useNavigation();
+
+  const right = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.iconButton}
+      aria-label='How hiding works'
+      onClick={openInfoModal}>
+      <InfoIcon size={20} />
+    </GeneralButton>
+  );
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <div className={s.heading}>
-          <h1 className={s.headingTitle}>Hide wallet</h1>
-          {walletName ? (
-            <span className={s.headingSub}>{walletName}</span>
-          ) : null}
-        </div>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='How hiding works'
-          onClick={openInfoModal}>
-          <InfoIcon size={20} />
-        </GeneralButton>
-      </div>
-
+    <Screen
+      className={s.page}
+      title='Hide wallet'
+      subtitle={walletName}
+      right={right}>
       <form className={s.column} noValidate onSubmit={onSubmitForm}>
         <section className={s.card} aria-label='Hide wallet'>
           <div className={s.toggleRow}>
@@ -208,7 +192,7 @@ const HideWallet = () => {
         onCancel={onCancelHideModal}
         onConfirm={onConfirmHideAndSave}
       />
-    </main>
+    </Screen>
   );
 };
 

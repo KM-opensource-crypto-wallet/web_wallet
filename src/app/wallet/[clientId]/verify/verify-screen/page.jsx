@@ -8,12 +8,8 @@ import styles from './Verify.module.css';
 import {useParams, useRouter} from 'next/navigation';
 import {cryptoRandom} from 'utils/common';
 import GeneralButton from 'components/Button';
-import {
-  CheckIcon,
-  ChevronLeftIcon,
-  CloseIcon,
-  InfoIcon,
-} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {CheckIcon, CloseIcon, InfoIcon} from 'components/Home/HomeIcons';
 import {ShieldIcon} from 'components/Transactions/TxIcons';
 
 const ordinal = n => {
@@ -103,25 +99,11 @@ export const Verify = () => {
   const isWrong = selectedItem?.audit === false;
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <div className={styles.heading}>
-          <h1 className={styles.title}>Confirm seed phrase</h1>
-          {targetWallet.walletName ? (
-            <span className={styles.subtitle}>{targetWallet.walletName}</span>
-          ) : null}
-        </div>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen
+      className={styles.page}
+      topBarClassName={styles.topBar}
+      title='Confirm seed phrase'
+      subtitle={targetWallet.walletName}>
       <Formik
         innerRef={formikRef}
         initialValues={{word: ''}}
@@ -275,7 +257,7 @@ export const Verify = () => {
           </form>
         )}
       </Formik>
-    </main>
+    </Screen>
   );
 };
 

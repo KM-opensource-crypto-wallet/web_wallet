@@ -1,6 +1,5 @@
 'use client';
 import {useEffect, useRef} from 'react';
-import {useRouter} from 'next/navigation';
 
 import {currencySymbol, localCurrencyList} from 'src/data/lists/currency';
 import {useSelector, useDispatch} from 'react-redux';
@@ -9,12 +8,11 @@ import {setLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/se
 
 import {refreshCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 
-import GeneralButton from 'components/Button';
-import {CheckIcon, ChevronLeftIcon, InfoIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {CheckIcon, InfoIcon} from 'components/Home/HomeIcons';
 import s from './LocalCurrency.module.css';
 
 const LocalCurrency = () => {
-  const router = useRouter();
   const localCurrency = useSelector(getLocalCurrency);
   const dispatch = useDispatch();
   const isButtonClick = useRef(false);
@@ -27,20 +25,7 @@ const LocalCurrency = () => {
   }, [dispatch, localCurrency]);
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Local currency</h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title='Local currency'>
       <div className={s.column}>
         <div className={s.card} role='radiogroup' aria-label='Local currency'>
           {localCurrencyList?.map(item => {
@@ -82,7 +67,7 @@ const LocalCurrency = () => {
           </span>
         </p>
       </div>
-    </main>
+    </Screen>
   );
 };
 

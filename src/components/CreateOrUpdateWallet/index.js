@@ -1,12 +1,11 @@
 import React from 'react';
 import {Formik} from 'formik';
-import {useRouter, useSearchParams} from 'next/navigation';
+import {useSearchParams} from 'next/navigation';
 import {wallet} from 'src/data/lists/data';
 import ModalDelete from 'components/ModalDelete';
 import useUpdateWallet from 'src/hooks/auth/updateWallet/useUpdateWallet';
 import GeneralButton from 'src/components/Button';
 import {
-  ChevronLeftIcon,
   ChevronRightIcon,
   EyeIcon,
   InfoIcon,
@@ -16,6 +15,7 @@ import {
 import {ClockIcon, TrashIcon} from 'components/Transactions/TxIcons';
 import s from './CreateOrUpdateWallet.module.css';
 import NameNewWallet from './NameNewWallet';
+import Screen from 'components/Screen';
 
 // A settings row: tinted icon, title + hint, optional trailing status pill
 // and chevron.
@@ -45,7 +45,6 @@ const SettingsRow = ({
 
 // Wallet settings (rename, backups, hide, scan, remove) for `?walletName=`.
 const UpdateWallet = () => {
-  const router = useRouter();
   const {
     walletName,
     initialValues,
@@ -79,25 +78,7 @@ const UpdateWallet = () => {
   );
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <div className={s.heading}>
-          <h1 className={s.headingTitle}>Wallet settings</h1>
-          {walletName ? (
-            <span className={s.headingSub}>{walletName}</span>
-          ) : null}
-        </div>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title='Wallet settings' subtitle={walletName}>
       <Formik
         enableReinitialize={true}
         initialValues={initialValues}
@@ -241,7 +222,7 @@ const UpdateWallet = () => {
         onPressNo={onPressNo}
         visible={showDeleteModal}
       />
-    </main>
+    </Screen>
   );
 };
 

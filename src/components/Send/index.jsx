@@ -11,7 +11,6 @@ import GeneralButton from 'components/Button';
 import {
   CheckIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
   CloseIcon,
   CopyIcon,
@@ -30,7 +29,7 @@ import AddressSelectorSheet from 'components/AddressSelectorSheet';
 import AddressTypeBadge from 'components/AddressTypeBadge';
 import SendPopOver from 'components/SendPopOver';
 import ModalUnclaimedDeposit from 'components/ModalUnclaimedDeposit';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 // Glass card row used for history / staking, and (flat) inside Advanced.
 const ActionRow = ({icon, tone, title, hint, onClick, chevron = true}) => (
@@ -90,45 +89,31 @@ const SendScreen = () => {
     modalUnclaimDepositVisible,
     hideModal,
   } = useSend('coin');
-  const {goBack} = useNavigation();
+
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.walletPill}
+      aria-haspopup='dialog'
+      onClick={openSwitcher}>
+      <span className={s.walletPillAvatar}>{walletName[0].toUpperCase()}</span>
+      <span className={s.walletPillName}>{walletName}</span>
+      <ChevronDownIcon size={16} className={s.walletPillChevron} />
+    </GeneralButton>
+  );
+
+  const right = showMenu && (
+    <div className={s.menu}>
+      <SendPopOver
+        isBitcoin={isBitcoin}
+        isDeriveAddressChain={isDeriveAddressChain && !isImportWithPrivateKey}
+      />
+    </div>
+  );
 
   return (
     <>
-      <main className={s.page}>
-        <div className={s.glow} aria-hidden='true' />
-        <div className={s.topBar}>
-          <GeneralButton
-            variant='unstyled'
-            className={s.iconButton}
-            aria-label='Back'
-            onClick={goBack}>
-            <ChevronLeftIcon size={24} />
-          </GeneralButton>
-          <GeneralButton
-            variant='unstyled'
-            className={s.walletPill}
-            aria-haspopup='dialog'
-            onClick={openSwitcher}>
-            <span className={s.walletPillAvatar}>
-              {walletName[0].toUpperCase()}
-            </span>
-            <span className={s.walletPillName}>{walletName}</span>
-            <ChevronDownIcon size={16} className={s.walletPillChevron} />
-          </GeneralButton>
-          {showMenu ? (
-            <div className={s.menu}>
-              <SendPopOver
-                isBitcoin={isBitcoin}
-                isDeriveAddressChain={
-                  isDeriveAddressChain && !isImportWithPrivateKey
-                }
-              />
-            </div>
-          ) : (
-            <span className={s.iconSpacer} aria-hidden='true' />
-          )}
-        </div>
-
+      <Screen className={s.page} center={center} right={right}>
         <div className={s.column}>
           {isLoading ? (
             <div className={s.loading}>
@@ -320,7 +305,7 @@ const SendScreen = () => {
             </>
           )}
         </div>
-      </main>
+      </Screen>
       <WalletSwitcher
         visible={switcherOpen}
         onClose={closeSwitcher}

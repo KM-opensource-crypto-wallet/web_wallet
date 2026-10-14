@@ -6,69 +6,34 @@
   --sd-ink: #1a1613;
   --sd-muted: #6e655e;
   --sd-faint: #8a7f76;
-  --sd-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
   --sd-glass: rgba(255, 255, 255, 0.65);
   --sd-glass-border: rgba(255, 255, 255, 0.9);
   --sd-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
   --sd-line: rgba(26, 22, 19, 0.06);
-  --sd-header-line: rgba(26, 22, 19, 0.07);
   --sd-hover: rgba(26, 22, 19, 0.05);
   --sd-chip: rgba(26, 22, 19, 0.06);
-  position: relative;
-  min-height: calc(var(--app-height, 100vh) - 70px);
-  overflow: hidden;
-  padding-bottom: 40px;
-  background: var(--sd-surface);
+  --glow-strength: 14%;
 }
 
 :global([data-theme='dark']) .page {
   --sd-ink: #f5f1ec;
   --sd-muted: #c9bfb6;
   --sd-faint: #a89c92;
-  --sd-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
   --sd-glass: rgba(255, 255, 255, 0.05);
   --sd-glass-border: rgba(255, 255, 255, 0.1);
   --sd-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
   --sd-line: rgba(255, 255, 255, 0.06);
-  --sd-header-line: rgba(255, 255, 255, 0.07);
   --sd-hover: rgba(255, 255, 255, 0.06);
   --sd-chip: rgba(255, 255, 255, 0.08);
 }
 
 /* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
-.topBar svg,
 .hero svg,
 .empty svg {
   fill: none;
 }
 
-.glow {
-  position: absolute;
-  top: -120px;
-  right: -140px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--background) 14%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
-/* Header */
-.topBar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--sd-header-line);
-}
-
-.iconButton,
-.iconSpacer,
+/* Header (in TopBar): refreshing indicator */
 .refreshing {
   display: flex;
   flex: none;
@@ -79,23 +44,6 @@
   border-radius: 12px;
   color: var(--sd-ink);
   transition: background-color 0.2s;
-}
-
-.iconButton:hover {
-  background: var(--sd-hover);
-}
-
-.title {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  font-size: 15.5px;
-  font-weight: 700;
-  color: var(--sd-ink);
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .refreshing::after {
@@ -358,17 +306,12 @@
   font-weight: 700;
 }
 
-.iconButton:focus-visible,
 .emptyAction:focus-visible {
   outline: 2px solid var(--background);
   outline-offset: 2px;
 }
 
 @media (min-width: 600px) {
-  .topBar {
-    padding: 10px 20px;
-  }
-
   .column {
     padding-top: 24px;
   }

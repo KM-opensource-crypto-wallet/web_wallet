@@ -11,7 +11,6 @@ import GeneralButton from 'components/Button';
 import {
   CheckIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
   SettingsIcon,
 } from 'components/Home/HomeIcons';
 import HomeSheet from 'components/Home/HomeSheet';
@@ -21,6 +20,7 @@ import DuplicateTransactionModal from 'components/DuplicateTransactionModal';
 import AdvancedFeesSheet from 'components/AdvancedFeesSheet';
 import useCommonTransfer from 'src/hooks/protectedRoutes/wallet/home/send/useCommonTransfer';
 import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 // One label/value line of a details card. `mono` for addresses.
 const InfoRow = ({label, value, mono = false, capitalize = false}) => (
@@ -352,20 +352,7 @@ const CommonTransfer = () => {
   };
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>{title}</h1>
-        <span className={s.iconSpacer} aria-hidden='true' />
-      </div>
-
+    <Screen className={s.page} title={title}>
       <div className={s.column}>
         {(isLoading || isExchangeLoading) && !isFetchingFeesAgain ? (
           <div className={s.loading}>
@@ -545,7 +532,7 @@ const CommonTransfer = () => {
         visible={showDuplicateModal}
         onClose={closeDuplicateModal}
       />
-    </main>
+    </Screen>
   );
 };
 

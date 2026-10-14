@@ -9,14 +9,13 @@ import WalletSwitcher from 'components/Home/WalletSwitcher';
 import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {
   ChevronDownIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
   CloseIcon,
   PlusIcon,
   SearchIcon,
 } from 'components/Home/HomeIcons';
 import useManageCoin from 'src/hooks/protectedRoutes/wallet/manageCoin/useManageCoin';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const MoreIcon = () => (
   <svg width='20' height='20' viewBox='0 0 24 24' aria-hidden='true'>
@@ -55,79 +54,71 @@ const ManageCoins = () => {
     setModalAddTokenVisible,
     openAddToken,
   } = useManageCoin();
-  const {goBack} = useNavigation();
+
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.heading}
+      aria-haspopup='dialog'
+      onClick={openSwitcher}>
+      <h1 className={s.headingTitle}>Manage coins</h1>
+      <span className={s.headingSub}>
+        <span className={s.walletAvatar}>{walletName[0].toUpperCase()}</span>
+        <span className={s.headingSubText}>{walletName}</span>
+        <ChevronDownIcon size={12} className={s.headingChevron} />
+      </span>
+    </GeneralButton>
+  );
+
+  const right = (
+    <div className={s.menuWrap}>
+      <GeneralButton
+        variant='unstyled'
+        className={s.iconButton}
+        aria-label='More'
+        aria-haspopup='menu'
+        aria-expanded={menuOpen}
+        onClick={toggleMenu}>
+        <MoreIcon />
+      </GeneralButton>
+      {menuOpen ? (
+        <>
+          <button
+            type='button'
+            className={s.menuBackdrop}
+            aria-label='Close menu'
+            onClick={closeMenu}
+          />
+          <div className={s.menu} role='menu'>
+            <button
+              type='button'
+              role='menuitem'
+              className={s.menuItem}
+              onClick={hideZeroBalances}>
+              Hide zero balances
+            </button>
+            <button
+              type='button'
+              role='menuitem'
+              className={s.menuItem}
+              onClick={showAll}>
+              Show all coins
+            </button>
+            <button
+              type='button'
+              role='menuitem'
+              className={s.menuItem}
+              onClick={startReorder}>
+              Reorder coins
+            </button>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <GeneralButton
-          variant='unstyled'
-          className={s.heading}
-          aria-haspopup='dialog'
-          onClick={openSwitcher}>
-          <h1 className={s.headingTitle}>Manage coins</h1>
-          <span className={s.headingSub}>
-            <span className={s.walletAvatar}>
-              {walletName[0].toUpperCase()}
-            </span>
-            <span className={s.headingSubText}>{walletName}</span>
-            <ChevronDownIcon size={12} className={s.headingChevron} />
-          </span>
-        </GeneralButton>
-        <div className={s.menuWrap}>
-          <GeneralButton
-            variant='unstyled'
-            className={s.iconButton}
-            aria-label='More'
-            aria-haspopup='menu'
-            aria-expanded={menuOpen}
-            onClick={toggleMenu}>
-            <MoreIcon />
-          </GeneralButton>
-          {menuOpen ? (
-            <>
-              <button
-                type='button'
-                className={s.menuBackdrop}
-                aria-label='Close menu'
-                onClick={closeMenu}
-              />
-              <div className={s.menu} role='menu'>
-                <button
-                  type='button'
-                  role='menuitem'
-                  className={s.menuItem}
-                  onClick={hideZeroBalances}>
-                  Hide zero balances
-                </button>
-                <button
-                  type='button'
-                  role='menuitem'
-                  className={s.menuItem}
-                  onClick={showAll}>
-                  Show all coins
-                </button>
-                <button
-                  type='button'
-                  role='menuitem'
-                  className={s.menuItem}
-                  onClick={startReorder}>
-                  Reorder coins
-                </button>
-              </div>
-            </>
-          ) : null}
-        </div>
-      </div>
-
+    <Screen className={s.page} center={center} right={right}>
       <div className={s.column}>
         {sorting ? (
           <div className={s.sortBanner}>
@@ -229,7 +220,7 @@ const ManageCoins = () => {
         hidden={switcherOpen && readHideBalances()}
         localCurrency={localCurrency}
       />
-    </main>
+    </Screen>
   );
 };
 

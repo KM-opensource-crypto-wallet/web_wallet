@@ -9,13 +9,11 @@
   --tx-muted: #6e655e;
   --tx-faint: #8a7f76;
   --tx-chevron: #c4b9af;
-  --tx-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
   --tx-glass: rgba(255, 255, 255, 0.65);
   --tx-glass-strong: rgba(255, 255, 255, 0.9);
   --tx-glass-border: rgba(255, 255, 255, 0.9);
   --tx-shadow: 0 10px 32px rgba(63, 40, 22, 0.06);
   --tx-line: rgba(26, 22, 19, 0.06);
-  --tx-header-line: rgba(26, 22, 19, 0.07);
   --tx-divider: rgba(26, 22, 19, 0.1);
   --tx-outline: rgba(26, 22, 19, 0.12);
   --tx-hover: rgba(26, 22, 19, 0.05);
@@ -31,11 +29,7 @@
   --tx-purple-bg: rgba(124, 84, 232, 0.1);
   --tx-blue: #2e5bd6;
   --tx-blue-bg: rgba(58, 102, 232, 0.1);
-  position: relative;
-  min-height: calc(var(--app-height, 100vh) - 70px);
-  overflow: hidden;
-  padding-bottom: 40px;
-  background: var(--tx-surface);
+  --glow-strength: 14%;
 }
 
 :global([data-theme='dark']) .page {
@@ -44,13 +38,11 @@
   --tx-muted: #a89c92;
   --tx-faint: #a89c92;
   --tx-chevron: #6b6259;
-  --tx-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
   --tx-glass: rgba(255, 255, 255, 0.05);
   --tx-glass-strong: rgba(255, 255, 255, 0.1);
   --tx-glass-border: rgba(255, 255, 255, 0.1);
   --tx-shadow: 0 10px 32px rgba(0, 0, 0, 0.35);
   --tx-line: rgba(255, 255, 255, 0.06);
-  --tx-header-line: rgba(255, 255, 255, 0.07);
   --tx-divider: rgba(255, 255, 255, 0.1);
   --tx-outline: rgba(255, 255, 255, 0.14);
   --tx-hover: rgba(255, 255, 255, 0.06);
@@ -73,44 +65,7 @@
   fill: none;
 }
 
-.glow {
-  position: absolute;
-  top: -120px;
-  right: -140px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--background) 14%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
-/* Header: back, title + wallet switcher, View all */
-.topBar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--tx-header-line);
-}
-
-.iconButton {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  color: var(--tx-ink);
-  transition: background-color 0.2s;
-}
-
-.iconButton:hover,
+/* Header (in TopBar): title + wallet switcher, View all */
 .heading:hover {
   background: var(--tx-hover);
 }
@@ -450,7 +405,6 @@
   text-decoration: underline;
 }
 
-.iconButton:focus-visible,
 .heading:focus-visible,
 .viewAll:focus-visible,
 .chip:focus-visible,
@@ -463,10 +417,6 @@
 }
 
 @media (min-width: 600px) {
-  .topBar {
-    padding: 10px 20px;
-  }
-
   .column {
     padding-top: 18px;
   }

@@ -4,13 +4,13 @@ import React from 'react';
 import styles from './UpdateTransaction.module.css';
 
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, InfoIcon} from 'components/Home/HomeIcons';
+import {InfoIcon} from 'components/Home/HomeIcons';
 
 import {Formik} from 'formik';
 import Loading from 'components/Loading';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import useTransaction from 'src/hooks/protectedRoutes/wallet/home/send/useTransaction';
-import useNavigation from 'src/hooks/navigation/useNavigation';
+import Screen from 'components/Screen';
 
 const UpdateTransaction = () => {
   const {
@@ -28,7 +28,6 @@ const UpdateTransaction = () => {
     closeUpdateModal,
     onUpdateConfirmed,
   } = useTransaction('update');
-  const {goBack} = useNavigation();
 
   const renderBox = () => {
     const tx = updateTransactionData?.transactionData;
@@ -87,19 +86,7 @@ const UpdateTransaction = () => {
   };
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glow} aria-hidden='true' />
-      <div className={styles.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={styles.back}
-          aria-label='Back'
-          onClick={goBack}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={styles.pageTitle}>Update Transaction</h1>
-        <span className={styles.iconSpacer} aria-hidden='true' />
-      </div>
+    <Screen className={styles.page} title='Update Transaction'>
       <div className={styles.formView}>
         <div className={styles.infoContainer}>
           <InfoIcon size={18} className={styles.infoIcon} />
@@ -184,7 +171,7 @@ const UpdateTransaction = () => {
         visible={showUpdateModal}
         onSuccess={onUpdateConfirmed}
       />
-    </main>
+    </Screen>
   );
 };
 

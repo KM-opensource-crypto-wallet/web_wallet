@@ -5,7 +5,6 @@
   --bk-ink: #1a1613;
   --bk-muted: #6e655e;
   --bk-faint: #8a7f76;
-  --bk-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
   --bk-base: #f3ebe3;
   --bk-glass: rgba(255, 255, 255, 0.65);
   --bk-glass-border: rgba(255, 255, 255, 0.9);
@@ -14,19 +13,14 @@
   --bk-outline: rgba(26, 22, 19, 0.12);
   --bk-hover: rgba(26, 22, 19, 0.04);
   --bk-tint: 10%;
-  position: relative;
-  min-height: calc(var(--app-height, 100vh) - 70px);
-  /* clip, not hidden: hidden would make this a scroll box and break the
-     sticky footer. */
-  overflow: clip;
-  background: var(--bk-surface);
+  /* No bottom padding: the sticky footer sits flush with the end. */
+  padding-bottom: 0;
 }
 
 :global([data-theme='dark']) .page {
   --bk-ink: #f5f1ec;
   --bk-muted: #c9bfb6;
   --bk-faint: #a89c92;
-  --bk-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
   --bk-base: #0e0b09;
   --bk-glass: rgba(255, 255, 255, 0.05);
   --bk-glass-border: rgba(255, 255, 255, 0.1);
@@ -42,69 +36,19 @@
   fill: none;
 }
 
-.glow {
-  position: absolute;
-  top: -120px;
-  right: -140px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--background) 13%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
-/* Top bar: back, centred title, account menu (or spacer). */
-.topBar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--bk-header-line);
-}
-
-.iconButton,
-.iconSpacer,
+/* Account menu on the right of the TopBar. */
 .account {
   display: flex;
   flex: none;
+  align-items: center;
+  justify-content: center;
   width: 44px;
   height: 44px;
-}
-
-.iconButton {
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  color: var(--bk-ink);
-  transition: background-color 0.2s;
-}
-
-.iconButton:hover {
-  background: var(--bk-hover);
-}
-
-.account {
-  align-items: center;
-  justify-content: center;
 }
 
 /* UserMenu draws a filled MUI icon; undo the line-icon reset above. */
 .page .account svg {
   fill: currentColor;
-}
-
-.title {
-  flex: 1;
-  margin: 0;
-  font-size: 15.5px;
-  font-weight: 700;
-  color: var(--bk-ink);
-  text-align: center;
 }
 
 .column {
@@ -215,16 +159,7 @@
   );
 }
 
-.iconButton:focus-visible {
-  outline: 2px solid var(--background);
-  outline-offset: -2px;
-}
-
 @media (min-width: 600px) {
-  .topBar {
-    padding: 10px 20px;
-  }
-
   .column {
     padding-top: 26px;
   }

@@ -7,7 +7,8 @@ import {selectAllCustomRpc} from 'dok-wallet-blockchain-networks/redux/customRpc
 import {deleteCustomRpc} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSlice';
 import {selectVisibleWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import GeneralButton from 'components/Button';
-import {ChevronLeftIcon, PlusIcon} from 'components/Home/HomeIcons';
+import {PlusIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
 import {TrashIcon} from 'components/Transactions/TxIcons';
 import {ServerIcon} from '../SettingsIcons';
 import {EditIcon, MoreIcon, WalletIcon} from './RpcIcons';
@@ -85,21 +86,10 @@ const CustomRpc = () => {
   }, [menuState.item, closeMenu, dispatch]);
 
   return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      {/* Click-away layer for the open card menu. */}
-      {menuState.item && (
-        <div className={s.backdrop} aria-hidden='true' onClick={closeMenu} />
-      )}
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Custom RPC</h1>
+    <Screen
+      className={s.page}
+      title='Custom RPC'
+      right={
         <GeneralButton
           variant='unstyled'
           className={s.iconButton}
@@ -107,7 +97,11 @@ const CustomRpc = () => {
           onClick={() => router.push('/settings/add-custom-rpc')}>
           <PlusIcon size={22} />
         </GeneralButton>
-      </div>
+      }>
+      {/* Click-away layer for the open card menu. */}
+      {menuState.item && (
+        <div className={s.backdrop} aria-hidden='true' onClick={closeMenu} />
+      )}
 
       <div className={s.column}>
         {groupedList.length === 0 ? (
@@ -208,7 +202,7 @@ const CustomRpc = () => {
           </section>
         )}
       </div>
-    </main>
+    </Screen>
   );
 };
 

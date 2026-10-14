@@ -43,6 +43,7 @@ import {SortableContext, verticalListSortingStrategy} from '@dnd-kit/sortable';
 import SortableItem from 'components/Sortable/sortable';
 import {currencySymbol} from 'src/data/lists/currency';
 import GeneralButton from 'components/Button';
+import Screen from 'components/Screen';
 import HomeSheet from 'components/Home/HomeSheet';
 import {MASK} from 'components/Home/AssetRow';
 import {
@@ -52,7 +53,6 @@ import {
 import {
   CheckIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
   CloseIcon,
   EyeIcon,
   PlusIcon,
@@ -325,38 +325,31 @@ const Wallets = () => {
     );
   };
 
-  return (
-    <main className={s.page}>
-      <div className={s.glow} aria-hidden='true' />
-      <div className={s.topBar}>
-        <GeneralButton
-          variant='unstyled'
-          className={s.iconButton}
-          aria-label='Back'
-          onClick={() => router.back()}>
-          <ChevronLeftIcon size={24} />
-        </GeneralButton>
-        <h1 className={s.title}>Wallets</h1>
-        <span className={s.topActions}>
-          <GeneralButton
-            variant='unstyled'
-            className={s.iconButton}
-            aria-label='Sort wallets'
-            aria-haspopup='dialog'
-            onClick={() => setSortSheetOpen(true)}>
-            <SortIcon size={21} />
-          </GeneralButton>
-          <GeneralButton
-            variant='unstyled'
-            className={s.iconButton}
-            aria-label='Add wallet'
-            aria-haspopup='dialog'
-            onClick={() => setmodalVisible(true)}>
-            <PlusIcon size={22} />
-          </GeneralButton>
-        </span>
-      </div>
+  const center = <h1 className={s.title}>Wallets</h1>;
 
+  const right = (
+    <span className={s.topActions}>
+      <GeneralButton
+        variant='unstyled'
+        className={s.iconButton}
+        aria-label='Sort wallets'
+        aria-haspopup='dialog'
+        onClick={() => setSortSheetOpen(true)}>
+        <SortIcon size={21} />
+      </GeneralButton>
+      <GeneralButton
+        variant='unstyled'
+        className={s.iconButton}
+        aria-label='Add wallet'
+        aria-haspopup='dialog'
+        onClick={() => setmodalVisible(true)}>
+        <PlusIcon size={22} />
+      </GeneralButton>
+    </span>
+  );
+
+  return (
+    <Screen className={s.page} center={center} right={right}>
       <div className={s.column}>
         <div className={s.toolbar}>
           <label className={s.search}>
@@ -634,7 +627,7 @@ const Wallets = () => {
         visible={modalVisible}
         hideModal={() => setmodalVisible(false)}
       />
-    </main>
+    </Screen>
   );
 };
 
