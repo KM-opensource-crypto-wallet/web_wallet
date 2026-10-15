@@ -1,82 +1,183 @@
-.container {
-  flex: 1;
+/* Vote staking: search, a glass card holding the scrolling validator list,
+   then the selected/total tally and Next. Same warm surface and glass as
+   Home; the accent is the white-label `--background` colour. */
+.page {
+  --vt-ink: #1a1613;
+  --vt-muted: #6e655e;
+  --vt-faint: #8a7f76;
+  --vt-glass: rgba(255, 255, 255, 0.65);
+  --vt-glass-border: rgba(255, 255, 255, 0.9);
+  --vt-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --vt-field: rgba(26, 22, 19, 0.045);
+  --vt-field-border: rgba(26, 22, 19, 0.08);
+  --vt-hover: rgba(26, 22, 19, 0.05);
+  --vt-placeholder: rgba(26, 22, 19, 0.3);
+  --vt-item: rgba(255, 255, 255, 0.7);
+  padding: 0 0 32px;
+}
+
+:global([data-theme='dark']) .page {
+  --vt-ink: #f5f1ec;
+  --vt-muted: #c9bfb6;
+  --vt-faint: #a89c92;
+  --vt-glass: rgba(255, 255, 255, 0.05);
+  --vt-glass-border: rgba(255, 255, 255, 0.1);
+  --vt-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --vt-field: rgba(255, 255, 255, 0.06);
+  --vt-field-border: rgba(255, 255, 255, 0.1);
+  --vt-hover: rgba(255, 255, 255, 0.08);
+  --vt-placeholder: rgba(255, 255, 255, 0.3);
+  --vt-item: rgba(255, 255, 255, 0.04);
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". Scoped
+   so ValidatorItem's filled +/- icons keep their fill. */
+.search svg {
+  fill: none;
+}
+
+.loading {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+/* Body */
+.column {
+  position: relative;
   display: flex;
   flex-direction: column;
-  background-color: var(--backgroundColor);
+  gap: 14px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 14px 16px 0;
 }
-.textInputContainer{
-  padding-left: 16px;
-  padding-right: 16px;
-  margin-top: 16px;
-}
-.scrollModalDiv {
-  overflow-y: auto;
-  height: 50vh;
-}
-.flatlistStyle {
-  margin-bottom: 140px;
-}
-.contentContainerStyle {
+
+/* Search field */
+.search {
   display: flex;
-  flex-grow: 1;
   align-items: center;
-  background-color: var(--backgroundColor);
-  padding-bottom: 20px;
+  gap: 10px;
+  padding: 0 6px 0 14px;
+  border: 1.5px solid var(--vt-field-border);
+  border-radius: 14px;
+  background: var(--vt-field);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
-.itemDescription {
-  color: var(--primary);
-  font-size: 14px;
-  font-family: var(--font-roboto);
-  font-weight: 500;
+
+.search:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
 }
-.itemDescriptionTitle {
-  color: var(--font);
-  font-size: 14px;
-  font-family: var(--font-roboto);
-  font-weight: 600;
+
+.searchIcon {
+  flex: none;
+  color: var(--vt-faint);
 }
-.bottomContainer {
-  padding: 20px;
-  bottom: 0;
-  width: 100%;
-  height: 134px;
-  background-color:var(--backgroundColor);
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--vt-ink);
 }
-.bottomView {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+
+.searchInput::placeholder {
+  color: var(--vt-placeholder);
 }
-.btnText {
-  color: var(--backgroundColor);
-}
-.button {
-  height: 60px;
-  border-radius: 10px;
-  font-size: 20px;
+
+.clear {
+  display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  background-color: var(--background);
-  width: 100%;
-}
-.buttonTitle {
-  color: var(--title);
-  font-size: 18px;
-  font-family: var(--font-roboto);
-}
-.input {
-  background-color: var(--backgroundColor);
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
-  margin-top: 20px;
-  margin-bottom: 10px;
-  font-size: 18px;
+  color: var(--vt-muted);
+  transition: background-color 0.2s;
 }
-.loader{
-  height: 52px;
-  width: 100%;
+
+.clear:hover {
+  background: var(--vt-hover);
+}
+
+/* Validator list: fixed height so InfiniteScroll can read its scroll. */
+.scrollModalDiv {
+  height: 50vh;
+  min-height: 280px;
+  overflow-y: auto;
+  padding-bottom: 12px;
+  border: 1px solid var(--vt-glass-border);
+  border-radius: 20px;
+  background: var(--vt-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--vt-shadow);
+}
+
+/* ValidatorItem rows (shared component; its inline border colour marks a
+   voted validator and is kept). */
+.scrollModalDiv > div > div:not(.loader) {
+  margin: 12px 12px 0;
+  border-radius: 14px;
+  background: var(--vt-item);
+}
+
+.loader {
   display: flex;
   flex: 1;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  height: 52px;
+}
+
+/* Tally + Next */
+.bottomContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.itemDescriptionTitle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 0 4px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--vt-muted);
+}
+
+.itemDescription {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--vt-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.clear:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .column {
+    padding-top: 24px;
+  }
+
+  .scrollModalDiv {
+    height: 55vh;
+  }
 }

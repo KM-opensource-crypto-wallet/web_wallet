@@ -1,39 +1,20 @@
 'use client';
 
-import React, {
-  useState,
-  useEffect,
-  useContext,
-  useCallback,
-  useRef,
-} from 'react';
-// import {Dimensions, button, View} from 'react-native';
-// import {Modal, Text, input} from 'react-native-paper';
-// import myStyles from './ModalConfirmTransactionStyles';
-// import {Formik} from 'formik';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import * as vault from 'dok-wallet-blockchain-networks/security/vault';
-// import {IS_IOS, useFloatingHeight} from 'dok-wallet-blockchain-networks/service/dimensions';
 import {validationSchemaFingerprintVerification} from 'utils/validationSchema';
-// import {useKeyboardHeight} from 'dok-wallet-blockchain-networks/service/useKeyboardHeight';
-// import {ThemeContext} from '../../../ThemeContext';
-// import {isFingerprint} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-// import FingerprintScanner from 'react-native-fingerprint-scanner';
-// import RNScreenshotPrevent from 'react-native-screenshot-prevent';
-
-import {Box, Modal} from '@mui/material';
-import s from './ModalConfirmTransaction.module.css';
 import {Formik} from 'formik';
+import HomeSheet from 'components/Home/HomeSheet';
+import GeneralButton from 'components/Button';
+import {EyeIcon, KeyIcon} from 'components/Home/HomeIcons';
+import s from './ModalConfirmTransaction.module.css';
 
-const icons = require(`assets/images/icons`).default;
-
+// Password check before a sensitive action (sending, revealing a private key,
+// custom derivation). Bottom sheet on phones, centred dialog from 600px up.
 const ModalConfirmTransaction = ({visible, hideModal, onSuccess}) => {
-  // const {theme} = useContext(ThemeContext);
-  // const styles = myStyles(theme);
-
-  // const floatingModalHeight = useFloatingHeight();
-  // const keyboardHeight = useKeyboardHeight();
   const [wrong, setWrong] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   // Guards against double-submit (Enter key + click racing, or rapid clicks)
   // firing onSuccess twice and broadcasting the transaction twice.
   const isSubmittingRef = useRef(false);
@@ -51,38 +32,6 @@ const ModalConfirmTransaction = ({visible, hideModal, onSuccess}) => {
     isSubmittingRef.current = true;
     onSuccess && onSuccess();
   }, [onSuccess]);
-  // const fingerprint = useSelector(isFingerprint);
-
-  // const handleFingerprintAuth = useCallback(async () => {
-  //   if (fingerprint && visible) {
-  //     try {
-  //       await FingerprintScanner.authenticate({
-  //         description: 'Unlock Dok Wallet with your fingerprint',
-  //       });
-  //       onSuccess && onSuccess();
-  //     } catch (error) {
-  //       if (error.name === 'SystemCancel') {
-  //         console.log('Authentication was canceled by the system');
-  //       } else {
-  //         console.log('Error checking fingerprint settings:', error);
-  //       }
-  //     } finally {
-  //       FingerprintScanner.release();
-  //     }
-  //   }
-  // }, [fingerprint, onSuccess, visible]);
-
-  // useEffect(() => {
-  //   if (visible) {
-  //     RNScreenshotPrevent.enabled(true);
-
-  //     setTimeout(() => {
-  //       handleFingerprintAuth().then();
-  //     }, 200);
-  //   } else {
-
-  //   }
-  // }, [handleFingerprintAuth, visible]);
 
   // One PBKDF2 (600k, in a worker) per confirm: the KDF is the verifier.
   const onSubmit = async values => {
@@ -105,104 +54,116 @@ const ModalConfirmTransaction = ({visible, hideModal, onSuccess}) => {
     }
   };
 
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '95%',
-    bgcolor: 'var(--secondaryBackgroundColor)',
-    borderRadius: '10px',
-    '@media (min-width: 768px)': {
-      width: '50%',
-    },
-    overflow: 'hidden',
+  const close = () => {
+    hideModal(false);
+    setWrong(false);
+    setShowPassword(false);
   };
 
-  // if (window.matchMedia("(min-width: 768px)").matches) {
-  //   style.width = "50%";
-  // }
-
   return (
-    <Modal
-      open={visible}
-      onClose={() => hideModal(false)}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={s.infoList}>
-          <div className={s.infoHeader}>
-            <p className={s.titleInfo}>
-              {'Please enter your password  for confirm the transfer'}
-            </p>
-            <button
-              className={s.infoIcon}
-              onClick={() => {
-                hideModal(false);
-                setWrong(false);
+    <HomeSheet
+      visible={visible}
+      onClose={close}
+      title='Confirm with password'
+      labelId='confirm-password-title'>
+      <Formik
+        enableReinitialize={true}
+        initialValues={{
+          currentPassword: '',
+        }}
+        validationSchema={validationSchemaFingerprintVerification}
+        onSubmit={onSubmit}>
+        {({
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          values,
+          errors,
+          touched,
+        }) => {
+          const error = wrong
+            ? 'Wrong password. Try again.'
+            : touched.currentPassword && errors.currentPassword
+              ? errors.currentPassword
+              : null;
+          return (
+            <form
+              className={s.form}
+              noValidate
+              onSubmit={event => {
+                event.preventDefault();
+                handleSubmit();
               }}>
-              <div className={s.closeBtn}>{icons.close}</div>
-            </button>
-          </div>
-
-          <Formik
-            enableReinitialize={true}
-            initialValues={{
-              currentPassword: '',
-            }}
-            validationSchema={validationSchemaFingerprintVerification}
-            onSubmit={onSubmit}>
-            {({
-              handleChange,
-              handleBlur,
-              handleSubmit,
-              values,
-              errors,
-              touched,
-            }) => (
-              <div className={s.formInput}>
-                <input
-                  className={s.input}
-                  style={{
-                    borderColor: errors.currentPassword ? 'red' : 'var(--gray)',
-                  }}
-                  type={'password'}
-                  // underlineColor={errors.currentPassword ? "red" : "#989898"}
-                  name='currentPassword'
-                  onChange={handleChange('currentPassword')}
-                  onBlur={handleBlur('currentPassword')}
-                  onSubmit={handleSubmit}
-                  value={values.currentPassword}
-                  onKeyDown={event => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault(); // Prevent the default Enter key behavior (e.g., new line in textarea)
-                      handleSubmit(); // Manually trigger Formik's submit function
-                    }
-                  }}
-                  autoFocus={true}
-                />
-
-                {wrong === true ? (
-                  <p className={s.textWarning}>* Wrong password</p>
-                ) : (
-                  <>
-                    {errors.currentPassword && touched.currentPassword && (
-                      <p className={s.textConfirm}>{errors.currentPassword}</p>
-                    )}
-                  </>
-                )}
-
-                <button
-                  className={`${s.button} ${s.shadow}`}
-                  onClick={handleSubmit}>
-                  <p className={s.buttonTitle}>Verify</p>
-                </button>
+              <div className={s.intro}>
+                <span className={s.introIcon}>
+                  <KeyIcon size={20} />
+                </span>
+                <p className={s.introText}>
+                  Enter your wallet password to confirm. It never leaves this
+                  device.
+                </p>
               </div>
-            )}
-          </Formik>
-        </div>
-      </Box>
-    </Modal>
+
+              <div className={s.field}>
+                <label htmlFor='confirm-password' className={s.label}>
+                  Password
+                </label>
+                <div
+                  className={`${s.inputBox} ${error ? s.inputBoxError : ''}`}>
+                  <input
+                    id='confirm-password'
+                    className={s.input}
+                    type={showPassword ? 'text' : 'password'}
+                    name='currentPassword'
+                    placeholder='Your wallet password'
+                    autoComplete='current-password'
+                    onChange={event => {
+                      if (wrong) setWrong(false);
+                      handleChange('currentPassword')(event);
+                    }}
+                    onBlur={handleBlur('currentPassword')}
+                    value={values.currentPassword}
+                    aria-invalid={!!error}
+                    autoFocus={true}
+                  />
+                  <button
+                    type='button'
+                    className={s.reveal}
+                    aria-label={
+                      showPassword ? 'Hide password' : 'Show password'
+                    }
+                    onClick={() => setShowPassword(v => !v)}>
+                    <EyeIcon size={18} off={showPassword} />
+                  </button>
+                </div>
+                {error ? (
+                  <p className={s.error} role='alert'>
+                    {error}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className={s.actions}>
+                <GeneralButton
+                  variant='secondary'
+                  fullWidth
+                  onClick={close}
+                  disabled={verifying}>
+                  Cancel
+                </GeneralButton>
+                <GeneralButton
+                  type='submit'
+                  fullWidth
+                  loading={verifying}
+                  loadingLabel='Verifying…'>
+                  Confirm
+                </GeneralButton>
+              </div>
+            </form>
+          );
+        }}
+      </Formik>
+    </HomeSheet>
   );
 };
 

@@ -1,6 +1,6 @@
 'use client';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Modal} from '@mui/material';
+import Modal from '@mui/material/Modal';
 import {useDispatch, useSelector} from 'react-redux';
 import BigNumber from 'bignumber.js';
 import {
@@ -26,7 +26,24 @@ import {
   getExchangeAllowanceLoading,
 } from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSelectors';
 import {selectUserCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import GeneralButton from 'components/Button';
 import s from './ModalAllowanceInfo.module.css';
+
+// Line icon on a 24px grid; stroke follows currentColor.
+const Icon = ({size = 22, strokeWidth = 2, children}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth={strokeWidth}
+    strokeLinecap='round'
+    strokeLinejoin='round'
+    aria-hidden='true'>
+    {children}
+  </svg>
+);
 
 const selectNativeBalance = (chainName, chainSymbol) => state => {
   const allCoins = selectUserCoins(state);
@@ -39,6 +56,9 @@ const selectNativeBalance = (chainName, chainSymbol) => state => {
   return nativeCoin?.totalAmount || 0;
 };
 
+// ERC20 allowance for the staking contract or the exchange provider: approval
+// type, network fee, advanced fee / nonce. Bottom sheet on phones, centred
+// dialog from 600px up.
 const ModalAllowanceInfo = ({
   source = 'staking',
   visible,
@@ -307,54 +327,69 @@ const ModalAllowanceInfo = ({
   const feesOptions = allowanceData?.feesOptions;
   const gasCurrency = GAS_CURRENCY[convertedChainName] || 'Gwei';
 
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    bgcolor: 'var(--secondaryBackgroundColor)',
-    borderRadius: '10px',
-    overflow: 'hidden',
-    maxWidth: '460px',
-    width: '92%',
-  };
-
   return (
-    <Modal open={!!visible} onClose={onClose} sx={{zIndex: 99999}}>
-      <Box sx={style}>
-        <div className={s.container}>
-          <div className={s.title}>Token Allowance</div>
+    <Modal
+      open={!!visible}
+      onClose={onClose}
+      sx={{zIndex: 99999}}
+      aria-labelledby='modal-allowance-title'
+      slotProps={{backdrop: {className: s.backdrop}}}>
+      <div className={s.sheet}>
+        <div className={s.handle} />
+        <div className={s.header}>
+          <span className={s.tile}>
+            <Icon>
+              <circle cx='7.5' cy='15.5' r='4.5' />
+              <path d='M10.7 12.3L21 2' />
+              <path d='M16 7l3 3' />
+              <path d='M18.5 4.5l2 2' />
+            </Icon>
+          </span>
+          <div id='modal-allowance-title' className={s.title}>
+            Token Allowance
+          </div>
+        </div>
 
-          {approveLoading ? (
-            <div className={s.centerView}>
-              <div className={s.spinner} />
-              <p className={s.body}>Processing approval...</p>
-            </div>
-          ) : isLoading && !isFetchingFeesAgain ? (
-            <div className={s.centerView}>
-              <div className={s.spinner} />
-              <p className={s.body}>Fetching allowance...</p>
-            </div>
-          ) : hasError ? (
-            <div className={s.centerView}>
-              <p className={s.title}>Something went wrong</p>
-              <p className={s.body}>
-                We couldn&apos;t estimate the network fee right now. Please
-                check your connection and try again.
-              </p>
-              <button className={s.secondaryBtn} onClick={fetchEstimationFee}>
-                Retry
-              </button>
-            </div>
-          ) : (
-            <>
-              {allowanceData ? (
-                <div
-                  className={`${s.statusText} ${
-                    allowanceData.isApproved
-                      ? s.statusApproved
-                      : s.statusPending
-                  }`}>
+        {approveLoading ? (
+          <div className={s.centerView} role='status'>
+            <div className={s.spinner} />
+            <p className={s.body}>Processing approval...</p>
+          </div>
+        ) : isLoading && !isFetchingFeesAgain ? (
+          <div className={s.centerView} role='status'>
+            <div className={s.spinner} />
+            <p className={s.body}>Fetching allowance...</p>
+          </div>
+        ) : hasError ? (
+          <div className={s.centerView}>
+            <span className={`${s.tile} ${s.tileDanger}`}>
+              <Icon>
+                <circle cx='12' cy='12' r='9' />
+                <path d='M12 8v4.5' />
+                <path d='M12 16h.01' />
+              </Icon>
+            </span>
+            <p className={s.errorTitle}>Something went wrong</p>
+            <p className={s.body}>
+              We couldn&apos;t estimate the network fee right now. Please check
+              your connection and try again.
+            </p>
+            <GeneralButton
+              variant='secondary'
+              fullWidth
+              onClick={fetchEstimationFee}>
+              Retry
+            </GeneralButton>
+          </div>
+        ) : (
+          <>
+            {allowanceData ? (
+              <div
+                className={`${s.statusText} ${
+                  allowanceData.isApproved ? s.statusApproved : s.statusPending
+                }`}>
+                <span className={s.statusDot} aria-hidden='true' />
+                <span>
                   {allowanceData.isApproved
                     ? `Current allowance: ${parseFloat(
                         allowanceData.allowanceFormatted || '0',
@@ -364,13 +399,16 @@ const ModalAllowanceInfo = ({
                       ).toFixed(6)} (current: ${parseFloat(
                         allowanceData.allowanceFormatted || '0',
                       ).toFixed(6)})`}
-                </div>
-              ) : isFetchingFeesAgain ? (
-                <div className={`${s.statusText} ${s.statusPending}`}>
-                  Current allowance: Refreshing...
-                </div>
-              ) : null}
+                </span>
+              </div>
+            ) : isFetchingFeesAgain ? (
+              <div className={`${s.statusText} ${s.statusPending}`}>
+                <span className={s.statusDot} aria-hidden='true' />
+                <span>Current allowance: Refreshing...</span>
+              </div>
+            ) : null}
 
+            <div className={s.section}>
               <div className={s.sectionLabel}>Select Approval Type</div>
               <p className={s.whatIsApprove}>
                 {`Approval is a one-time on-chain permission that lets the ${contractLabel} use your ${
@@ -379,164 +417,214 @@ const ModalAllowanceInfo = ({
                   isExchange ? 'swap' : 'stake'
                 }.`}
               </p>
+            </div>
 
-              <div className={s.cardsRow}>
-                <button
-                  className={`${s.card} ${
-                    selectedType === 'manual' ? s.cardSelected : ''
-                  }`}
-                  onClick={() => setSelectedType('manual')}>
-                  <div className={s.cardTitle}>Manual</div>
-                  <div className={s.cardDesc}>Approve only this amount</div>
-                  <div className={s.cardAmount}>
-                    {parseFloat(displayRequiredAmount).toFixed(6)}
-                  </div>
-                  <div className={s.cardSymbol}>{tokenSymbol || ''}</div>
-                </button>
-
-                <button
-                  className={`${s.card} ${
-                    selectedType === 'unlimited' ? s.cardSelected : ''
-                  }`}
-                  onClick={() => setSelectedType('unlimited')}>
-                  <div className={s.cardTitle}>Unlimited</div>
-                  <div className={s.cardDesc}>Approve once, skip future</div>
-                  <div className={s.cardAmount}>∞</div>
-                  <div className={s.cardSymbol}>{tokenSymbol || ''}</div>
-                </button>
-              </div>
-
-              {insufficientBalance ? (
-                <p className={s.errorText}>
-                  {`Insufficient balance. Amount exceeds available balance of ${parseFloat(
-                    availableAmount || '0',
-                  ).toFixed(6)} ${tokenSymbol || ''}.`}
-                </p>
-              ) : (
-                <p
-                  className={
-                    selectedType === 'unlimited' ? s.noteWarning : s.noteSafe
-                  }>
-                  {selectedType === 'unlimited'
-                    ? `The ${contractLabel} can move any amount of your ${
-                        tokenSymbol || 'tokens'
-                      } until you revoke it. Saves fees and time on future ${
-                        isExchange ? 'swaps' : 'stakes'
-                      } — choose only for protocols you trust.`
-                    : `Safest option. The contract can only ever move this exact amount — you'll need to approve again for future ${
-                        isExchange ? 'swaps' : 'stakes'
-                      }.`}
-                </p>
-              )}
-
-              <div className={s.feeRow}>
-                <span className={s.feeLabel}>Network Fee</span>
-                <span className={s.feeValue}>
-                  {isFetchingFeesAgain
-                    ? 'Refreshing...'
-                    : `${allowanceData?.transactionFee || '0'} ${
-                        chainSymbol || ''
-                      }`}
+            <div className={s.cardsRow}>
+              <button
+                type='button'
+                aria-pressed={selectedType === 'manual'}
+                className={`${s.card} ${
+                  selectedType === 'manual' ? s.cardSelected : ''
+                }`}
+                onClick={() => setSelectedType('manual')}>
+                <span className={s.cardHeader}>
+                  <span className={s.cardIcon}>
+                    <Icon size={18}>
+                      <path d='M12 20h9' />
+                      <path d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z' />
+                    </Icon>
+                  </span>
+                  <span className={s.cardCheck} aria-hidden='true'>
+                    <Icon size={11} strokeWidth={3.2}>
+                      <path d='M20 6 9 17l-5-5' />
+                    </Icon>
+                  </span>
                 </span>
-              </div>
+                <div className={s.cardTitle}>Manual</div>
+                <div className={s.cardDesc}>Approve only this amount</div>
+                <div className={s.cardAmount}>
+                  {parseFloat(displayRequiredAmount).toFixed(6)}
+                </div>
+                <div className={s.cardSymbol}>{tokenSymbol || ''}</div>
+              </button>
 
-              {!!feesOptions?.length && (
-                <button
-                  className={s.advancedToggle}
-                  onClick={() => setShowAdvanced(prev => !prev)}>
-                  {showAdvanced ? 'Hide advanced' : 'Advanced options'}
-                </button>
-              )}
+              <button
+                type='button'
+                aria-pressed={selectedType === 'unlimited'}
+                className={`${s.card} ${
+                  selectedType === 'unlimited' ? s.cardSelected : ''
+                }`}
+                onClick={() => setSelectedType('unlimited')}>
+                <span className={s.cardHeader}>
+                  <span className={s.cardIcon}>
+                    <Icon size={18}>
+                      <path d='M18.2 8.4a5 5 0 1 1 0 7.2L12 9.6 5.8 15.6a5 5 0 1 1 0-7.2L12 14.4z' />
+                    </Icon>
+                  </span>
+                  <span className={s.cardCheck} aria-hidden='true'>
+                    <Icon size={11} strokeWidth={3.2}>
+                      <path d='M20 6 9 17l-5-5' />
+                    </Icon>
+                  </span>
+                </span>
+                <div className={s.cardTitle}>Unlimited</div>
+                <div className={s.cardDesc}>Approve once, skip future</div>
+                <div className={s.cardAmount}>∞</div>
+                <div className={s.cardSymbol}>{tokenSymbol || ''}</div>
+              </button>
+            </div>
 
-              {showAdvanced && !!feesOptions?.length && (
-                <div className={s.advancedBox}>
-                  <div className={s.feesOptionsRow}>
-                    {feesOptions?.slice(0, 2).map(option => (
-                      <button
-                        key={option?.title}
-                        className={`${s.feesOptionsItem} ${
-                          selectedFeesType?.toLowerCase() ===
-                          option?.title?.toLowerCase()
-                            ? s.feesOptionSelected
-                            : ''
-                        }`}
-                        onClick={() =>
-                          onSelectFeesType(
-                            option?.title?.toLowerCase(),
-                            option?.gasPrice,
-                          )
-                        }>
-                        <p className={s.feesOptionTitle}>{option?.title}</p>
-                        <p className={s.feesOptionValue}>
-                          {`${option?.gasPrice} ${gasCurrency}`}
-                        </p>
-                      </button>
-                    ))}
+            {insufficientBalance ? (
+              <p className={s.errorText}>
+                {`Insufficient balance. Amount exceeds available balance of ${parseFloat(
+                  availableAmount || '0',
+                ).toFixed(6)} ${tokenSymbol || ''}.`}
+              </p>
+            ) : (
+              <p
+                className={
+                  selectedType === 'unlimited' ? s.noteWarning : s.noteSafe
+                }>
+                {selectedType === 'unlimited'
+                  ? `The ${contractLabel} can move any amount of your ${
+                      tokenSymbol || 'tokens'
+                    } until you revoke it. Saves fees and time on future ${
+                      isExchange ? 'swaps' : 'stakes'
+                    } — choose only for protocols you trust.`
+                  : `Safest option. The contract can only ever move this exact amount — you'll need to approve again for future ${
+                      isExchange ? 'swaps' : 'stakes'
+                    }.`}
+              </p>
+            )}
+
+            <div className={s.feeRow}>
+              <span className={s.feeLabelRow}>
+                <Icon size={16}>
+                  <path d='M3 22V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v17' />
+                  <path d='M2 22h13' />
+                  <path d='M3 10h11' />
+                  <path d='M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9l-3-3' />
+                </Icon>
+                <span className={s.feeLabel}>Network Fee</span>
+              </span>
+              <span className={s.feeValue}>
+                {isFetchingFeesAgain
+                  ? 'Refreshing...'
+                  : `${allowanceData?.transactionFee || '0'} ${
+                      chainSymbol || ''
+                    }`}
+              </span>
+            </div>
+
+            {!!feesOptions?.length && (
+              <GeneralButton
+                variant='unstyled'
+                aria-expanded={showAdvanced}
+                className={s.advancedToggle}
+                onClick={() => setShowAdvanced(prev => !prev)}>
+                {showAdvanced ? 'Hide advanced' : 'Advanced options'}
+                <Icon size={14} strokeWidth={2.4}>
+                  <path d={showAdvanced ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'} />
+                </Icon>
+              </GeneralButton>
+            )}
+
+            {showAdvanced && !!feesOptions?.length && (
+              <div className={s.advancedBox}>
+                <div className={s.feesOptionsRow}>
+                  {feesOptions?.slice(0, 2).map(option => (
                     <button
+                      type='button'
+                      key={option?.title}
+                      aria-pressed={
+                        selectedFeesType?.toLowerCase() ===
+                        option?.title?.toLowerCase()
+                      }
                       className={`${s.feesOptionsItem} ${
-                        selectedFeesType?.toLowerCase() === 'custom'
+                        selectedFeesType?.toLowerCase() ===
+                        option?.title?.toLowerCase()
                           ? s.feesOptionSelected
                           : ''
                       }`}
-                      onClick={() => onSelectFeesType('custom')}>
-                      <p className={s.feesOptionTitle}>Custom</p>
+                      onClick={() =>
+                        onSelectFeesType(
+                          option?.title?.toLowerCase(),
+                          option?.gasPrice,
+                        )
+                      }>
+                      <p className={s.feesOptionTitle}>{option?.title}</p>
+                      <p className={s.feesOptionValue}>
+                        {`${option?.gasPrice} ${gasCurrency}`}
+                      </p>
                     </button>
-                  </div>
-                  {selectedFeesType === 'custom' && (
-                    <div className={s.customInputRow}>
-                      <span
-                        className={
-                          s.customLabel
-                        }>{`Gas Price (${gasCurrency})`}</span>
-                      <input
-                        className={s.customInput}
-                        type='number'
-                        value={customFees}
-                        onChange={onChangeCustomFees}
-                      />
-                    </div>
-                  )}
+                  ))}
+                  <button
+                    type='button'
+                    aria-pressed={selectedFeesType?.toLowerCase() === 'custom'}
+                    className={`${s.feesOptionsItem} ${
+                      selectedFeesType?.toLowerCase() === 'custom'
+                        ? s.feesOptionSelected
+                        : ''
+                    }`}
+                    onClick={() => onSelectFeesType('custom')}>
+                    <p className={s.feesOptionTitle}>Custom</p>
+                  </button>
+                </div>
+                {selectedFeesType === 'custom' && (
                   <div className={s.customInputRow}>
-                    <span className={s.customLabel}>Nonce</span>
+                    <label
+                      htmlFor='allowance-gas-price'
+                      className={
+                        s.customLabel
+                      }>{`Gas Price (${gasCurrency})`}</label>
                     <input
+                      id='allowance-gas-price'
                       className={s.customInput}
                       type='number'
-                      value={customNonce}
-                      onChange={onChangeCustomNonce}
+                      value={customFees}
+                      onChange={onChangeCustomFees}
                     />
                   </div>
+                )}
+                <div className={s.customInputRow}>
+                  <label htmlFor='allowance-nonce' className={s.customLabel}>
+                    Nonce
+                  </label>
+                  <input
+                    id='allowance-nonce'
+                    className={s.customInput}
+                    type='number'
+                    value={customNonce}
+                    onChange={onChangeCustomNonce}
+                  />
                 </div>
-              )}
+              </div>
+            )}
 
-              {isInsufficientFeeBalance ? (
-                <p className={s.errorText}>
-                  {`Insufficient ${
-                    chainSymbol || ''
-                  } balance to pay the network fee.`}
-                </p>
-              ) : null}
-            </>
-          )}
+            {isInsufficientFeeBalance ? (
+              <p className={s.errorText}>
+                {`Insufficient ${
+                  chainSymbol || ''
+                } balance to pay the network fee.`}
+              </p>
+            ) : null}
+          </>
+        )}
 
-          {!approveLoading && !hasError && (
-            <div className={s.actions}>
-              <button
-                className={s.primaryBtn}
-                disabled={isDisabled}
-                style={{
-                  backgroundColor: isDisabled ? 'var(--gray)' : undefined,
-                  cursor: isDisabled ? 'not-allowed' : 'pointer',
-                }}
-                onClick={handleApprove}>
-                Approve
-              </button>
-              <button className={s.secondaryBtn} onClick={onClose}>
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
-      </Box>
+        {!approveLoading && !hasError && (
+          <div className={s.actions}>
+            <GeneralButton variant='secondary' fullWidth onClick={onClose}>
+              Cancel
+            </GeneralButton>
+            <GeneralButton
+              fullWidth
+              disabled={isDisabled}
+              onClick={handleApprove}>
+              Approve
+            </GeneralButton>
+          </div>
+        )}
+      </div>
     </Modal>
   );
 };

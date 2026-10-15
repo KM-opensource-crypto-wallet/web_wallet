@@ -7,13 +7,11 @@ import {modalAddTokenValidation} from 'utils/validationSchema';
 import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 import {useDispatch} from 'react-redux';
 
-import Modal from '@mui/material/Modal';
 import s from './ModalAddToken.module.css';
 import {Formik} from 'formik';
-
-const icons = require(`assets/images/icons`).default;
-import {Box} from '@mui/material';
-import SelectInput from 'components/SelectInput';
+import HomeSheet from 'components/Home/HomeSheet';
+import GeneralButton from 'components/Button';
+import {CheckIcon, ChevronDownIcon} from 'components/Home/HomeIcons';
 import {useSelector} from 'react-redux';
 import {
   selectCurrentWallet,
@@ -27,12 +25,15 @@ import {
 
 const ModalAddToken = ({visible, hideModal, data}) => {
   const [networkInput, setNetworkInput] = useState({});
+  const [networkListOpen, setNetworkListOpen] = useState(false);
   const chain_name = useSelector(selectWalletChainName);
   const [possibleChain, setPossibleChain] = useState(ModalAddTokenList);
 
   const dispatch = useDispatch();
   const chainRef = useRef(TronChain());
-  const previousTimerRef = useRef(null);
+  // Bumped per address change; a contract lookup only applies its result if
+  // no newer address was entered while it was in flight.
+  const lookupIdRef = useRef(0);
   const formikRef = useRef(null);
   const currentWallet = useSelector(selectCurrentWallet);
   const allCustomRPC = useSelector(selectAllCustomRpc);
@@ -86,33 +87,6 @@ const ModalAddToken = ({visible, hideModal, data}) => {
     }
   };
 
-  const showAddressError = useCallback(async () => {
-    await formikRef?.current?.setErrors({
-      fields: {
-        contract_address: `Invalid ${networkInput?.value?.toUpperCase()} contract contract_address`,
-      },
-    });
-    await formikRef?.current?.setValues({
-      name: '',
-      decimal: '',
-      symbol: '',
-    });
-  }, [networkInput?.value]);
-
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '95%',
-    bgcolor: 'var(--secondaryBackgroundColor)',
-    borderRadius: '10px',
-    overflow: 'hidden',
-    '@media (min-width: 768px)': {
-      width: '50%',
-    },
-  };
-
   const onChangeNetwork = useCallback(
     value => {
       const foundChain = ModalAddTokenList.find(item => item.value === value);
@@ -124,6 +98,7 @@ const ModalAddToken = ({visible, hideModal, data}) => {
           symbol: '',
         });
         setNetworkInput(foundChain);
+        setNetworkListOpen(false);
         const customRPC = getCustomRPCWithData(
           allCustomRPC,
           foundChain.value,
@@ -139,186 +114,241 @@ const ModalAddToken = ({visible, hideModal, data}) => {
     [allCustomRPC, currentWallet?.clientId, currentWallet?.phrase],
   );
 
+  const close = () => {
+    setNetworkListOpen(false);
+    hideModal(false);
+  };
+
   return (
-    <Modal
-      open={visible}
-      onClose={() => hideModal(false)}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={s.centeredView}>
-          <div className={s.modalView}>
-            <div className={s.modalHeader}>
-              <p className={s.headerText}>Add Custom Token</p>
-              <button
-                onClick={() => {
-                  hideModal(false);
-                }}
-                className={s.closeBtn}>
-                {icons.close}
-              </button>
-            </div>
-            <div className={s.modalBody}>
-              <Formik
-                initialValues={{
-                  contract_address: '',
-                  name: '',
-                  symbol: '',
-                  decimal: '',
-                  icon: '',
-                }}
-                innerRef={formikRef}
-                validationSchema={modalAddTokenValidation}
-                onSubmit={values => onFormSubmit(values)}>
-                {({
-                  handleChange,
-                  handleBlur,
-                  handleSubmit,
-                  values,
-                  errors,
-                  setFieldValue,
-                  setFieldTouched,
-                  isValid,
-                }) => {
-                  return (
-                    <div>
-                      <div className={s.addressViev}>
-                        <SelectInput
-                          listData={possibleChain}
-                          onValueChange={onChangeNetwork}
-                          value={networkInput?.value}
-                          placeholder={'Select Network'}
-                        />
-                      </div>
-                      <div className={s.qrContainer}>
-                        <input
-                          className={s.input}
-                          placeholder='Address'
-                          name='contract_address'
-                          onChange={async event => {
-                            const value = event?.target.value;
-                            setFieldValue('contract_address', value);
-                            const isValidAddress =
-                              chainRef.current?.isValidAddress({
-                                address: value,
-                              });
-                            if (isValidAddress) {
-                              const resp = await chainRef?.current?.getContract(
-                                {
-                                  contractAddress: value,
-                                },
-                              );
-                              if (resp?.name) {
-                                setFieldValue('name', resp?.name);
-                              } else {
-                                showAddressError();
-                              }
-                              if (resp?.decimals) {
-                                setFieldValue(
-                                  'decimal',
-                                  resp?.decimals?.toString(),
-                                );
-                              }
-                              if (resp?.symbol) {
-                                setFieldValue('symbol', resp?.symbol);
-                              }
-                              setFieldTouched('contract_address', true);
-                              if (resp?.icon) {
-                                setFieldValue('icon', resp?.icon);
-                              }
-                            } else {
-                              if (previousTimerRef.current) {
-                                previousTimerRef.current = null;
-                                clearTimeout(previousTimerRef.current);
-                              }
-                              showAddressError();
-                              previousTimerRef.current = setTimeout(() => {
-                                // showAddressError();
-                                previousTimerRef.current = null;
-                              }, 500);
-                            }
-                          }}
-                          onBlur={handleBlur('contract_address')}
-                          value={values.contract_address}
-                        />
-                      </div>
-                      {errors.contract_address && (
-                        <p className={s.errorText}>{errors.contract_address}</p>
-                      )}
-                      <input
-                        className={s.input}
-                        // style={{ marginBottom: 20 }}
-                        placeholder='Name'
-                        readOnly
-                        // theme={{
-                        //   colors: {
-                        //     onSurfaceVariant: "#989898",
-                        //   },
-                        // }}
+    <HomeSheet
+      visible={visible}
+      onClose={close}
+      title='Add custom token'
+      labelId='add-token-title'>
+      <Formik
+        initialValues={{
+          contract_address: '',
+          name: '',
+          symbol: '',
+          decimal: '',
+          icon: '',
+        }}
+        innerRef={formikRef}
+        validationSchema={modalAddTokenValidation}
+        onSubmit={values => onFormSubmit(values)}>
+        {({
+          handleBlur,
+          handleSubmit,
+          values,
+          errors,
+          setValues,
+          setFieldError,
+          setFieldTouched,
+          isValid,
+        }) => {
+          // Every update goes through setValues with the full value set, so
+          // validation always runs against the values just written. Separate
+          // setFieldValue calls after the await validated stale values and
+          // left the form invalid with all fields filled.
+          const onChangeContract = async value => {
+            const lookupId = ++lookupIdRef.current;
+            const empty = {name: '', symbol: '', decimal: '', icon: ''};
+            await setValues({contract_address: value, ...empty}, false);
+            if (!value) {
+              return;
+            }
+            const invalidMessage = `Not a valid ${
+              networkInput?.label || 'token'
+            } contract address`;
+            if (!chainRef.current?.isValidAddress({address: value})) {
+              setFieldError('contract_address', invalidMessage);
+              return;
+            }
+            let resp = null;
+            try {
+              resp = await chainRef.current?.getContract({
+                contractAddress: value,
+              });
+            } catch (e) {
+              resp = null;
+            }
+            if (lookupId !== lookupIdRef.current) {
+              return;
+            }
+            if (!resp?.name) {
+              setFieldError(
+                'contract_address',
+                'Could not read a token at this address',
+              );
+              return;
+            }
+            await setValues(
+              {
+                contract_address: value,
+                name: resp.name,
+                symbol: resp.symbol || '',
+                decimal: resp.decimals != null ? resp.decimals.toString() : '',
+                icon: resp.icon || '',
+              },
+              true,
+            );
+            setFieldTouched('contract_address', true, false);
+          };
+          const onPaste = async () => {
+            try {
+              const text = (await navigator.clipboard.readText())?.trim();
+              if (text) {
+                await onChangeContract(text);
+              }
+            } catch (e) {
+              // Clipboard blocked: the field still accepts a manual paste.
+            }
+          };
+          const addressError =
+            values.contract_address && errors.contract_address
+              ? errors.contract_address
+              : null;
+          const hasNetwork = !!networkInput?.value;
+          return (
+            <form
+              className={s.form}
+              noValidate
+              onSubmit={event => {
+                event.preventDefault();
+                handleSubmit();
+              }}>
+              <div className={s.field}>
+                <span className={s.label}>Network</span>
+                <button
+                  type='button'
+                  className={s.networkButton}
+                  aria-expanded={networkListOpen}
+                  onClick={() => setNetworkListOpen(v => !v)}>
+                  <span
+                    className={`${s.networkLabel} ${
+                      hasNetwork ? '' : s.placeholder
+                    }`}>
+                    {networkInput?.label || 'Select network'}
+                  </span>
+                  <ChevronDownIcon
+                    size={18}
+                    className={`${s.chevron} ${
+                      networkListOpen ? s.chevronOpen : ''
+                    }`}
+                  />
+                </button>
+                {networkListOpen ? (
+                  <div className={s.networkList} role='listbox'>
+                    {possibleChain.map(item => {
+                      const selected = item.value === networkInput?.value;
+                      return (
+                        <button
+                          key={item.value}
+                          type='button'
+                          role='option'
+                          aria-selected={selected}
+                          className={`${s.networkOption} ${
+                            selected ? s.networkOptionOn : ''
+                          }`}
+                          onClick={() => onChangeNetwork(item.value)}>
+                          {item.label}
+                          {selected ? <CheckIcon size={16} /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
 
-                        disabled={!values.contract_address && !values.name}
-                        name='name'
-                        onChange={handleChange('name')}
-                        onBlur={handleBlur('name')}
-                        value={values.name}
-                      />
-                      <div className={s.qrContainer} style={{marginBottom: 20}}>
-                        <input
-                          className={s.input}
-                          style={{width: '45%'}}
-                          placeholder='Symbol'
-                          readOnly
-                          // theme={{
-                          //   colors: {
-                          //     onSurfaceVariant: "#989898",
-                          //     primary: "#989898",
-                          //   },
-                          // }}
-                          disabled={!values.contract_address && !values.symbol}
-                          name='symbol'
-                          onChange={handleChange('symbol')}
-                          onBlur={handleBlur('symbol')}
-                          value={values.symbol}
-                        />
-                        <input
-                          className={s.input}
-                          style={{width: '45%'}}
-                          readOnly
-                          placeholder='Decimal'
-                          // theme={{
-                          //   colors: {
-                          //     onSurfaceVariant: "#989898",
-                          //   },
-                          // }}
+              <div className={s.field}>
+                <label htmlFor='token-contract' className={s.label}>
+                  Contract address
+                </label>
+                <div
+                  className={`${s.inputBox} ${
+                    addressError ? s.inputBoxError : ''
+                  } ${hasNetwork ? '' : s.inputBoxDisabled}`}>
+                  <input
+                    id='token-contract'
+                    className={s.input}
+                    placeholder={
+                      hasNetwork ? 'Contract address' : 'Select a network first'
+                    }
+                    name='contract_address'
+                    autoComplete='off'
+                    spellCheck={false}
+                    disabled={!hasNetwork}
+                    onChange={event => onChangeContract(event?.target.value)}
+                    onBlur={handleBlur('contract_address')}
+                    value={values.contract_address}
+                  />
+                  {hasNetwork && !values.contract_address ? (
+                    <button
+                      type='button'
+                      className={s.pasteButton}
+                      onClick={onPaste}>
+                      Paste
+                    </button>
+                  ) : null}
+                </div>
+                {addressError ? (
+                  <p className={s.error} role='alert'>
+                    {addressError}
+                  </p>
+                ) : null}
+              </div>
 
-                          disabled={!values.contract_address}
-                          name='decimal'
-                          onChange={handleChange('decimal')}
-                          onBlur={handleBlur('decimal')}
-                          value={values.decimal}
-                        />
-                      </div>
-                      <button
-                        disabled={!isValid}
-                        type='button'
-                        className={s.button}
-                        style={{
-                          backgroundColor: !isValid
-                            ? 'var(--gray)'
-                            : 'var(--background)',
-                        }}
-                        onClick={handleSubmit}>
-                        <p className={s.buttonTitle}>Add new Coin</p>
-                      </button>
-                    </div>
-                  );
-                }}
-              </Formik>
-            </div>
-          </div>
-        </div>
-      </Box>
-    </Modal>
+              <div className={s.field}>
+                <span className={s.label}>
+                  Token details{' '}
+                  <span className={s.optional}>· filled from the contract</span>
+                </span>
+                <div className={`${s.inputBox} ${s.inputBoxReadOnly}`}>
+                  <input
+                    className={s.input}
+                    placeholder='Token name'
+                    aria-label='Token name'
+                    readOnly
+                    name='name'
+                    value={values.name}
+                  />
+                </div>
+                <div className={s.pair}>
+                  <div className={`${s.inputBox} ${s.inputBoxReadOnly}`}>
+                    <input
+                      className={s.input}
+                      placeholder='Symbol'
+                      aria-label='Symbol'
+                      readOnly
+                      name='symbol'
+                      value={values.symbol}
+                    />
+                  </div>
+                  <div className={`${s.inputBox} ${s.inputBoxReadOnly}`}>
+                    <input
+                      className={s.input}
+                      placeholder='Decimals'
+                      aria-label='Decimals'
+                      readOnly
+                      name='decimal'
+                      value={values.decimal}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <GeneralButton
+                type='submit'
+                fullWidth
+                className={s.submit}
+                disabled={!isValid || !hasNetwork || !values.name}>
+                Add token
+              </GeneralButton>
+            </form>
+          );
+        }}
+      </Formik>
+    </HomeSheet>
   );
 };
 

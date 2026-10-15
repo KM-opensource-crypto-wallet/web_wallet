@@ -1,206 +1,749 @@
-.goBack {
-  margin: 20px;
+/* Buy (Buy Crypto design): title with the wallet switcher, You pay (amount,
+   currency, presets), You get (coin card, Change opens the coin sheet),
+   provider quotes with Best rate, then Continue. Same warm surface and glass
+   as Home; the accent is the white-label `--background` colour. */
+.page {
+  --bc-ink: #1a1613;
+  --bc-muted: #6e655e;
+  --bc-faint: #8a7f76;
+  --bc-glass: rgba(255, 255, 255, 0.7);
+  --bc-glass-strong: rgba(255, 255, 255, 0.92);
+  --bc-glass-border: rgba(255, 255, 255, 0.9);
+  --bc-shadow: 0 8px 28px rgba(63, 40, 22, 0.06);
+  --bc-line: rgba(26, 22, 19, 0.07);
+  --bc-outline: rgba(26, 22, 19, 0.1);
+  --bc-hover: rgba(26, 22, 19, 0.05);
+  --bc-chip: rgba(26, 22, 19, 0.06);
+  --bc-placeholder: #9a8f86;
+  --bc-success: #1e7f4f;
+  --bc-error: #b3261e;
+  --bc-tint: 10%;
+  --glow-strength: 14%;
+  /* Screen adds 40px; this page never had bottom padding. */
+  padding-bottom: 0;
 }
 
-.container {
- padding:20px;
-}
-.dropdownContainer {
-  width: 100%;
-  border: 1px solid #989898;
-  border-radius: 4px;
+:global([data-theme='dark']) .page {
+  --bc-ink: #f5f1ec;
+  --bc-muted: #c9bfb6;
+  --bc-faint: #a89c92;
+  --bc-glass: rgba(255, 255, 255, 0.05);
+  --bc-glass-strong: rgba(255, 255, 255, 0.1);
+  --bc-glass-border: rgba(255, 255, 255, 0.1);
+  --bc-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  --bc-line: rgba(255, 255, 255, 0.07);
+  --bc-outline: rgba(255, 255, 255, 0.14);
+  --bc-hover: rgba(255, 255, 255, 0.07);
+  --bc-chip: rgba(255, 255, 255, 0.08);
+  --bc-placeholder: #7d726a;
+  --bc-success: #32d583;
+  --bc-error: #ff8a80;
+  --bc-tint: 16%;
 }
 
-.textStyle {
-  color: var(--primary);
-  font-size: 15px;
-  margin-bottom: 8px;
-  font-weight: bold;
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.page svg {
+  fill: none;
 }
 
-.eurTextStyle {
-  color: var(--primary);
-  font-size: 32px;
-  font-weight: bold;
-  margin-right: 16px;
+/* Header (in TopBar): title with the wallet switcher */
+.heading:hover {
+  background: var(--bc-hover);
 }
-.address {
-  color: var(--font);
-  font-size: 14px;
-}
-.addressView{
-  margin-top: 16px;
-}
-.flex1{
-  width: 100%;
-  display:flex;
-  align-items: center;
-  justify-content: center;
-}
-.rowView{
-  flex-direction: row;
-  align-items: center;
+
+.heading {
   display: flex;
-  justify-content: space-between;
-  margin-top: 24px;
-}
-.addCoinRowView {
-  margin-top: 16px;
-  flex-direction: row;
-  display: flex;
-  width: 100%;
-  justify-content: center;
+  flex: 1;
+  flex-direction: column;
   align-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: background-color 0.2s;
 }
-.text {
-  font-size: 14px;
-  color: var(--gray);
-}
-.highlightText{
-  font-size: 14px;
-  color: var(--background);
-  margin-left: 6px;
-  cursor: pointer;
+
+.headingTitle {
+  margin: 0;
+  font-size: 15.5px;
   font-weight: 700;
-}
-.fiatCurrencyPicker {
-  width:65px;
-  border-width: 1px;
-  border-style: solid;
-  border-radius: 4px;
-  border-color: var(--sidebarIcon);
-  margin-right: 12px;
-  height: 56px;
-}
-.textConfirm {
-  color: red;
-  font-size: 12px;
-  margin-top: 8px;
+  color: var(--bc-ink);
 }
 
-.button {
-  width: 100%;
-  background-color: var(--background);
-  min-height: 60px;
-  border-radius: 10px;
+.headingSub {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  color: var(--title);
-  font-size: 16px;
-  margin-top: 24px;
+  gap: 4px;
+  max-width: 100%;
 }
 
-.btnList {
+.walletAvatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--background) 82%, #fff) 0%,
+    var(--background) 100%
+  );
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 800;
+}
+
+.headingSubText {
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--bc-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headingChevron {
+  flex: none;
+  color: var(--bc-faint);
+}
+
+/* Body */
+.column {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  gap: 16px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 14px 20px 0;
 }
 
-.btn {
-  width: 100%;
-  text-align: left;
-  background-color: var(--backgroundColor);
-  height: 60px;
-  font-size: 20px;
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.labelRow {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  flex-direction: row;
-  border-bottom: 1px solid var(--whiteOutline);
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.btn:disabled {
-  cursor: progress;
-  opacity: 0.7;
+.label {
+  padding: 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--bc-muted);
 }
 
-.btnBox {
-  flex: 1;
-  padding-right: 20px;
-}
-
-.btnTitle {
-  color: var(--font);
-  font-size: 14px;
-}
-
-.btnCoins {
-  color: var(--background);
+.error {
+  margin: 0;
+  padding: 0 2px;
   font-size: 12px;
+  font-weight: 600;
+  color: var(--bc-error);
 }
 
-.imageBox {
+.chip {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--bc-chip);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--bc-muted);
+  white-space: nowrap;
+}
+
+/* You pay */
+.amountCard,
+.coinCard,
+.quote {
+  border: 1.5px solid var(--bc-glass-border);
+  border-radius: 16px;
+  background: var(--bc-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--bc-shadow);
+}
+
+.amountCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 14px 14px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.amountCard:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
+}
+
+.inputBoxError,
+.inputBoxError:focus-within {
+  border-color: color-mix(in srgb, var(--bc-error) 60%, transparent);
+  box-shadow: none;
+}
+
+.amountRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fiatPrefix {
+  flex: none;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--bc-faint);
+}
+
+.amountInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: var(--bc-ink);
+}
+
+.amountInput::placeholder {
+  color: var(--bc-placeholder);
+}
+
+.currencyChip {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--bc-chip);
+  color: var(--bc-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: background-color 0.2s;
+}
+
+.currencyChip:hover:not(:disabled) {
+  background: var(--bc-hover);
+}
+
+.currencyChip:disabled {
+  cursor: default;
+}
+
+.presets {
+  display: flex;
+  gap: 6px;
+}
+
+.preset {
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--bc-outline);
+  border-radius: 999px;
+  color: var(--bc-ink);
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.preset:hover,
+.presetOn {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--background) var(--bc-tint), transparent);
+  color: var(--background);
+}
+
+/* You get */
+.coinCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.coinCard:hover {
+  background: var(--bc-glass-strong);
+}
+
+.coinIcon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
   width: 40px;
   height: 40px;
-  color: var(--backgroundColor);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 10px;
-  margin-left: 10px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--background);
 }
 
-.image {
-  width: 35px;
-  height: 35px;
-  border-radius: 20px;
-  border: 1px solid var(--borderActiveColor);
-}
-
-.list {
-  display: flex;
-  align-items: center;
-  border-bottom: 0.5px solid var(--gray);
+.coinIcon img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.iconBox {
-  width: 39px;
-  height: 39px;
-  background-color: var(--font);
-  border-radius: 20px;
+.coinText {
   display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.coinGot {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.coinAmount {
+  overflow: hidden;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--bc-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coinSymbol {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.coinPlaceholder {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.coinMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 12.5px;
+  color: var(--bc-faint);
+  white-space: nowrap;
+}
+
+.changeChip {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background) var(--bc-tint), transparent);
+  color: var(--background);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.addressRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.addressLabel {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bc-faint);
+}
+
+.address {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--bc-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy {
+  display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  margin-right: 10px;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  margin-left: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--bc-faint);
 }
 
-.iconBox > svg {
-  width: 30px;
-  height: 30px;
-  fill: var(--backgroundColor);
+.copy:hover {
+  background: var(--bc-hover);
+  color: var(--bc-ink);
 }
 
-.items {
-  text-align: left;
+.copyDone,
+.copyDone:hover {
+  color: var(--bc-success);
 }
 
-.row {
+/* Quotes */
+.refresh {
   display: flex;
   align-items: center;
-  flex-direction: row;
-  margin-top: 10px;
+  gap: 5px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  color: var(--bc-faint);
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.title {
-  color: var(--font);
-  font-size: 14px;
+.refresh:hover:not(:disabled) {
+  background: var(--bc-hover);
+  color: var(--bc-ink);
 }
 
-.chainDisplayName {
-  margin-left: 5px;
-  color: var(--font);
-  font-size: 14px;
-  font-family: var(--font-roboto);
-  flex-shrink: 1;
-  border-radius: 10px;
-  background-color: var(--walletItemColor);
+.spinning {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.quotes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quote {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+}
+
+.quote:hover:not(.quoteOn) {
+  background: var(--bc-glass-strong);
+}
+
+.quoteOn {
+  border-color: var(--background);
+  background: color-mix(in srgb, var(--background) 6%, var(--bc-glass));
+}
+
+.providerLogo {
+  display: flex;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--bc-line);
+}
+
+.providerLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.quoteText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.quoteTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.quoteName {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.bestBadge {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bc-success) 12%, transparent);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--bc-success);
+}
+
+.quoteSub {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--bc-faint);
+}
+
+.quoteRight {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 45%;
+  text-align: right;
+}
+
+.quoteGot {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: var(--bc-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quoteDiff {
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--bc-error);
+}
+
+.quotesEmpty,
+.quotesLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 24px 16px;
+  border: 1px dashed var(--bc-outline);
+  border-radius: 16px;
+  font-size: 13px;
+  color: var(--bc-faint);
   text-align: center;
-  padding: 0 10px;
+}
+
+.quotesEmpty strong {
+  font-size: 14px;
+  color: var(--bc-ink);
+}
+
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 0 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--bc-faint);
+}
+
+.note > svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* Continue stays reachable at the bottom while the quotes scroll. */
+.cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: 0 -20px;
+  padding: 18px 20px 16px;
+  background: linear-gradient(to bottom, transparent 0, #f4ede6 18px);
+}
+
+:global([data-theme='dark']) .cta {
+  background: linear-gradient(to bottom, transparent 0, #100c0a 18px);
+}
+
+.ctaButton {
+  min-height: 56px;
+  font-size: 16.5px;
+}
+
+/* Coin sheet (HomeSheet; reads Home's --hm-* tokens) */
+.sheetSearch {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1.5px solid var(--hm-field-border);
+  border-radius: 12px;
+  color: var(--hm-faint);
+}
+
+.sheetSearch:focus-within {
+  border-color: var(--background);
+}
+
+.sheetSearch input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--hm-ink);
+}
+
+.sheetList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sheetCoin {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--hm-field-border);
+  border-radius: 14px;
+  color: var(--background);
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.sheetCoin:hover {
+  background: var(--hm-hover);
+}
+
+.sheetCoinOn {
+  border-color: color-mix(in srgb, var(--background) 45%, transparent);
+  background: color-mix(in srgb, var(--background) 6%, transparent);
+}
+
+.sheetCoinIcon {
+  display: flex;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.sheetCoinIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sheetCoinText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sheetCoinTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--hm-ink);
+}
+
+.sheetCoinName {
+  margin-top: 1px;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--hm-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheetEmpty {
+  margin: 0;
+  padding: 28px 0;
+  font-size: 13.5px;
+  color: var(--hm-faint);
+  text-align: center;
+}
+
+.sheetAdd {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border: 1.5px dashed color-mix(in srgb, var(--background) 40%, transparent);
+  border-radius: 14px;
+  color: var(--background);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.sheetAdd:hover {
+  background: color-mix(in srgb, var(--background) 6%, transparent);
+}
+
+.heading:focus-visible,
+.currencyChip:focus-visible,
+.preset:focus-visible,
+.coinCard:focus-visible,
+.copy:focus-visible,
+.refresh:focus-visible,
+.quote:focus-visible,
+.sheetCoin:focus-visible,
+.sheetAdd:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .column {
+    padding-top: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinning {
+    animation: none;
+  }
 }

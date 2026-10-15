@@ -1,12 +1,10 @@
 'use client';
 import {useMemo} from 'react';
-import {useSelector, shallowEqual} from 'react-redux';
-import {selectCoinsForCurrentWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {selectAllCurrencies} from 'dok-wallet-blockchain-networks/redux/currency/currencySelectors';
 import {
   getExchangeChainNames,
   getChainDisplayName,
 } from 'components/ExchangeHistory/exchangeFormat';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 // A swapped-away coin may no longer be in the wallet, so the wallet coins
 // are tried first and the global currency catalogue second. The exact
@@ -47,8 +45,7 @@ const findCoinIcon = (lists, symbol, chainName) => {
 // identity: {symbol, icon, chainName, chainDisplayName}. Shared by the
 // history row and the details screen.
 const useSwapCoinDisplay = transaction => {
-  const walletCoins = useSelector(selectCoinsForCurrentWallet, shallowEqual);
-  const currencies = useSelector(selectAllCurrencies, shallowEqual);
+  const {allCoins: walletCoins, currencies} = useWallet();
 
   return useMemo(() => {
     const {fromChainName, toChainName} = getExchangeChainNames(transaction);

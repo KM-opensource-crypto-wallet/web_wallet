@@ -1,132 +1,193 @@
-.container {
+/* Seed phrase backup: numbered word grid on the glass card, a warning
+   note and one pinned action. Same warm surface and glass as the other
+   wallet screens. */
+.page {
+  --vc-ink: #1a1613;
+  --vc-muted: #6e655e;
+  --vc-faint: #8a7f76;
+  --vc-surface-solid: #f4ede6;
+  --vc-glass: rgba(255, 255, 255, 0.65);
+  --vc-glass-border: rgba(255, 255, 255, 0.9);
+  --vc-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --vc-word: rgba(26, 22, 19, 0.04);
+  --vc-warning: #b54708;
+  --vc-warning-bg: rgba(247, 144, 9, 0.1);
+  --glow-strength: 14%;
   display: flex;
-  background-color: var(--backgroundColor);
-  justify-content: space-between;
   flex-direction: column;
-  height: calc(var(--app-height) - 70px);
-  padding: 20px;
+  /* The footer is pinned to the bottom; no extra space under it. */
+  padding-bottom: 0;
 }
 
-.goBack {
-  margin-bottom: 5px;
+:global([data-theme='dark']) .page {
+  --vc-ink: #f5f1ec;
+  --vc-muted: #c9bfb6;
+  --vc-faint: #a89c92;
+  --vc-surface-solid: #100c0a;
+  --vc-glass: rgba(255, 255, 255, 0.05);
+  --vc-glass-border: rgba(255, 255, 255, 0.1);
+  --vc-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --vc-word: rgba(255, 255, 255, 0.04);
+  --vc-warning: #fdb022;
+  --vc-warning-bg: rgba(253, 176, 34, 0.1);
 }
 
-.title {
-  color: var(--font);
-  font-size: 25px;
-  margin-top: 5px;
-  margin-bottom: 5px;
-  text-align: left;
-  font-weight: bold;
+.page svg {
+  fill: none;
 }
 
-.span {
-  color: var(--gray);
-  font-size: 15px;
-  margin-bottom: 5px;
-  text-align: left;
+/* Keeps the header its natural height in this flex column. */
+.page .topBar {
+  flex: none;
 }
 
-.textFirst {
-  color: var(--gray);
-  font-size: 15px;
-  text-align: left;
-  font-weight: bold;
-  margin-bottom: 5px;
+/* Body */
+.column {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 16px 0;
 }
 
-.text {
-  color: var(--gray);
-  font-size: 15px;
-  margin-bottom: 10px;
-  text-align: left;
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 0;
+  text-align: center;
 }
 
-.btn {
-  background-color: var(--background);
-  border-radius: 10px;
-  height: 60px;
+.introIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-width: 1px;
-  border-color: transparent;
-  color: var(--title);
+  width: 48px;
+  height: 48px;
+  margin-bottom: 4px;
+  border-radius: 16px;
+  color: var(--background);
+  background: color-mix(in srgb, var(--background) 12%, transparent);
+}
+
+.introTitle {
+  margin: 0;
   font-size: 16px;
-  width: 100%;
-  margin: 0 auto;
+  font-weight: 700;
+  color: var(--vc-ink);
 }
 
-@media (min-width: 768px) {
-  .btn {
-    width: 50%;
-  }
+.introText {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--vc-muted);
 }
 
-.info {
-  color: var(--gray);
-  font-size: 15px;
-  text-align: center;
-  margin-top: 10px;
-  align-self: center;
-  margin-bottom: 10px;
-}
-
-.wordsList {
+.wordsCard {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 5px;
-  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  list-style: none;
+  border: 1px solid var(--vc-glass-border);
+  border-radius: 18px;
+  background: var(--vc-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--vc-shadow);
 }
 
-@media (min-width: 768px) {
-  .wordsList {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-}
-
-.wordsBox {
-  max-width: 100px;
-  height: 60px;
-  position: absolute;
-  text-align: center;
-  position: relative;
-  z-index: 10;
-  margin: 20px auto 0 auto;
-}
-
-@media (min-width: 768px) {
-  .wordsBox {
-    max-width: 100px;
-    height: 60px;
-    margin: 20px auto 0 auto;
-  }
+.wordChip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--vc-word);
 }
 
 .number {
-  color: var(--primary);
+  flex: none;
+  min-width: 18px;
   font-size: 12px;
-  text-align: center;
-  width: 40px;
-  height: 40px;
-  background-color: #e6e2e1;
-  padding-top: 5px;
-  position: absolute;
-  left: 30%;
-  top: -35%;
-  font-weight: bold;
-  border-radius: 50px;
-  z-index: -1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--vc-faint);
+  text-align: right;
 }
 
 .word {
-  color: var(--fontSecondary);
+  overflow: hidden;
   font-size: 15px;
+  font-weight: 600;
+  color: var(--vc-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: var(--vc-warning);
+  background: var(--vc-warning-bg);
+}
+
+.note svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.note p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* Pinned action */
+.footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: auto -16px 0;
+  padding: 18px 16px 16px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--vc-surface-solid) 18px
+  );
+}
+
+.button {
+  min-height: 54px;
+  font-size: 16px;
+}
+
+.info {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--vc-faint);
   text-align: center;
-  width: 100px;
-  height: 40px;
-  background-color: #e6e2e1;
-  padding-top: 5px;
-  border-radius: 30px 20px 20px 30px;
+}
+
+@media (min-width: 600px) {
+  .column {
+    padding-top: 24px;
+  }
+
+  .wordsCard {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

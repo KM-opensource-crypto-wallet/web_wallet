@@ -1,6 +1,5 @@
 'use client';
 
-import s from './ActiveLink.module.css';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import {getActiveNavSegment} from 'utils/common';
@@ -10,17 +9,19 @@ const MODAL_PAGES = {
   '/logout': 'LogOut',
 };
 
-function ActiveLink({children, href, setModal, setPage}) {
+function ActiveLink({
+  children,
+  href,
+  setModal,
+  setPage,
+  className,
+  activeClassName,
+}) {
   const path = usePathname();
   const pathname = getActiveNavSegment(path);
   // href may be wallet-scoped (/wallet/{id}/buy-crypto) - normalize it the
   // same way as pathname before comparing.
   const isActive = pathname === getActiveNavSegment(href);
-
-  const style = {
-    color: isActive ? 'var(--background)' : 'var(--gray)',
-    fill: isActive ? 'var(--background)' : 'var(--gray)',
-  };
 
   // These two sidebar entries open a modal instead of navigating. Matching
   // on the href (not the translated label) keeps that working in every
@@ -39,8 +40,10 @@ function ActiveLink({children, href, setModal, setPage}) {
   return (
     <Link
       href={href}
-      className={s.item}
-      style={style}
+      className={[className, isActive && activeClassName]
+        .filter(Boolean)
+        .join(' ')}
+      aria-current={isActive ? 'page' : undefined}
       onClick={handleClick}
       prefetch={modalPage ? false : undefined}>
       {children}

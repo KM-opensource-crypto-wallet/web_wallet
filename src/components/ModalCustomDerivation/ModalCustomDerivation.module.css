@@ -1,49 +1,202 @@
-.container {
+/* Bottom sheet on phones, centred dialog from 600px up; same surface as
+   ModalReset. */
+.sheet {
+  --cd-ink: #1a1613;
+  --cd-text: #4a423b;
+  --cd-faint: #8a7f76;
+  --cd-surface: rgba(255, 255, 255, 0.94);
+  --cd-handle: rgba(26, 22, 19, 0.2);
+  --cd-ring: rgba(26, 22, 19, 0.2);
+  --cd-field: rgba(26, 22, 19, 0.045);
+  --cd-field-border: rgba(26, 22, 19, 0.08);
+  --cd-warning: #dc6803;
+  --cd-tint: 10%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  max-height: calc(100dvh - 24px);
   overflow-y: auto;
-  max-height: 40vh;
+  padding: 14px 24px 30px;
+  border-radius: 28px 28px 0 0;
+  background: var(--cd-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  outline: none;
+  animation: pop 0.25s ease;
 }
 
-.infoList {
+:global([data-theme='dark']) .sheet {
+  --cd-ink: #f5f1ec;
+  --cd-text: #c9bfb6;
+  --cd-faint: #a89c92;
+  --cd-surface: #1f1f23;
+  --cd-handle: rgba(245, 241, 236, 0.25);
+  --cd-ring: rgba(255, 255, 255, 0.22);
+  --cd-field: rgba(255, 255, 255, 0.06);
+  --cd-field-border: rgba(255, 255, 255, 0.1);
+  --cd-warning: #fdb022;
+  --cd-tint: 14%;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.8);
+}
+
+.backdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .backdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+.sheet svg {
+  fill: none;
+}
+
+.handle {
+  width: 40px;
+  height: 4px;
+  margin-bottom: 6px;
+  border-radius: 2px;
+  background: var(--cd-handle);
+}
+
+.tile {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  color: var(--cd-warning);
+  background: color-mix(in srgb, var(--cd-warning) var(--cd-tint), transparent);
+}
+
+.title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--cd-ink);
+}
+
+.body {
+  display: flex;
   flex-direction: column;
-  padding: 10px;
+  gap: 8px;
 }
 
-.titleInfo {
-  color: var(--font);
-  font-size: 20px;
-  text-align: center;
-  margin-bottom: 20px;
-  text-transform: uppercase;
+.text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--cd-text);
 }
 
-.info {
-  color: var(--font);
-  font-size: 16px;
-  text-align: center;
-}
-
-.btnList {
-  align-items: center;
-  border-top: 1px solid var(--gray);
+/* "Don't show again" row with a square tick box. */
+.dontShow {
   display: flex;
-  justify-content: space-around;
-}
-
-.learnBox {
-  justify-content: center;
   align-items: center;
-  height: 60px;
-  color: var(--background);
-  font-size: 17px;
-  width: 50%;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--cd-field-border);
+  border-radius: 14px;
+  background: var(--cd-field);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--cd-ink);
+  text-align: left;
 }
 
-.learnBox:first-child {
-  border-right: 1px solid var(--gray);
+.tick {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--cd-ring);
+  border-radius: 7px;
+  color: #fff;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.dontShowOn .tick {
+  border-color: var(--background);
+  background: var(--background);
+}
+
+.dontShow:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+@media (min-width: 600px) {
+  .sheet {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(440px, calc(100vw - 32px));
+    padding: 28px;
+    border-radius: 24px;
+    transform: translate(-50%, -50%);
+    animation-name: popCentered;
+  }
+
+  :global([data-theme='dark']) .sheet {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .handle {
+    display: none;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
 }

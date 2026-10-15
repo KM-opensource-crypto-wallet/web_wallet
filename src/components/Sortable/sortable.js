@@ -18,7 +18,10 @@ const SortableItem = ({id, children}) => {
       : 'none',
     borderRadius: '8px',
     opacity: isDragging ? 0.9 : 1, // Slightly reduce opacity when dragging
-    scale: isDragging ? 1.02 : 1, // Slightly enlarge item during drag
+    // Slightly enlarge item during drag. Left unset otherwise: any `scale`
+    // value (even 1) makes the row its own stacking context, which traps
+    // z-index inside it (e.g. a card's open menu under the next card).
+    scale: isDragging ? 1.02 : undefined,
     zIndex: isDragging ? 1000 : 'auto',
     cursor: 'default',
   };

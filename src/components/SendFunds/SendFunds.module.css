@@ -1,196 +1,564 @@
-.container {
+/* Send (Send design): title with the wallet switcher, the coin card
+   (Change opens the coin picker), Send to with Paste and recent recipients,
+   the amount card with unit toggle and Max, memo, then Review. Same warm
+   surface and glass as Home; the accent is the white-label `--background`
+   colour. */
+.page {
+  --sf-ink: #1a1613;
+  --sf-muted: #6e655e;
+  --sf-faint: #8a7f76;
+  --sf-glass: rgba(255, 255, 255, 0.7);
+  --sf-glass-strong: rgba(255, 255, 255, 0.92);
+  --sf-glass-border: rgba(255, 255, 255, 0.9);
+  --sf-shadow: 0 8px 24px rgba(63, 40, 22, 0.06);
+  --sf-field-border: rgba(26, 22, 19, 0.1);
+  --sf-hover: rgba(26, 22, 19, 0.06);
+  --sf-chip: rgba(26, 22, 19, 0.06);
+  --sf-placeholder: #9a8f86;
+  --sf-error: #b3261e;
+  --sf-error-border: rgba(179, 38, 30, 0.6);
+  --sf-tint: 10%;
+  --glow-strength: 14%;
+}
+
+:global([data-theme='dark']) .page {
+  --sf-ink: #f5f1ec;
+  --sf-muted: #c9bfb6;
+  --sf-faint: #a89c92;
+  --sf-glass: rgba(255, 255, 255, 0.05);
+  --sf-glass-strong: rgba(255, 255, 255, 0.1);
+  --sf-glass-border: rgba(255, 255, 255, 0.1);
+  --sf-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --sf-field-border: rgba(255, 255, 255, 0.12);
+  --sf-hover: rgba(255, 255, 255, 0.08);
+  --sf-chip: rgba(255, 255, 255, 0.08);
+  --sf-placeholder: #7d726a;
+  --sf-error: #ff8a80;
+  --sf-error-border: rgba(255, 138, 128, 0.6);
+  --sf-tint: 16%;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.page svg {
+  fill: none;
+}
+
+/* Header (in TopBar): title + wallet switcher */
+.heading:hover {
+  background: var(--sf-hover);
+}
+
+.heading {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+}
+
+.headingTitle {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--sf-ink);
+}
+
+.headingSub {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.walletAvatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--background) 82%, #fff) 0%,
+    var(--background) 100%
+  );
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 800;
+}
+
+.headingSubText {
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--sf-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headingChevron {
+  flex: none;
+  color: var(--sf-faint);
+}
+
+/* Body */
+.column {
+  position: relative;
   display: flex;
   flex-direction: column;
-  background-color: var(--backgroundColor);
+  gap: 16px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 14px 20px 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Coin card */
+.coinCard {
+  display: flex;
   align-items: center;
+  gap: 12px;
   width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--sf-glass-border);
+  border-radius: 16px;
+  background: var(--sf-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--sf-shadow);
+  text-align: left;
+  transition: background-color 0.2s;
 }
 
-.goBack {
-  margin: 20px;
+.coinCard:hover {
+  background: var(--sf-glass-strong);
 }
 
-.contentContainerStyle {
-  padding: 20px;
+.coinIcon {
   display: flex;
-  flex-grow: 1;
+  flex: none;
+}
+
+/* CoinIcon brings its own margin and dark plate; neutralise both. */
+.coinIcon > div {
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.coinText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.coinLabel,
+.label {
+  display: flex;
   align-items: center;
-  background-color: var(--backgroundColor);
-  width: 100%;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--sf-faint);
 }
 
-.title {
-  color: var(--gray);
-  font-size: 18px;
-  text-align: left;
-
-  margin-bottom: 5px;
+.label {
+  padding: 0 2px;
+  color: var(--sf-muted);
 }
 
-.box {
+.network {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--sf-chip);
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--sf-muted);
+}
+
+.coinBalance {
   display: flex;
-}
-
-.boxTitle {
-  color: var(--font);
-  font-size: 20px;
-  text-align: left;
-
-  font-weight: bold;
-  margin-bottom: 5px;
-  margin-right: 5px;
-}
-
-.boxBalance {
-  color: var(--gray);
-  font-size: 18px;
-  text-align: left;
-}
-
-.inputWrapper {
-  display: flex;
-  justify-content: space-between;
   flex-wrap: wrap;
-  width: 100%;
-  margin-top: 30px;
+  align-items: baseline;
+  gap: 0 6px;
+  margin-top: 2px;
+  min-width: 0;
 }
 
-.formInput {
-  width: 100%;
+.coinAmount {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--sf-ink);
 }
 
-.boxInput {
-  width: 45%;
+.coinSymbol {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sf-ink);
 }
 
-.boxInputFull {
-  width: 100%;
+.coinFiat {
+  font-size: 12.5px;
+  color: var(--sf-faint);
 }
-.infoText {
-  margin-left: 10px;
+
+.coinChange {
   font-size: 12px;
-  margin-top: 4px;
 }
 
-.inputView {
-  position: relative;
-  margin-bottom: 5px;
+.changeChip {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background) var(--sf-tint), transparent);
+  color: var(--background);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Fields */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.optional {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--sf-faint);
+}
+
+.inputBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 54px;
+  padding: 0 8px 0 14px;
+  border: 1.5px solid var(--sf-field-border);
+  border-radius: 14px;
+  background: var(--sf-glass);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.inputBox:focus-within,
+.amountCard:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
+}
+
+.inputBoxError,
+.inputBoxError:focus-within {
+  border-color: var(--sf-error-border);
+  box-shadow: none;
+}
+
+.inputBoxLocked {
+  opacity: 0.7;
 }
 
 .input {
-  background-color: var(--backgroundColor);
-  border: 1px solid;
-  border-radius: 6px;
-  width: 100%;
-  padding: 10px;
-  box-sizing: border-box;
-  color: var(--font);
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14.5px;
+  color: var(--sf-ink);
 }
 
-.btnMax {
+.input::placeholder,
+.amountInput::placeholder {
+  color: var(--sf-placeholder);
+}
+
+.pasteButton {
+  flex: none;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 9px;
+  background: var(--sf-chip);
+  color: var(--sf-ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: background-color 0.2s;
+}
+
+.pasteButton:hover {
+  background: var(--sf-hover);
+}
+
+.clearButton {
   display: flex;
-  position: absolute;
-  top: 25px; /* Замініть на потрібне значення */
-  right: 16px; /* Замініть на потрібне значення */
-  transform: translateY(-60%);
-  background-color: var(--background);
-  width: 40px;
-  height: 20px;
-  border-radius: 5px;
-  border: 1px solid var(--background);
-  color: var(--backgroundColor);
+  flex: none;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--sf-hover);
+  color: var(--sf-muted);
 }
 
-.btnText {
-  color: var(--backgroundColor);
+/* Recent recipients */
+.recents {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.recentsLabel {
+  padding: 0 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--sf-faint);
+}
+
+.recentsRow {
+  display: flex;
+  gap: 8px;
+  margin: 0 -20px;
+  padding: 0 20px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.recentsRow::-webkit-scrollbar {
+  display: none;
+}
+
+.recent {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px 7px 7px;
+  border: 1px solid var(--sf-glass-border);
+  border-radius: 999px;
+  background: var(--sf-glass);
+  box-shadow: 0 4px 12px rgba(63, 40, 22, 0.05);
+  transition: background-color 0.2s;
+}
+
+.recent:hover {
+  background: var(--sf-glass-strong);
+}
+
+.recentAvatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--background) 75%, #1a1613);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.recentText {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
+  font-weight: 600;
+  color: var(--sf-ink);
+  white-space: nowrap;
 }
 
-.scan {
-  background-color: var(--font); /* Замініть на потрібний колір */
-}
-
-.textConfirm {
-  color: red;
-  margin-left: 10px;
+/* Amount */
+.unitSwap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  color: var(--background);
   font-size: 12px;
+  font-weight: 700;
+  transition: background-color 0.2s;
 }
 
-.listTitle {
-  color: var(--font);
+.unitSwap:hover {
+  background: color-mix(in srgb, var(--background) 8%, transparent);
+}
+
+.amountCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 14px 14px;
+  border: 1.5px solid var(--sf-glass-border);
+  border-radius: 16px;
+  background: var(--sf-glass);
+  box-shadow: var(--sf-shadow);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.amountRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.amountInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: var(--sf-ink);
+  -moz-appearance: textfield;
+}
+
+.amountInput::-webkit-outer-spin-button,
+.amountInput::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.unit {
+  flex: none;
   font-size: 16px;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  text-align: left;
-
-  font-weight: bold;
-  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--sf-muted);
 }
 
-.blockList {
+.maxButton {
+  flex: none;
+  height: 32px;
+  padding: 0 13px;
+  border-radius: 9px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--background) 85%, #fff) 0%,
+    var(--background) 100%
+  );
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--background) 30%, transparent);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.maxButton:hover {
+  filter: brightness(1.05);
+}
+
+.convertedRow {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  margin-top: 15px;
-  width: 100%; /* Замініть на потрібний розмір */
 }
 
-.blockTitle {
-  color: var(--font);
-  font-size: 18px;
-  text-align: left;
-
-  text-transform: uppercase;
+.converted {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  color: var(--sf-faint);
 }
 
-.boxText {
-  color: var(--font);
-  font-size: 18px;
-  text-align: right;
+.infoText {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--sf-faint);
 }
 
-.switchList {
+.error {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sf-error);
+}
+
+/* Fee + actions */
+.feeRow {
   display: flex;
   align-items: center;
-  margin-top: 5px;
-  margin-bottom: 10%; /* Замініть на потрібний розмір */
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px 0;
+  font-size: 12.5px;
+  color: var(--sf-faint);
 }
 
-.switchText {
-  color: var(--font);
-  font-size: 18px;
-  margin-left: 10px;
+.feeValue {
+  font-weight: 600;
+  color: var(--sf-muted);
 }
 
-.button {
+.actions {
   display: flex;
-  height: 60px;
-  border-radius: 10px;
-  font-size: 20px;
-  align-items: center;
-  justify-content: center;
-  width: 50%; /* Замініть на потрібний розмір */
-  margin: 40px 0 20px 0;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
 }
 
-.buttonTitle {
-  color: var(--title);
-  font-size: 18px;
+.review {
+  min-height: 56px;
+  font-size: 16.5px;
 }
 
-@media (max-width: 768px) {
-  .button {
-    width: 100%;
-  }
+.delegation {
+  align-self: center;
+}
 
-  .boxInput {
-    width: 100%;
-  }
+.heading:focus-visible,
+.coinCard:focus-visible,
+.pasteButton:focus-visible,
+.clearButton:focus-visible,
+.recent:focus-visible,
+.unitSwap:focus-visible,
+.maxButton:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
 
-  .inputWrapper {
-    margin-top: 0;
+@media (min-width: 600px) {
+  .column {
+    padding-top: 24px;
   }
 }

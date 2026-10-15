@@ -1,8 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import styles from './WalletConnectRequestModal.module.css';
+import Image from 'next/image';
 import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {getSdkError} from '@walletconnect/utils';
 import {useDispatch, useSelector} from 'react-redux';
 import {getWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
@@ -30,22 +29,10 @@ import {
   toSessionAccountsData,
 } from 'dok-wallet-blockchain-networks/helper/walletConnectSession';
 import {showToast} from 'utils/toast';
-import WalletConnectModalHeader from 'components/WalletConnectModalHeader';
-import WalletConnectChainRow from 'components/WalletConnectChainRow';
-
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '95%',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  '@media (min-width: 768px)': {
-    width: '50%',
-  },
-};
+import {chainLogoMap} from 'assets/chain_logo';
+import GeneralButton from 'components/Button';
+import sheet from './WalletConnectSheet.module.css';
+import DappHero from './DappHero';
 
 const getTonSessionProperties = privateKey => {
   const {
@@ -235,31 +222,58 @@ const WalletConnectRequestModal = props => {
     <Modal
       open={props.visible}
       onClose={() => props.onClose(false)}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={styles.container}>
-          <WalletConnectModalHeader image={image} title={title} url={url} />
-          <p className={styles.chainTitle}>{'Chains'}</p>
-          {chainData.map((item, index) => (
-            <div className={styles.itemView} key={item.key + index}>
-              <WalletConnectChainRow
-                icon={item?.icon}
-                chain_name={item?.chain_name}
-                title={`${item?.chain_display_name} (${currentWallet.walletName})`}
-                subtitle={
+      aria-labelledby='wc-request-title'
+      aria-describedby='wc-request-chains'
+      slotProps={{backdrop: {className: sheet.backdrop}}}>
+      <div className={sheet.sheet}>
+        <div className={sheet.handle} />
+        <div className={sheet.scroll}>
+          <DappHero
+            image={image}
+            title={title}
+            url={url}
+            titleId='wc-request-title'
+          />
+          <section id='wc-request-chains'>
+            <p className={sheet.label}>{'Chains'}</p>
+            <div className={chainData.length ? sheet.card : undefined}>
+              {chainData.map((item, index) => {
+                const logo =
+                  chainLogoMap[item?.chain_name?.toLowerCase()] ||
+                  item?.icon ||
+                  null;
+                const subtitle =
                   getCustomizePublicAddress(getSessionAccountAddress(item)) ||
-                  'Account not active yet'
-                }
-              />
+                  'Account not active yet';
+                return (
+                  <div className={sheet.chain} key={item.key + index}>
+                    <span className={sheet.chainLogo}>
+                      {logo ? (
+                        <Image src={logo} alt='' width={32} height={32} />
+                      ) : null}
+                    </span>
+                    <div className={sheet.chainText}>
+                      <p className={sheet.chainName}>
+                        {`${item?.chain_display_name} (${currentWallet.walletName})`}
+                      </p>
+                      <p className={sheet.chainAddress} title={subtitle}>
+                        {subtitle}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          </section>
           {hasBitcoinRequest && btcVariantCoins.length > 1 && (
-            <div className={styles.addressTypeView}>
-              <p className={styles.chainTitle} style={{marginLeft: 0}}>
+            <section>
+              <p className={sheet.label} id='wc-request-btc-type'>
                 {'Bitcoin address type'}
               </p>
-              <div className={styles.addressTypeGrid} role='radiogroup'>
+              <div
+                className={styles.addressTypeGrid}
+                role='radiogroup'
+                aria-labelledby='wc-request-btc-type'>
                 {btcVariantCoins.map(coin => {
                   const selected = bitcoinAddressType === coin.chain_name;
                   return (
@@ -281,9 +295,18 @@ const WalletConnectRequestModal = props => {
                             check appears. */}
                         <span className={styles.addressTypeCheckSlot}>
                           {selected && (
-                            <CheckCircleIcon
-                              sx={{fontSize: 18, color: 'var(--background)'}}
-                            />
+                            <svg
+                              width='12'
+                              height='12'
+                              viewBox='0 0 24 24'
+                              fill='none'
+                              stroke='currentColor'
+                              strokeWidth='3.2'
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                              aria-hidden='true'>
+                              <path d='M20 6 9 17l-5-5' />
+                            </svg>
                           )}
                         </span>
                       </span>
@@ -294,29 +317,31 @@ const WalletConnectRequestModal = props => {
                   );
                 })}
               </div>
-            </div>
+            </section>
           )}
-          <div className={styles.bottomView}>
-            {!!errorText && <p className={styles.errorText}>{errorText}</p>}
-            <div className={styles.rowView}>
-              <button className={styles.button} onClick={onPressReject}>
-                {'Reject'}
-              </button>
-              <button
-                disabled={!canApprove}
-                style={{
-                  backgroundColor: !canApprove
-                    ? 'var(--gray)'
-                    : 'var(--background)',
-                }}
-                className={styles.button}
-                onClick={onPressApprove}>
-                {'Accept'}
-              </button>
-            </div>
+        </div>
+        <div className={sheet.footer}>
+          {!!errorText && (
+            <p className={`${sheet.notice} ${sheet.danger}`} role='alert'>
+              {errorText}
+            </p>
+          )}
+          <div className={sheet.actions}>
+            <GeneralButton
+              variant='secondary'
+              fullWidth
+              onClick={onPressReject}>
+              {'Reject'}
+            </GeneralButton>
+            <GeneralButton
+              fullWidth
+              disabled={!canApprove}
+              onClick={onPressApprove}>
+              {'Accept'}
+            </GeneralButton>
           </div>
         </div>
-      </Box>
+      </div>
     </Modal>
   );
 };

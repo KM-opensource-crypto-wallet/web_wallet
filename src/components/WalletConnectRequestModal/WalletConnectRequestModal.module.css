@@ -1,71 +1,46 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow-y: auto;
-  max-height: 85vh;
-}
-
-.chainTitle {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--font);
-  text-align: left;
-  margin-top: 12px;
-  margin-left: 10px;
-}
-
-@media (min-width: 769px) {
-  .chainTitle {
-    margin-left: 20px;
-  }
-}
-
-.itemView {
-  display: flex;
-  align-items: center;
-  width: 93%;
-  border: 1px solid var(--gray);
-  border-radius: 8px;
-  overflow: hidden;
-  padding: 8px 12px;
-  margin: 20px auto 0 auto;
-}
-
-.addressTypeView {
-  width: 93%;
-  margin: 0 auto;
-}
-
+/* Session proposal. The shell, dApp hero and chain rows live in
+   WalletConnectSheet.module.css (shared with the request modal); this file
+   only styles the Bitcoin address-type picker. */
 .addressTypeGrid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  row-gap: 12px;
-  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .addressTypeCard {
   display: flex;
   flex-direction: column;
-  width: 48%;
-  border: 1px solid var(--gray);
-  border-radius: 8px;
-  padding: 10px 12px;
-  background-color: transparent;
+  gap: 4px;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1.5px solid var(--wcs-line);
+  border-radius: 14px;
+  background: var(--wcs-card);
+  font-family: inherit;
   text-align: left;
   cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
 }
 
-.addressTypeCardSelected {
+.addressTypeCard:hover {
+  background: var(--wcs-hover);
+}
+
+.addressTypeCardSelected,
+.addressTypeCardSelected:hover {
   border-color: var(--background);
-  background-color: var(--walletItemColor);
+  background: color-mix(in srgb, var(--background) var(--wcs-tint), transparent);
+}
+
+.addressTypeCard:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
 }
 
 .addressTypeCardHeader {
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   min-width: 0;
@@ -73,72 +48,36 @@
 
 .addressTypeLabel {
   flex: 1;
-  color: var(--font);
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
   overflow: hidden;
+  color: var(--wcs-ink);
+  font-size: 14px;
+  font-weight: 700;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Fixed slot so the label does not shift when the check appears. */
 .addressTypeCheckSlot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   width: 18px;
   height: 18px;
   margin-left: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+}
+
+.addressTypeCardSelected .addressTypeCheckSlot {
+  border-radius: 50%;
+  background: var(--background);
+  color: #fff;
 }
 
 .addressTypeAddress {
-  margin-top: 4px;
-  color: var(--gray);
-  font-size: 12px;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bottomView {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 5px 10px;
-  width: 100%;
-  margin-top: 10px;
-}
-
-@media (min-width: 769px) {
-  .bottomView {
-    padding: 10px 20px;
-  }
-}
-
-.rowView {
-  display: flex;
-  justify-content: space-between;
-}
-
-.button {
-  background-color: var(--background);
-  height: 60px;
-  border-radius: 10px;
-  align-items: center;
-  justify-content: center;
-  width: 48%;
-  color: var(--title);
-  font-size: 16px;
-  font-weight: 700;
-  border: 1px solid var(--background);
-}
-
-.errorText {
-  margin-top: 2px;
-  margin-bottom: 10px;
-  color: red;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--wcs-faint);
   font-size: 12px;
-  font-weight: 500;
-  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

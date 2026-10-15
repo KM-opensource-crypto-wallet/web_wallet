@@ -1,0 +1,343 @@
+/* Shell shared by the WalletConnect session-proposal and request modals:
+   bottom sheet on phones, centred dialog from 600px up, same surface as
+   ModalReset. The body scrolls; the Reject / Approve row stays in view. */
+.sheet {
+  --wcs-ink: #1a1613;
+  --wcs-text: #4a423b;
+  --wcs-faint: #8a7f76;
+  --wcs-surface: rgba(255, 255, 255, 0.94);
+  --wcs-handle: rgba(26, 22, 19, 0.2);
+  --wcs-line: rgba(26, 22, 19, 0.08);
+  --wcs-card: rgba(26, 22, 19, 0.035);
+  --wcs-hover: rgba(26, 22, 19, 0.05);
+  --wcs-tint: 9%;
+  --wcs-danger: #d92d20;
+  --wcs-warning-bg: rgba(247, 144, 9, 0.1);
+  --wcs-warning-border: rgba(247, 144, 9, 0.3);
+  --wcs-warning-ink: #93520a;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(var(--app-height, 100dvh) - 24px);
+  overflow: hidden;
+  border-radius: 28px 28px 0 0;
+  background: var(--wcs-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.25);
+  color: var(--wcs-ink);
+  outline: none;
+  animation: pop 0.25s ease;
+}
+
+:global([data-theme='dark']) .sheet {
+  --wcs-ink: #f5f1ec;
+  --wcs-text: #c9bfb6;
+  --wcs-faint: #a89c92;
+  --wcs-surface: #1f1f23;
+  --wcs-handle: rgba(245, 241, 236, 0.25);
+  --wcs-line: rgba(255, 255, 255, 0.08);
+  --wcs-card: rgba(255, 255, 255, 0.04);
+  --wcs-hover: rgba(255, 255, 255, 0.06);
+  --wcs-tint: 14%;
+  --wcs-danger: #f97066;
+  --wcs-warning-bg: rgba(253, 176, 34, 0.1);
+  --wcs-warning-border: rgba(253, 176, 34, 0.28);
+  --wcs-warning-ink: #fdb022;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.8);
+}
+
+.backdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .backdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". MUI
+   icons (the message tree's copy buttons) are filled, so they keep theirs. */
+.sheet svg:not(:global(.MuiSvgIcon-root)) {
+  fill: none;
+}
+
+.handle {
+  flex: none;
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  margin: 14px 0 4px;
+  border-radius: 2px;
+  background: var(--wcs-handle);
+}
+
+.scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 20px 4px;
+}
+
+/* dApp identity: logo (WalletConnect badge in the corner), name, full url. */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-top: 4px;
+  text-align: center;
+}
+
+.heroLogo {
+  position: relative;
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.heroImage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px var(--wcs-line),
+    0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+.heroImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.heroBadge {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: flex;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  border: 2px solid var(--wcs-surface);
+  border-radius: 8px;
+  background: #fff;
+}
+
+:global([data-theme='dark']) .heroBadge {
+  border-color: #1f1f23;
+}
+
+.heroBadge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--wcs-ink);
+  word-break: break-word;
+}
+
+.heroUrl {
+  max-width: 100%;
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--wcs-card);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--wcs-faint);
+  word-break: break-all;
+}
+
+/* Section label, e.g. "Chains". */
+.label {
+  margin: 0 0 8px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--wcs-faint);
+}
+
+/* Card with hairline-separated rows (chains, transfer details). */
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--wcs-line);
+  border-radius: 16px;
+  background: var(--wcs-card);
+}
+
+.chain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 11px 14px;
+}
+
+.chain + .chain {
+  border-top: 1px solid var(--wcs-line);
+}
+
+.chainLogo {
+  display: flex;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.chainLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.chainText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.chainName {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--wcs-ink);
+  word-break: break-word;
+}
+
+.chainAddress {
+  margin: 0;
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--wcs-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Amber notice; `.danger` turns it red. */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--wcs-warning-border);
+  border-radius: 14px;
+  background: var(--wcs-warning-bg);
+  color: var(--wcs-warning-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.notice svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.notice.danger {
+  border-color: color-mix(in srgb, var(--wcs-danger) 28%, transparent);
+  background: color-mix(in srgb, var(--wcs-danger) 8%, transparent);
+  color: var(--wcs-danger);
+}
+
+.footer {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 20px 28px;
+  border-top: 1px solid var(--wcs-line);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 600px) {
+  .sheet {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(520px, calc(100vw - 32px));
+    max-height: calc(var(--app-height, 100dvh) - 48px);
+    border-radius: 24px;
+    transform: translate(-50%, -50%);
+    animation-name: popCentered;
+  }
+
+  :global([data-theme='dark']) .sheet {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .handle {
+    display: none;
+  }
+
+  .scroll {
+    padding: 28px 28px 4px;
+  }
+
+  .footer {
+    padding: 16px 28px 24px;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}

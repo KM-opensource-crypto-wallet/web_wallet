@@ -8,7 +8,7 @@ import {
   InfoOutlined,
   CheckBox,
 } from '@mui/icons-material';
-import {currencySymbol} from 'data/currency';
+import {currencySymbol} from 'src/data/lists/currency';
 import CoinIcon from 'components/CoinIcon';
 import styles from './BatchTransactionItem.module.css';
 import {

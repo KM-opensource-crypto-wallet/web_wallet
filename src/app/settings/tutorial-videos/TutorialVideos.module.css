@@ -1,29 +1,207 @@
-.container {
-  padding: 20px;
-  background-color: var(--backgroundColor);
-  min-height: 100%;
+/* Tutorial videos: a grid of glass thumbnail cards on the warm surface used
+   across Settings; the accent is the white-label `--background` colour. */
+.page {
+  --tv-ink: #1a1613;
+  --tv-muted: #6e655e;
+  --tv-faint: #8a7f76;
+  --tv-glass: rgba(255, 255, 255, 0.65);
+  --tv-glass-border: rgba(255, 255, 255, 0.9);
+  --tv-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --tv-shadow-hover: 0 16px 44px rgba(63, 40, 22, 0.14);
+  --tv-thumb: #e9e1d9;
+  --tv-tint: 10%;
 }
 
+:global([data-theme='dark']) .page {
+  --tv-ink: #f5f1ec;
+  --tv-muted: #a89c92;
+  --tv-faint: #a89c92;
+  --tv-glass: rgba(255, 255, 255, 0.05);
+  --tv-glass-border: rgba(255, 255, 255, 0.1);
+  --tv-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --tv-shadow-hover: 0 16px 44px rgba(0, 0, 0, 0.55);
+  --tv-thumb: #221c17;
+  --tv-tint: 16%;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.page svg {
+  fill: none;
+}
+
+/* Wider than the other settings pages so the grid has room. */
+.column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+}
+
+.lead {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--tv-muted);
+}
+
+/* Grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-  margin-top: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-/* 3 columns on wider viewports */
-@media (min-width: 640px) {
+.gridItem {
+  display: flex;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--tv-glass-border);
+  border-radius: 20px;
+  background: var(--tv-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--tv-shadow);
+  text-align: left;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--tv-shadow-hover);
+}
+
+.thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--tv-thumb);
+}
+
+/* Darkens the thumbnail a touch so the play badge always reads. */
+.thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.28), transparent 60%);
+  transition: background-color 0.2s;
+}
+
+.tile:hover .thumb::after {
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+.thumbVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.playBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--background);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  color: #fff;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s;
+}
+
+.tile:hover .playBadge {
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.page .playBadge svg {
+  margin-left: 2px;
+  fill: currentColor;
+}
+
+.tileTitle {
+  display: -webkit-box;
+  overflow: hidden;
+  padding: 10px 12px 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--tv-ink);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Empty */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 16px;
+  border: 1px solid var(--tv-glass-border);
+  border-radius: 22px;
+  background: var(--tv-glass);
+  box-shadow: var(--tv-shadow);
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--background) var(--tv-tint), transparent);
+  color: var(--background);
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--tv-muted);
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .column {
+    padding-top: 24px;
+  }
+
   .grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
   }
 }
 
 @media (min-width: 900px) {
   .grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-}
-
-.gridItem {
-  display: flex;
 }

@@ -1,33 +1,130 @@
-.container {
+/* Router (Permit2) permission: bottom sheet on phones, centred dialog from
+   600px up. Same surface and pieces as ModalAllowanceInfo; the accent is the
+   white-label `--background` colour. */
+.sheet {
+  --mp-ink: #1a1613;
+  --mp-text: #4a423b;
+  --mp-muted: #6e655e;
+  --mp-faint: #8a7f76;
+  --mp-handle: rgba(26, 22, 19, 0.2);
+  --mp-line: rgba(26, 22, 19, 0.07);
+  --mp-field: rgba(26, 22, 19, 0.045);
+  --mp-field-border: rgba(26, 22, 19, 0.08);
+  --mp-hover: rgba(26, 22, 19, 0.05);
+  --mp-tint: 9%;
+  --mp-success: #079455;
+  --mp-danger: #d92d20;
+  --mp-warning-bg: rgba(247, 144, 9, 0.1);
+  --mp-warning-border: rgba(247, 144, 9, 0.3);
+  --mp-warning-ink: #93520a;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-height: 82vh;
+  gap: 14px;
+  max-height: calc(100dvh - 24px);
   overflow-y: auto;
-  padding: 24px;
+  padding: 14px 20px 26px;
+  border-radius: 28px 28px 0 0;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.25);
+  outline: none;
+  animation: pop 0.25s ease;
+}
+
+:global([data-theme='dark']) .sheet {
+  --mp-ink: #f5f1ec;
+  --mp-text: #c9bfb6;
+  --mp-muted: #a89c92;
+  --mp-faint: #a89c92;
+  --mp-handle: rgba(245, 241, 236, 0.25);
+  --mp-line: rgba(255, 255, 255, 0.08);
+  --mp-field: rgba(255, 255, 255, 0.06);
+  --mp-field-border: rgba(255, 255, 255, 0.1);
+  --mp-hover: rgba(255, 255, 255, 0.06);
+  --mp-tint: 14%;
+  --mp-success: #32d583;
+  --mp-danger: #f97066;
+  --mp-warning-bg: rgba(253, 176, 34, 0.1);
+  --mp-warning-border: rgba(253, 176, 34, 0.28);
+  --mp-warning-ink: #fdb022;
+  background: #1f1f23;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.8);
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.sheet svg {
+  fill: none;
+}
+
+.backdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .backdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+.handle {
+  flex: none;
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--mp-handle);
 }
 
 .header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--whiteOutline);
+}
+
+.tile {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: var(--background);
+  background: color-mix(in srgb, var(--background) var(--mp-tint), transparent);
+}
+
+.tileDanger {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  color: var(--mp-danger);
+  background: color-mix(in srgb, var(--mp-danger) var(--mp-tint), transparent);
 }
 
 .title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--font);
   margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--mp-ink);
+}
+
+.errorTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--mp-ink);
 }
 
 .body {
-  font-size: 14px;
-  color: var(--font);
-  opacity: 0.8;
-  line-height: 1.5;
   margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--mp-text);
   text-align: center;
 }
 
@@ -36,14 +133,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 40px 12px;
+  gap: 12px;
+  padding: 32px 4px 8px;
 }
 
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--gray);
+  border: 3px solid color-mix(in srgb, var(--background) 20%, transparent);
   border-top-color: var(--background);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -55,254 +152,459 @@
   }
 }
 
-.statusRow {
+/* Allowance status pill */
+.statusText {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
-.statusText {
-  font-size: 13px;
-  font-weight: 500;
+.statusDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .statusApproved {
-  color: var(--success);
+  color: var(--mp-success);
+  background: color-mix(in srgb, var(--mp-success) 12%, transparent);
 }
 
 .statusPending {
-  color: var(--warning);
+  color: var(--mp-warning-ink);
+  background: var(--mp-warning-bg);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .sectionLabel {
-  font-size: 13px;
-  color: var(--gray);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mp-faint);
 }
 
 .whatIsApprove {
-  font-size: 12px;
-  color: var(--gray);
-  line-height: 1.45;
   margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--mp-muted);
 }
 
+/* Approval type: two selectable cards. */
 .cardsRow {
-  display: flex;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .card {
-  flex: 1;
-  border: 1.5px solid var(--whiteOutline);
-  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   padding: 14px;
+  border: 1.5px solid var(--mp-field-border);
+  border-radius: 18px;
   background: transparent;
+  color: var(--mp-ink);
   text-align: left;
   cursor: pointer;
-  color: var(--font);
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
 }
 
-.cardSelected {
+.card:hover {
+  background: var(--mp-hover);
+}
+
+.cardSelected,
+.cardSelected:hover {
   border-color: var(--background);
-  background: rgba(244, 77, 3, 0.08);
+  background: color-mix(in srgb, var(--background) 7%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--background) 12%, transparent);
 }
 
 .cardHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-}
-
-.cardTitle {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--font);
-  margin-bottom: 4px;
-}
-
-.cardDesc {
-  font-size: 11px;
-  color: var(--gray);
+  justify-content: space-between;
   margin-bottom: 10px;
 }
 
-.cardAmount {
-  font-size: 16px;
+.cardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--mp-field);
+  color: var(--mp-muted);
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.cardSelected .cardIcon {
+  background: color-mix(in srgb, var(--background) var(--mp-tint), transparent);
+  color: var(--background);
+}
+
+.cardCheck {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--background);
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+
+.cardSelected .cardCheck {
+  opacity: 1;
+  transform: none;
+}
+
+.cardTitle {
+  margin-bottom: 2px;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--font);
+  color: var(--mp-ink);
+}
+
+.cardDesc {
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--mp-faint);
+}
+
+.cardAmount {
   overflow: hidden;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--mp-ink);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .cardSymbol {
-  font-size: 11px;
-  color: var(--gray);
   margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mp-muted);
 }
 
-.selectionNote {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
+/* Notes under the cards */
+.noteSafe,
+.noteWarning,
+.errorText {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
 }
 
 .noteSafe {
-  font-size: 12px;
-  color: var(--gray);
-  line-height: 1.5;
-  margin: 0;
+  color: var(--mp-muted);
 }
 
 .noteWarning {
-  font-size: 12px;
-  color: var(--warning);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.hint {
-  font-size: 12px;
-  color: var(--gray);
-  line-height: 1.5;
-  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--mp-warning-border);
+  border-radius: 14px;
+  background: var(--mp-warning-bg);
+  color: var(--mp-warning-ink);
+  font-weight: 600;
 }
 
 .errorText {
-  font-size: 12px;
-  color: var(--error);
-  line-height: 1.5;
-  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--mp-danger) 28%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--mp-danger) 8%, transparent);
+  color: var(--mp-danger);
+  font-weight: 600;
 }
 
+/* Network fee */
 .feeRow {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  border-top: 1px solid var(--whiteOutline);
-  padding-top: 14px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--mp-field-border);
+  border-radius: 14px;
+  background: var(--mp-field);
 }
 
 .feeLabelRow {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  color: var(--background);
 }
 
 .feeLabel {
   font-size: 14px;
   font-weight: 600;
-  color: var(--font);
+  color: var(--mp-ink);
 }
 
 .feeValue {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--font);
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--mp-ink);
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .advancedToggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   align-self: flex-start;
-  background: none;
-  border: none;
+  padding: 2px 0;
+  border-radius: 6px;
   color: var(--background);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.advancedToggle:hover {
+  text-decoration: underline;
 }
 
 .advancedBox {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--mp-line);
+  border-radius: 16px;
 }
 
+/* Fee tier: segmented choice. */
 .feesOptionsRow {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--mp-field-border);
+  border-radius: 14px;
+  background: var(--mp-field);
 }
 
 .feesOptionsItem {
-  flex: 1;
-  border: 1px solid var(--whiteOutline);
-  border-radius: 8px;
-  padding: 8px;
-  background: transparent;
-  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 6px 4px;
+  border-radius: 10px;
+  color: var(--mp-muted);
   text-align: center;
-  color: var(--font);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
-.feesOptionSelected {
-  border-color: var(--background);
-  background: rgba(244, 77, 3, 0.08);
+.feesOptionsItem:hover {
+  color: var(--mp-ink);
+}
+
+.feesOptionSelected,
+.feesOptionSelected:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--mp-ink);
+  box-shadow: 0 2px 8px rgba(63, 40, 22, 0.1);
+}
+
+:global([data-theme='dark']) .feesOptionSelected {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
 }
 
 .feesOptionTitle {
-  font-size: 12px;
-  font-weight: 600;
   margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
   text-transform: capitalize;
 }
 
 .feesOptionValue {
-  font-size: 11px;
-  color: var(--gray);
   margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--mp-faint);
 }
 
 .customInputRow {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .customLabel {
   font-size: 12px;
-  color: var(--gray);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mp-faint);
 }
 
 .customInput {
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--whiteOutline);
-  background: transparent;
-  color: var(--font);
-  font-size: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--mp-field-border);
+  border-radius: 12px;
+  outline: none;
+  background: var(--mp-field);
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--mp-ink);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.customInput:focus {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
 }
 
 .actions {
   display: flex;
-  flex-direction: column;
   gap: 10px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
-.primaryBtn {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
+/* Permit-only pieces: icon in the status pill, icon beside the note, and the
+   hint about the separate Permit2 transaction. */
+.statusRow > svg {
+  flex: none;
+}
+
+.selectionNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--mp-muted);
+}
+
+.selectionNote > svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.selectionNoteWarning {
+  padding: 10px 12px;
+  border: 1px solid var(--mp-warning-border);
+  border-radius: 14px;
+  background: var(--mp-warning-bg);
+  color: var(--mp-warning-ink);
+}
+
+.selectionNote > .noteSafe,
+.selectionNote > .noteWarning {
+  padding: 0;
   border: none;
-  background: var(--background);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
+  background: none;
+  color: inherit;
 }
 
-.secondaryBtn {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--whiteOutline);
-  background: transparent;
-  color: var(--font);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
+.hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--mp-faint);
 }
 
-.secondaryBtn:hover {
-  background: var(--backdrop);
+.card:focus-visible,
+.feesOptionsItem:focus-visible,
+.advancedToggle:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .sheet {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(460px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    padding: 24px;
+    border-radius: 24px;
+    transform: translate(-50%, -50%);
+    animation-name: popCentered;
+  }
+
+  :global([data-theme='dark']) .sheet {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .handle {
+    display: none;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+
+  .spinner {
+    animation-duration: 1.6s;
+  }
 }

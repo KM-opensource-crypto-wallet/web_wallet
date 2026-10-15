@@ -1,11 +1,19 @@
-import React, {useState, useCallback, useMemo, lazy} from 'react';
-import {Modal} from '@mui/material';
-import Tabs from 'src/components/Tabs/Tabs';
-import styles from './ModalAddCoins.module.css';
+import React, {useState, useCallback, lazy, Suspense} from 'react';
+import HomeSheet from 'components/Home/HomeSheet';
+import Loading from 'components/Loading';
+import s from './ModalAddCoins.module.css';
 
 const TabAddCoins = lazy(() => import('src/components/TabAddCoins'));
 const TabAddCoinsGroup = lazy(() => import('src/components/TabAddCoinsGroup'));
 
+const TABS = [
+  {label: 'Coins', Component: TabAddCoins},
+  {label: 'Coin groups', Component: TabAddCoinsGroup},
+];
+
+// "Add coin or token": the supported catalog, as single coins or groups.
+// Each tab mounts on first visit and stays mounted so its list and scroll
+// position survive switching back.
 const ModalAddCoins = ({visible, hideModal}) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loadedTabs, setLoadedTabs] = useState([0]);
@@ -14,63 +22,56 @@ const ModalAddCoins = ({visible, hideModal}) => {
     hideModal(false);
   }, [hideModal]);
 
-  const tabList = ['Coins', 'Coins Group'];
-
-  const tabContents = useMemo(
-    () => [
-      {component: TabAddCoins, key: 'coins'},
-      {component: TabAddCoinsGroup, key: 'coinsGroup'},
-    ],
-    [],
-  );
-
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-    if (!loadedTabs.includes(newValue)) {
-      setLoadedTabs(prevLoadedTabs => [...prevLoadedTabs, newValue]);
+  const selectTab = index => {
+    setActiveTab(index);
+    if (!loadedTabs.includes(index)) {
+      setLoadedTabs(prev => [...prev, index]);
     }
   };
 
   return (
-    <Modal
-      open={visible}
+    <HomeSheet
+      visible={visible}
       onClose={handleClose}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'
-      className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
-        <div className={styles.modalDiv}>
-          <div className={styles.modalHeader}>
-            <p className={styles.headerText}>Add supported coin or token</p>
-            <button className={styles.btnClose} onClick={handleClose}>
-              ×
-            </button>
-          </div>
-          <Tabs
-            tabList={tabList}
-            selectedTab={activeTab}
-            onTabChange={handleTabChange}
-            tabsClassName={styles.tabBar}
-            tabClassName={styles.tab}
-          />
-          <div className={styles.contentBox}>
-            {tabContents.map(({component: Component, key}, index) => (
-              <div
-                key={key}
-                style={{
-                  display: activeTab === index ? 'block' : 'none',
-                  height: '100%',
-                  overflow: 'auto',
-                }}>
-                {loadedTabs.includes(index) && (
-                  <Component isVisible={activeTab === index} />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+      title='Add coin or token'
+      labelId='add-coins-title'
+      className={s.sheet}>
+      <div className={s.segmented} role='tablist' aria-label='Add'>
+        {TABS.map(({label}, index) => (
+          <button
+            key={label}
+            type='button'
+            role='tab'
+            aria-selected={activeTab === index}
+            className={`${s.segment} ${
+              activeTab === index ? s.segmentActive : ''
+            }`}
+            onClick={() => selectTab(index)}>
+            {label}
+          </button>
+        ))}
       </div>
-    </Modal>
+      <div className={s.body}>
+        {TABS.map(({label, Component}, index) => (
+          <div
+            key={label}
+            role='tabpanel'
+            className={s.panel}
+            hidden={activeTab !== index}>
+            {loadedTabs.includes(index) && (
+              <Suspense
+                fallback={
+                  <div className={s.loader}>
+                    <Loading />
+                  </div>
+                }>
+                <Component isVisible={activeTab === index} />
+              </Suspense>
+            )}
+          </div>
+        ))}
+      </div>
+    </HomeSheet>
   );
 };
 

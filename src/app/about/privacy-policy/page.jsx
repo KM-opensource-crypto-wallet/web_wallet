@@ -1,21 +1,27 @@
 'use client';
+import {useRouter} from 'next/navigation';
+import AuthLayout, {BackBar, authStyles} from 'components/AuthLayout';
 import s from './PrivacyPolicyPage.module.css';
-import GoBackButton from 'components/GoBackButton';
 import {getPrivacyUrl} from 'whitelabel/whiteLabelInfo';
 
 const PrivacyPolicyPage = () => {
+  const router = useRouter();
+
   return (
-    <div className={s.container}>
-      <div>
-        <GoBackButton />
+    <AuthLayout
+      wide
+      topBar={<BackBar title='About' onBack={() => router.back()} />}
+      title='Privacy Policy'>
+      <div className={authStyles.form}>
+        <div className={`${authStyles.card} ${s.card}`}>
+          <iframe
+            src={getPrivacyUrl()}
+            title='Privacy Policy'
+            className={s.frame}
+          />
+        </div>
       </div>
-      <div className={s.titleContainer}>
-        <p className={s.title}>Privacy Policy</p>
-      </div>
-      <div className={s.mainContainer}>
-        <iframe src={getPrivacyUrl()} height={'100%'} width={'100%'} />
-      </div>
-    </div>
+    </AuthLayout>
   );
 };
 

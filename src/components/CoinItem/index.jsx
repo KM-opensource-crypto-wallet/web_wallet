@@ -1,6 +1,6 @@
 'use client';
 import {coinRoutes} from 'utils/routes';
-import React, {memo, useCallback} from 'react';
+import React, {memo, useCallback, useState} from 'react';
 import {useSelector} from 'react-redux';
 import {
   checkValidChainForWalletImportWithPrivateKey,
@@ -9,40 +9,28 @@ import {
 } from 'dok-wallet-blockchain-networks/helper';
 import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {getCoinSlug, isValidBrowser} from 'utils/common';
-import Image from 'next/image';
 import {
   addOrToggleCoinInWallet,
   setCurrentCoin,
-  setCurrentWalletCoinsPosition,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {currencySymbol} from 'data/currency';
-import Switch from '@mui/material/Switch';
-import styles from './CoinItem.module.css';
 import CoinIcon from 'components/CoinIcon';
-const icons = require(`assets/images/icons`).default;
+import {CheckIcon, PlusIcon} from 'components/Home/HomeIcons';
+import {reportThunkRejection} from 'utils/thunkErrors';
+import s from 'components/ModalAddCoins/ModalAddCoins.module.css';
 
-const disabledStyle = {
-  filter: 'opacity(0.5) drop-shadow(0 0 0 gray)',
-  cursor: 'not-allowed',
-};
-
+// One row of the "Add coin or token" catalog: icon, symbol + network, name,
+// and an Add button that shows a spinner until the coin is in the wallet,
+// then "Added". Removing a coin is done from the Manage coins list. Coins a
+// private-key wallet can't hold (other chains) are shown disabled.
 const CoinItem = ({
   currentWallet,
   item,
-  index,
   number,
   router,
   showSwitch,
   dispatch,
   setRenderList,
-  localCurrency,
-  dragHandleProps,
-  isSortSelected,
-  coinsLength,
-  PngIcons,
 }) => {
-  const isCoinInWallet = item?.isInWallet;
-  const isToken = item?.type === 'token';
   const isAddCoin = number === 3;
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const isDisabledItem =
@@ -51,12 +39,8 @@ const CoinItem = ({
       currentWallet,
       currentCoin: item,
     });
-
-  const isBitcoin = isBitcoinChain(item?.chain_name);
-
-  const onPressMove = isMoveUp => {
-    dispatch(setCurrentWalletCoinsPosition({index, isMoveUp}));
-  };
+  const showNetwork =
+    item?.type === 'token' || isBitcoinChain(item?.chain_name);
 
   const onPressItem = useCallback(() => {
     // A catalog coin that isn't in the wallet has no wallet entry to select;
@@ -73,16 +57,30 @@ const CoinItem = ({
     );
   }, [dispatch, item, isAddCoin, currentWalletClientId, router]);
 
-  const onChangeValue = useCallback(() => {
-    dispatch(addOrToggleCoinInWallet(item));
-    setRenderList(prevState =>
-      prevState.map(subItem => {
-        if (item._id === subItem._id) {
-          return {...subItem, isInWallet: !subItem.isInWallet};
-        }
-        return subItem;
-      }),
-    );
+  const [adding, setAdding] = useState(false);
+
+  const onAdd = useCallback(async () => {
+    setAdding(true);
+    try {
+      const result = await dispatch(addOrToggleCoinInWallet(item)).unwrap();
+      // null when the coin couldn't be created.
+      if (!result) {
+        throw new Error('new coin not created');
+      }
+      setRenderList(prevState =>
+        prevState.map(subItem =>
+          item._id === subItem._id ? {...subItem, isInWallet: true} : subItem,
+        ),
+      );
+    } catch (error) {
+      reportThunkRejection({
+        area: 'coins',
+        op: 'add',
+        toast: `Couldn't add ${item?.symbol}. Please try again.`,
+      })(error);
+    } finally {
+      setAdding(false);
+    }
   }, [dispatch, item, setRenderList]);
 
   if (!validateSupportedChain(item?.chain_name)) {
@@ -92,103 +90,57 @@ const CoinItem = ({
     return null;
   }
 
+  const isOn = !!item?.isInWallet;
+
   return (
     <div
-      key={index}
-      className={styles.section}
-      style={isDisabledItem ? {backgroundColor: 'var(--disabledItem)'} : {}}>
-      {isSortSelected && dragHandleProps && (
-        <span
-          {...dragHandleProps}
-          style={{
-            cursor: 'grab',
-            marginRight: 10,
-            height: 30,
-            width: 30,
-            fill: 'var(--font)',
-          }}>
-          {icons.dragVertical}
+      className={`${s.coinRow} ${isDisabledItem ? s.coinRowDisabled : ''}`}
+      title={isDisabledItem ? 'Not available for this wallet' : undefined}>
+      <span className={s.coinIcon}>
+        <CoinIcon item={item} />
+      </span>
+      <span
+        className={s.coinText}
+        role={isOn && !isDisabledItem ? 'button' : undefined}
+        tabIndex={isOn && !isDisabledItem ? 0 : undefined}
+        onClick={isDisabledItem ? undefined : onPressItem}
+        onKeyDown={event => {
+          if (isOn && !isDisabledItem && event.key === 'Enter') {
+            onPressItem();
+          }
+        }}>
+        <span className={s.coinTitleRow}>
+          <span className={s.coinSymbol}>{item?.symbol}</span>
+          {showNetwork && item?.chain_display_name ? (
+            <span className={s.chip}>{item.chain_display_name}</span>
+          ) : null}
         </span>
-      )}
-      <CoinIcon item={item} />
-
-      <div className={styles.list}>
+        <span className={s.coinName}>{item?.name}</span>
+      </span>
+      {showSwitch ? (
         <button
-          className={styles.box}
-          disabled={isDisabledItem}
-          onClick={onPressItem}>
-          <div className={styles.item}>
-            <div className={styles.rowStyle}>
-              <p className={styles.title} title={item?.symbol}>
-                {item?.symbol}
-              </p>
-              {/* {isToken && ( */}
-              {(isToken || isBitcoin) && (
-                <p className={styles.chainDisplayName}>
-                  {item?.chain_display_name}
-                </p>
-              )}
-              {/* )} */}
-            </div>
-            <p className={styles.text} title={item?.name}>
-              {item?.name}
-            </p>
-          </div>
-
-          {number === 1 && (
-            <div className={styles.itemNumber}>
-              <p className={styles.title}>{item?.totalBalance}</p>
-              <p className={styles.text}>
-                {currencySymbol[localCurrency] || ''} {item?.totalBalanceCourse}
-              </p>
-            </div>
+          type='button'
+          aria-label={
+            isOn
+              ? `${item?.symbol} added`
+              : adding
+                ? `Adding ${item?.symbol}`
+                : `Add ${item?.symbol}`
+          }
+          aria-busy={adding}
+          className={`${s.groupAdd} ${isOn ? s.groupAdded : ''}`}
+          disabled={isDisabledItem || isOn || adding}
+          onClick={onAdd}>
+          {adding ? (
+            <span className={s.spinner} aria-hidden='true' />
+          ) : isOn ? (
+            <CheckIcon size={14} />
+          ) : (
+            <PlusIcon size={14} />
           )}
+          {adding ? 'Adding' : isOn ? 'Added' : 'Add'}
         </button>
-
-        {number === 1 && (
-          <div className={styles.arrow}>{icons.keyboard_arrow_right}</div>
-        )}
-        {isSortSelected && coinsLength > 1 && PngIcons && (
-          <>
-            <button
-              disabled={index === 0}
-              className={styles.boxBtn}
-              onClick={() => {
-                onPressMove(true);
-              }}>
-              <Image
-                style={index === 0 && disabledStyle}
-                src={PngIcons.UpArrow}
-                alt={'Up arrow'}
-                width={24}
-                height={24}
-              />
-            </button>
-            <button
-              disabled={index === coinsLength - 1}
-              className={styles.boxBtn}
-              onClick={() => {
-                onPressMove(false);
-              }}>
-              <Image
-                src={PngIcons.DownArrow}
-                alt={'Down arrow'}
-                width={24}
-                height={24}
-                style={index === coinsLength - 1 && disabledStyle}
-              />
-            </button>
-          </>
-        )}
-        {showSwitch && !isSortSelected && (
-          <Switch
-            checked={isCoinInWallet}
-            onChange={onChangeValue}
-            disabled={isDisabledItem}
-            color='warning'
-          />
-        )}
-      </div>
+      ) : null}
     </div>
   );
 };
@@ -200,7 +152,6 @@ export default memo(CoinItem, (prevProps, nextProps) => {
     key1 === key2 &&
     JSON.stringify(prevProps.item) === JSON.stringify(nextProps.item) &&
     JSON.stringify(prevProps.currentWallet) ===
-      JSON.stringify(nextProps.currentWallet) &&
-    prevProps.isSortSelected === nextProps.isSortSelected
+      JSON.stringify(nextProps.currentWallet)
   );
 });

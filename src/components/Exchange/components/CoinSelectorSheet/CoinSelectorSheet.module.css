@@ -1,13 +1,45 @@
 .container {
+  --sw-ink: #1a1613;
+  --sw-muted: #6e655e;
+  --sw-faint: #8a7f76;
+  --sw-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
+  --sw-surface-solid: #f6f0ea;
+  --sw-glass: rgba(255, 255, 255, 0.65);
+  --sw-glass-strong: rgba(255, 255, 255, 0.85);
+  --sw-glass-border: rgba(255, 255, 255, 0.9);
+  --sw-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --sw-line: rgba(26, 22, 19, 0.06);
+  --sw-field: rgba(26, 22, 19, 0.045);
+  --sw-field-border: rgba(26, 22, 19, 0.08);
+  --sw-hover: rgba(26, 22, 19, 0.05);
+  --sw-placeholder: rgba(26, 22, 19, 0.3);
   display: flex;
   flex-direction: column;
   padding: 16px 0;
   min-height: 0;
   max-height: 85vh;
+  background: var(--sw-surface);
+}
+
+:global([data-theme='dark']) .container {
+  --sw-ink: #f5f1ec;
+  --sw-muted: #a89c92;
+  --sw-faint: #a89c92;
+  --sw-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
+  --sw-surface-solid: #120e0b;
+  --sw-glass: rgba(255, 255, 255, 0.05);
+  --sw-glass-strong: rgba(255, 255, 255, 0.08);
+  --sw-glass-border: rgba(255, 255, 255, 0.1);
+  --sw-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --sw-line: rgba(255, 255, 255, 0.06);
+  --sw-field: rgba(255, 255, 255, 0.06);
+  --sw-field-border: rgba(255, 255, 255, 0.1);
+  --sw-hover: rgba(255, 255, 255, 0.08);
+  --sw-placeholder: rgba(255, 255, 255, 0.3);
 }
 
 .title {
-  color: var(--font);
+  color: var(--sw-ink);
   font-size: 16px;
   font-weight: 700;
   margin: 0 16px 12px 16px;
@@ -20,8 +52,9 @@
   gap: 8px;
   margin: 0 16px 8px 16px;
   padding: 8px 12px;
-  border-radius: 10px;
-  background-color: var(--lightBackground);
+  border: 1px solid var(--sw-field-border);
+  border-radius: 14px;
+  background-color: var(--sw-field);
 }
 
 .searchInput {
@@ -29,12 +62,12 @@
   border: none;
   outline: none;
   background-color: transparent;
-  color: var(--font);
+  color: var(--sw-ink);
   font-size: 14px;
 }
 
 .searchInput::placeholder {
-  color: var(--gray);
+  color: var(--sw-placeholder);
 }
 
 .list {
@@ -59,7 +92,7 @@
 }
 
 .optionRow:hover {
-  background-color: var(--lightBackground);
+  background-color: var(--sw-hover);
 }
 
 .optionIconBox {
@@ -68,7 +101,7 @@
   border-radius: 50%;
   overflow: hidden;
   margin-right: 10px;
-  background-color: var(--lightBackground);
+  background-color: #fff;
   flex-shrink: 0;
 }
 
@@ -85,7 +118,7 @@
 }
 
 .optionTitle {
-  color: var(--font);
+  color: var(--sw-ink);
   font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
@@ -94,7 +127,7 @@
 }
 
 .optionChain {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
@@ -102,13 +135,13 @@
 }
 
 .optionSymbol {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 13px;
   margin-left: 10px;
 }
 
 .emptyText {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 14px;
   text-align: center;
   margin: 32px 24px;

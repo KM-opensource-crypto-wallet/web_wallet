@@ -22,8 +22,7 @@ const modalStyle = {
   maxHeight: '85vh',
   display: 'flex',
   flexDirection: 'column',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
+  borderRadius: '22px',
   '@media (min-width: 768px)': {
     width: '50%',
     maxWidth: '560px',
@@ -79,7 +78,7 @@ const CoinSelectorSheet = forwardRef(({options, onSelect}, ref) => {
         <div className={s.container}>
           <p className={s.title}>Select coin</p>
           <div className={s.searchBox}>
-            <SearchIcon sx={{fontSize: 20, color: 'var(--gray)'}} />
+            <SearchIcon sx={{fontSize: 20, color: 'var(--sw-muted)'}} />
             <input
               className={s.searchInput}
               placeholder='Search by name or symbol'

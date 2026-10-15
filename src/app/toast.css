@@ -1,0 +1,133 @@
+/* Toasts: one glass card for every react-toastify toast, in the warm palette
+   of the redesigned screens. Each type sets `--tt-accent` from the theme
+   tokens (brand `--background` for default/info); the icon chip, glow and
+   progress bar all follow it.
+   react-toastify injects its own stylesheet at runtime, after this one, so
+   every rule is scoped under `.Toastify` to win on specificity. */
+.Toastify {
+  --toastify-toast-width: 380px;
+  --toastify-toast-bd-radius: 20px;
+}
+
+.Toastify .Toastify__toast {
+  --tt-ink: #1a1613;
+  --tt-muted: #6e655e;
+  --tt-glass: rgba(255, 255, 255, 0.84);
+  --tt-border: rgba(255, 255, 255, 0.95);
+  --tt-ring: rgba(26, 22, 19, 0.06);
+  --tt-shadow: 0 1px 2px rgba(63, 40, 22, 0.06),
+    0 16px 44px rgba(63, 40, 22, 0.16);
+  --tt-hover: rgba(26, 22, 19, 0.06);
+  --tt-tint: 10%;
+  --tt-accent: var(--background);
+  overflow: hidden;
+  width: min(var(--toastify-toast-width), calc(100vw - 32px));
+  min-height: 0;
+  margin-bottom: 10px;
+  padding: 12px 40px 12px 12px;
+  gap: 12px;
+  border: 1px solid var(--tt-border);
+  border-radius: var(--toastify-toast-bd-radius);
+  background:
+    radial-gradient(
+      120% 140% at 0% 0%,
+      color-mix(in srgb, var(--tt-accent) var(--tt-tint), transparent) 0%,
+      transparent 55%
+    ),
+    var(--tt-glass);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow:
+    0 0 0 1px var(--tt-ring),
+    var(--tt-shadow);
+  color: var(--tt-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.Toastify .Toastify__toast-theme--dark {
+  --tt-ink: #f5f1ec;
+  --tt-muted: #a89c92;
+  --tt-glass: rgba(30, 26, 23, 0.86);
+  --tt-border: rgba(255, 255, 255, 0.1);
+  --tt-ring: rgba(0, 0, 0, 0.3);
+  --tt-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 44px rgba(0, 0, 0, 0.5);
+  --tt-hover: rgba(255, 255, 255, 0.08);
+  --tt-tint: 16%;
+}
+
+.Toastify .Toastify__toast--success {
+  --tt-accent: var(--success, #4caf50);
+}
+
+.Toastify .Toastify__toast--error {
+  --tt-accent: var(--error, #f44336);
+}
+
+.Toastify .Toastify__toast--warning {
+  --tt-accent: var(--warning, #ff9800);
+}
+
+/* The icon slot hosts `ToastIcon` (utils/toast.js). */
+.Toastify .Toastify__toast-icon {
+  width: auto;
+  margin: 0;
+}
+
+/* Close: a quiet round button in the corner. */
+.Toastify .Toastify__close-button {
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--tt-muted);
+  opacity: 1;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.Toastify .Toastify__close-button:hover,
+.Toastify .Toastify__close-button:focus-visible {
+  background: var(--tt-hover);
+  color: var(--tt-ink);
+}
+
+.Toastify .Toastify__close-button > svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Progress: a slim accent line along the bottom edge. */
+.Toastify .Toastify__progress-bar--wrp {
+  height: 3px;
+}
+
+.Toastify .Toastify__progress-bar {
+  opacity: 1;
+  background: var(--tt-accent);
+}
+
+.Toastify .Toastify__progress-bar--bg {
+  opacity: 0.12;
+  background: var(--tt-accent);
+}
+
+/* react-toastify goes edge-to-edge with square corners on phones; keep the
+   floating card instead. */
+@media only screen and (max-width: 480px) {
+  .Toastify .Toastify__toast {
+    width: auto;
+    margin: 0 12px 8px;
+    border-radius: 18px;
+  }
+
+  .Toastify .Toastify__toast-container--top-left .Toastify__toast,
+  .Toastify .Toastify__toast-container--top-center .Toastify__toast,
+  .Toastify .Toastify__toast-container--top-right .Toastify__toast {
+    margin: 8px 12px 0;
+  }
+}

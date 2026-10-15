@@ -1,47 +1,39 @@
-.infoList {
-  padding: 20px;
-  /* width: 60%;
-  height: calc(50vh - 60px); */
-  /* display: flex;
-  justify-content: center;
-  align-items: center; */
-}
-
-.titleInfo {
-  color: var(--font);
-  font-size: 20px;
-  text-align: center;
-
-  margin-bottom: 20px;
-  text-transform: uppercase;
-}
-
-.info {
-  color: var(--font);
-  font-size: 16px;
-  text-align: center;
-}
-
-.btnList {
+/* Only the wallet chip lives here; the sheet itself is styled by
+   ModalReset.module.css (and its --mr-* tokens). */
+.walletChip {
   display: flex;
   align-items: center;
-  border-top: 1px solid var(--gray);
+  gap: 8px;
+  max-width: 100%;
+  margin-top: -4px;
+  padding: 5px 12px 5px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mr-ink) 6%, transparent);
 }
 
-.learnBorder {
-  border-right: 1px solid var(--gray);
-  width: 100%;
-  padding: 0 20px;
-  text-align: center;
+.walletAvatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--background) 82%, #fff) 0%,
+    var(--background) 100%
+  );
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-.learnBox {
-  height: 60px;
-  padding: 0 20px;
-  text-align: center;
-}
-
-.learnText {
-  color: var(--background);
-  font-size: 17px;
+.walletName {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mr-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

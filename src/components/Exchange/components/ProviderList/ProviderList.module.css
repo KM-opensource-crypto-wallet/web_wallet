@@ -11,13 +11,17 @@
 }
 
 .headerTitle {
-  color: var(--font);
+  color: var(--sw-ink);
   font-size: 15px;
   font-weight: 700;
 }
 
 .stateBox {
-  background-color: var(--lightBackground);
+  border: 1px solid var(--sw-glass-border);
+  background: var(--sw-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--sw-shadow);
   border-radius: 12px;
   padding: 20px;
   display: flex;
@@ -26,7 +30,7 @@
 }
 
 .stateText {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 13px;
   text-align: center;
   margin-top: 8px;

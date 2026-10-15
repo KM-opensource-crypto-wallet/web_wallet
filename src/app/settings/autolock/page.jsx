@@ -1,15 +1,19 @@
 'use client';
 import React, {useCallback} from 'react';
-import {useSelector, useDispatch} from 'react-redux';
-import {getLockTime} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
+import {useTranslations} from 'next-intl';
+import {useDispatch} from 'react-redux';
 import {updateLockTime} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
-import DokRadioButton from 'components/DokRadioButton';
 import {WEB_AUTO_LOCK, getWebLockTimeLabel} from 'utils/autoLock';
+import Screen from 'components/Screen';
+import {CheckIcon, InfoIcon} from 'components/Home/HomeIcons';
+import useWallet from 'src/hooks/wallet/useWallet';
+import {LockIcon, TimerIcon} from '../SettingsIcons';
 import s from './AutoLock.module.css';
-import GoBackButton from 'components/GoBackButton';
 
 const AutoLock = () => {
-  const lockTimeDisplay = getWebLockTimeLabel(useSelector(getLockTime));
+  const t = useTranslations('settings');
+  const {lockTime} = useWallet();
+  const lockTimeDisplay = getWebLockTimeLabel(lockTime);
   const dispatch = useDispatch();
 
   const onChangeLockTime = useCallback(
@@ -22,15 +26,50 @@ const AutoLock = () => {
   );
 
   return (
-    <div className={s.container}>
-      <GoBackButton />
-      <DokRadioButton
-        title={'Select a auto lock'}
-        options={WEB_AUTO_LOCK}
-        checked={lockTimeDisplay}
-        setChecked={onChangeLockTime}
-      />
-    </div>
+    <Screen className={s.page} title={t('autoLock')}>
+      <div className={s.column}>
+        <p className={s.sectionLabel} id='autolock-label'>
+          Lock the wallet
+        </p>
+        <div
+          className={s.card}
+          role='radiogroup'
+          aria-labelledby='autolock-label'>
+          {WEB_AUTO_LOCK.map(item => {
+            const selected = lockTimeDisplay === item.label;
+            return (
+              <button
+                key={item.value}
+                type='button'
+                role='radio'
+                aria-checked={selected}
+                className={`${s.row} ${selected ? s.rowActive : ''}`}
+                onClick={() => onChangeLockTime(item.label)}>
+                <span className={s.iconTile} aria-hidden='true'>
+                  {item.value === 0 ? (
+                    <LockIcon size={19} />
+                  ) : (
+                    <TimerIcon size={19} />
+                  )}
+                </span>
+                <span className={s.rowTitle}>{item.label}</span>
+                <span className={s.check} aria-hidden='true'>
+                  {selected ? <CheckIcon size={14} strokeWidth={3} /> : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <p className={s.note}>
+          <InfoIcon size={16} />
+          <span>
+            Once locked, the wallet asks for your password before it can be used
+            again.
+          </span>
+        </p>
+      </div>
+    </Screen>
   );
 };
 

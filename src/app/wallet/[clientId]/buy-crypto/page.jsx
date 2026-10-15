@@ -1,428 +1,463 @@
 'use client';
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React from 'react';
 import {Formik} from 'formik';
 import styles from './CryptoProviders.module.css';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {getUserCoinsOptions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {getBuyCryptoUrl} from 'dok-wallet-blockchain-networks/service/dokApi';
-import GoBackButton from 'components/GoBackButton';
 import Image from 'next/image';
+import {validateNumberInInput} from 'dok-wallet-blockchain-networks/helper';
+import {currencySymbol} from 'src/data/lists/currency';
+import GeneralButton from 'components/Button';
+import HomeSheet from 'components/Home/HomeSheet';
+import WalletSwitcher from 'components/Home/WalletSwitcher';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {
-  validateNumber,
-  validateNumberInInput,
-} from 'dok-wallet-blockchain-networks/helper';
-
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import SelectInputExchange from 'components/SelectInputExchange';
-import {amountValidation} from 'utils/validationSchema';
-import SelectInput from 'components/SelectInput';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import {toast} from 'react-toastify';
-const copyIcon = require(`assets/images/icons`).default;
-import {currencySymbol} from 'data/currency';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-
-import {
-  getCryptoProviders,
-  getCryptoProvidersLoading,
-} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
-import {
-  debounceFetchBuyCryptoQuote,
-  fetchBuyCryptoQuote,
-  setCryptoProviderLoading,
-} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProviderSlice';
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  InfoIcon,
+  PlusIcon,
+  SearchIcon,
+} from 'components/Home/HomeIcons';
 import Loading from 'components/Loading';
 import ModalAddCoins from 'components/ModalAddCoins';
-import {isUsdtNotSupportedWL} from 'src/whitelabel/whiteLabelInfo';
-import ModalRedirect from 'components/ModalRedirect';
+import useBuyCrypto from 'src/hooks/protectedRoutes/wallet/buyCrypto/useBuyCrypto';
+import Screen from 'components/Screen';
 
-const currencyPicker = [
-  {
-    label: '$ USD',
-    value: 'USD',
-  },
-  {
-    label: '€ EURO',
-    value: 'EUR',
-  },
-];
+const PRESETS = ['100', '250', '500'];
+
+const RefreshIcon = props => (
+  <svg
+    width={13}
+    height={13}
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='2.4'
+    strokeLinecap='round'
+    strokeLinejoin='round'
+    aria-hidden='true'
+    {...props}>
+    <path d='M21 12a9 9 0 1 1-3-6.7' />
+    <path d='M21 4v5h-5' />
+  </svg>
+);
+
+const formatNumber = (value, max = 6) =>
+  Number(value).toLocaleString('en-US', {maximumFractionDigits: max});
 
 const CryptoProviders = () => {
-  const localCurrency = useSelector(getLocalCurrency);
-  const coinOptions = useSelector(getUserCoinsOptions, shallowEqual);
-  const cryptoProviders = useSelector(getCryptoProviders);
-  const isLoading = useSelector(getCryptoProvidersLoading);
-  const dispatch = useDispatch();
-  const formikRef = useRef();
-  const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
-  const [modalInfoVisible, setModalInfoVisible] = useState(false);
-  const [buyCryptoUrl, setBuyCryptoUrl] = useState(null);
-  const [loadingIndex, setLoadingIndex] = useState(null);
-  const [selectedProvider, setSelectedProvider] = useState(null);
+  const {
+    walletName,
+    switcherOpen,
+    openSwitcher,
+    closeSwitcher,
+    localCurrency,
+    formikRef,
+    initialValues,
+    amountValidation,
+    onSubmit,
+    eurOnly,
+    changeAmount,
+    cycleCurrency,
+    coinSheetOpen,
+    openCoinSheet,
+    closeCoinSheet,
+    coinQuery,
+    onCoinQueryChange,
+    coinList,
+    pickCoin,
+    openAddCoins,
+    addressCopied,
+    copyAddress,
+    isLoading,
+    quotes,
+    activeQuote,
+    pickQuote,
+    refreshQuote,
+    loadingIndex,
+    continueWithActiveQuote,
+    modalAddCoinsVisible,
+    setModalAddCoinsVisible,
+  } = useBuyCrypto();
 
-  const finalCoinOptions = useMemo(() => {
-    if (isUsdtNotSupportedWL()) {
-      return coinOptions.filter(
-        item =>
-          !(
-            item.options?.symbol?.toUpperCase() === 'USDT' ||
-            (item.options?.symbol?.toUpperCase() === 'USDC' &&
-              item.options?.chain_name === 'tron')
-          ),
-      );
-    }
-    return coinOptions;
-  }, [coinOptions]);
-
-  const handleNewTabClose = useCallback(() => {
-    setBuyCryptoUrl(null);
-    setModalInfoVisible(false);
-  }, []);
-
-  const handleNewTabLaunch = useCallback(() => {
-    if (!buyCryptoUrl) return;
-
-    const anchor = document.createElement('a');
-    anchor.href = buyCryptoUrl;
-    anchor.target = '_blank';
-    anchor.rel = 'noopener';
-    anchor.referrerPolicy = 'origin';
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-
-    handleNewTabClose();
-  }, [buyCryptoUrl, handleNewTabClose]);
-
-  const onPressItem = useCallback(async (item, index) => {
-    let pendingTab = null;
-    try {
-      const selectedCoin = formikRef.current?.values?.selectedCoin?.options;
-      const amount = formikRef.current?.values?.amount;
-      const fiatCurrency = formikRef.current?.values?.fiatCurrency;
-      if (!selectedCoin) {
-        formikRef?.current?.setFieldError(
-          'selectedCoin',
-          'Please select a coin',
-        );
-        formikRef?.current?.setFieldTouched('selectedCoin', true);
-        return;
-      }
-      if (isNaN(Number(amount)) || !Number(amount)) {
-        formikRef?.current?.setFieldError(
-          'amount',
-          'Please enter a valid amount',
-        );
-        formikRef?.current?.setFieldTouched('amount', true);
-        return;
-      }
-
-      const url = item?.extraData?.url;
-      setSelectedProvider(item);
-      if (item.title?.toLowerCase() === 'castor24') {
-        return window.open('https://www.castor24.com/login', '_blank');
-      }
-      if (item.title?.toLowerCase() === '51pegasi') {
-        return window.open('https://www.51pegasi.com/login', '_blank');
-      } else if (url) {
-        return window.open(url, '_blank');
-      } else {
-        pendingTab = window.open('about:blank', '_blank');
-        if (!pendingTab) {
-          toast.error('Please allow pop-ups to continue');
-          return;
-        }
-        pendingTab.opener = null;
-        setLoadingIndex(index);
-        const resp = await getBuyCryptoUrl({
-          ...item,
-          selectedCoin,
-          fiatCurrency,
-          amount,
-          appVersion: 'web',
-          from_device: 'web',
-        });
-        const redirectUrl = resp?.data;
-        if (!redirectUrl) {
-          pendingTab.close();
-          toast.error('Unable to generate provider link');
-          return;
-        }
-        pendingTab.location.replace(redirectUrl);
-      }
-    } catch (e) {
-      pendingTab?.close();
-      toast.error('Something went wrong');
-      console.error('Error in press item', e);
-    } finally {
-      setLoadingIndex(null);
-    }
-  }, []);
-
-  const submitQuote = useCallback(
-    async (values, {isDebounce = false} = {}) => {
-      const chainDetails = values?.selectedCoin?.options;
-      if (!chainDetails || !values.amount || values?.amount === '0') {
-        return;
-      }
-      const payload = {
-        fiatCurrency: values?.fiatCurrency,
-        amount: validateNumber(values?.amount) || '0',
-        chain_name: chainDetails?.chain_name,
-        type: chainDetails?.type,
-        symbol: chainDetails?.symbol,
-        walletAddress: chainDetails?.walletAddress,
-        from_device: 'web',
-      };
-      if (isDebounce) {
-        dispatch(setCryptoProviderLoading(true));
-        dispatch(debounceFetchBuyCryptoQuote(payload));
-      } else {
-        dispatch(fetchBuyCryptoQuote(payload));
-      }
-    },
-    [dispatch],
-  );
-
-  const onSubmit = useCallback(
-    async values => {
-      submitQuote(values, {isDebounce: false});
-    },
-    [submitQuote],
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={styles.heading}
+      aria-haspopup='dialog'
+      onClick={openSwitcher}>
+      <h1 className={styles.headingTitle}>Buy</h1>
+      <span className={styles.headingSub}>
+        <span className={styles.walletAvatar}>
+          {walletName[0].toUpperCase()}
+        </span>
+        <span className={styles.headingSubText}>{walletName}</span>
+        <ChevronDownIcon size={12} className={styles.headingChevron} />
+      </span>
+    </GeneralButton>
   );
 
   return (
-    <>
-      <div className={styles.goBack}>
-        <GoBackButton />
-      </div>
+    <Screen className={styles.page} center={center}>
+      <Formik
+        innerRef={formikRef}
+        initialValues={initialValues}
+        validationSchema={amountValidation}
+        onSubmit={onSubmit}>
+        {({handleBlur, values, errors, touched, setFieldValue}) => {
+          const coin = values?.selectedCoin?.options;
+          const symbol = coin?.symbol?.toUpperCase() ?? '';
+          const fiatSymbol = currencySymbol[values.fiatCurrency] || '';
+          const amountError = touched.amount && errors.amount;
+          const coinError = touched.selectedCoin && errors.selectedCoin;
+          const canQuote = !!coin && Number(values.amount) > 0;
+          const showQuotes = canQuote && !isLoading && quotes.length > 0;
+
+          const setAmount = next => changeAmount(next, values, setFieldValue);
+
+          return (
+            <div className={styles.column}>
+              <div className={styles.field}>
+                <label htmlFor='amount' className={styles.label}>
+                  You pay
+                </label>
+                <div
+                  className={`${styles.amountCard} ${
+                    amountError ? styles.inputBoxError : ''
+                  }`}>
+                  <div className={styles.amountRow}>
+                    <span className={styles.fiatPrefix}>{fiatSymbol}</span>
+                    <input
+                      id='amount'
+                      className={styles.amountInput}
+                      placeholder='0'
+                      inputMode='decimal'
+                      name='amount'
+                      onChange={e =>
+                        setAmount(
+                          validateNumberInInput(e.target.value, coin?.decimal),
+                        )
+                      }
+                      onBlur={handleBlur('amount')}
+                      value={values.amount}
+                    />
+                    <button
+                      type='button'
+                      className={styles.currencyChip}
+                      disabled={eurOnly}
+                      aria-label={
+                        eurOnly
+                          ? `Paying in ${values.fiatCurrency}`
+                          : `Paying in ${values.fiatCurrency}, change currency`
+                      }
+                      onClick={() => cycleCurrency(values, setFieldValue)}>
+                      {values.fiatCurrency}
+                      {eurOnly ? null : <ChevronDownIcon size={12} />}
+                    </button>
+                  </div>
+                  <div className={styles.presets}>
+                    {PRESETS.map(preset => (
+                      <button
+                        key={preset}
+                        type='button'
+                        className={`${styles.preset} ${
+                          values.amount === preset ? styles.presetOn : ''
+                        }`}
+                        onClick={() => setAmount(preset)}>
+                        {fiatSymbol}
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {amountError && (
+                  <p className={styles.error} role='alert'>
+                    {errors.amount}
+                  </p>
+                )}
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>You get</span>
+                <button
+                  type='button'
+                  className={`${styles.coinCard} ${
+                    coinError ? styles.inputBoxError : ''
+                  }`}
+                  aria-haspopup='dialog'
+                  onClick={openCoinSheet}>
+                  <span className={styles.coinIcon}>
+                    {coin?.icon ? (
+                      <Image src={coin.icon} alt='' width={40} height={40} />
+                    ) : (
+                      <PlusIcon size={18} />
+                    )}
+                  </span>
+                  <span className={styles.coinText}>
+                    {coin ? (
+                      <>
+                        <span className={styles.coinGot}>
+                          <span className={styles.coinAmount}>
+                            {activeQuote?.hasQuote && !isLoading
+                              ? `≈ ${formatNumber(activeQuote.got)}`
+                              : '—'}
+                          </span>
+                          <span className={styles.coinSymbol}>{symbol}</span>
+                        </span>
+                        <span className={styles.coinMeta}>
+                          {values.selectedCoin?.label}
+                          {coin?.chain_display_name ? (
+                            <span className={styles.chip}>
+                              {coin.chain_display_name}
+                            </span>
+                          ) : null}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className={styles.coinPlaceholder}>
+                          Select a coin
+                        </span>
+                        <span className={styles.coinMeta}>
+                          From the coins in this wallet
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  <span className={styles.changeChip}>
+                    {coin ? 'Change' : 'Select'}
+                    <ChevronRightIcon size={12} />
+                  </span>
+                </button>
+                {coinError && (
+                  <p className={styles.error} role='alert'>
+                    {errors.selectedCoin}
+                  </p>
+                )}
+                {!!coin?.walletAddress && (
+                  <div className={styles.addressRow}>
+                    <span className={styles.addressLabel}>To</span>
+                    <span className={styles.address} title={coin.walletAddress}>
+                      {coin.walletAddress}
+                    </span>
+                    <button
+                      type='button'
+                      className={`${styles.copy} ${
+                        addressCopied ? styles.copyDone : ''
+                      }`}
+                      aria-label='Copy address'
+                      onClick={() => copyAddress(coin.walletAddress)}>
+                      {addressCopied ? (
+                        <CheckIcon size={14} />
+                      ) : (
+                        <CopyIcon size={14} />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.field}>
+                <div className={styles.labelRow}>
+                  <span className={styles.label}>Quotes</span>
+                  {canQuote ? (
+                    <button
+                      type='button'
+                      className={styles.refresh}
+                      disabled={isLoading}
+                      onClick={() => refreshQuote(values)}>
+                      <RefreshIcon
+                        className={isLoading ? styles.spinning : ''}
+                      />
+                      {isLoading ? 'Updating…' : 'Refresh'}
+                    </button>
+                  ) : null}
+                </div>
+                {!canQuote ? (
+                  <div className={styles.quotesEmpty}>
+                    {coin
+                      ? 'Enter an amount to compare providers'
+                      : 'Pick a coin to compare providers'}
+                  </div>
+                ) : isLoading ? (
+                  <div className={styles.quotesLoading}>
+                    <Loading />
+                  </div>
+                ) : !showQuotes ? (
+                  <div className={styles.quotesEmpty}>
+                    <strong>No providers available</strong>
+                    <span>Try another coin or amount</span>
+                  </div>
+                ) : (
+                  <div
+                    className={styles.quotes}
+                    role='radiogroup'
+                    aria-label='Provider'>
+                    {quotes.map(quote => {
+                      const on = activeQuote?.key === quote.key;
+                      const {item} = quote;
+                      const rate =
+                        quote.hasQuote && quote.got > 0
+                          ? `1 ${symbol} ≈ ${fiatSymbol}${formatNumber(
+                              Number(item.fromAmount) / quote.got,
+                              2,
+                            )}`
+                          : 'Quote on the provider site';
+                      return (
+                        <button
+                          key={quote.key}
+                          type='button'
+                          role='radio'
+                          aria-checked={on}
+                          className={`${styles.quote} ${
+                            on ? styles.quoteOn : ''
+                          }`}
+                          onClick={() => pickQuote(quote.key)}>
+                          <span className={styles.providerLogo}>
+                            <Image
+                              src={item.src}
+                              alt=''
+                              width={38}
+                              height={38}
+                            />
+                          </span>
+                          <span className={styles.quoteText}>
+                            <span className={styles.quoteTitleRow}>
+                              <span className={styles.quoteName}>
+                                {item.title}
+                              </span>
+                              {quote.isBest ? (
+                                <span className={styles.bestBadge}>
+                                  Best rate
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className={styles.quoteSub}>{rate}</span>
+                          </span>
+                          <span className={styles.quoteRight}>
+                            {quote.hasQuote ? (
+                              <span className={styles.quoteGot}>
+                                {formatNumber(quote.got)} {symbol}
+                              </span>
+                            ) : null}
+                            {quote.diff != null ? (
+                              <span className={styles.quoteDiff}>
+                                {(quote.diff * 100).toFixed(2)}%
+                              </span>
+                            ) : null}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <p className={styles.note}>
+                <InfoIcon size={16} />
+                <span>
+                  You finish the purchase on the provider&apos;s site; the coins
+                  are sent to the address above.
+                </span>
+              </p>
+
+              <div className={styles.cta}>
+                <GeneralButton
+                  fullWidth
+                  className={styles.ctaButton}
+                  disabled={!showQuotes || !activeQuote}
+                  loading={loadingIndex !== null}
+                  loadingLabel='Opening provider…'
+                  onClick={continueWithActiveQuote}>
+                  {showQuotes && activeQuote
+                    ? `Continue with ${activeQuote.item.title}`
+                    : 'Continue'}
+                </GeneralButton>
+              </div>
+
+              <HomeSheet
+                visible={coinSheetOpen}
+                onClose={closeCoinSheet}
+                title='Buy which coin?'
+                labelId='buy-coin-title'>
+                <label className={styles.sheetSearch}>
+                  <SearchIcon size={16} />
+                  <input
+                    value={coinQuery}
+                    onChange={onCoinQueryChange}
+                    placeholder='Search'
+                    aria-label='Search coins'
+                  />
+                </label>
+                <div className={styles.sheetList}>
+                  {coinList.length ? (
+                    coinList.map(item => {
+                      const on = item.value === values?.selectedCoin?.value;
+                      return (
+                        <button
+                          key={item.value}
+                          type='button'
+                          className={`${styles.sheetCoin} ${
+                            on ? styles.sheetCoinOn : ''
+                          }`}
+                          onClick={() => pickCoin(item, values, setFieldValue)}>
+                          <span className={styles.sheetCoinIcon}>
+                            {item.options?.icon ? (
+                              <Image
+                                src={item.options.icon}
+                                alt=''
+                                width={34}
+                                height={34}
+                              />
+                            ) : null}
+                          </span>
+                          <span className={styles.sheetCoinText}>
+                            <span className={styles.sheetCoinTitle}>
+                              {item.options?.symbol?.toUpperCase()}
+                              {item.options?.chain_display_name ? (
+                                <span className={styles.chip}>
+                                  {item.options.chain_display_name}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className={styles.sheetCoinName}>
+                              {item.label}
+                            </span>
+                          </span>
+                          {on ? <CheckIcon size={18} /> : null}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className={styles.sheetEmpty}>No coins found</p>
+                  )}
+                </div>
+                <button
+                  type='button'
+                  className={styles.sheetAdd}
+                  onClick={openAddCoins}>
+                  <PlusIcon size={16} />
+                  Add more coins to this wallet
+                </button>
+              </HomeSheet>
+            </div>
+          );
+        }}
+      </Formik>
+
       {modalAddCoinsVisible && (
         <ModalAddCoins
           visible={modalAddCoinsVisible}
           hideModal={setModalAddCoinsVisible}
         />
       )}
-      {modalInfoVisible && (
-        <ModalRedirect
-          visible={modalInfoVisible}
-          handleClose={handleNewTabClose}
-          title={`Redirect to the ${selectedProvider?.title || 'provider'}`}
-          message={'You will be automatically redirect in'}
-          onOkay={handleNewTabLaunch}
-        />
-      )}
-      <div className={styles.container}>
-        <Formik
-          innerRef={formikRef}
-          initialValues={{
-            amount: '100',
-            selectedCoin: null,
-            fiatCurrency: isUsdtNotSupportedWL() ? 'EUR' : localCurrency,
-          }}
-          validationSchema={amountValidation}
-          onSubmit={onSubmit}>
-          {({
-            handleChange,
-            handleBlur,
-            handleSubmit,
-            values,
-            errors,
-            touched,
-            setFieldValue,
-          }) => (
-            <div>
-              <p className={styles.textStyle}>{' Select Crypto'}</p>
-              <div className={styles.dropdownContainer}>
-                <SelectInputExchange
-                  listData={finalCoinOptions}
-                  onValueChange={event => {
-                    const value = event.target.value;
-
-                    const foundItem = finalCoinOptions.find(
-                      item => item.value === value,
-                    );
-                    if (foundItem) {
-                      setFieldValue('selectedCoin', foundItem);
-                      submitQuote({...values, selectedCoin: foundItem});
-                    }
-                  }}
-                  selectedValue={values?.selectedCoin?.value}
-                  placeholder={'Select Crypto'}
-                />
-              </div>
-              {errors.selectedCoin && touched.selectedCoin && (
-                <p className={styles.textConfirm}>{errors.selectedCoin}</p>
-              )}
-              <div className={styles.addCoinRowView}>
-                <p className={styles.text} style={{fontWeight: 700}}>
-                  {'Looking for more coins?'}
-                </p>
-                <p
-                  className={styles.highlightText}
-                  onClick={e => setModalAddCoinsVisible(true)}>
-                  {'Click here for add coins on selected wallet'}
-                </p>
-              </div>
-              <div className={styles.rowView}>
-                {isUsdtNotSupportedWL() ? (
-                  <p className={styles.eurTextStyle}>{'€'}</p>
-                ) : (
-                  <div className={styles.fiatCurrencyPicker}>
-                    <SelectInput
-                      listData={currencyPicker}
-                      onValueChange={value => {
-                        setFieldValue('fiatCurrency', value);
-                        submitQuote({...values, fiatCurrency: value});
-                      }}
-                      value={values.fiatCurrency}
-                      placeholder={'Select Network'}
-                      renderValue={p => {
-                        return p === 'USD' ? '$' : '€';
-                      }}
-                    />
-                  </div>
-                )}
-                <FormControl variant='outlined' fullWidth={true}>
-                  <InputLabel
-                    sx={{
-                      color:
-                        errors.amount && touched.amount
-                          ? 'red'
-                          : 'var(--borderActiveColor)',
-                    }}
-                    focused={false}>
-                    Amount
-                  </InputLabel>
-                  <OutlinedInput
-                    fullWidth
-                    id='amount'
-                    type={'text'}
-                    name='amount'
-                    onChange={e => {
-                      const tempValues = validateNumberInInput(
-                        e.target.value,
-                        values?.selectedCoin?.options?.decimal,
-                      );
-                      setFieldValue('amount', tempValues);
-                      submitQuote(
-                        {...values, amount: tempValues},
-                        {isDebounce: true},
-                      );
-                    }}
-                    onBlur={handleBlur('amount')}
-                    value={values.amount}
-                    placeholder='Enter Amount'
-                    label={'Amount'}
-                    sx={{
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor:
-                          errors.amount && touched.amount
-                            ? 'red'
-                            : 'var(--sidebarIcon)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor:
-                          errors.amount && touched.amount
-                            ? 'red'
-                            : 'var(--borderActiveColor)',
-                      },
-                      '& .MuiInputLabel-outlined': {
-                        color:
-                          errors.amount && touched.amount
-                            ? 'red'
-                            : 'var(--font)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'var(--sidebarIcon) !important',
-                      },
-                    }}
-                  />
-                </FormControl>
-              </div>
-              {errors.amount && touched.amount && (
-                <p className={styles.textConfirm}>{errors.amount}</p>
-              )}
-              {!!values?.selectedCoin?.options?.walletAddress && (
-                <div className={styles.addressView}>
-                  <div className={styles.rowView}>
-                    <p className={styles.textStyle}>{'Wallet Address'}</p>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(
-                          values?.selectedCoin?.options?.walletAddress || '',
-                        );
-                        toast.success('address copied');
-                      }}>
-                      <div style={{fill: 'var(--background)'}}>
-                        {copyIcon.copy}
-                      </div>
-                    </button>
-                  </div>
-                  <p className={styles.address}>
-                    {values?.selectedCoin?.options?.walletAddress || '' || ''}
-                  </p>
-                </div>
-              )}
-              <button
-                className={styles.button}
-                type='button'
-                onClick={handleSubmit}>
-                {'Check Best Price'}
-              </button>
-              <div className={styles.btnList}>
-                {isLoading ? (
-                  <div className={styles.flex1}>
-                    <Loading />
-                  </div>
-                ) : (
-                  cryptoProviders?.map((item, index) => {
-                    const isItemLoading = loadingIndex === index;
-                    return (
-                      <button
-                        key={index}
-                        className={styles.btn}
-                        disabled={loadingIndex !== null}
-                        onClick={() => {
-                          onPressItem(item, index);
-                        }}>
-                        <div className={styles.imageBox}>
-                          <Image
-                            src={item.src}
-                            alt={item.title}
-                            className={styles.image}
-                            height={40}
-                            width={40}
-                          />
-                        </div>
-                        <div className={styles.btnBox}>
-                          <p className={styles.btnTitle}>{item.title}</p>
-                          {isItemLoading ? (
-                            <Loading size={18} height={'auto'} />
-                          ) : (
-                            <p className={styles.btnCoins}>
-                              {item?.fromAmount &&
-                              item?.toAmount &&
-                              values.selectedCoin
-                                ? `${currencySymbol[values.fiatCurrency]}${
-                                    item.fromAmount
-                                  } ==> ${item.toAmount} ${
-                                    values.selectedCoin?.options?.symbol
-                                  }`
-                                : ''}
-                            </p>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
-        </Formik>
-      </div>
-    </>
+      <WalletSwitcher
+        visible={switcherOpen}
+        onClose={closeSwitcher}
+        hidden={switcherOpen && readHideBalances()}
+        localCurrency={localCurrency}
+      />
+    </Screen>
   );
 };
 

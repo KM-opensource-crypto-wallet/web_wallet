@@ -1,26 +1,13 @@
 import React, {useEffect, useRef} from 'react';
-import styles from './ModalRedirect.module.css';
 import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
+import GeneralButton from 'components/Button';
+// Same sheet / dialog look as the Reset Wallet and Log out confirmation.
+import styles from 'components/ModalReset/ModalReset.module.css';
+import s from './ModalRedirect.module.css';
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '80%',
-  padding: '12px',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  '@media (min-width: 500px)': {
-    width: '60%',
-  },
-  '@media (min-width: 768px)': {
-    width: '40%',
-  },
-};
-
+// Countdown before opening a buy-crypto provider. No onClose on purpose: it
+// can't be dismissed, only "Go now" or the countdown move on. Bottom sheet on
+// phones, centred dialog from 600px up.
 const ModalRedirect = ({visible, handleClose, title, message, onOkay}) => {
   const [counter, setCounter] = React.useState(5);
   const counterRef = useRef(5);
@@ -45,28 +32,46 @@ const ModalRedirect = ({visible, handleClose, title, message, onOkay}) => {
   return (
     <Modal
       open={visible}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={styles.container}>
-          <div className={styles.infoList}>
-            <p className={styles.titleInfo}>{title}</p>
-            <p className={styles.info}>{message}</p>
-            <div className={styles.countdown}>
-              <div key={counter} className={styles.count}>
-                {counter}
-              </div>
-            </div>
-          </div>
-          <div>
-            <button
-              className={styles.learnBox}
-              onClick={() => (onOkay ? onOkay() : handleClose())}>
-              Go now
-            </button>
+      aria-labelledby='modal-redirect-title'
+      aria-describedby='modal-redirect-description'
+      slotProps={{backdrop: {className: styles.backdrop}}}>
+      <div className={styles.sheet}>
+        <div className={styles.handle} />
+        <span className={styles.tile}>
+          <svg
+            width='22'
+            height='22'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            aria-hidden='true'>
+            <path d='M15 3h6v6' />
+            <path d='M10 14 21 3' />
+            <path d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' />
+          </svg>
+        </span>
+        <h2 id='modal-redirect-title' className={styles.title}>
+          {title}
+        </h2>
+        <p id='modal-redirect-description' className={styles.text}>
+          {message}
+        </p>
+        <div className={s.countdown}>
+          <div key={counter} className={s.count}>
+            {counter}
           </div>
         </div>
-      </Box>
+        <div className={s.action}>
+          <GeneralButton
+            fullWidth
+            onClick={() => (onOkay ? onOkay() : handleClose())}>
+            Go now
+          </GeneralButton>
+        </div>
+      </div>
     </Modal>
   );
 };

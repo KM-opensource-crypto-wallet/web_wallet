@@ -1,162 +1,291 @@
-.container {
-  flex: 1;
-  background-color: var(--backgroundColor);
-  align-items: center;
+/* Create staking: available balance, then a glass card with the amount
+   (crypto + local currency), validator and resource type, then Next. Same
+   warm surface and glass as Home; the accent is the white-label
+   `--background` colour. */
+.page {
+  --sk-ink: #1a1613;
+  --sk-muted: #6e655e;
+  --sk-faint: #8a7f76;
+  --sk-glass: rgba(255, 255, 255, 0.65);
+  --sk-glass-border: rgba(255, 255, 255, 0.9);
+  --sk-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --sk-line: rgba(26, 22, 19, 0.06);
+  --sk-field: rgba(26, 22, 19, 0.045);
+  --sk-field-border: rgba(26, 22, 19, 0.08);
+  --sk-hover: rgba(26, 22, 19, 0.05);
+  --sk-placeholder: rgba(26, 22, 19, 0.3);
+  --sk-error: #d92d20;
 }
 
-.contentContainerStyle {
-  flex-grow: 1;
-  align-items: center;
-  background-color: var(--backgroundColor);
+:global([data-theme='dark']) .page {
+  --sk-ink: #f5f1ec;
+  --sk-muted: #a89c92;
+  --sk-faint: #a89c92;
+  --sk-glass: rgba(255, 255, 255, 0.05);
+  --sk-glass-border: rgba(255, 255, 255, 0.1);
+  --sk-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --sk-line: rgba(255, 255, 255, 0.06);
+  --sk-field: rgba(255, 255, 255, 0.06);
+  --sk-field-border: rgba(255, 255, 255, 0.1);
+  --sk-hover: rgba(255, 255, 255, 0.08);
+  --sk-placeholder: rgba(255, 255, 255, 0.3);
+  --sk-error: #f97066;
 }
 
-.title {
-  color: var(--gray);
-  font-size: 18px;
-  text-align: left;
-  margin-bottom: 5px;
-}
-
-.box {
-  flex-direction: row;
-}
-
-.boxTitle {
-  color: var(--font);
-  font-size: 20px;
-  text-align: left;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.boxBalance {
-  color: var(--gray);
-  font-size: 18px;
-  text-align: left;
-}
-
-.formInput {
-  width: 100%;
-  flex: 1;
-}
-
-.boxInput {
-  margin-top: 10px;
-}
-
-.inputView {
-  background-color: var(--secondaryBackgroundColor);
+.column {
   position: relative;
-  margin-bottom: 5px;
-  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 14px 16px 0;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Available balance */
+.balanceCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--sk-glass-border);
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--background) 10%, transparent) 0%,
+      transparent 60%
+    ),
+    var(--sk-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--sk-shadow);
+}
+
+.coinIcon {
+  display: flex;
+  flex: none;
+}
+
+/* CoinIcon brings its own margin and dark plate; neutralise both. */
+.coinIcon > div {
+  margin: 0;
+  background: #fff;
+}
+
+.balanceText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.balance {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--sk-ink);
+}
+
+.balanceSymbol {
+  font-size: 14px;
+  color: var(--sk-muted);
+}
+
+.balanceFiat {
+  flex: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sk-muted);
+}
+
+/* Form card */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 16px;
+  border: 1px solid var(--sk-glass-border);
+  border-radius: 22px;
+  background: var(--sk-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--sk-shadow);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sk-faint);
+}
+
+.labelRow > .maxChip {
+  padding: 5px 14px;
+  font-size: 12.5px;
+}
+
+.amountBox,
+.selectBox {
+  border: 1.5px solid var(--sk-field-border);
+  border-radius: 14px;
+  background: var(--sk-field);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.amountBox:focus-within,
+.selectBox:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
+}
+
+.inputBoxError,
+.inputBoxError:focus-within {
+  border-color: var(--sk-error);
+  box-shadow: none;
 }
 
 .input {
-  height: 50px;
   width: 100%;
+  min-width: 0;
+  padding: 14px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--sk-ink);
 }
 
-.btnMax {
-  background-color: var(--background);
-  width: 40px;
-  height: 20px;
-  border-radius: 5px;
-  border-color: var(--background);
-  color: var(--backgroundColor);
+.input::placeholder {
+  color: var(--sk-placeholder);
+}
+
+/* Amount: big crypto value, local-currency value underneath. */
+.amountRow,
+.fiatRow {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  padding-right: 14px;
 }
 
-.btnText {
-  color: var(--backgroundColor);
-  font-size: 12px;
-}
-
-.scan {
-  background-color: var(--font);
-}
-
-.textConfirm {
-  color: red;
-  margin-left: 10px;
-  font-size: 12px;
-}
-
-.listTitle {
-  color: var(--font);
-  font-size: 16px;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  text-align: left;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.blockList {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 15px;
-  width: 100%;
-}
-
-.blockTitle {
-  color: var(--font);
-  font-size: 18px;
-  text-align: left;
+.amountInput {
+  padding: 14px 8px 10px 14px;
+  font-size: 28px;
   font-weight: 700;
+  letter-spacing: -0.6px;
 }
 
-.boxText {
-  color: var(--font);
-  font-size: 18px;
-  text-align: right;
+.unit {
+  flex: none;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sk-muted);
 }
 
-.switchList {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin: 5px 0;
-  margin-bottom: 20px;
+.fiatRow {
+  border-top: 1px solid var(--sk-line);
+  padding-left: 14px;
 }
 
-.switchText {
-  color: var(--font);
-  font-size: 18px;
-  margin-left: 10px;
+.fiatPrefix {
+  flex: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sk-faint);
 }
 
-.addressView {
-  border: solid 1px var(--whiteOutline);
-  border-width: 1px;
-  border-radius: 6px;
-  /* margin-top: 20px; */
-  margin-bottom: 20px;
+.fiatInput {
+  padding: 10px 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sk-muted);
+}
+
+.fiatUnit {
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sk-faint);
+}
+
+/* The MUI select inside, restyled as one of our fields. */
+.selectBox :global(.MuiOutlinedInput-notchedOutline) {
+  border: none;
+}
+
+.selectBox :global(.MuiInputBase-root),
+.selectBox :global(.MuiSelect-select) {
+  width: 100%;
+  color: var(--sk-ink);
+  font-family: inherit;
+  font-size: 15px;
 }
 
 .selectInput {
-    height: 50px;
+  width: 100%;
+  min-height: 50px;
 }
 
-.nextContainer {
-  display: flex;
-  justify-content: center;
+.hint {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sk-muted);
 }
 
-.button {
-  height: 60px;
-  border-radius: 10px;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50%;
-  margin-bottom: 20px;
+.error {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sk-error);
 }
 
-.buttonTitle {
-  color: var(--title);
-  font-size: 18px;
+@media (min-width: 600px) {
+  .column {
+    padding-top: 24px;
+  }
+
+  .card {
+    padding: 22px 20px;
+  }
+}
+
+/* 24h price change next to the balance label. */
+.labelChange {
+  margin-left: 6px;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
 }

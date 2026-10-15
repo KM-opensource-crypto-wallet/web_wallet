@@ -1,66 +1,61 @@
-/* ── Header ──────────────────────────────────────────── */
-.header {
+/* Sort & filter sheet (Transaction History design). Rendered inside
+   HomeSheet, so it reads Home's `--hm-*` tokens. */
+.body {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 18px;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  margin: 0 -20px;
+  padding: 0 20px 2px;
+  overflow-y: auto;
 }
 
-.headerTitle {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--font);
-  margin: 0 0 2px;
-}
-
-.headerSub {
-  font-size: 12px;
-  color: var(--font);
-  opacity: 0.55;
-  margin: 0;
-}
-
-.resetBtn {
+.intro {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--borderColor, rgba(128,128,128,0.3));
-  background: transparent;
-  color: var(--font);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: -6px;
 }
 
-.resetBtn:hover {
-  background: rgba(128, 128, 128, 0.1);
+.introText {
+  margin: 0;
+  font-size: 13px;
+  color: var(--hm-faint);
 }
 
-/* ── Section labels ──────────────────────────────────── */
-.sectionLabel {
+.resetButton {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 6px;
-  margin: 16px 0 8px;
-  color: var(--background);
-}
-
-.sectionLabelText {
-  font-size: 12px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--hm-field-border);
+  border-radius: 999px;
+  color: var(--hm-ink);
+  font-size: 13px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--background);
+  transition: background-color 0.2s;
 }
 
-/* ── Sort option group ───────────────────────────────── */
+.resetButton:hover {
+  background: var(--hm-hover);
+}
+
+.sectionLabel {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hm-faint);
+}
+
+/* Sort options */
 .optionGroup {
-  border-radius: 10px;
-  border: 1px solid var(--borderColor, rgba(128,128,128,0.2));
   overflow: hidden;
+  border: 1px solid var(--hm-field-border);
+  border-radius: 16px;
 }
 
 .optionRow {
@@ -69,221 +64,191 @@
   gap: 12px;
   width: 100%;
   padding: 12px 14px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
   text-align: left;
-  transition: background 0.15s;
+  transition: background-color 0.2s;
 }
 
-.optionRow:hover {
-  background: rgba(128, 128, 128, 0.06);
+.optionRow + .optionRow {
+  border-top: 1px solid var(--hm-field-border);
 }
 
-.optionRowSelected {
-  background: rgba(var(--backgroundRgb, 244, 77, 3), 0.08);
+.optionRow:hover:not(.optionRowSelected) {
+  background: var(--hm-hover);
 }
 
-.optionRowDivider {
-  border-bottom: 1px solid var(--borderColor, rgba(128,128,128,0.15));
-}
-
-.optionIcon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: rgba(128, 128, 128, 0.1);
+.optionIcon,
+.toggleIcon {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  color: var(--font);
-  flex-shrink: 0;
-}
-
-.optionIconSelected {
-  background: var(--background);
-  color: var(--title);
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--hm-field);
+  color: var(--hm-muted);
 }
 
 .optionText {
-  flex: 1;
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 2px;
+  min-width: 0;
 }
 
 .optionLabel {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--font);
-}
-
-.optionLabelSelected {
+  font-size: 14.5px;
   font-weight: 700;
-  color: var(--background);
+  color: var(--hm-ink);
 }
 
 .optionDesc {
-  font-size: 11px;
-  color: var(--font);
-  opacity: 0.5;
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--hm-faint);
 }
 
 .radio {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid rgba(128, 128, 128, 0.4);
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-}
-
-.radioSelected {
-  border-color: var(--background);
+  width: 21px;
+  height: 21px;
+  border: 2px solid var(--hm-field-border);
+  border-radius: 50%;
 }
 
 .radioDot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--background);
 }
 
-/* ── Filter pills ────────────────────────────────────── */
-.filterRow {
+.optionRowSelected {
+  background: color-mix(in srgb, var(--background) 6%, transparent);
+}
+
+.optionRowSelected .optionIcon {
+  background: var(--background);
+  color: #fff;
+}
+
+.optionRowSelected .optionLabel {
+  color: var(--background);
+}
+
+.optionRowSelected .radio {
+  border-color: var(--background);
+}
+
+/* Direction pills */
+.pills {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.filterPill {
+.pill {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 13px;
-  border-radius: 20px;
-  border: 1px solid var(--borderColor, rgba(128,128,128,0.25));
-  background: transparent;
-  color: var(--font);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.filterPill:hover {
-  background: rgba(128, 128, 128, 0.08);
-}
-
-.filterPillSelected {
-  background: var(--background);
-  border-color: var(--background);
-  color: var(--title);
-}
-
-.filterPillText {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--font);
-}
-
-.filterPillTextSelected {
-  color: var(--title);
+  gap: 7px;
+  padding: 9px 15px;
+  border: 1.5px solid var(--hm-field-border);
+  border-radius: 999px;
+  color: var(--hm-muted);
+  font-size: 13.5px;
   font-weight: 700;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s;
 }
 
-/* ── Toggle row ──────────────────────────────────────── */
+.pill:hover:not(.pillSelected) {
+  background: var(--hm-hover);
+}
+
+.pillSelected {
+  border-color: var(--background);
+  background: var(--background);
+  color: #fff;
+}
+
+/* Hide small toggle */
 .toggleRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin: 16px 0 4px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--borderColor, rgba(128,128,128,0.2));
-}
-
-.toggleLeft {
-  display: flex;
-  align-items: center;
   gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--hm-field-border);
+  border-radius: 16px;
 }
 
-.toggleIcon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--background);
+.switch {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--title);
-  flex-shrink: 0;
+  flex: none;
+  justify-content: flex-start;
+  width: 50px;
+  height: 30px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--hm-chip);
+  transition: background-color 0.2s;
 }
 
-.toggleLabel {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--font);
-  margin: 0 0 2px;
+.switchOn {
+  justify-content: flex-end;
+  background: var(--background);
 }
 
-.toggleDesc {
-  font-size: 11px;
-  color: var(--font);
-  opacity: 0.5;
-  margin: 0;
+.switchThumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-/* ── Action buttons ──────────────────────────────────── */
-.applyBtn {
+/* Actions */
+.apply {
+  min-height: 54px;
+  font-size: 16.5px;
+}
+
+.clearCache {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
-  height: 48px;
-  margin-top: 16px;
-  border-radius: 10px;
-  border: none;
-  background: var(--background);
-  color: var(--title);
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.applyBtn:hover {
-  opacity: 0.9;
-}
-
-.applyBtnText {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.cacheBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  height: 44px;
-  margin-top: 10px;
-  border-radius: 10px;
-  border: 1px solid var(--background);
-  background: transparent;
+  min-height: 52px;
+  border: 1.5px solid color-mix(in srgb, var(--background) 30%, transparent);
+  border-radius: 15px;
   color: var(--background);
-  cursor: pointer;
-  font-size: 14px;
+  font-size: 14.5px;
+  font-weight: 700;
+  transition: background-color 0.2s;
 }
 
-.cacheBtn:hover {
-  background: rgba(128, 128, 128, 0.06);
+.clearCache:hover {
+  background: color-mix(in srgb, var(--background) 7%, transparent);
 }
 
-.cacheBtnText {
-  font-size: 14px;
-  font-weight: 500;
+.resetButton:focus-visible,
+.optionRow:focus-visible,
+.pill:focus-visible,
+.switch:focus-visible,
+.clearCache:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+/* HomeSheet pads 24px from 600px up; keep the scroll area flush with it. */
+@media (min-width: 600px) {
+  .body {
+    margin: 0 -24px;
+    padding: 0 24px 2px;
+  }
 }

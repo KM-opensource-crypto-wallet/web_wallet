@@ -1,22 +1,28 @@
 'use client';
 
+import {useRouter} from 'next/navigation';
+import AuthLayout, {BackBar, authStyles} from 'components/AuthLayout';
 import s from './TermsConditionsPage.module.css';
-import GoBackButton from 'components/GoBackButton';
 import {getTermsUrl} from 'whitelabel/whiteLabelInfo';
 
 const TermsConditionsPage = () => {
+  const router = useRouter();
+
   return (
-    <div className={s.container}>
-      <div>
-        <GoBackButton />
+    <AuthLayout
+      wide
+      topBar={<BackBar title='About' onBack={() => router.back()} />}
+      title='Terms of Use'>
+      <div className={authStyles.form}>
+        <div className={`${authStyles.card} ${s.card}`}>
+          <iframe
+            src={getTermsUrl()}
+            title='Terms of Use'
+            className={s.frame}
+          />
+        </div>
       </div>
-      <div className={s.titleContainer}>
-        <p className={s.title}>Terms of Use</p>
-      </div>
-      <div className={s.mainContainer}>
-        <iframe src={getTermsUrl()} height={'100%'} width={'100%'} />
-      </div>
-    </div>
+    </AuthLayout>
   );
 };
 

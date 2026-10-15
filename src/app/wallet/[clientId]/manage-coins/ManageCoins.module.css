@@ -1,59 +1,405 @@
-.mainView {
+/* Manage coins (Manage Coins design): title with the wallet switcher and a
+   ⋯ menu, search, shown / hidden counts, the coin list with show-on-Home
+   switches, then Add coin / Add custom token. The `--mc-*` tokens are also
+   read by components/DraggableCryptoList. */
+.page {
+  --mc-ink: #1a1613;
+  --mc-muted: #6e655e;
+  --mc-faint: #8a7f76;
+  --mc-surface-solid: #f4ede6;
+  --mc-glass: rgba(255, 255, 255, 0.6);
+  --mc-glass-strong: rgba(255, 255, 255, 0.97);
+  --mc-glass-border: rgba(255, 255, 255, 0.9);
+  --mc-shadow: 0 8px 28px rgba(63, 40, 22, 0.06);
+  --mc-line: rgba(26, 22, 19, 0.06);
+  --mc-outline: rgba(26, 22, 19, 0.15);
+  --mc-hover: rgba(26, 22, 19, 0.05);
+  --mc-chip: rgba(26, 22, 19, 0.06);
+  --mc-track: rgba(26, 22, 19, 0.18);
+  --mc-placeholder: #9a8f86;
+  --glow-strength: 14%;
+  /* Screen adds 40px; this page never had bottom padding. */
+  padding-bottom: 0;
+}
+
+:global([data-theme='dark']) .page {
+  --mc-ink: #f5f1ec;
+  --mc-muted: #c9bfb6;
+  --mc-faint: #a89c92;
+  --mc-surface-solid: #100c0a;
+  --mc-glass: rgba(255, 255, 255, 0.05);
+  --mc-glass-strong: #1f1b17;
+  --mc-glass-border: rgba(255, 255, 255, 0.1);
+  --mc-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  --mc-line: rgba(255, 255, 255, 0.06);
+  --mc-outline: rgba(255, 255, 255, 0.18);
+  --mc-hover: rgba(255, 255, 255, 0.07);
+  --mc-chip: rgba(255, 255, 255, 0.08);
+  --mc-track: rgba(255, 255, 255, 0.16);
+  --mc-placeholder: #7d726a;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". The
+   ⋯ and grip icons set their dot fill inline, which wins over this. */
+.page svg {
+  fill: none;
+}
+
+/* Header (in TopBar): title with the wallet switcher, ⋯ menu */
+.iconButton {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: calc(var(--app-height) - 135px);
-}
-.goBack {
-  margin-top: 20px;
-  margin-left: 20px;
-  height: 45px;
-}
-
-.extraElementContainer {
-  display: flex;
-  justify-content: flex-end;
-}
-
-
-.searchView {
+  flex: none;
   align-items: center;
-  margin: 0 10px;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--mc-ink);
+  transition: background-color 0.2s;
 }
 
-.btnList {
+.iconButton:hover,
+.heading:hover {
+  background: var(--mc-hover);
+}
+
+.heading {
   display: flex;
+  flex: 1;
   flex-direction: column;
-}
-
-.btnAdd {
-  border-bottom: 1px solid var(--gray);
-  display: flex;
-  flex-direction: row;
   align-items: center;
-  padding: 10px;
-  background-color: var(--backgroundColor);
+  gap: 1px;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: background-color 0.2s;
 }
 
-.btnAdd > svg {
-  fill: var(--gray);
-  width: 24px;
-  height: 24px;
+.headingTitle {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--mc-ink);
 }
 
-.box {
-  margin-left: 20px;
+.headingSub {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.walletAvatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--background) 82%, #fff) 0%,
+    var(--background) 100%
+  );
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 800;
+}
+
+.headingSubText {
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--mc-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headingChevron {
+  flex: none;
+  color: var(--mc-faint);
+}
+
+/* ⋯ menu */
+.menuWrap {
+  position: relative;
+  flex: none;
+}
+
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  cursor: default;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 2;
+  width: 226px;
+  overflow: hidden;
+  border: 1px solid var(--mc-line);
+  border-radius: 16px;
+  background: var(--mc-glass-strong);
+  box-shadow: 0 18px 44px rgba(45, 28, 14, 0.22);
+}
+
+.menuItem {
+  width: 100%;
+  padding: 13px 15px;
+  color: var(--mc-ink);
+  font-size: 14px;
+  font-weight: 600;
   text-align: left;
+  transition: background-color 0.2s;
 }
 
-.title {
-  color: var(--font);
-  font-size: 14px;
-  font-family: var(--font-roboto);
+.menuItem + .menuItem {
+  border-top: 1px solid var(--mc-line);
 }
 
-.text {
-  color: var(--gray);
-  font-size: 14px;
-  font-family: var(--font-roboto);
+.menuItem:hover {
+  background: var(--mc-hover);
+}
+
+/* Body */
+.column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 14px 20px 0;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 50px;
+  padding: 0 14px;
+  border: 1.5px solid var(--mc-glass-border);
+  border-radius: 14px;
+  background: var(--mc-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--mc-shadow);
+  color: var(--mc-faint);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.search:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
+}
+
+.search > svg {
+  flex: none;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--mc-ink);
+}
+
+.search input::placeholder {
+  color: var(--mc-placeholder);
+}
+
+.clear {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--mc-chip);
+  color: var(--mc-muted);
+}
+
+.counts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 4px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mc-faint);
+}
+
+.showAll {
+  padding: 4px 6px;
+  border-radius: 8px;
+  color: var(--background);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.showAll:hover {
+  background: color-mix(in srgb, var(--background) 8%, transparent);
+}
+
+.sortBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 10px 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--background) 25%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--background) 7%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mc-ink);
+}
+
+.sortDone {
+  flex: none;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: var(--background);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.card {
+  overflow: hidden;
+  border: 1px solid var(--mc-glass-border);
+  border-radius: 18px;
+  background: var(--mc-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--mc-shadow);
+}
+
+/* Add coin / custom token stay pinned to the bottom of the viewport while the
+   coin list scrolls behind them. */
+.addDock {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: 0 -20px;
+  padding: 24px 20px 16px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--mc-surface-solid) 22px
+  );
+}
+
+.addDock > .card {
+  background: var(--mc-glass-strong);
+}
+
+.empty {
+  padding: 44px 16px;
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--mc-ink);
+}
+
+.emptyText {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: var(--mc-faint);
+}
+
+/* Add coin / custom token */
+.addRow {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 14px;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.addRow + .addRow {
+  border-top: 1px solid var(--mc-line);
+}
+
+.addRow:hover {
+  background: color-mix(in srgb, var(--background) 4%, transparent);
+}
+
+.addIcon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid var(--mc-outline);
+  border-radius: 50%;
+  color: var(--mc-ink);
+}
+
+.addIconAccent {
+  border-color: color-mix(in srgb, var(--background) 35%, transparent);
+  background: color-mix(in srgb, var(--background) 8%, transparent);
+  color: var(--background);
+}
+
+.addText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.addTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--mc-ink);
+}
+
+.addHint {
+  margin-top: 1px;
+  font-size: 12.5px;
+  color: var(--mc-faint);
+}
+
+.addChevron {
+  flex: none;
+  color: var(--mc-faint);
+}
+
+.iconButton:focus-visible,
+.heading:focus-visible,
+.menuItem:focus-visible,
+.clear:focus-visible,
+.showAll:focus-visible,
+.sortDone:focus-visible,
+.addRow:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .column {
+    padding-top: 24px;
+  }
 }

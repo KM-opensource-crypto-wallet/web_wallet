@@ -1,6 +1,43 @@
+/* Swap. Layout is unchanged; it only takes the warm surface and glass theme
+   from Home. The `--sw-*` tokens below are read by the Exchange subcomponents
+   (the coin sheet renders in a portal and declares its own copy). */
+.page {
+  --sw-ink: #1a1613;
+  --sw-muted: #6e655e;
+  --sw-faint: #8a7f76;
+  --sw-surface-solid: #f6f0ea;
+  --sw-glass: rgba(255, 255, 255, 0.65);
+  --sw-glass-strong: rgba(255, 255, 255, 0.85);
+  --sw-glass-border: rgba(255, 255, 255, 0.9);
+  --sw-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --sw-line: rgba(26, 22, 19, 0.06);
+  --sw-field: rgba(26, 22, 19, 0.045);
+  --sw-field-border: rgba(26, 22, 19, 0.08);
+  --sw-hover: rgba(26, 22, 19, 0.05);
+  --sw-placeholder: rgba(26, 22, 19, 0.3);
+  /* Screen adds 40px; this page never had bottom padding. */
+  padding-bottom: 0;
+}
+
+:global([data-theme='dark']) .page {
+  --sw-ink: #f5f1ec;
+  --sw-muted: #a89c92;
+  --sw-faint: #a89c92;
+  --sw-surface-solid: #120e0b;
+  --sw-glass: rgba(255, 255, 255, 0.05);
+  --sw-glass-strong: rgba(255, 255, 255, 0.08);
+  --sw-glass-border: rgba(255, 255, 255, 0.1);
+  --sw-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --sw-line: rgba(255, 255, 255, 0.06);
+  --sw-field: rgba(255, 255, 255, 0.06);
+  --sw-field-border: rgba(255, 255, 255, 0.1);
+  --sw-hover: rgba(255, 255, 255, 0.08);
+  --sw-placeholder: rgba(255, 255, 255, 0.3);
+}
+
 .container {
+  position: relative;
   flex: 1;
-  background-color: var(--backgroundColor);
   padding: 20px;
   max-width: 720px;
   margin: 0 auto;
@@ -8,28 +45,94 @@
   box-sizing: border-box;
 }
 
-.headerRow {
+/* Header (in TopBar): wallet switcher and history */
+.iconButton {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.pageTitle {
-  color: var(--font);
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.historyButton {
-  border: none;
-  background-color: transparent;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--sw-ink);
+  transition: background-color 0.2s;
+}
+
+.iconButton svg {
+  fill: none;
+}
+
+.iconButton:hover,
+.heading:hover {
+  background-color: var(--sw-hover);
+}
+
+.heading {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+}
+
+.heading svg {
+  fill: none;
+}
+
+.headingTitle {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--sw-ink);
+}
+
+.headingSub {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.walletAvatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--background) 82%, #fff) 0%,
+    var(--background) 100%
+  );
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 800;
+}
+
+.headingSubText {
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--sw-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headingChevron {
+  flex: none;
+  color: var(--sw-faint);
+}
+
+.iconButton:focus-visible,
+.heading:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
 }
 
 .errorText {
@@ -43,14 +146,14 @@
 }
 
 .addressTitle {
-  color: var(--font);
+  color: var(--sw-ink);
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 6px;
 }
 
 .addCoinText {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 13px;
   margin-top: 14px;
 }
@@ -67,8 +170,12 @@
 }
 
 .detailsCard {
-  background-color: var(--lightBackground);
-  border-radius: 12px;
+  border: 1px solid var(--sw-glass-border);
+  border-radius: 16px;
+  background: var(--sw-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--sw-shadow);
   padding: 8px 14px;
   margin-top: 14px;
 }
@@ -78,7 +185,7 @@
 }
 
 .footerText {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 12px;
   text-align: center;
 }
@@ -98,7 +205,7 @@
 }
 
 .buttonHintInfo {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 13px;
   text-align: center;
   margin-top: 10px;

@@ -1,23 +1,63 @@
 'use client';
 import React, {useRef, useState, useCallback} from 'react';
-import styles from './ChangePassword.module.css';
+import s from './ChangePassword.module.css';
 import {Formik} from 'formik';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import InputAdornment from '@mui/material/InputAdornment';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import Input from '@mui/material/Input';
-import IconButton from '@mui/material/IconButton';
 import {validationSchemaChangePassword} from 'utils/validationSchema';
-import GoBackButton from 'components/GoBackButton';
 import {useDispatch} from 'react-redux';
 import * as vault from 'dok-wallet-blockchain-networks/security/vault';
 import {VAULT_ERROR_CODES} from 'dok-wallet-blockchain-networks/security/errors';
 import {captureError} from 'services/logger';
 import {toast} from 'react-toastify';
 import {useRouter} from 'next/navigation';
+import {useTranslations} from 'next-intl';
 import {changePasswordSuccess} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
+import GeneralButton from 'components/Button';
+import Screen from 'components/Screen';
+import {EyeIcon, InfoIcon} from 'components/Home/HomeIcons';
+
+// One password input with its label, show/hide toggle and error line.
+const PasswordField = ({
+  id,
+  label,
+  error,
+  hidden,
+  onToggle,
+  inputRef,
+  ...inputProps
+}) => (
+  <div className={s.field}>
+    <label htmlFor={id} className={s.fieldLabel}>
+      {label}
+    </label>
+    <div className={`${s.inputRow} ${error ? s.inputError : ''}`}>
+      <input
+        id={id}
+        name={id}
+        ref={inputRef}
+        className={s.input}
+        type={hidden ? 'password' : 'text'}
+        autoComplete={
+          id === 'currentPassword' ? 'current-password' : 'new-password'
+        }
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
+        {...inputProps}
+      />
+      <button
+        type='button'
+        className={s.reveal}
+        aria-label={hidden ? 'Show password' : 'Hide password'}
+        onClick={onToggle}>
+        <EyeIcon size={18} off={!hidden} />
+      </button>
+    </div>
+    {error ? (
+      <p id={`${id}-error`} className={s.error}>
+        {error}
+      </p>
+    ) : null}
+  </div>
+);
 
 const ChangePassword = () => {
   const [hideCurrentPassword, setHideCurrentPassword] = useState(true);
@@ -25,6 +65,7 @@ const ChangePassword = () => {
   const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
   const [wrong, setWrong] = useState(false);
   const router = useRouter();
+  const t = useTranslations('settings');
 
   const dispatch = useDispatch();
   const [busy, setBusy] = useState(false);
@@ -80,252 +121,110 @@ const ChangePassword = () => {
   }, []);
 
   return (
-    <div className={styles.container}>
-      <GoBackButton />
-      <Formik
-        enableReinitialize={true}
-        initialValues={{
-          currentPassword: '',
-          newPassword: '',
-          retypePassword: '',
-        }}
-        validationSchema={validationSchemaChangePassword}
-        onSubmit={handleSubmit}>
-        {({
-          handleChange,
-          handleBlur,
-          handleSubmit,
-          values,
-          errors,
-          touched,
-          isValid,
-        }) => (
-          <form className={styles.formInput} onSubmit={handleSubmit}>
-            <div className={styles.inputsList}>
-              <FormControl sx={{m: 1}} variant='standard'>
-                <InputLabel
-                  sx={{
-                    color:
-                      (errors.currentPassword && touched.currentPassword) ||
-                      wrong
-                        ? 'red'
-                        : 'var(--borderActiveColor)',
-                  }}
-                  focused={false}>
-                  Current Password
-                </InputLabel>
-                <Input
-                  fullWidth
-                  autoFocus={true}
+    <Screen className={s.page} title={t('changePassword')}>
+      <div className={s.column}>
+        <Formik
+          enableReinitialize={true}
+          initialValues={{
+            currentPassword: '',
+            newPassword: '',
+            retypePassword: '',
+          }}
+          validationSchema={validationSchemaChangePassword}
+          onSubmit={handleSubmit}>
+          {({
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            values,
+            errors,
+            touched,
+            isValid,
+          }) => (
+            <form className={s.form} onSubmit={handleSubmit}>
+              <div className={s.card}>
+                <PasswordField
                   id='currentPassword'
-                  type={!hideCurrentPassword ? 'text' : 'password'}
-                  name='currentPassword'
+                  label='Current password'
+                  autoFocus={true}
+                  hidden={hideCurrentPassword}
+                  onToggle={() => setHideCurrentPassword(!hideCurrentPassword)}
+                  error={
+                    errors.currentPassword && touched.currentPassword
+                      ? errors.currentPassword
+                      : null
+                  }
                   onChange={handleChange('currentPassword')}
                   onKeyDown={onCurrentPasswordKeyDown}
-                  onBlur={() => {
+                  onBlur={e => {
                     setWrong(false);
-                    handleBlur('currentPassword');
+                    handleBlur('currentPassword')(e);
                   }}
                   value={values.currentPassword}
-                  endAdornment={
-                    <InputAdornment position='end'>
-                      <IconButton
-                        aria-label='toggle password visibility'
-                        onClick={() =>
-                          setHideCurrentPassword(!hideCurrentPassword)
-                        }
-                        edge='end'
-                        sx={{
-                          '&  .MuiSvgIcon-root': {
-                            color: 'var(--borderActiveColor) ',
-                          },
-                        }}>
-                        {!hideCurrentPassword ? (
-                          <VisibilityOff />
-                        ) : (
-                          <Visibility />
-                        )}
-                      </IconButton>
-                    </InputAdornment>
-                  }
-                  label='Current Password'
-                  sx={{
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor:
-                        errors.currentPassword && touched.currentPassword
-                          ? 'red'
-                          : 'var(--sidebarIcon)',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor:
-                        errors.currentPassword && touched.currentPassword
-                          ? 'red'
-                          : 'var(--borderActiveColor)',
-                    },
-                    '& .MuiInputLabel-outlined': {
-                      color:
-                        errors.currentPassword && touched.currentPassword
-                          ? 'red'
-                          : 'var(--sidebarIcon)',
-                    },
-                  }}
                 />
-              </FormControl>
-              {errors.currentPassword && touched.currentPassword && (
-                <p className={styles.textConfirm}>{errors.currentPassword}</p>
-              )}
-              {wrong === true && (
-                <p className={styles.textWarning}>
-                  * You have entered an invalid password
-                </p>
-              )}
-              <FormControl sx={{m: 1}} variant='standard'>
-                <InputLabel
-                  sx={{
-                    color:
-                      errors.newPassword && touched.newPassword
-                        ? 'red'
-                        : 'var(--borderActiveColor)',
-                  }}
-                  focused={false}>
-                  New Password
-                </InputLabel>
-                <Input
-                  inputRef={newPasswordRef}
-                  onKeyDown={onNewPasswordKeyDown}
-                  fullWidth
+                {wrong === true && (
+                  <p className={s.alert} role='alert'>
+                    You have entered an invalid password
+                  </p>
+                )}
+
+                <PasswordField
                   id='newPassword'
-                  type={!hideNewPassword ? 'text' : 'password'}
-                  name='newPassword'
+                  label='New password'
+                  inputRef={newPasswordRef}
+                  hidden={hideNewPassword}
+                  onToggle={() => setHideNewPassword(!hideNewPassword)}
+                  error={
+                    errors.newPassword && touched.newPassword
+                      ? errors.newPassword
+                      : null
+                  }
                   onChange={handleChange('newPassword')}
+                  onKeyDown={onNewPasswordKeyDown}
                   onBlur={handleBlur('newPassword')}
                   value={values.newPassword}
-                  endAdornment={
-                    <InputAdornment position='end'>
-                      <IconButton
-                        aria-label='toggle password visibility'
-                        onClick={() => setHideNewPassword(!hideNewPassword)}
-                        edge='end'
-                        sx={{
-                          '&  .MuiSvgIcon-root': {
-                            color: 'var(--borderActiveColor) ',
-                          },
-                        }}>
-                        {!hideNewPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  }
-                  label='New Password'
-                  sx={{
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor:
-                        errors.newPassword && touched.newPassword
-                          ? 'red'
-                          : 'var(--sidebarIcon)',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor:
-                        errors.newPassword && touched.newPassword
-                          ? 'red'
-                          : 'var(--borderActiveColor)',
-                    },
-                    '& .MuiInputLabel-outlined': {
-                      color:
-                        errors.newPassword && touched.newPassword
-                          ? 'red'
-                          : 'var(--sidebarIcon)',
-                    },
-                  }}
                 />
-              </FormControl>
-              {errors.newPassword && touched.newPassword && (
-                <p className={styles.textConfirm}>{errors.newPassword}</p>
-              )}
 
-              <FormControl sx={{m: 1}} variant='standard'>
-                <InputLabel
-                  sx={{
-                    color:
-                      errors.retypePassword && touched.retypePassword
-                        ? 'red'
-                        : 'var(--borderActiveColor)',
-                  }}
-                  focused={false}>
-                  New Password
-                </InputLabel>
-                <Input
-                  inputRef={confirmPasswordRef}
-                  onKeyDown={onConfirmPasswordKeyDown}
-                  fullWidth
+                <PasswordField
                   id='retypePassword'
-                  type={!hideConfirmPassword ? 'text' : 'password'}
-                  name='retypePassword'
+                  label='Confirm new password'
+                  inputRef={confirmPasswordRef}
+                  hidden={hideConfirmPassword}
+                  onToggle={() => setHideConfirmPassword(!hideConfirmPassword)}
+                  error={
+                    errors.retypePassword && touched.retypePassword
+                      ? errors.retypePassword
+                      : null
+                  }
                   onChange={handleChange('retypePassword')}
+                  onKeyDown={onConfirmPasswordKeyDown}
                   onBlur={handleBlur('retypePassword')}
                   value={values.retypePassword}
-                  endAdornment={
-                    <InputAdornment position='end'>
-                      <IconButton
-                        aria-label='toggle password visibility'
-                        onClick={() =>
-                          setHideConfirmPassword(!hideConfirmPassword)
-                        }
-                        edge='end'
-                        sx={{
-                          '&  .MuiSvgIcon-root': {
-                            color: 'var(--borderActiveColor) ',
-                          },
-                        }}>
-                        {!hideConfirmPassword ? (
-                          <VisibilityOff />
-                        ) : (
-                          <Visibility />
-                        )}
-                      </IconButton>
-                    </InputAdornment>
-                  }
-                  label='New Password'
-                  sx={{
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor:
-                        errors.retypePassword && touched.retypePassword
-                          ? 'red'
-                          : 'var(--sidebarIcon)',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor:
-                        errors.retypePassword && touched.retypePassword
-                          ? 'red'
-                          : 'var(--borderActiveColor)',
-                    },
-                    '& .MuiInputLabel-outlined': {
-                      color:
-                        errors.retypePassword && touched.retypePassword
-                          ? 'red'
-                          : 'var(--sidebarIcon)',
-                    },
-                  }}
                 />
-              </FormControl>
-              {errors.retypePassword && touched.retypePassword && (
-                <p className={styles.textConfirm}>{errors.retypePassword}</p>
-              )}
-            </div>
+              </div>
 
-            <button
-              ref={buttonRef}
-              type='submit'
-              disabled={isValid ? false : true}
-              className={styles.button}
-              style={{
-                opacity: !isValid && 0.5,
-              }}>
-              Update password
-            </button>
-          </form>
-        )}
-      </Formik>
-    </div>
+              <p className={s.note}>
+                <InfoIcon size={16} />
+                <span>
+                  You&apos;ll be signed out and asked to log in again with the
+                  new password.
+                </span>
+              </p>
+
+              <GeneralButton
+                ref={buttonRef}
+                type='submit'
+                fullWidth
+                disabled={!isValid}
+                loading={busy}
+                loadingLabel='Updating…'>
+                Update password
+              </GeneralButton>
+            </form>
+          )}
+        </Formik>
+      </div>
+    </Screen>
   );
 };
 

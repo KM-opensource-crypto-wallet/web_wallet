@@ -1,0 +1,248 @@
+/* The stage is drawn at 320x256 and scaled by --hero-scale (set by the
+   carousel per breakpoint); the frame reserves the scaled size in layout. */
+.frame {
+  --ink: #1a1613;
+  --lift: rgba(26, 22, 19, 0.18);
+  --lift-strong: rgba(26, 22, 19, 0.24);
+  width: calc(320px * var(--hero-scale, 1));
+  height: calc(256px * var(--hero-scale, 1));
+  flex: none;
+  margin: 0 auto;
+}
+
+:global([data-theme='dark']) .frame {
+  --lift: rgba(0, 0, 0, 0.4);
+  --lift-strong: rgba(0, 0, 0, 0.45);
+}
+
+.stage {
+  position: relative;
+  width: 320px;
+  height: 256px;
+  transform: scale(var(--hero-scale, 1));
+  transform-origin: top left;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats the fill="none"
+   attribute and would fill every outline icon solid. */
+.stage svg {
+  fill: none;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+.blob {
+  position: absolute;
+  inset: 14px 26px 20px;
+  background: linear-gradient(
+    var(--blob-angle, 150deg),
+    color-mix(in srgb, var(--background) 82%, #fff) 0%,
+    var(--background) 100%
+  );
+  box-shadow: 0 22px 54px color-mix(in srgb, var(--background) 32%, transparent);
+}
+
+.ring {
+  animation: spin 40s linear infinite;
+}
+
+.float {
+  animation-name: float;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: #fff;
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 12px 28px var(--lift-strong);
+}
+
+.walletCard {
+  width: 158px;
+  height: 104px;
+  border-radius: 18px;
+  transform: translate(-50%, -52%) rotate(-5deg);
+  overflow: hidden;
+}
+
+.walletScreen {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 14px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--background) 82%, #fff),
+    var(--background)
+  );
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+}
+
+.walletBarLong,
+.walletBarShort {
+  position: absolute;
+  bottom: 10px;
+  height: 12px;
+  border-radius: 6px;
+}
+
+.walletBarLong {
+  left: 12px;
+  width: 64px;
+  background: var(--ink);
+}
+
+.walletBarShort {
+  right: 12px;
+  width: 26px;
+  background: rgba(26, 22, 19, 0.2);
+}
+
+.centerCircle {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  transform: translate(-50%, -52%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slidersCard {
+  width: 158px;
+  height: 112px;
+  border-radius: 18px;
+  transform: translate(-50%, -54%) rotate(3deg);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.track {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(26, 22, 19, 0.15);
+}
+
+.trackFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+  background: var(--background);
+}
+
+.trackKnob {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2.5px solid var(--ink);
+  transform: translate(-50%, -50%);
+}
+
+.shield {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100px;
+  height: 112px;
+  transform: translate(-50%, -54%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff;
+  border: 2.5px solid var(--ink);
+  color: var(--ink);
+  overflow: hidden;
+  box-shadow: 0 8px 18px var(--lift);
+}
+
+.pill {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: #fff;
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  box-shadow: 0 8px 18px var(--lift);
+}
+
+.badge.dark,
+.pill.dark {
+  background: var(--ink);
+  border-color: #fff;
+  color: #fff;
+  box-shadow: 0 8px 18px var(--lift-strong);
+}
+
+.mono {
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+.coin {
+  width: 74%;
+  height: 74%;
+  object-fit: contain;
+}
+
+.coinCover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.12);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float {
+  from {
+    transform: translateY(-4px);
+  }
+  to {
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring,
+  .float {
+    animation: none;
+  }
+}

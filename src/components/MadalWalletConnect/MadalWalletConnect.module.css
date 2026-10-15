@@ -1,124 +1,147 @@
-.container {
-  padding: 20px;
+/* "New connection" sheet. Rendered inside HomeSheet, so it reads Home's
+   `--hm-*` tokens; the accent is the white-label `--background` colour. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
   overflow-y: auto;
-  max-height: 80vh;
-  width: 100%;
-  height: var(--app-height);
+}
+
+.steps {
   display: flex;
-  justify-content: space-between;
   flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--hm-field-border);
+  border-radius: 16px;
+  list-style: none;
 }
 
-.header {
-  color: var(--background) !important;
-  font-size: 18px !important;
-  font-weight: bold;
-  text-align: left !important;
-}
-
-.borderView {
-  height: 1.5px;
-  background-color: var(--whiteOutline);
-  width: 100%;
-  margin-top: 24px;
-  margin-bottom: 24px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.codeBox {
-  border: 2px dashed hsla(0, 0%, 55%, 0.4);
-  width: 100%;
-  border-radius: 15px;
-  padding: 50px;
+.step {
   display: flex;
-  align-items: center;
-  flex-direction: column;
-  justify-content: center;
-  margin-bottom: 20px;
-  height: 100%;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--hm-ink);
 }
 
-.iconBox {
-  margin-bottom: 20px;
-}
-
-.iconBox > svg {
-  width: 100px;
-  height: 100px;
-  fill: var(--gray);
-  stroke: var(--gray);
-}
-
-.button {
-  width: 80%;
-  background-color: var(--background);
-  height: 50px;
-  border-radius: 10px;
-  font-size: 20px;
+.stepNumber {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  margin: 0 auto;
-  color: var(--title);
-  font-size: 16px;
-}
-
-.container > p {
-  color: var(--font);
-  font-size: 16px;
-  text-align: center;
-}
-
-.formInput {
-  width: 100%;
-  margin-top: 40px;
-  display: flex;
-  flex-direction: column;
-  margin: 20px auto 20px auto;
-}
-
-.formInput > div {
-  width: 90%;
-  margin: 0 auto;
-}
-
-.errorText {
-  color: #ff4444;
-  font-size: 13px;
-  width: 90%;
-  margin: 8px auto 0 auto;
-  text-align: center;
-}
-
-.btnList {
-  width: 90%;
-  display: flex;
-  justify-content: space-between;
-  margin: 40px auto 20px auto;
-}
-
-.btn > svg {
-  width: 30px;
-  height: 30px;
-  fill: var(--background);
-  stroke: var(--background);
-}
-
-.btnActive {
-  background-color: var(--background);
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-  height: 50px;
+  background: color-mix(in srgb, var(--background) 12%, transparent);
+  color: var(--background);
+  font-size: 12px;
+  font-weight: 800;
 }
 
-.btnActive > svg {
-  width: 30px;
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  padding: 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--hm-faint);
+}
+
+.inputBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 54px;
+  padding: 0 8px 0 14px;
+  border: 1.5px solid var(--hm-field-border);
+  border-radius: 14px;
+  background: var(--hm-field);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.inputBox:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
+}
+
+.inputBoxError,
+.inputBoxError:focus-within {
+  border-color: #d92d20;
+  box-shadow: none;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13.5px;
+  color: var(--hm-ink);
+}
+
+.input::placeholder {
+  color: var(--hm-faint);
+}
+
+.paste {
+  flex: none;
   height: 30px;
-  fill: #ffffff;
-  stroke: #ffffff;
+  padding: 0 11px;
+  border-radius: 9px;
+  background: var(--hm-chip);
+  color: var(--hm-ink);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.clear {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--hm-chip);
+  color: var(--hm-muted);
+}
+
+.error {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #d92d20;
+}
+
+:global([data-theme='dark']) .error {
+  color: #f97066;
+}
+
+.submit {
+  min-height: 54px;
+  font-size: 16px;
+}
+
+.paste:focus-visible,
+.clear:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
 }
