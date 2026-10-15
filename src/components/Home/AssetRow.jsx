@@ -10,8 +10,9 @@ import s from './Home.module.css';
 export const MASK = '••••••';
 
 // One coin of the current wallet: icon, symbol (+ network for tokens and
-// bitcoin address types), name, balance and its value.
-const AssetRow = ({item, hidden, localCurrency, onPick}) => {
+// bitcoin address types), name, balance and its value. On wide screens it
+// also shows the coin's share of the wallet.
+const AssetRow = ({item, hidden, localCurrency, share = 0, onPick}) => {
   const showNetwork =
     item?.type === 'token' || isBitcoinChain(item?.chain_name);
   return (
@@ -32,6 +33,17 @@ const AssetRow = ({item, hidden, localCurrency, onPick}) => {
         <span className={s.assetSub}>
           <span className={s.assetName}>{item?.name}</span>
           <PriceChange value={item?.priceChange24h} className={s.assetChange} />
+        </span>
+      </span>
+      <span className={s.assetShare} title='Share of wallet'>
+        <span className={s.assetShareTrack} aria-hidden='true'>
+          <span
+            className={s.assetShareFill}
+            style={{width: `${Math.min(share, 100)}%`}}
+          />
+        </span>
+        <span className={s.assetShareText}>
+          {share >= 0.1 || share === 0 ? share.toFixed(1) : '<0.1'}%
         </span>
       </span>
       <span className={s.assetAmounts}>

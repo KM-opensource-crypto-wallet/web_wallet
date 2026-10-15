@@ -39,6 +39,9 @@ export const writeHideBalances = hidden => {
   }
 };
 
+// Holdings named in the allocation card; the rest are summed as "Other".
+const ALLOCATION_SLICES = 4;
+
 export const useHome = () => {
   const {clientId} = useParams();
   const router = useRouter();
@@ -95,6 +98,48 @@ export const useHome = () => {
         )
       : coins;
   }, [coins, searchQuery]);
+
+  // Portfolio split by fiat value: the biggest holdings plus "Other", each
+  // coin's share for its row, and the value-weighted 24h change.
+  const portfolio = useMemo(() => {
+    const valued = coins
+      .map(item => ({item, value: parseFloat(item?.totalCourse) || 0}))
+      .filter(({value}) => value > 0)
+      .sort((a, b) => b.value - a.value);
+    const total = valued.reduce((sum, {value}) => sum + value, 0);
+    const shareById = {};
+    let now = 0;
+    let before = 0;
+    valued.forEach(({item, value}) => {
+      shareById[item._id] = total ? (value / total) * 100 : 0;
+      const change = Number(item?.priceChange24h);
+      if (item?.priceChange24h != null && Number.isFinite(change)) {
+        now += value;
+        before += value / (1 + change / 100);
+      }
+    });
+    const top = valued.slice(0, ALLOCATION_SLICES).map(({item, value}) => ({
+      key: item._id,
+      label: item?.symbol,
+      share: shareById[item._id],
+      value,
+    }));
+    const rest = valued.slice(ALLOCATION_SLICES);
+    if (rest.length) {
+      const value = rest.reduce((sum, entry) => sum + entry.value, 0);
+      top.push({
+        key: 'other',
+        label: `Other (${rest.length})`,
+        share: (value / total) * 100,
+        value,
+      });
+    }
+    return {
+      allocation: top,
+      shareById,
+      change24h: before > 0 ? ((now - before) / before) * 100 : null,
+    };
+  }, [coins]);
 
   const coinsNames = useMemo(
     () =>
@@ -182,6 +227,9 @@ export const useHome = () => {
     toggleHidden,
     balanceText: hidden ? MASK : formatMoney(totalAssets, symbol),
     actions,
+    change24h: portfolio.change24h,
+    allocation: portfolio.allocation,
+    formatFiat: value => (hidden ? MASK : formatMoney(value, symbol)),
 
     // Search and sort
     searchQuery,
@@ -197,6 +245,7 @@ export const useHome = () => {
     // Assets
     coins,
     visibleCoins,
+    shareById: portfolio.shareById,
     localCurrency,
     openCoin,
     goToManageCoins: () => router.push(walletRoutes.manageCoins(clientId)),

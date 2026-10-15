@@ -1,6 +1,6 @@
 'use client';
 import {coinRoutes} from 'utils/routes';
-import React, {memo, useCallback} from 'react';
+import React, {memo, useCallback, useState} from 'react';
 import {useSelector} from 'react-redux';
 import {
   checkValidChainForWalletImportWithPrivateKey,
@@ -14,11 +14,14 @@ import {
   setCurrentCoin,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import CoinIcon from 'components/CoinIcon';
+import {CheckIcon, PlusIcon} from 'components/Home/HomeIcons';
+import {reportThunkRejection} from 'utils/thunkErrors';
 import s from 'components/ModalAddCoins/ModalAddCoins.module.css';
 
 // One row of the "Add coin or token" catalog: icon, symbol + network, name,
-// and the in-wallet switch. Coins a private-key wallet can't hold (other
-// chains) are shown disabled.
+// and an Add button that shows a spinner until the coin is in the wallet,
+// then "Added". Removing a coin is done from the Manage coins list. Coins a
+// private-key wallet can't hold (other chains) are shown disabled.
 const CoinItem = ({
   currentWallet,
   item,
@@ -54,15 +57,30 @@ const CoinItem = ({
     );
   }, [dispatch, item, isAddCoin, currentWalletClientId, router]);
 
-  const onChangeValue = useCallback(() => {
-    dispatch(addOrToggleCoinInWallet(item));
-    setRenderList(prevState =>
-      prevState.map(subItem =>
-        item._id === subItem._id
-          ? {...subItem, isInWallet: !subItem.isInWallet}
-          : subItem,
-      ),
-    );
+  const [adding, setAdding] = useState(false);
+
+  const onAdd = useCallback(async () => {
+    setAdding(true);
+    try {
+      const result = await dispatch(addOrToggleCoinInWallet(item)).unwrap();
+      // null when the coin couldn't be created.
+      if (!result) {
+        throw new Error('new coin not created');
+      }
+      setRenderList(prevState =>
+        prevState.map(subItem =>
+          item._id === subItem._id ? {...subItem, isInWallet: true} : subItem,
+        ),
+      );
+    } catch (error) {
+      reportThunkRejection({
+        area: 'coins',
+        op: 'add',
+        toast: `Couldn't add ${item?.symbol}. Please try again.`,
+      })(error);
+    } finally {
+      setAdding(false);
+    }
   }, [dispatch, item, setRenderList]);
 
   if (!validateSupportedChain(item?.chain_name)) {
@@ -102,13 +120,25 @@ const CoinItem = ({
       {showSwitch ? (
         <button
           type='button'
-          role='switch'
-          aria-checked={isOn}
-          aria-label={`${isOn ? 'Remove' : 'Add'} ${item?.symbol}`}
-          className={`${s.switch} ${isOn ? s.switchOn : ''}`}
-          disabled={isDisabledItem}
-          onClick={onChangeValue}>
-          <span className={s.knob} />
+          aria-label={
+            isOn
+              ? `${item?.symbol} added`
+              : adding
+                ? `Adding ${item?.symbol}`
+                : `Add ${item?.symbol}`
+          }
+          aria-busy={adding}
+          className={`${s.groupAdd} ${isOn ? s.groupAdded : ''}`}
+          disabled={isDisabledItem || isOn || adding}
+          onClick={onAdd}>
+          {adding ? (
+            <span className={s.spinner} aria-hidden='true' />
+          ) : isOn ? (
+            <CheckIcon size={14} />
+          ) : (
+            <PlusIcon size={14} />
+          )}
+          {adding ? 'Adding' : isOn ? 'Added' : 'Add'}
         </button>
       ) : null}
     </div>

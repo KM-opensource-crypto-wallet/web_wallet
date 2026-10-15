@@ -20,7 +20,16 @@ import {
   SortIcon,
 } from './HomeIcons';
 import s from './Home.module.css';
-import useWallet from 'src/hooks/wallet/useWallet';
+import PriceChange from 'components/PriceChange';
+
+// Allocation slices: the brand accent first, then fixed hues; "Other" last.
+const SLICE_COLORS = [
+  'var(--background)',
+  '#f79009',
+  '#2e90fa',
+  '#12b76a',
+  'var(--hm-dot)',
+];
 
 const Notice = ({children, actionLabel, onAction, onClose}) => (
   <div className={s.notice}>
@@ -57,6 +66,9 @@ const Home = () => {
     toggleHidden,
     balanceText,
     actions,
+    change24h,
+    allocation,
+    formatFiat,
     searchQuery,
     onSearchChange,
     clearSearch,
@@ -68,6 +80,7 @@ const Home = () => {
     coinsSortOption,
     coins,
     visibleCoins,
+    shareById,
     localCurrency,
     openCoin,
     goToManageCoins,
@@ -78,14 +91,6 @@ const Home = () => {
     closeBackupModal,
   } = useHome();
 
-  // const {
-  //   coins,
-  //   walletName,
-  //   searchQuery,
-  //   onSearchChange,
-  //   clearSearch,
-  //   newCoinsMessage,
-  // } = useWallet();
   return (
     <>
       <main className={s.page}>
@@ -105,126 +110,180 @@ const Home = () => {
             </GeneralButton>
           </div>
 
-          <BatchTransactionBanner />
-          <CoinSyncBanner />
-          {showNews ? (
-            <Notice
-              actionLabel='View'
-              onAction={openNews}
-              onClose={dismissNews}>
-              Important news!
-            </Notice>
-          ) : null}
-          {newCoinsMessage ? (
-            <Notice
-              actionLabel='Sync'
-              onAction={syncNewCoins}
-              onClose={dismissNewCoins}>
-              {newCoinsMessage}
-            </Notice>
-          ) : null}
-
-          <section className={s.balanceCard} aria-label='Total balance'>
-            <div className={s.balanceLabel}>
-              Total balance
-              <GeneralButton
-                variant='unstyled'
-                className={s.eye}
-                aria-label={hidden ? 'Show balances' : 'Hide balances'}
-                aria-pressed={hidden}
-                onClick={toggleHidden}>
-                <EyeIcon size={15} off={hidden} />
-              </GeneralButton>
-            </div>
-            <p className={s.balanceValue}>{balanceText}</p>
-            <div
-              className={s.actions}
-              style={{'--action-count': actions.length}}>
-              {actions.map(({key, label, Icon, onClick}) => (
-                <GeneralButton
-                  key={key}
-                  variant='unstyled'
-                  className={s.action}
-                  onClick={onClick}>
-                  <span className={s.actionIcon}>
-                    <Icon size={20} />
-                  </span>
-                  <span className={s.actionLabel}>{label}</span>
-                </GeneralButton>
-              ))}
-            </div>
-          </section>
-
-          <div className={s.toolbar}>
-            <label className={s.search}>
-              <SearchIcon size={17} />
-              <input
-                value={searchQuery}
-                onChange={onSearchChange}
-                placeholder='Search assets'
-                aria-label='Search assets'
-              />
-              {searchQuery ? (
-                <GeneralButton
-                  variant='unstyled'
-                  className={s.searchClear}
-                  aria-label='Clear search'
-                  onClick={clearSearch}>
-                  <CloseIcon size={14} />
-                </GeneralButton>
-              ) : null}
-            </label>
-            <GeneralButton
-              ref={sortButtonRef}
-              variant='unstyled'
-              className={s.sortButton}
-              aria-label='Sort coins'
-              onClick={toggleSortMenu}>
-              <SortIcon size={18} />
-            </GeneralButton>
-            <SortMenu
-              visible={sortMenuVisible}
-              onClose={closeSortMenu}
-              onSelect={handleSortApply}
-              currentSort={coinsSortOption}
-              anchorRef={sortButtonRef}
-              sortOptions={COIN_SORT_OPTIONS}
-              title='Sort Coins'
-            />
+          <div className={s.alerts}>
+            <BatchTransactionBanner />
+            <CoinSyncBanner />
+            {showNews ? (
+              <Notice
+                actionLabel='View'
+                onAction={openNews}
+                onClose={dismissNews}>
+                Important news!
+              </Notice>
+            ) : null}
+            {newCoinsMessage ? (
+              <Notice
+                actionLabel='Sync'
+                onAction={syncNewCoins}
+                onClose={dismissNewCoins}>
+                {newCoinsMessage}
+              </Notice>
+            ) : null}
           </div>
 
-          <section className={s.assets} aria-label='Assets'>
-            <div className={s.assetsHeader}>
-              <span>Assets</span>
-              <span>
-                {coins.length} {coins.length === 1 ? 'asset' : 'assets'}
-              </span>
-            </div>
-            {visibleCoins.map(item => (
-              <AssetRow
-                key={item._id}
-                item={item}
-                hidden={hidden}
-                localCurrency={localCurrency}
-                onPick={openCoin}
-              />
-            ))}
-            {visibleCoins.length === 0 ? (
-              <p className={s.empty}>
-                {searchQuery ? 'No coins match your search' : 'No coins yet'}
-              </p>
+          <aside className={s.side}>
+            <section className={s.balanceCard} aria-label='Total balance'>
+              <div className={s.balanceLabel}>
+                Total balance
+                <GeneralButton
+                  variant='unstyled'
+                  className={s.eye}
+                  aria-label={hidden ? 'Show balances' : 'Hide balances'}
+                  aria-pressed={hidden}
+                  onClick={toggleHidden}>
+                  <EyeIcon size={15} off={hidden} />
+                </GeneralButton>
+              </div>
+              <p className={s.balanceValue}>{balanceText}</p>
+              {change24h != null && !hidden ? (
+                <p className={s.balanceChange}>
+                  <PriceChange value={change24h} />
+                  <span>past 24h</span>
+                </p>
+              ) : null}
+              <div
+                className={s.actions}
+                style={{'--action-count': actions.length}}>
+                {actions.map(({key, label, Icon, onClick}) => (
+                  <GeneralButton
+                    key={key}
+                    variant='unstyled'
+                    className={s.action}
+                    onClick={onClick}>
+                    <span className={s.actionIcon}>
+                      <Icon size={20} />
+                    </span>
+                    <span className={s.actionLabel}>{label}</span>
+                  </GeneralButton>
+                ))}
+              </div>
+            </section>
+
+            {allocation.length ? (
+              <section className={s.allocation} aria-label='Allocation'>
+                <div className={s.cardHeader}>
+                  <span>Allocation</span>
+                  <span>
+                    {coins.length} {coins.length === 1 ? 'asset' : 'assets'}
+                  </span>
+                </div>
+                <div className={s.allocationBar} aria-hidden='true'>
+                  {allocation.map((slice, index) => (
+                    <span
+                      key={slice.key}
+                      className={s.allocationSlice}
+                      style={{
+                        width: `${slice.share}%`,
+                        '--slice': SLICE_COLORS[index],
+                      }}
+                    />
+                  ))}
+                </div>
+                <ul className={s.allocationList}>
+                  {allocation.map((slice, index) => (
+                    <li key={slice.key} className={s.allocationItem}>
+                      <span
+                        className={s.allocationDot}
+                        style={{'--slice': SLICE_COLORS[index]}}
+                      />
+                      <span className={s.allocationLabel}>{slice.label}</span>
+                      <span className={s.allocationValue}>
+                        {formatFiat(slice.value)}
+                      </span>
+                      <span className={s.allocationShare}>
+                        {slice.share.toFixed(1)}%
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ) : null}
-          </section>
+          </aside>
 
-          <GeneralButton
-            variant='unstyled'
-            className={s.moreCoins}
-            onClick={goToManageCoins}>
-            <PlusIcon size={16} />
-            More coins
-          </GeneralButton>
+          <div className={s.main}>
+            <div className={s.toolbar}>
+              <label className={s.search}>
+                <SearchIcon size={17} />
+                <input
+                  value={searchQuery}
+                  onChange={onSearchChange}
+                  placeholder='Search assets'
+                  aria-label='Search assets'
+                />
+                {searchQuery ? (
+                  <GeneralButton
+                    variant='unstyled'
+                    className={s.searchClear}
+                    aria-label='Clear search'
+                    onClick={clearSearch}>
+                    <CloseIcon size={14} />
+                  </GeneralButton>
+                ) : null}
+              </label>
+              <GeneralButton
+                ref={sortButtonRef}
+                variant='unstyled'
+                className={s.sortButton}
+                aria-label='Sort coins'
+                onClick={toggleSortMenu}>
+                <SortIcon size={18} />
+              </GeneralButton>
+              <SortMenu
+                visible={sortMenuVisible}
+                onClose={closeSortMenu}
+                onSelect={handleSortApply}
+                currentSort={coinsSortOption}
+                anchorRef={sortButtonRef}
+                sortOptions={COIN_SORT_OPTIONS}
+                title='Sort Coins'
+              />
+            </div>
 
-          <WalletConnectStatus />
+            <section className={s.assets} aria-label='Assets'>
+              <div className={s.assetsHeader}>
+                <span>Assets</span>
+                <span className={s.assetsHeaderShare}>Share</span>
+                <span className={s.assetsHeaderCount}>
+                  {coins.length} {coins.length === 1 ? 'asset' : 'assets'}
+                </span>
+              </div>
+              {visibleCoins.map(item => (
+                <AssetRow
+                  key={item._id}
+                  item={item}
+                  hidden={hidden}
+                  localCurrency={localCurrency}
+                  share={shareById[item._id]}
+                  onPick={openCoin}
+                />
+              ))}
+              {visibleCoins.length === 0 ? (
+                <p className={s.empty}>
+                  {searchQuery ? 'No coins match your search' : 'No coins yet'}
+                </p>
+              ) : null}
+            </section>
+
+            <GeneralButton
+              variant='unstyled'
+              className={s.moreCoins}
+              onClick={goToManageCoins}>
+              <PlusIcon size={16} />
+              More coins
+            </GeneralButton>
+
+            <WalletConnectStatus />
+          </div>
         </div>
       </main>
 

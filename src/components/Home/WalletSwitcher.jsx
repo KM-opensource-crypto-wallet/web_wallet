@@ -1,7 +1,8 @@
 import React, {useMemo, useState} from 'react';
-import {useRouter} from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {walletRoutes} from 'utils/routes';
+import {switchWalletPath} from 'utils/routes';
+import {findCoinBySlug} from 'utils/common';
 import {currencySymbol} from 'src/data/lists/currency';
 import {
   selectCurrentWalletClientId,
@@ -32,10 +33,11 @@ export const formatMoney = (value, symbol) =>
     maximumFractionDigits: 2,
   })}`;
 
-// "Your wallets" sheet: switch the active wallet, add one, or go to the
-// wallets page. Hidden (locked) wallets are left out, as everywhere else.
+// "Your wallets" sheet: switch the active wallet (staying on the current
+// screen), add one, or go to the wallets page. Hidden (locked) wallets are left out, as everywhere else.
 const WalletSwitcher = ({visible, onClose, hidden, localCurrency}) => {
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useDispatch();
   const wallets = useSelector(selectVisibleWallets, shallowEqual);
   const currentClientId = useSelector(selectCurrentWalletClientId);
@@ -57,7 +59,13 @@ const WalletSwitcher = ({visible, onClose, hidden, localCurrency}) => {
     dispatch(refreshCoins());
     dispatch(resetPaymentUrl());
     dispatch(setCurrentWalletClientId(wallet.clientId));
-    router.push(walletRoutes.home(wallet.clientId));
+    // Stay on the same screen in the new wallet.
+    const hasCoin = slug =>
+      !!findCoinBySlug(
+        (wallet.coins || []).filter(coin => coin?.isInWallet),
+        slug,
+      );
+    router.push(switchWalletPath(pathname, wallet.clientId, hasCoin));
   };
 
   return (

@@ -1,6 +1,7 @@
 'use client';
 import React, {useState} from 'react';
 import {useSelector} from 'react-redux';
+import Image from 'next/image';
 import QRCode from 'react-qr-code';
 import useReceiveFunds from 'src/hooks/protectedRoutes/wallet/home/send/useReceiveFunds';
 import CoinIcon from 'components/CoinIcon';
@@ -16,6 +17,7 @@ import {
   InfoIcon,
 } from 'components/Home/HomeIcons';
 import Screen from 'components/Screen';
+import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 import s from './RecieveFunds.module.css';
 
 // Read-only value with a copy button; used for the address and, on Hedera,
@@ -140,8 +142,15 @@ const ReceiveFunds = () => {
                     fgColor='#1a1613'
                     className={s.qr}
                   />
+                  {/* The white-label's app icon, not the coin's. */}
                   <span className={s.qrLogo} aria-hidden='true'>
-                    <CoinIcon item={coin} />
+                    <Image
+                      src={getAppIcon()}
+                      alt=''
+                      width={40}
+                      height={40}
+                      className={s.qrLogoImage}
+                    />
                   </span>
                 </>
               ) : null}

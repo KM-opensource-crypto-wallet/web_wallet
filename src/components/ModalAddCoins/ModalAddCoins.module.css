@@ -209,39 +209,6 @@
   white-space: nowrap;
 }
 
-.switch {
-  display: flex;
-  flex: none;
-  justify-content: flex-start;
-  width: 50px;
-  height: 30px;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--hm-chip);
-  transition: background-color 0.18s;
-}
-
-:global([data-theme='dark']) .switch:not(.switchOn) {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.switchOn {
-  justify-content: flex-end;
-  background: var(--background);
-}
-
-.switch:disabled {
-  cursor: not-allowed;
-}
-
-.knob {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-}
-
 /* Group rows (CryptoGroupItem) */
 .groupRow {
   display: flex;
@@ -327,6 +294,35 @@
   opacity: 0.6;
 }
 
+/* "Added" and "Adding" are states, not unavailable actions: keep them at
+   full strength. */
+.groupAdded:disabled,
+.groupAdd[aria-busy='true'] {
+  cursor: default;
+  opacity: 1;
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.6s;
+  }
+}
+
 .groupAdded {
   background: color-mix(in srgb, #12b76a 14%, transparent);
   color: #0d8a4e;
@@ -338,7 +334,6 @@
 
 .segment:focus-visible,
 .clear:focus-visible,
-.switch:focus-visible,
 .groupRow:focus-visible,
 .groupAdd:focus-visible {
   outline: 2px solid var(--background);

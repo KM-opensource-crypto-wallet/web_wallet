@@ -301,9 +301,11 @@
   transform: translate(-50%, -50%);
 }
 
-.qrLogo > div {
-  margin: 0;
-  background: #fff;
+.qrLogoImage {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: contain;
 }
 
 .qrCaption {
