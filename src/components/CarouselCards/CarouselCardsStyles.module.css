@@ -111,3 +111,7 @@
     width: 50%;
   }
 }
+
+.restoreButton {
+  margin-bottom: 12px;
+}

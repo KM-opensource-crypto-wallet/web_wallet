@@ -27,12 +27,14 @@ import {
   vaultUnlocked,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {getHasAccount} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
-import {addBreadcrumb, captureError} from 'services/logger';
+import {addBreadcrumb, captureError, logger} from 'services/logger';
 import {SEALED_PERSIST_CONFIGS, vaultSync} from 'redux/store';
 import {
   enableSealedWrites,
   isSealedWritable,
+  listSealedKeys,
   sealStorage,
+  sealedStorage,
   unsealStorage,
 } from 'redux/storage/sealedStorage';
 import {
@@ -46,6 +48,7 @@ export const UNLOCK_ERROR_CODES = Object.freeze({
   ...VAULT_ERROR_CODES,
   MISSING_SECRETS: 'missing_secrets',
   ACCOUNT_EXISTS: 'account_exists',
+  VAULT_EXISTS: 'vault_exists',
 });
 
 export class AccountExistsError extends Error {
@@ -53,6 +56,19 @@ export class AccountExistsError extends Error {
     super('An account already exists on this device. Log in instead.');
     this.name = 'AccountExistsError';
     this.code = UNLOCK_ERROR_CODES.ACCOUNT_EXISTS;
+  }
+}
+
+// Registration found a vault from earlier on this device: its wallets can still
+// be restored with the old password, so it is only replaced once the user has
+// chosen to start over (`discardExistingVault`).
+export class VaultExistsError extends Error {
+  constructor() {
+    super(
+      'Wallets from earlier are still saved on this device. Restore them with your old password, or delete them to start over.',
+    );
+    this.name = 'VaultExistsError';
+    this.code = UNLOCK_ERROR_CODES.VAULT_EXISTS;
   }
 }
 
@@ -120,7 +136,9 @@ const rollbackUnlock = dispatch => {
   }
 };
 
-const completeUnlock = async (dispatch, getState, payload, via) => {
+// Also the restore fast path (vaultRecovery): a vault without an account whose
+// sealed wallets are still on disk is unlocked exactly like a login.
+export const completeUnlock = async (dispatch, getState, payload, via) => {
   try {
     unsealStorage(await vault.getStateKey());
     if (!sealedRehydrated) {
@@ -170,9 +188,12 @@ export const unlockWithPassword = password => async (dispatch, getState) => {
 /**
  * Registration: create the vault for a new account. Refused while an account
  * exists: an existing vault is only ever replaced through the explicit reset
- * flow (wipeAllLocalData). The one vault this replaces is a leftover from a
- * wipe whose destroy step failed, where no account remains. Sealed writes
- * open straight away (there is nothing on disk to rehydrate).
+ * flow (wipeAllLocalData). A vault found without an account (a state database
+ * that came back empty, an unreadable auth slice, or a wipe whose destroy step
+ * failed) still holds wallet keys: it is refused with VaultExistsError until
+ * the user picks Restore (vaultRecovery) or confirms starting over
+ * (`discardExistingVault`). Sealed writes open straight away (there is nothing
+ * on disk to rehydrate).
  *
  * Orphaned legacy state (migrated without a password) is sealed, verified and
  * committed (schemaVersion 0 → 2) BEFORE the store sees it, with awaited
@@ -182,45 +203,61 @@ export const unlockWithPassword = password => async (dispatch, getState) => {
  * the state parked, so the next Registration submit (or a reload, which
  * redoes the migration from the legacy blob) retries all of it.
  */
-export const createAccount = password => async (dispatch, getState) => {
-  if (getHasAccount(getState())) {
-    throw new AccountExistsError();
-  }
-  if (await vault.hasVault()) {
-    await vault.destroy();
-  }
-  await vault.createVault(password);
-  const stateKey = await vault.getStateKey();
-  // Peek, never consume here: consuming before the commit landed would make a
-  // retry find nothing to migrate and leave the wallets without keys.
-  const orphan = peekOrphanLegacyState();
-  if (orphan) {
-    try {
-      await commitOrphanLegacyMigration(stateKey);
-    } catch (error) {
-      vault.lock();
-      throw error;
+export const createAccount =
+  (password, {discardExistingVault = false} = {}) =>
+  async (dispatch, getState) => {
+    if (getHasAccount(getState())) {
+      throw new AccountExistsError();
     }
-  }
-  unsealStorage(stateKey);
-  sealedRehydrated = true;
-  if (orphan) {
-    // reset() first: it also drops any pending snapshot. The vault already
-    // holds exactly this payload, so the hydrate's write is skipped.
-    vaultSync.reset();
-    rehydrateOrphanLegacyState(dispatch, orphan);
-    vaultSync.markSynced(orphan.vaultPayload);
-    consumeOrphanLegacyState();
-  }
-  enableSealedWrites();
-  dispatch(vaultUnlocked());
-  addBreadcrumb('auth', 'vault.created', {});
-  // Same post-unlock initialisation as a login: the master client id must
-  // exist before the first wallet is created (registerUserAPI, logging user
-  // context), and orphaned legacy wallets need the privacy-mode / hidden
-  // wallet housekeeping that runs on every unlock.
-  runPostUnlockThunks(dispatch);
-};
+    if (await vault.hasVault()) {
+      // The orphan legacy path's keys are parked in memory, never in this vault.
+      if (!discardExistingVault && !peekOrphanLegacyState()) {
+        throw new VaultExistsError();
+      }
+      addBreadcrumb('auth', 'vault.discarded', {by: 'registration'}, 'warning');
+      logger.warn('vault.discarded', {by: 'registration'});
+      await vault.destroy();
+      if (discardExistingVault) {
+        // Sealed slices under the destroyed vault's key can never be read
+        // again, and a later unlock would fail on them: the user chose to
+        // delete them. (The orphan path rewrites them under the new key.)
+        for (const key of await listSealedKeys()) {
+          await sealedStorage.removeItem(key);
+        }
+      }
+    }
+    await vault.createVault(password);
+    const stateKey = await vault.getStateKey();
+    // Peek, never consume here: consuming before the commit landed would make a
+    // retry find nothing to migrate and leave the wallets without keys.
+    const orphan = peekOrphanLegacyState();
+    if (orphan) {
+      try {
+        await commitOrphanLegacyMigration(stateKey);
+      } catch (error) {
+        vault.lock();
+        throw error;
+      }
+    }
+    unsealStorage(stateKey);
+    sealedRehydrated = true;
+    if (orphan) {
+      // reset() first: it also drops any pending snapshot. The vault already
+      // holds exactly this payload, so the hydrate's write is skipped.
+      vaultSync.reset();
+      rehydrateOrphanLegacyState(dispatch, orphan);
+      vaultSync.markSynced(orphan.vaultPayload);
+      consumeOrphanLegacyState();
+    }
+    enableSealedWrites();
+    dispatch(vaultUnlocked());
+    addBreadcrumb('auth', 'vault.created', {});
+    // Same post-unlock initialisation as a login: the master client id must
+    // exist before the first wallet is created (registerUserAPI, logging user
+    // context), and orphaned legacy wallets need the privacy-mode / hidden
+    // wallet housekeeping that runs on every unlock.
+    runPostUnlockThunks(dispatch);
+  };
 
 /**
  * Zeroise on lock (Phase 5). Idle lock and logout route to /auth/login; before
@@ -243,6 +280,11 @@ export const isInvalidPassword = error =>
 
 export const isUnlockedForWrites = () =>
   vault.isUnlocked() && isSealedWritable();
+
+/** vaultRecovery rebuilt the wallets in memory: the sealed slices count as loaded. */
+export const markSealedSlicesLoaded = () => {
+  sealedRehydrated = true;
+};
 
 // Test hook only.
 export const __resetUnlockFlowForTests = () => {

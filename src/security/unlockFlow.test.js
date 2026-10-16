@@ -557,4 +557,56 @@ describe('web unlock flow', () => {
     expect(await vault.hasVault()).toBe(true);
     expect((await vault.readSecrets()).wallets.w1.phrase).toBe(MNEMONIC);
   });
+
+  // A vault without an account still holds wallet keys (a state database that
+  // came back empty, an unreadable auth slice). Never replaced silently.
+  it('createAccount refuses a vault from earlier with VAULT_EXISTS and leaves it alone', async () => {
+    const {store, vaultSync} = require('redux/store');
+    const {createAccount} = require('security/unlockFlow');
+    const {
+      logOutSuccess,
+    } = require('dok-wallet-blockchain-networks/redux/auth/authSlice');
+    const {sealStorage, writeSealed} = require('redux/storage/sealedStorage');
+    store.dispatch(logOutSuccess());
+    await vaultSync.flush();
+    await waitFor(() => !vault.isUnlocked());
+    // The earlier vault and a sealed slice under its key.
+    await vault.createVault('old');
+    await vault.saveSecrets({v: 1, wallets: {w9: {phrase: MNEMONIC}}});
+    await writeSealed(
+      'persist:customRpc',
+      buildPersistEnvelope({rpc: 'old'}),
+      await vault.getStateKey(),
+    );
+    vault.lock();
+    sealStorage();
+
+    await expect(store.dispatch(createAccount('new'))).rejects.toMatchObject({
+      code: 'vault_exists',
+    });
+    expect(store.getState().auth.isVaultUnlocked).toBe(false);
+    expect((await vault.unlockWithPassword('old')).wallets.w9.phrase).toBe(
+      MNEMONIC,
+    );
+    vault.lock();
+  });
+
+  it('createAccount replaces it only when the user chose to start over, and drops its sealed slices', async () => {
+    const {store} = require('redux/store');
+    const {createAccount} = require('security/unlockFlow');
+    await store.dispatch(createAccount('new', {discardExistingVault: true}));
+    const stateKey = await vault.getStateKey();
+    // Nothing left that the new key cannot read (a later unlock would fail).
+    for (const key of await listSealedKeys()) {
+      await expect(readSealed(key, stateKey)).resolves.toEqual(
+        expect.any(String),
+      );
+    }
+    expect(await listSealedKeys()).not.toContain('persist:customRpc');
+    vault.lock();
+    await expect(vault.unlockWithPassword('old')).rejects.toMatchObject({
+      code: 'invalid_password',
+    });
+    await expect(vault.unlockWithPassword('new')).resolves.toBeDefined();
+  });
 });
