@@ -24,23 +24,29 @@ export const blockWrites = key => {
 };
 export const isWriteBlocked = key => blockedKeys.has(key);
 
-/** Lifts the block on `key` and writes the newest value refused meanwhile. */
+/**
+ * Writes the newest value refused meanwhile, then lifts the block on `key`.
+ * The key stays blocked while the write is pending and when it fails (the
+ * rejection propagates), so a refused value is never lost and no setItem
+ * races it. A value queued during the write is written before the block lifts.
+ */
 export const releaseBlockedWrites = async key => {
   if (!blockedKeys.has(key)) {
     return;
   }
   await bootstrapStorage();
-  // Read the queued value only after the await and lift the block in the same
-  // synchronous step: a setItem refused while bootstrap was pending queued a
-  // newer value, which must be the one written.
-  if (!blockedKeys.has(key)) {
-    return;
-  }
-  const value = blockedKeys.get(key);
-  blockedKeys.delete(key);
-  if (value !== undefined) {
+  // Read the queued value only after the await: a setItem refused while
+  // bootstrap was pending queued a newer value, which must be the one written.
+  let value = blockedKeys.get(key);
+  while (value !== undefined) {
     await plainKv.set(key, value);
+    const latest = blockedKeys.get(key);
+    if (latest === value) {
+      break;
+    }
+    value = latest;
   }
+  blockedKeys.delete(key);
 };
 
 export const plainStorage = {

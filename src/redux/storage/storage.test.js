@@ -212,6 +212,47 @@ describe('web storage', () => {
       expect(await plainStorage.getItem('persist:auth')).toBe('{"r":"2"}');
     });
 
+    it('a failed release keeps the key blocked and the refused value queued', async () => {
+      await plainStorage.setItem('persist:auth', '{"kept":"1"}');
+      blockWrites('persist:auth');
+      await plainStorage.setItem('persist:auth', '{"r":"1"}').catch(() => {});
+      const spy = jest
+        .spyOn(plainKv, 'set')
+        .mockRejectedValueOnce(new Error('idb write failed'));
+      await expect(releaseBlockedWrites('persist:auth')).rejects.toThrow(
+        'idb write failed',
+      );
+      spy.mockRestore();
+      // Still blocked, stored copy untouched; a retry writes the queued value.
+      await expect(
+        plainStorage.setItem('persist:auth', '{"r":"2"}'),
+      ).rejects.toThrow('blocked');
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"kept":"1"}');
+      await releaseBlockedWrites('persist:auth');
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"r":"2"}');
+    });
+
+    it('a value refused while the release writes is written before the block lifts', async () => {
+      await plainStorage.setItem('persist:auth', '{"kept":"1"}');
+      blockWrites('persist:auth');
+      await plainStorage.setItem('persist:auth', '{"r":"1"}').catch(() => {});
+      const realSet = plainKv.set.bind(plainKv);
+      const spy = jest
+        .spyOn(plainKv, 'set')
+        .mockImplementationOnce(async (key, value) => {
+          // Refused: the release is still writing, so the key stays blocked.
+          await expect(
+            plainStorage.setItem('persist:auth', '{"r":"2"}'),
+          ).rejects.toThrow('blocked');
+          return realSet(key, value);
+        });
+      await releaseBlockedWrites('persist:auth');
+      spy.mockRestore();
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"r":"2"}');
+      await plainStorage.setItem('persist:auth', '{"r":"3"}');
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"r":"3"}');
+    });
+
     it('releasing a block with nothing refused keeps the stored copy', async () => {
       await plainStorage.setItem('persist:auth', '{"kept":"1"}');
       blockWrites('persist:auth');

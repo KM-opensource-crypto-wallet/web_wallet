@@ -99,6 +99,11 @@ export const findWalletsWithoutKeys = allWallets =>
 // (an idle-lock re-login must not roll them back to the throttled disk copy).
 let sealedRehydrated = false;
 
+// The vault this page created for an orphan commit that then failed: it holds
+// nothing but that attempt, so the next Registration submit may replace it.
+// Any other existing vault is replaced only when the user starts over.
+let failedOrphanVault = false;
+
 const rehydrateSealedSlices = async dispatch => {
   for (const [name, config] of Object.entries(SEALED_PERSIST_CONFIGS)) {
     const payload = await getStoredState(config);
@@ -200,8 +205,10 @@ export const unlockWithPassword = password => async (dispatch, getState) => {
  * writes: redux-persist swallows a failed sealed write, so its flush cannot
  * prove anything landed. The parked state is released only after the commit;
  * a failure locks the new vault again, leaves the store untouched and keeps
- * the state parked, so the next Registration submit (or a reload, which
- * redoes the migration from the legacy blob) retries all of it.
+ * the state parked, so the next Registration submit on this page retries all
+ * of it. After a reload, the vault from the failed attempt can't be told apart
+ * from a vault holding other wallets, so it is refused like any existing vault
+ * (VaultExistsError) until the user picks Restore or starts over.
  */
 export const createAccount =
   (password, {discardExistingVault = false} = {}) =>
@@ -210,13 +217,16 @@ export const createAccount =
       throw new AccountExistsError();
     }
     if (await vault.hasVault()) {
-      // The orphan legacy path's keys are parked in memory, never in this vault.
-      if (!discardExistingVault && !peekOrphanLegacyState()) {
+      // A parked orphan proves nothing about this vault: it may hold wallets
+      // created after an earlier migration. Only the user's start-over, or the
+      // retry of this page's own failed orphan commit, replaces it.
+      if (!discardExistingVault && !failedOrphanVault) {
         throw new VaultExistsError();
       }
       addBreadcrumb('auth', 'vault.discarded', {by: 'registration'}, 'warning');
       logger.warn('vault.discarded', {by: 'registration'});
       await vault.destroy();
+      failedOrphanVault = false;
       if (discardExistingVault) {
         // Sealed slices under the destroyed vault's key can never be read
         // again, and a later unlock would fail on them: the user chose to
@@ -235,6 +245,7 @@ export const createAccount =
       try {
         await commitOrphanLegacyMigration(stateKey);
       } catch (error) {
+        failedOrphanVault = true;
         vault.lock();
         throw error;
       }
@@ -289,4 +300,5 @@ export const markSealedSlicesLoaded = () => {
 // Test hook only.
 export const __resetUnlockFlowForTests = () => {
   sealedRehydrated = false;
+  failedOrphanVault = false;
 };
