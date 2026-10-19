@@ -114,11 +114,15 @@ const routes = {
       if (!fileContent) {
         return json({error: 'No file content provided'}, 400);
       }
-      // Delete-then-create, as the web route does.
-      for (const file of await listBackups()) {
+      // Create before deleting: a failed upload must not leave the user with
+      // no backup. Only the files listed beforehand are removed, never the
+      // new one.
+      const previous = await listBackups();
+      const fileId = await createBackup(fileContent);
+      for (const file of previous) {
         await deleteFile(file.id);
       }
-      return json({success: true, fileId: await createBackup(fileContent)});
+      return json({success: true, fileId});
     }),
   'DELETE /api/drive/backup': () =>
     handleErrors(async () => {
