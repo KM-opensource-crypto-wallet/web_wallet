@@ -66,6 +66,7 @@ export const TRANSACTION_STATUS_LABEL = {
 // Home
 // Per-browser preference: show balances as dots.
 export const HIDE_BALANCES_KEY = 'home.hideBalances';
+export const ALLOCATION_SLICES = 4;
 
 // Swap
 export const SWAP_QUOTE_DEBOUNCE_MS = 700;

@@ -2,7 +2,6 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {useSession, signIn, signOut} from 'next-auth/react';
 import {showToast} from 'src/utils/toast';
-import {currencySymbol} from 'src/data/lists/currency';
 import {
   backupWalletsToDrive,
   deleteWalletBackup,
@@ -15,12 +14,8 @@ import useWallet from 'src/hooks/wallet/useWallet';
 export const useBackupSettings = () => {
   const router = useRouter();
   const {data: session, status} = useSession();
-  const {
-    visibleWallets: allWallets,
-    masterClientId,
-    localCurrency,
-  } = useWallet();
-  const symbol = currencySymbol[localCurrency] || '$';
+  const {visibleWallets: allWallets, masterClientId, fiatSymbol} = useWallet();
+  const symbol = fiatSymbol || '$';
 
   const [selectedWalletIds, setSelectedWalletIds] = useState([]);
   const [showWarningModal, setShowWarningModal] = useState(false);

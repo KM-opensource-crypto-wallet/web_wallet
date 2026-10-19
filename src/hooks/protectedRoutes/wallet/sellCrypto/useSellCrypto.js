@@ -19,6 +19,7 @@ import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/
 import {sellCryptoValidation} from 'src/utils/validationSchema';
 import {popupCenter} from 'src/utils/common';
 import useWallet from 'src/hooks/wallet/useWallet';
+import {useFormDraft} from 'src/hooks/useFormDraft';
 
 // Sell quotes: the best payout is the largest fiat amount; the others show
 // how far below it they are.
@@ -50,10 +51,10 @@ export const useSellCrypto = () => {
     coinOptions,
     sellCryptoProviders: cryptoProviders,
     sellCryptoLoading: isLoading,
-    currentWallet,
     visibleWallets: allWallets,
     currentWalletClientId,
     sellCryptoError,
+    walletName,
   } = useWallet();
   const dispatch = useDispatch();
   const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
@@ -81,9 +82,9 @@ export const useSellCrypto = () => {
     quotes.find(q => q.isBest) ||
     quotes[0] ||
     null;
-  const walletName = currentWallet?.walletName || 'Wallet';
 
   const formikRef = useRef();
+  const {draftKey, draft} = useFormDraft();
 
   const router = useRouter();
   const {clientId} = useParams();
@@ -280,7 +281,14 @@ export const useSellCrypto = () => {
     [dispatch],
   );
 
-  const initialValues = {
+  // Back from the confirm step: refresh the quotes for the restored values.
+  useEffect(() => {
+    if (draft) {
+      onSubmit(draft, false);
+    }
+  }, [draft, onSubmit]);
+
+  const initialValues = draft || {
     amount: '0.1',
     selectedCoin: null,
     fiatCurrency: localCurrency,
@@ -329,6 +337,7 @@ export const useSellCrypto = () => {
 
     // Form
     formikRef,
+    draftKey,
     initialValues,
     sellCryptoValidation,
     onSubmit,

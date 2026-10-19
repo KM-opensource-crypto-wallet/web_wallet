@@ -22,6 +22,7 @@ import {
 } from 'components/Home/HomeIcons';
 import useSellCrypto from 'src/hooks/protectedRoutes/wallet/sellCrypto/useSellCrypto';
 import Screen from 'components/Screen';
+import {FormDraftSync} from 'src/hooks/useFormDraft';
 
 const CURRENCIES = ['USD', 'EUR'];
 
@@ -56,6 +57,7 @@ const SellCrypto = () => {
     closeSwitcher,
     localCurrency,
     formikRef,
+    draftKey,
     initialValues,
     sellCryptoValidation,
     onSubmit,
@@ -120,6 +122,7 @@ const SellCrypto = () => {
 
           return (
             <div className={styles.column}>
+              <FormDraftSync draftKey={draftKey} />
               <div className={styles.field}>
                 <label htmlFor='amount' className={styles.label}>
                   You sell

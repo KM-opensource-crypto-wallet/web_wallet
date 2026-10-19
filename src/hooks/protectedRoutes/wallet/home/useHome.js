@@ -1,11 +1,9 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import {useDispatch} from 'react-redux';
 import {coinRoutes, walletRoutes} from 'utils/routes';
-import {currencySymbol} from 'src/data/lists/currency';
 import {HOME_ACTIONS} from 'src/data/lists/homeActions';
-import {getCoinSlug, isValidBrowser} from 'utils/common';
-import {validateSupportedChain} from 'dok-wallet-blockchain-networks/helper';
+import {getCoinSlug} from 'utils/common';
 import {
   setCurrentCoin,
   sortCurrentWalletCoins,
@@ -21,6 +19,7 @@ import {MASK} from 'components/Home/AssetRow';
 import {formatMoney} from 'components/Home/WalletSwitcher';
 import useWallet from 'src/hooks/wallet/useWallet';
 import {HIDE_BALANCES_KEY} from 'src/data/constants';
+import {consumeClearFormDrafts} from 'src/hooks/useFormDraft';
 
 // Per-browser preference: show balances as dots.
 export const readHideBalances = () => {
@@ -39,36 +38,44 @@ export const writeHideBalances = hidden => {
   }
 };
 
-// Holdings named in the allocation card; the rest are summed as "Other".
-const ALLOCATION_SLICES = 4;
-
 export const useHome = () => {
   const {clientId} = useParams();
   const router = useRouter();
   const dispatch = useDispatch();
-  const [searchQuery, setSearchQuery] = useState('');
+
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const [backupModalVisible, setBackupModalVisible] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  // 'send' | 'receive' while the coin picker is open.
   const [pickerMode, setPickerMode] = useState(null);
   const [hidden, setHidden] = useState(readHideBalances);
+
   const sortButtonRef = useRef(null);
 
   const {
-    userCoins,
     localCurrency,
     totalAssets,
-    allNewCoins,
     isBackup,
     currentWallet,
     isAskedBackup,
-    isImportWithPrivateKey,
     newsMessage,
     coinsSortOption,
     cryptoProviders: buyProviders,
     exchangeProviders: swapProviders,
+    walletName,
+    coins,
+    visibleCoins,
+    portfolio,
+    newCoinsMessage,
+    searchQuery,
+    onSearchChange,
+    clearSearch,
+    fiatSymbol,
   } = useWallet();
+
+  // A successful send lands here: its form starts empty next time.
+  useEffect(() => {
+    consumeClearFormDrafts();
+  }, []);
 
   useEffect(() => {
     if (!isBackup && !isAskedBackup[currentWallet?.walletName]) {
@@ -76,87 +83,6 @@ export const useHome = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Coins this browser can show (same rules as the old list rows).
-  const coins = useMemo(
-    () =>
-      (userCoins || []).filter(
-        item =>
-          validateSupportedChain(item?.chain_name) &&
-          (item?.chain_name !== 'thorchain' || isValidBrowser()),
-      ),
-    [userCoins],
-  );
-
-  const visibleCoins = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return q
-      ? coins.filter(
-          item =>
-            item?.name?.toLowerCase().includes(q) ||
-            item?.symbol?.toLowerCase().includes(q),
-        )
-      : coins;
-  }, [coins, searchQuery]);
-
-  // Portfolio split by fiat value: the biggest holdings plus "Other", each
-  // coin's share for its row, and the value-weighted 24h change.
-  const portfolio = useMemo(() => {
-    const valued = coins
-      .map(item => ({item, value: parseFloat(item?.totalCourse) || 0}))
-      .filter(({value}) => value > 0)
-      .sort((a, b) => b.value - a.value);
-    const total = valued.reduce((sum, {value}) => sum + value, 0);
-    const shareById = {};
-    let now = 0;
-    let before = 0;
-    valued.forEach(({item, value}) => {
-      shareById[item._id] = total ? (value / total) * 100 : 0;
-      const change = Number(item?.priceChange24h);
-      if (item?.priceChange24h != null && Number.isFinite(change)) {
-        now += value;
-        before += value / (1 + change / 100);
-      }
-    });
-    const top = valued.slice(0, ALLOCATION_SLICES).map(({item, value}) => ({
-      key: item._id,
-      label: item?.symbol,
-      share: shareById[item._id],
-      value,
-    }));
-    const rest = valued.slice(ALLOCATION_SLICES);
-    if (rest.length) {
-      const value = rest.reduce((sum, entry) => sum + entry.value, 0);
-      top.push({
-        key: 'other',
-        label: `Other (${rest.length})`,
-        share: (value / total) * 100,
-        value,
-      });
-    }
-    return {
-      allocation: top,
-      shareById,
-      change24h: before > 0 ? ((now - before) / before) * 100 : null,
-    };
-  }, [coins]);
-
-  const coinsNames = useMemo(
-    () =>
-      (Array.isArray(allNewCoins) ? allNewCoins : [])
-        .map(item => item.name)
-        .join(', '),
-    [allNewCoins],
-  );
-
-  const newCoinsMessage =
-    coinsNames && !isImportWithPrivateKey
-      ? `New ${
-          allNewCoins?.length === 1 ? 'cryptocurrency' : 'cryptocurrencies'
-        }, such as ${coinsNames} ${
-          allNewCoins?.length === 1 ? 'is' : 'are'
-        } now accessible.`
-      : '';
 
   const toggleHidden = () => {
     const next = !hidden;
@@ -201,9 +127,6 @@ export const useHome = () => {
     action => ({...action, onClick: actionHandlers[action.key]}),
   );
 
-  const walletName = currentWallet?.walletName || 'Wallet';
-  const symbol = currencySymbol[localCurrency] || '';
-
   return {
     // Wallet switcher
     walletName,
@@ -225,16 +148,16 @@ export const useHome = () => {
     // Balance card
     hidden,
     toggleHidden,
-    balanceText: hidden ? MASK : formatMoney(totalAssets, symbol),
+    balanceText: hidden ? MASK : formatMoney(totalAssets, fiatSymbol),
     actions,
     change24h: portfolio.change24h,
     allocation: portfolio.allocation,
-    formatFiat: value => (hidden ? MASK : formatMoney(value, symbol)),
+    formatFiat: value => (hidden ? MASK : formatMoney(value, fiatSymbol)),
 
     // Search and sort
     searchQuery,
-    onSearchChange: e => setSearchQuery(e.target.value),
-    clearSearch: () => setSearchQuery(''),
+    onSearchChange,
+    clearSearch,
     sortButtonRef,
     sortMenuVisible,
     toggleSortMenu: () => setSortMenuVisible(prev => !prev),

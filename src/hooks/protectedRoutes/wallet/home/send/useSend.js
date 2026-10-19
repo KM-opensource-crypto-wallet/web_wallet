@@ -9,8 +9,7 @@ import {copyToClipboard} from 'utils/copyToClipboard';
 import {showToast} from 'src/utils/toast';
 import {validationSchemaSendFunds} from 'utils/validationSchema';
 import {coinRoutes} from 'utils/routes';
-import {getCoinSlug, isValidBrowser} from 'utils/common';
-import {currencySymbol} from 'src/data/lists/currency';
+import {getCoinSlug} from 'utils/common';
 import {
   addEVMAndTronDeriveAddresses,
   refreshCurrentCoin,
@@ -45,12 +44,12 @@ import {
   multiplyBNWithFixed,
   validateBigNumberStr,
   validateNumberInInput,
-  validateSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
 import {getVisibleDeriveAddresses} from 'dok-wallet-blockchain-networks/service/bitcoinHdAddress';
 import {QUICK_ACTIONS} from 'src/data/lists/quickActions';
 import useWallet from 'src/hooks/wallet/useWallet';
 import {MAX_RECENTS} from 'src/data/constants';
+import {useFormDraft} from 'src/hooks/useFormDraft';
 
 // Logic for the coin screens. `screen` is 'coin' (the coin's Send screen,
 // components/Send) or 'sendFunds' (components/SendFunds); it decides which
@@ -70,7 +69,9 @@ export const useSend = screen => {
     transferData,
     allCustomRPC,
     sentAddressHistory,
-    userCoins,
+    walletName,
+    fiatSymbol,
+    coins,
   } = useWallet();
 
   const [modalUnclaimDepositVisible, setModalUnclaimDepositVisible] =
@@ -251,6 +252,9 @@ export const useSend = screen => {
   const [coinPickerOpen, setCoinPickerOpen] = useState(false);
   const [maxAmount, setMaxAmount] = useState('0.00000');
   const formikRef = useRef(null);
+  const {draftKey: sendFundsDraftKey, draft: sendFundsDraft} = useFormDraft(
+    searchParams.toString(),
+  );
 
   const getHederaChain = useCallback(
     () =>
@@ -510,19 +514,7 @@ export const useSend = screen => {
   ]);
 
   const isBatchSupported = isEip7702SupportedChain(currentCoin?.chain_name);
-  const fiatSymbol = currencySymbol[localCurrency] || '';
   const isCrypto = unit === 'crypto';
-
-  // Same coin list as Home's Send picker.
-  const pickerCoins = useMemo(
-    () =>
-      (userCoins || []).filter(
-        item =>
-          validateSupportedChain(item?.chain_name) &&
-          (item?.chain_name !== 'thorchain' || isValidBrowser()),
-      ),
-    [userCoins],
-  );
 
   // Sent-address history is only kept for EVM chains (shared bucket).
   const recents = useMemo(
@@ -549,7 +541,7 @@ export const useSend = screen => {
       ? currentCoin?.chain_display_name
       : null;
 
-  const sendFundsInitialValues = {
+  const sendFundsInitialValues = sendFundsDraft || {
     send: qrAddress || sendInput,
     amount: linkInvoiceAmount || qrAmount || '',
     currencyAmount: linkInvoiceAmount
@@ -638,7 +630,6 @@ export const useSend = screen => {
       : `${validateBigNumberStr(values.amount) || '0'} ${currentCoin?.symbol?.toUpperCase() ?? ''}`;
 
   const symbol = currentCoin?.symbol?.toUpperCase() ?? '';
-  const walletName = currentWallet?.walletName || 'Wallet';
   const showMenu =
     isBitcoin || (isDeriveAddressChain && !isImportWithPrivateKey);
   const showAddAddressesNotice =
@@ -746,11 +737,13 @@ export const useSend = screen => {
     coinPickerOpen,
     openCoinPicker: () => setCoinPickerOpen(true),
     closeCoinPicker: () => setCoinPickerOpen(false),
-    pickerCoins,
+    // Same coin list as Home's Send picker.
+    pickerCoins: coins,
     onPickCoin,
 
     // Send Funds: form
     formikRef,
+    sendFundsDraftKey,
     sendFundsInitialValues,
     sendFundsValidationSchema,
     handleSendFundsSubmit,

@@ -18,7 +18,7 @@ export const HOST_TO_BRAND = {
 
 /**
  * The domain to resolve the brand for. In development, DEV_WHITE_LABEL_DOMAIN
- * (e.g. `app.kimlwallet.com` in .env.local) stands in for the request host, so
+ * (e.g. `app.kimlwallet.com` in .env) stands in for the request host, so
  * any brand can be run on http://localhost:3000. localhost has to stay the
  * origin: browsers only expose Web Crypto (the vault) on secure contexts, and
  * plain http on any other host is not one.

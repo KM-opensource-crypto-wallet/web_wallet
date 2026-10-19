@@ -37,6 +37,7 @@ import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/
 import ValidatorOptionItem from 'components/ValidatorOptionItem';
 import useWallet from 'src/hooks/wallet/useWallet';
 import {STAKING_DISABLED_INPUT_CHAINS} from 'src/data/constants';
+import {useFormDraft} from 'src/hooks/useFormDraft';
 
 // Label shown in a SelectInput for the option whose value is `value`.
 const findLabel = (list, value) =>
@@ -73,6 +74,7 @@ export const useStaking = screen => {
   const [pendingAmount, setPendingAmount] = useState(null);
   const pendingFormValuesRef = useRef(null);
   const formikRef = useRef(null);
+  const {draftKey, draft} = useFormDraft();
   const defaultValidatorSetRef = useRef(false);
 
   const isEVMStaking = useMemo(
@@ -115,11 +117,16 @@ export const useStaking = screen => {
   }, [isResourceSupport, currentCoin?.chain_name]);
 
   useEffect(() => {
-    if (validatorList?.[0] && !defaultValidatorSetRef.current) {
+    // A restored draft already carries the validator the user picked.
+    if (
+      validatorList?.[0] &&
+      !defaultValidatorSetRef.current &&
+      !draft?.validatorPubKey
+    ) {
       defaultValidatorSetRef.current = true;
       formikRef?.current?.setFieldValue('validatorPubKey', validatorList?.[0]);
     }
-  }, [validatorList]);
+  }, [validatorList, draft]);
 
   useEffect(() => {
     // Anonymous function: the react-hooks compiler lint flags setState calls
@@ -320,7 +327,7 @@ export const useStaking = screen => {
     setFieldValue('resourceType', selected);
   };
 
-  const initialValues = {
+  const initialValues = draft || {
     amount: '',
     currencyAmount: '',
     validatorPubKey: null,
@@ -873,6 +880,7 @@ export const useStaking = screen => {
 
     // Create Staking: form
     formikRef,
+    draftKey,
     initialValues,
     validationSchema,
     handleSubmitForm,

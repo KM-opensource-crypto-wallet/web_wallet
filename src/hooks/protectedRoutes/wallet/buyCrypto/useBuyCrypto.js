@@ -25,6 +25,7 @@ import {getAppIcon, getAppIconDark} from 'whitelabel/whiteLabelInfo';
 import {ThemeContext} from 'theme/ThemeContext';
 import {walletRoutes} from 'utils/routes';
 import useWallet from 'src/hooks/wallet/useWallet';
+import {useFormDraft} from 'src/hooks/useFormDraft';
 import {BUY_CRYPTO_CURRENCIES, OTC_DETAILS_ROUTE} from 'src/data/constants';
 
 // Quote cards: the best rate is the largest amount received; the others show
@@ -59,11 +60,12 @@ export const useBuyCrypto = () => {
     coinOptions,
     cryptoProviders,
     cryptoProvidersLoading: isLoading,
-    currentWallet,
     otcData,
+    walletName,
   } = useWallet();
   const dispatch = useDispatch();
   const formikRef = useRef();
+  const {draftKey, draft} = useFormDraft();
   const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
   const [loadingIndex, setLoadingIndex] = useState(null);
   const [addressCopied, setAddressCopied] = useState(false);
@@ -90,7 +92,6 @@ export const useBuyCrypto = () => {
     quotes[0] ||
     null;
 
-  const walletName = currentWallet?.walletName || 'Wallet';
   const eurOnly = isUsdtNotSupportedWL();
 
   const finalCoinOptions = useMemo(() => {
@@ -203,7 +204,14 @@ export const useBuyCrypto = () => {
     [submitQuote],
   );
 
-  const initialValues = {
+  // Back from a later step: refresh the quotes for the restored values.
+  useEffect(() => {
+    if (draft) {
+      submitQuote(draft, {isDebounce: false});
+    }
+  }, [draft, submitQuote]);
+
+  const initialValues = draft || {
     amount: '100',
     selectedCoin: null,
     fiatCurrency: eurOnly ? 'EUR' : localCurrency,
@@ -399,6 +407,7 @@ export const useBuyCrypto = () => {
 
     // Form
     formikRef,
+    draftKey,
     initialValues,
     amountValidation,
     onSubmit,

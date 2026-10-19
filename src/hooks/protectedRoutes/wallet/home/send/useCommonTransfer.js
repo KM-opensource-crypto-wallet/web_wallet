@@ -12,7 +12,6 @@ import BigNumber from 'bignumber.js';
 import dayjs from 'dayjs';
 import {sendFunds} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {calculateEstimateFee} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import {currencySymbol} from 'src/data/lists/currency';
 import {
   delay,
   getCustomizePublicAddress,
@@ -25,6 +24,10 @@ import {getChain} from 'dok-wallet-blockchain-networks/cryptoChain';
 import useAdvancedFees from 'src/hooks/useAdvancedFees';
 import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
 import useWallet from 'src/hooks/wallet/useWallet';
+import {
+  cancelClearFormDraftsOnHome,
+  clearFormDraftsOnHome,
+} from 'src/hooks/useFormDraft';
 
 // Logic for the shared confirm screen (components/CommonTransfer), used by
 // send funds, staking, swap, sell crypto, NFT, vote and batch transactions.
@@ -52,6 +55,8 @@ export const useCommonTransfer = () => {
     exchangeToName,
     exchangeToAddress,
     selectedExchangeChain,
+    walletName,
+    fiatSymbol,
   } = useWallet();
   // Hedera: the recipient's ledger account id; a missing id means the
   // transfer will auto-create the account (sender pays).
@@ -374,7 +379,10 @@ export const useCommonTransfer = () => {
   }, [estimateStatus]);
 
   const submitTransferData = useCallback(async () => {
-    await dispatch(
+    // A successful send redirects to Home before the thunk resolves (it waits
+    // for confirmation); Home then clears the form the user filled in.
+    clearFormDraftsOnHome();
+    const result = await dispatch(
       sendFunds({
         to: transferData.toAddress,
         memo: transferData.memo,
@@ -434,6 +442,9 @@ export const useCommonTransfer = () => {
         router,
       }),
     );
+    if (!result?.payload?.tx_hash) {
+      cancelClearFormDraftsOnHome();
+    }
   }, [
     finalNonce,
     dispatch,
@@ -565,7 +576,6 @@ export const useCommonTransfer = () => {
         : null,
   );
 
-  const fiatSymbol = currencySymbol[localCurrency] || '';
   const feeSymbol = isExchangeScreen
     ? selectedFromAsset?.chain_symbol
     : transferData?.currentCoin?.chain_symbol;
@@ -596,7 +606,6 @@ export const useCommonTransfer = () => {
       ? address
       : getCustomizePublicAddress(address);
 
-  const walletName = currentWallet?.walletName || 'Wallet';
   const fromParty = coin => ({
     name: walletName,
     sub: formatAddress(coin?.address),

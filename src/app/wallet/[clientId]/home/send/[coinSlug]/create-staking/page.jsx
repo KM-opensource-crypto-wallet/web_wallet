@@ -11,6 +11,7 @@ import CoinIcon from 'components/CoinIcon';
 import PriceChange from 'components/PriceChange';
 import GeneralButton from 'components/Button';
 import Screen from 'components/Screen';
+import {FormDraftSync} from 'src/hooks/useFormDraft';
 
 const CreateStaking = () => {
   const {
@@ -21,6 +22,7 @@ const CreateStaking = () => {
     availableAmount,
     availableAmountCurrency,
     formikRef,
+    draftKey,
     initialValues,
     validationSchema,
     handleSubmitForm,
@@ -79,6 +81,7 @@ const CreateStaking = () => {
                     event.preventDefault();
                     handleSubmit();
                   }}>
+                  <FormDraftSync draftKey={draftKey} />
                   <section className={styles.balanceCard} aria-label='Balance'>
                     <span className={styles.coinIcon}>
                       <CoinIcon item={currentCoin} />

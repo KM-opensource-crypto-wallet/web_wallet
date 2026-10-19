@@ -132,6 +132,13 @@ import {
 import {validateSupportedChain} from 'dok-wallet-blockchain-networks/helper';
 import {isValidBrowser} from 'src/utils/common';
 import {useMemo, useState} from 'react';
+import {ALLOCATION_SLICES} from 'src/data/constants';
+import {currencySymbol} from 'src/data/lists/currency';
+
+// Coins this browser can show.
+export const isSupportedCoin = item =>
+  validateSupportedChain(item?.chain_name) &&
+  (item?.chain_name !== 'thorchain' || isValidBrowser());
 
 // Every store value the hooks read.
 export const useWallet = () => {
@@ -274,14 +281,8 @@ export const useWallet = () => {
   const selectedVotes = useSelector(getSelectedVotes);
   const selectedVotesTotal = useSelector(countSelectedVotes);
 
-  // Coins this browser can show (same rules as the old list rows).
   const coins = useMemo(
-    () =>
-      (userCoins || []).filter(
-        item =>
-          validateSupportedChain(item?.chain_name) &&
-          (item?.chain_name !== 'thorchain' || isValidBrowser()),
-      ),
+    () => (userCoins || []).filter(isSupportedCoin),
     [userCoins],
   );
 
@@ -295,6 +296,48 @@ export const useWallet = () => {
         )
       : coins;
   }, [coins, searchQuery]);
+
+  // Portfolio split by fiat value: the biggest holdings plus "Other", each
+  // coin's share for its row, and the value-weighted 24h change.
+  const portfolio = useMemo(() => {
+    const valued = coins
+      .map(item => ({item, value: parseFloat(item?.totalCourse) || 0}))
+      .filter(({value}) => value > 0)
+      .sort((a, b) => b.value - a.value);
+    const total = valued.reduce((sum, {value}) => sum + value, 0);
+    const shareById = {};
+    let now = 0;
+    let before = 0;
+    valued.forEach(({item, value}) => {
+      shareById[item._id] = total ? (value / total) * 100 : 0;
+      const change = Number(item?.priceChange24h);
+      if (item?.priceChange24h != null && Number.isFinite(change)) {
+        now += value;
+        before += value / (1 + change / 100);
+      }
+    });
+    const top = valued.slice(0, ALLOCATION_SLICES).map(({item, value}) => ({
+      key: item._id,
+      label: item?.symbol,
+      share: shareById[item._id],
+      value,
+    }));
+    const rest = valued.slice(ALLOCATION_SLICES);
+    if (rest.length) {
+      const value = rest.reduce((sum, entry) => sum + entry.value, 0);
+      top.push({
+        key: 'other',
+        label: `Other (${rest.length})`,
+        share: (value / total) * 100,
+        value,
+      });
+    }
+    return {
+      allocation: top,
+      shareById,
+      change24h: before > 0 ? ((now - before) / before) * 100 : null,
+    };
+  }, [coins]);
 
   const coinsNames = useMemo(
     () =>
@@ -314,6 +357,8 @@ export const useWallet = () => {
       : '';
 
   const walletName = currentWallet?.walletName || 'Wallet';
+  const fiatSymbol = currencySymbol[localCurrency] || '';
+
   return {
     // App and auth
     isStoreLoaded,
@@ -442,8 +487,10 @@ export const useWallet = () => {
     selectedVotesTotal,
 
     walletName,
+    fiatSymbol,
     coins,
     visibleCoins,
+    portfolio,
     newCoinsMessage,
     searchQuery,
     onSearchChange: e => setSearchQuery(e.target.value),

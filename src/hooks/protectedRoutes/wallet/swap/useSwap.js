@@ -39,7 +39,6 @@ import {
   createDebounced,
   getSmartDefaultAmount,
 } from 'dok-wallet-blockchain-networks/helper/exchangeHelpers';
-import {currencySymbol} from 'src/data/lists/currency';
 import {setCurrentTransferSuccess} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {
@@ -119,7 +118,6 @@ export const useSwap = screen => {
     allCoinsOptions: coinOptions,
     visibleWallets: allWallets,
     currentWalletClientId,
-    currentWallet,
     exchange: {
       selectedCoinToOptions,
       selectedFromAsset,
@@ -154,9 +152,11 @@ export const useSwap = screen => {
     detailTransaction,
     detailLoading,
     detailError,
+    walletName,
+    fiatSymbol: walletFiatSymbol,
   } = useWallet();
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  const fiatSymbol = currencySymbol[localCurrency] || '$';
+  const fiatSymbol = walletFiatSymbol || '$';
 
   const [isPreparingAllowance, setIsPreparingAllowance] = useState(false);
   // Set on submit: from that moment the auto-refresh countdown is removed so
@@ -752,7 +752,6 @@ export const useSwap = screen => {
     permitModalVisible;
 
   // ---- Display values ----------------------------------------------------
-  const walletName = currentWallet?.walletName || 'Wallet';
   const fromFiatValue =
     validateNumber(amountFrom) && selectedFromAsset?.currencyRate
       ? `~${fiatSymbol}${multiplyBNWithFixed(

@@ -24,7 +24,6 @@ import {
   isCustomAddressNotSupportedChain,
   isPendingTransactionSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
-import {currencySymbol} from 'src/data/lists/currency';
 import {
   describeTransaction,
   fiatValue,
@@ -334,11 +333,12 @@ export const useTransaction = screen => {
   const {
     localCurrency,
     currentCoin,
-    currentWallet,
     hideSmallTx,
     reduxRecentTransaction,
     routeStateData,
     updateTransactionData,
+    walletName,
+    fiatSymbol,
   } = useWallet();
 
   const [modalVisible, setmodalVisible] = useState(false);
@@ -482,9 +482,7 @@ export const useTransaction = screen => {
     return {netFiat, netCoin, pending};
   }, [renderList, currentCoin?.address]);
 
-  const fiatSymbol = currencySymbol[localCurrency] || '';
   const symbol = currentCoin?.symbol?.toUpperCase() ?? '';
-  const walletName = currentWallet?.walletName || 'Wallet';
   const filterCount =
     (selectedType !== 'all' ? 1 : 0) + (filter !== 'None' ? 1 : 0);
   const sortLabel =

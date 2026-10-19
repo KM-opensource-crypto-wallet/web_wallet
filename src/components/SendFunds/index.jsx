@@ -21,6 +21,7 @@ import s from './SendFunds.module.css';
 import ModalAddressPoisoningWarning from 'components/ModalAddressPoisoningWarning';
 import {useHederaRecipientLookup} from 'src/hooks/useHederaAccount';
 import Screen from 'components/Screen';
+import {FormDraftSync} from 'src/hooks/useFormDraft';
 
 const shortAddress = address =>
   address && address.length > 14
@@ -84,6 +85,7 @@ const SendFunds = () => {
     pickerCoins,
     onPickCoin,
     formikRef,
+    sendFundsDraftKey,
     sendFundsInitialValues,
     sendFundsValidationSchema,
     handleSendFundsSubmit,
@@ -157,6 +159,7 @@ const SendFunds = () => {
                   event.preventDefault();
                   handleSubmit();
                 }}>
+                <FormDraftSync draftKey={sendFundsDraftKey} />
                 <button
                   type='button'
                   className={s.coinCard}

@@ -13,7 +13,6 @@ import {
   multiplyBNWithFixed,
   validateNumberInInput,
 } from 'dok-wallet-blockchain-networks/helper';
-import {currencySymbol} from 'src/data/lists/currency';
 import useWallet from 'src/hooks/wallet/useWallet';
 
 const coinKey = item => `${item?.chain_name}_${item?.symbol}`;
@@ -24,19 +23,18 @@ export const useReceivePaymentUrl = () => {
   const {
     coinOptions,
     userCoins,
-    currentWallet,
     paymentUrlCoin,
     paymentUrlAmount,
     paymentUrlCurrencyAmount,
     localCurrency,
+    walletName,
+    fiatSymbol,
   } = useWallet();
   const dispatch = useDispatch();
   const formikRef = useRef();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const walletName = currentWallet?.walletName || 'Wallet';
-  const fiatSymbol = currencySymbol[localCurrency] || '';
 
   // The picker sheet lists full coin objects; keep only the ones that have a
   // payment-link option (one per chain + symbol).

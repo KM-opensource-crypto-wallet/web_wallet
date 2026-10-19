@@ -1,13 +1,7 @@
 import {useCallback, useMemo, useState} from 'react';
 import {useDispatch} from 'react-redux';
 import {addOrToggleCoinInWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {validateSupportedChain} from 'dok-wallet-blockchain-networks/helper';
-import {isValidBrowser} from 'utils/common';
-import useWallet from 'src/hooks/wallet/useWallet';
-
-const isShownHere = item =>
-  validateSupportedChain(item?.chain_name) &&
-  (item?.chain_name !== 'thorchain' || isValidBrowser());
+import useWallet, {isSupportedCoin} from 'src/hooks/wallet/useWallet';
 
 const isZeroBalance = item =>
   !(Number(item?.totalAmount ?? item?.totalBalance) > 0);
@@ -15,7 +9,7 @@ const isZeroBalance = item =>
 // Logic for the Manage coins screen.
 export const useManageCoin = () => {
   const dispatch = useDispatch();
-  const {allCoins, currentWallet, localCurrency} = useWallet();
+  const {allCoins, localCurrency, walletName} = useWallet();
 
   const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
   const [modalAddTokenVisible, setModalAddTokenVisible] = useState(false);
@@ -25,7 +19,7 @@ export const useManageCoin = () => {
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
   const coins = useMemo(
-    () => (Array.isArray(allCoins) ? allCoins.filter(isShownHere) : []),
+    () => (Array.isArray(allCoins) ? allCoins.filter(isSupportedCoin) : []),
     [allCoins],
   );
 
@@ -50,7 +44,6 @@ export const useManageCoin = () => {
 
   const shownCount = coins.filter(item => item?.isInWallet).length;
   const hiddenCount = coins.length - shownCount;
-  const walletName = currentWallet?.walletName || 'Wallet';
   // Reordering works on the full list only.
   const sorting = isSortSelected && !query;
 
@@ -102,7 +95,7 @@ export const useManageCoin = () => {
 
     // List
     list,
-    hasVisibleCoins: list.some(isShownHere),
+    hasVisibleCoins: list.some(isSupportedCoin),
 
     // Add coin / token modals
     modalAddCoinsVisible,

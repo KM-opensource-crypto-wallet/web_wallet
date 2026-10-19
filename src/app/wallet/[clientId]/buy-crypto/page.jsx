@@ -22,6 +22,7 @@ import Loading from 'components/Loading';
 import ModalAddCoins from 'components/ModalAddCoins';
 import useBuyCrypto from 'src/hooks/protectedRoutes/wallet/buyCrypto/useBuyCrypto';
 import Screen from 'components/Screen';
+import {FormDraftSync} from 'src/hooks/useFormDraft';
 
 const PRESETS = ['100', '250', '500'];
 
@@ -53,6 +54,7 @@ const CryptoProviders = () => {
     closeSwitcher,
     localCurrency,
     formikRef,
+    draftKey,
     initialValues,
     amountValidation,
     onSubmit,
@@ -117,6 +119,7 @@ const CryptoProviders = () => {
 
           return (
             <div className={styles.column}>
+              <FormDraftSync draftKey={draftKey} />
               <div className={styles.field}>
                 <label htmlFor='amount' className={styles.label}>
                   You pay
