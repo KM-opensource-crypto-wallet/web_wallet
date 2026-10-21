@@ -30,7 +30,7 @@ even if the panel is closed during consent.
 | Registration, vault, password login                                                                    | Works (tested in Chrome)                                                     |
 | Staying unlocked between panel opens, auto-lock, lock in every page                                    | Works (tested in Chrome)                                                     |
 | Address derivation on all 20 chains, derivation workers, protobuf, Breez WASM, under the extension CSP | Works (`selftest.html`)                                                      |
-| **Every DokApi call apart from the white-label lookup**                                                | **Blocked by the backend.** See [Backend changes](#backend-changes-required) |
+| **Every DokApi call apart from the white-label lookup**                                                | **Needs the reCAPTCHA bridge.** See [reCAPTCHA](#recaptcha)                  |
 | Google Drive backup/restore                                                                            | Implemented. Needs an OAuth client id (see below)                            |
 | Bitcoin over Electrum                                                                                  | Uses the DokApi fallback, or a bridge URL if you configure one               |
 | WalletConnect                                                                                          | Works while the side panel or a tab is open. Not tested end-to-end           |
@@ -100,7 +100,7 @@ The overrides and why each one exists:
 | `security/secureStore.js`                        | The web IndexedDB store, except the vault's "biometric" slot goes to `chrome.storage.session` (the unlock session, below) |
 | `security/unlockFlow.js` ⚠ copy                  | Adds `unlockWithSession()`. Password unlock keeps the session; lock clears it and locks every open page                   |
 | `app/auth/login/page.jsx`                        | Unlocks from the session if there is one, otherwise shows the web login                                                   |
-| `utils/apiCaptcha.js`                            | Sends `x-app-name: <brand>-extension` instead of a reCAPTCHA token                                                        |
+| `utils/apiCaptcha.js`                            | Gets reCAPTCHA tokens from the web wallet's `/ext-captcha/` page in a hidden iframe (see [reCAPTCHA](#recaptcha))         |
 | `utils/electrumTransport.js`                     | No `/api/bitcoin` route of its own: uses an optional bridge URL, else the DokApi fallback                                 |
 | `utils/updateLocale.js`, `utils/localeCookie.js` | Locale in localStorage instead of a server action plus cookie                                                             |
 | `utils/localStorageData.js`                      | Also reports activity to the unlock session                                                                               |
@@ -140,22 +140,46 @@ does, so the extension works like this:
 
 ## Backend changes required
 
-1. **DokApi app name (blocking).** The API accepts only known
-   `x-app-name` values. `<brand>-web` additionally requires a reCAPTCHA v3
-   token, which an extension cannot produce: the script is remote and the
-   site keys are bound to domains. Today every call apart from
-   `/get-white-label` gets a 401. The fix:
-   - Accept `dokwallet-extension` and `kimlwallet-extension` (and the other
-     brands if they get builds).
-   - Verify them some other way, as is done for `-ios` and `-android`.
-   - The suffix is configurable (`EXT_APP_NAME_SUFFIX`) if you prefer
-     another name.
+1. **reCAPTCHA.** `<brand>-web` requests need a reCAPTCHA v3 token. With the
+   [reCAPTCHA bridge](#recaptcha) configured the extension sends one, issued
+   for the web wallet's domain, so no backend change is needed. Without it
+   every call apart from `/get-white-label` gets a 401. Optional: give the
+   extension its own app name (`EXT_APP_NAME_SUFFIX=extension`) once the
+   backend accepts `dokwallet-extension` / `kimlwallet-extension` with the
+   same token check.
 2. **CORS.** Requests come from `chrome-extension://<id>`. The DokApi host
    is in `host_permissions`, so Chrome does not enforce CORS for it, but the
    server must not reject that Origin.
 3. **Optional: Electrum bridge.** Point `ELECTRUM_BRIDGE_URL` at a deployed
    web wallet's `/api/bitcoin` to get the Electrum path back. Its host is
    added to `host_permissions` automatically.
+
+## reCAPTCHA
+
+An extension page cannot load reCAPTCHA: the script is remote (blocked by
+the extension CSP) and site keys are bound to web domains. Instead:
+
+```
+side panel (app.html)                      https://www.dokwallet.app/ext-captcha/
+  hidden <iframe> ──── captcha:execute ──▶  loads reCAPTCHA v3 with the web site key
+                  ◀─── captcha:result ────  answers only allowed extension origins
+  DokApi request + x-captcha-token ─▶ backend verifies it like a web token
+```
+
+- The page is `web_wallet/src/app/ext-captcha/route.js`. It answers 404
+  unless the deployment sets `EXT_CAPTCHA_ALLOWED_ORIGINS` to the allowed
+  extension origins, comma-separated:
+  `chrome-extension://<web-store-id>,chrome-extension://<dev-id>`. Only those
+  can embed it (`frame-ancestors`) or get a token.
+- The extension reads `CAPTCHA_BRIDGE_URL` (see `.env.example`). Without
+  it, requests go out with no token. If the page fails to load, requests go
+  out with no token for a minute, then it tries again.
+- The extension id must stay stable for the allow-list: use the Web Store
+  id, and pin the development id with `EXTENSION_KEY`.
+- Google's badge is inside the hidden iframe. Show the reCAPTCHA notice
+  ("This site is protected by reCAPTCHA and the Google Privacy Policy and
+  Terms of Service apply.") somewhere visible, and mention reCAPTCHA in the
+  Web Store privacy disclosures.
 
 ## Google Drive backup
 
@@ -179,9 +203,11 @@ secret ships inside the extension, as it does in the mobile app.
 
 ## Differences from the web build
 
-- No reCAPTCHA. Google Analytics is a no-op because gtag.js is a remote
-  script (see `src/shims/react-ga4.js`). Sentry posts straight to Sentry,
-  without the `/monitoring` tunnel.
+- reCAPTCHA tokens come from the web wallet's `/ext-captcha/` page in a
+  hidden iframe (see [reCAPTCHA](#recaptcha)).
+- Google Analytics is a no-op because gtag.js is a remote script (see
+  `src/shims/react-ga4.js`). Sentry posts straight to Sentry, without the
+  `/monitoring` tunnel.
 - `host_permissions` lists only the DokApi host (plus the bridge if you set
   one). Public RPCs and explorers already serve the web wallet
   cross-origin. If one rejects the extension origin, add its host in
