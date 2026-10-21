@@ -79,6 +79,7 @@ import {
   getDisableMessage,
   getExchangeProviders,
   getGoogleAnalyticsKey,
+  getSellCryptoAllProviders,
   getTutorialVideos,
 } from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
 import {
@@ -236,6 +237,7 @@ export const useWallet = () => {
   const cryptoProviders = useSelector(getCryptoProviders);
   const cryptoProvidersLoading = useSelector(getCryptoProvidersLoading);
   const otcData = useSelector(getOTCData);
+  const sellCryptoAllProviders = useSelector(getSellCryptoAllProviders);
   const sellCryptoProviders = useSelector(getSellCryptoProviders);
   const sellCryptoLoading = useSelector(getSellCryptoLoading);
   const sellCryptoError = useSelector(getSellCryptoError);
@@ -443,6 +445,7 @@ export const useWallet = () => {
     cryptoProviders,
     cryptoProvidersLoading,
     otcData,
+    sellCryptoAllProviders,
     sellCryptoProviders,
     sellCryptoLoading,
     sellCryptoError,

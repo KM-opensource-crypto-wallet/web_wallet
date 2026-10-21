@@ -1,6 +1,5 @@
 import {useRouter} from 'next/navigation';
-
-export const LEARN_MORE_URL = 'https://en.bitcoin.it/wiki/Seed_phrase';
+import {LEARN_MORE_URL} from 'src/data/constants';
 
 // The page is public and can be opened directly (no history to go back to),
 // so back falls back to the app's entry.

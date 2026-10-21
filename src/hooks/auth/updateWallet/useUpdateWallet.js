@@ -28,8 +28,7 @@ export const useUpdateWallet = () => {
     syncingWalletClientId,
     syncingWalletName,
   } = useWallet();
-  // The other wallets' names, captured once at mount (the schema below is
-  // rebuilt every render, so this must not be a ref read during render).
+
   const [finalAllWallets] = useState(() =>
     allWalletName.filter(subItem => subItem !== walletName),
   );
@@ -40,19 +39,15 @@ export const useUpdateWallet = () => {
   const isCurrentWallet = walletName === currentWallet?.walletName;
   const canDelete = !isCurrentWallet && !!walletName;
 
-  // The wallet being edited (only reachable while it's visible), as opposed to
-  // `currentWallet` which is the globally active wallet.
   const editingWallet =
     allWallets.find(item => item?.clientId === walletClientId) || null;
 
-  // Coin scan (1 per 24h per wallet) targets the wallet being edited
   const scanTargetClientId = walletClientId ?? currentWalletClientId;
   const scanWallet = editingWallet ?? currentWallet;
   const {isAvailable: isScanAvailable, remainingLabel: scanRemainingLabel} =
     useCoinScanCooldown(scanWallet?.lastCoinsScanTimestamp);
   const isScanningThisWallet =
     isCoinSyncRunning && syncingWalletClientId === scanTargetClientId;
-  // Only one scan can run at a time - lock the row while another wallet scans
   const isScanningOtherWallet = isCoinSyncRunning && !isScanningThisWallet;
   const isScanRowEnabled =
     isScanningThisWallet || (isScanAvailable && !isScanningOtherWallet);

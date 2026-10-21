@@ -49,9 +49,9 @@
   flex-direction: column;
   gap: 18px;
   width: 100%;
-  max-width: 720px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 28px 16px 0;
+  padding: 28px var(--content-gutter) 0;
 }
 
 .title {

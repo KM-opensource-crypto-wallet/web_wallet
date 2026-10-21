@@ -71,3 +71,10 @@ export const ALLOCATION_SLICES = 4;
 // Swap
 export const SWAP_QUOTE_DEBOUNCE_MS = 700;
 export const SWAP_POLL_INTERVAL_MS = 30_000;
+
+// Reset wallet
+export const LEARN_MORE_URL = 'https://en.bitcoin.it/wiki/Seed_phrase';
+
+// Highlighted address
+export const ADDRESS_HIGHLIGHT_LENGTH = 8;
+export const EVM_ADDRESS_PREFIX_HIGHLIGHT_LENGTH = 10;

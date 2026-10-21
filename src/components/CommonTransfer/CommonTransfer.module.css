@@ -47,9 +47,9 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  max-width: 560px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 14px 20px 0;
+  padding: 14px var(--content-gutter) 0;
 }
 
 .loading {

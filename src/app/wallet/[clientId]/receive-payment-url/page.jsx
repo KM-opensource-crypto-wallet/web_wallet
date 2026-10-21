@@ -15,6 +15,7 @@ import {
 } from 'components/Home/HomeIcons';
 import useReceivePaymentUrl from 'src/hooks/protectedRoutes/wallet/receivePaymentUrl/useReceivePaymentUrl';
 import Screen from 'components/Screen';
+import ModalAddCoins from 'components/ModalAddCoins';
 
 // Payment link: pick a coin and an amount, then share a link the payer opens
 // on their own wallet to send it.
@@ -36,6 +37,9 @@ const ReceivePaymentUrl = () => {
     closePicker,
     pickerCoins,
     onPickCoin,
+    modalAddCoinsVisible,
+    setModalAddCoinsVisible,
+    openAddCoins,
     copied,
     copyUrl,
   } = useReceivePaymentUrl();
@@ -177,6 +181,16 @@ const ReceivePaymentUrl = () => {
                   </div>
                 </section>
 
+                <p className={styles.addCoinText}>
+                  Looking for more coins?
+                  <button
+                    type='button'
+                    className={styles.addCoinLink}
+                    onClick={openAddCoins}>
+                    {' Add coins to this wallet'}
+                  </button>
+                </p>
+
                 <section className={styles.card} aria-label='Payment link'>
                   <div className={styles.field}>
                     <span className={styles.fieldLabel}>Your payment link</span>
@@ -240,6 +254,12 @@ const ReceivePaymentUrl = () => {
         hidden={switcherOpen && readHideBalances()}
         localCurrency={localCurrency}
       />
+      {modalAddCoinsVisible && (
+        <ModalAddCoins
+          visible={modalAddCoinsVisible}
+          hideModal={setModalAddCoinsVisible}
+        />
+      )}
     </Screen>
   );
 };

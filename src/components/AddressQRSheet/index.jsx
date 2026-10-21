@@ -9,6 +9,7 @@ import React, {
 import Modal from '@mui/material/Modal';
 import QRCode from 'react-qr-code';
 import GeneralButton from 'components/Button';
+import HighlightedAddress from 'components/HighlightedAddress';
 import {CopyIcon} from 'components/Home/HomeIcons';
 import {copyToClipboard} from 'utils/copyToClipboard';
 import s from './AddressQRSheet.module.css';
@@ -66,7 +67,9 @@ const AddressQRSheet = forwardRef((_props, ref) => {
           </div>
         )}
         <div className={s.field}>
-          <p className={s.address}>{payload?.address}</p>
+          <p className={s.address}>
+            <HighlightedAddress address={payload?.address} />
+          </p>
           {!!payload?.derivePath && (
             <p className={s.derivePath}>{payload.derivePath}</p>
           )}

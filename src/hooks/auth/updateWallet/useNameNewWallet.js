@@ -90,8 +90,6 @@ export const useNameNewWallet = () => {
           chain_name,
         }),
       ).unwrap();
-      // The reducer makes the new wallet current, but this closure still
-      // holds the previous id; land on the wallet that was just created.
       const newWalletClientId =
         created?.newStoreWallet?.clientId || currentWalletClientId;
       const redirectRoute = searchParams?.get('redirectRoute');

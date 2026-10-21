@@ -35,6 +35,7 @@ export const useReceivePaymentUrl = () => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
 
   // The picker sheet lists full coin objects; keep only the ones that have a
   // payment-link option (one per chain + symbol).
@@ -151,6 +152,11 @@ export const useReceivePaymentUrl = () => {
     closePicker: () => setPickerOpen(false),
     pickerCoins,
     onPickCoin,
+
+    // Add coins
+    modalAddCoinsVisible,
+    setModalAddCoinsVisible,
+    openAddCoins: () => setModalAddCoinsVisible(true),
 
     // Copy link
     copied,

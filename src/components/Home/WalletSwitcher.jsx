@@ -56,7 +56,6 @@ const WalletSwitcher = ({visible, onClose, hidden, localCurrency}) => {
     if (wallet.clientId === currentClientId) {
       return;
     }
-    dispatch(refreshCoins());
     dispatch(resetPaymentUrl());
     dispatch(setCurrentWalletClientId(wallet.clientId));
     // Stay on the same screen in the new wallet.
@@ -65,7 +64,13 @@ const WalletSwitcher = ({visible, onClose, hidden, localCurrency}) => {
         (wallet.coins || []).filter(coin => coin?.isInWallet),
         slug,
       );
-    router.push(switchWalletPath(pathname, wallet.clientId, hasCoin));
+    const nextPath = switchWalletPath(pathname, wallet.clientId, hasCoin);
+    // Coin screens refresh their own coin (see send/[coinSlug]/layout.jsx);
+    // everywhere else shows wallet-wide balances, so refresh the new wallet.
+    if (!nextPath.includes('/home/send/')) {
+      dispatch(refreshCoins({walletClientId: wallet.clientId}));
+    }
+    router.push(nextPath);
   };
 
   return (

@@ -1,7 +1,6 @@
-/* App navigation: a fixed rail on desktop, a slide-in drawer (react-burger-
-   menu) on phones. Same warm surface and glass language as Home; the accent
-   is the white-label `--background` colour. */
-.container,
+/* Phone navigation: a slide-in drawer (react-burger-menu). Desktop nav lives
+   in the Header. Same warm surface and glass language as Home; the accent is
+   the white-label `--background` colour. */
 .bmMenu,
 .bmBurgerButton {
   --sb-ink: #1a1613;
@@ -16,7 +15,6 @@
   --sb-tint: 10%;
 }
 
-:global([data-theme='dark']) .container,
 :global([data-theme='dark']) .bmMenu,
 :global([data-theme='dark']) .bmBurgerButton {
   --sb-ink: #f5f1ec;
@@ -32,26 +30,8 @@
 }
 
 /* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
-.container svg,
 .bmMenu svg {
   fill: none;
-}
-
-/* Desktop rail */
-.container {
-  display: none;
-}
-
-@media (min-width: 769px) {
-  .container {
-    display: block;
-    width: 240px;
-    height: calc(var(--app-height) - 70px);
-    padding: 16px 12px 24px;
-    overflow-y: auto;
-    border-right: 1px solid var(--sb-line);
-    background: var(--sb-surface);
-  }
 }
 
 /* Nav */

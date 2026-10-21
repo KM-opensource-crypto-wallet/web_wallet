@@ -6,6 +6,8 @@ import GeneralButton from 'components/Button';
 import PriceChange from 'components/PriceChange';
 import {ChevronRightIcon} from './HomeIcons';
 import s from './Home.module.css';
+import useHome from 'src/hooks/protectedRoutes/wallet/home/useHome';
+import Skeleton from '../Skeleton';
 
 export const MASK = '••••••';
 
@@ -13,6 +15,7 @@ export const MASK = '••••••';
 // bitcoin address types), name, balance and its value. On wide screens it
 // also shows the coin's share of the wallet.
 const AssetRow = ({item, hidden, localCurrency, share = 0, onPick}) => {
+  const {isLoading} = useHome();
   const showNetwork =
     item?.type === 'token' || isBitcoinChain(item?.chain_name);
   return (
@@ -43,19 +46,25 @@ const AssetRow = ({item, hidden, localCurrency, share = 0, onPick}) => {
           />
         </span>
         <span className={s.assetShareText}>
-          {share >= 0.1 || share === 0 ? share.toFixed(1) : '<0.1'}%
+          <Skeleton loading={isLoading} width='5em'>
+            {share >= 0.1 || share === 0 ? share.toFixed(1) : '<0.1'}%
+          </Skeleton>
         </span>
       </span>
       <span className={s.assetAmounts}>
         <span className={s.assetBalance}>
-          {hidden ? MASK : item?.totalBalance}
+          <Skeleton loading={isLoading} width='5em'>
+            {hidden ? MASK : item?.totalBalance}
+          </Skeleton>
         </span>
         <span className={s.assetValue}>
-          {hidden
-            ? '••••'
-            : `${currencySymbol[localCurrency] || ''}${
-                item?.totalBalanceCourse ?? '0'
-              }`}
+          <Skeleton loading={isLoading} width='5em'>
+            {hidden
+              ? '••••'
+              : `${currencySymbol[localCurrency] || ''}${
+                  item?.totalBalanceCourse ?? '0'
+                }`}
+          </Skeleton>
         </span>
       </span>
       <ChevronRightIcon size={17} className={s.assetChevron} />

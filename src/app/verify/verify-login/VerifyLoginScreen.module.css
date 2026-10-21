@@ -41,9 +41,9 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
-  max-width: 560px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 28px 16px 0;
+  padding: 28px var(--content-gutter) 0;
 }
 
 /* Intro */

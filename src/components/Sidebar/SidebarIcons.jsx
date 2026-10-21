@@ -56,12 +56,29 @@ export const WalletIcon = props => (
   </Svg>
 );
 
-export const WalletConnectIcon = props => (
-  <Svg {...props}>
-    <path d='M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7' />
-    <path d='M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7' />
-  </Svg>
-);
+// WalletConnect.png is the full 1200x675 wordmark; crop to its logo mark
+// (x 107-368, y 231-390) so it stays legible at icon size.
+const WalletConnectLogo = require('assets/images/WalletConnect.png').default;
+const WC_MARK = {x: 107, y: 231, width: 262, height: 160};
+const WC_IMAGE = {width: 1200, height: 675};
+
+export const WalletConnectIcon = ({size = 22}) => {
+  const scale = size / WC_MARK.width;
+  return (
+    <span
+      aria-hidden='true'
+      style={{
+        display: 'block',
+        width: size,
+        height: WC_MARK.height * scale,
+        backgroundImage: `url(${WalletConnectLogo?.src || WalletConnectLogo})`,
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: `${WC_IMAGE.width * scale}px ${WC_IMAGE.height * scale}px`,
+        backgroundPosition: `${-WC_MARK.x * scale}px ${-WC_MARK.y * scale}px`,
+      }}
+    />
+  );
+};
 
 export const AboutIcon = props => (
   <Svg {...props}>
@@ -106,5 +123,18 @@ export const LogoutIcon = props => (
     <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' />
     <path d='M16 17l5-5-5-5' />
     <path d='M21 12H9' />
+  </Svg>
+);
+
+export const ProfileIcon = props => (
+  <Svg {...props}>
+    <circle cx='12' cy='8' r='4' />
+    <path d='M4 21a8 8 0 0 1 16 0' />
+  </Svg>
+);
+
+export const ChevronDownIcon = props => (
+  <Svg {...props}>
+    <path d='M6 9l6 6 6-6' />
   </Svg>
 );

@@ -44,9 +44,9 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-width: 560px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 16px 16px 0;
+  padding: 16px var(--content-gutter) 0;
 }
 
 /* Header (in TopBar): title with the wallet switcher. */
@@ -378,6 +378,24 @@
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--pl-muted);
+}
+
+.addCoinText {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--pl-muted);
+}
+
+.addCoinLink {
+  /* Native button reset — keep the inline text-link look. */
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--background);
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .note > svg {

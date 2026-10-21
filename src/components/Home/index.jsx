@@ -21,6 +21,7 @@ import {
 } from './HomeIcons';
 import s from './Home.module.css';
 import PriceChange from 'components/PriceChange';
+import Skeleton from 'components/Skeleton';
 
 // Allocation slices: the brand accent first, then fixed hues; "Other" last.
 const SLICE_COLORS = [
@@ -52,6 +53,7 @@ const Notice = ({children, actionLabel, onAction, onClose}) => (
 
 const Home = () => {
   const {
+    isLoading,
     walletName,
     switcherOpen,
     openSwitcher,
@@ -144,12 +146,18 @@ const Home = () => {
                   <EyeIcon size={15} off={hidden} />
                 </GeneralButton>
               </div>
-              <p className={s.balanceValue}>{balanceText}</p>
-              {change24h != null && !hidden ? (
-                <p className={s.balanceChange}>
-                  <PriceChange value={change24h} />
-                  <span>past 24h</span>
-                </p>
+              <p className={s.balanceValue}>
+                <Skeleton loading={isLoading} width='5em'>
+                  {balanceText}
+                </Skeleton>
+              </p>
+              {change24h != null && !hidden && !isLoading ? (
+                <Skeleton loading={isLoading} width='5em'>
+                  <p className={s.balanceChange}>
+                    <PriceChange value={change24h} />
+                    <span>past 24h</span>
+                  </p>
+                </Skeleton>
               ) : null}
               <div
                 className={s.actions}
@@ -198,10 +206,14 @@ const Home = () => {
                       />
                       <span className={s.allocationLabel}>{slice.label}</span>
                       <span className={s.allocationValue}>
-                        {formatFiat(slice.value)}
+                        <Skeleton loading={isLoading} width='5em'>
+                          {formatFiat(slice.value)}
+                        </Skeleton>
                       </span>
                       <span className={s.allocationShare}>
-                        {slice.share.toFixed(1)}%
+                        <Skeleton loading={isLoading} width='5em'>
+                          {slice.share.toFixed(1)}%
+                        </Skeleton>
                       </span>
                     </li>
                   ))}

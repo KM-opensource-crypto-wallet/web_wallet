@@ -8,6 +8,7 @@ import Loading from 'components/Loading';
 import CoinIcon from 'components/CoinIcon';
 import PriceChange from 'components/PriceChange';
 import GeneralButton from 'components/Button';
+import HighlightedAddress from 'components/HighlightedAddress';
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -22,7 +23,9 @@ import {
   UnlinkIcon,
 } from 'components/Home/HomeIcons';
 import WalletSwitcher from 'components/Home/WalletSwitcher';
-import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
+import useHome, {
+  readHideBalances,
+} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
 import ModalDelegation from 'components/ModalDelegation';
 import AddressSelectorSheet from 'components/AddressSelectorSheet';
@@ -30,6 +33,7 @@ import AddressTypeBadge from 'components/AddressTypeBadge';
 import SendPopOver from 'components/SendPopOver';
 import ModalUnclaimedDeposit from 'components/ModalUnclaimedDeposit';
 import Screen from 'components/Screen';
+import Skeleton from '../Skeleton';
 
 // Glass card row used for history / staking, and (flat) inside Advanced.
 const ActionRow = ({icon, tone, title, hint, onClick, chevron = true}) => (
@@ -135,16 +139,20 @@ const SendScreen = () => {
                   ) : null}
                 </span>
                 <p className={s.balance}>
-                  {currentCoin?.totalAmount}{' '}
+                  <Skeleton loading={isLoading} width='5em'>
+                    {currentCoin?.totalAmount}{' '}
+                  </Skeleton>
                   <span className={s.balanceSymbol}>{symbol}</span>
                 </p>
                 <p className={s.fiat}>
-                  {currencySymbol[localCurrency] || ''}
-                  {currentCoin?.totalCourse}
-                  <PriceChange
-                    value={currentCoin?.priceChange24h}
-                    className={s.heroChange}
-                  />
+                  <Skeleton loading={isLoading} width='5em'>
+                    {currencySymbol[localCurrency] || ''}
+                    {currentCoin?.totalCourse}
+                    <PriceChange
+                      value={currentCoin?.priceChange24h}
+                      className={s.heroChange}
+                    />
+                  </Skeleton>
                 </p>
               </section>
 
@@ -206,7 +214,9 @@ const SendScreen = () => {
                     </GeneralButton>
                   ) : null}
                 </div>
-                <p className={s.address}>{currentCoin?.address || ''}</p>
+                <p className={s.address}>
+                  <HighlightedAddress address={currentCoin?.address} />
+                </p>
                 <div className={s.cardFoot}>
                   <span className={s.meta}>
                     {selectedDeriveAddressItem?.derivePath ? (

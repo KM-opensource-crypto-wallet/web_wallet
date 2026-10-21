@@ -10,8 +10,7 @@ export const useResetWallet = () => {
   const query = searchParams?.toString() ? `?${searchParams}` : '';
   const createPath = `/auth/create-wallet${query}`;
   const importPath = `/auth/import-wallet${query}`;
-  // Navigation finishes only once the next page's code has loaded; until then
-  // the picked card shows a spinner instead of looking unresponsive.
+
   const [isNavigating, startNavigation] = useTransition();
 
   // Load both next pages while the user reads, so the click is instant.

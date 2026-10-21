@@ -1,21 +1,293 @@
+/* Top bar. Phones: centred logo (the Sidebar drawer's burger sits top-left).
+   Desktop: logo, primary nav pills, and a profile menu on the right. Same warm
+   surface and glass language as Home/Sidebar; the accent is the white-label
+   `--background` colour. */
 .container {
+  --hd-ink: #1a1613;
+  --hd-muted: #6e655e;
+  --hd-surface: rgba(251, 248, 245, 0.92);
+  --hd-line: rgba(26, 22, 19, 0.07);
+  --hd-track: rgba(26, 22, 19, 0.045);
+  --hd-hover: rgba(26, 22, 19, 0.05);
+  --hd-pill: #ffffff;
+  --hd-pill-shadow:
+    0 1px 2px rgba(63, 40, 22, 0.08), 0 4px 12px rgba(63, 40, 22, 0.06);
+  --hd-menu: #ffffff;
+  --hd-menu-shadow:
+    0 18px 48px rgba(63, 40, 22, 0.16), 0 2px 6px rgba(63, 40, 22, 0.06);
+  --hd-danger: #d92d20;
+
+  position: relative;
+  z-index: 100;
   display: flex;
+  align-items: center;
+  gap: 20px;
   width: 100%;
   height: 70px;
-  border-bottom: solid 1px var(--whiteOutline);
+  padding: 0 24px;
+  border-bottom: 1px solid var(--hd-line);
+  background: var(--hd-surface);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+}
+
+:global([data-theme='dark']) .container {
+  --hd-ink: #f5f1ec;
+  --hd-muted: #a89c92;
+  --hd-surface: rgba(23, 19, 15, 0.92);
+  --hd-line: rgba(255, 255, 255, 0.07);
+  --hd-track: rgba(255, 255, 255, 0.05);
+  --hd-hover: rgba(255, 255, 255, 0.06);
+  --hd-pill: rgba(255, 255, 255, 0.1);
+  --hd-pill-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --hd-menu: #1d1813;
+  --hd-menu-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --hd-danger: #f97066;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.container svg {
+  fill: none;
+}
+
+.logo {
+  display: flex;
+  flex: none;
   align-items: center;
-  @media(max-width: 768px){
+}
+
+/* Desktop navigation is hidden on phones, where the drawer is used. */
+.nav,
+.profile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .container {
     justify-content: center;
     padding: 6px;
   }
+}
 
-}
-.btnContainer {
-  position: relative;
-  width: 10px;
-}
 @media (min-width: 769px) {
-  .btnContainer {
-    display: none;
+  .logoImage {
+    width: auto;
+    height: 52px;
   }
+
+  .nav {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .profile {
+    position: relative;
+    display: block;
+    flex: none;
+    margin-left: auto;
+  }
+}
+
+/* Primary nav: a segmented track of pills */
+.navList {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--hd-track);
+  list-style: none;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--hd-muted);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    box-shadow 0.2s;
+}
+
+.navItem:hover {
+  color: var(--hd-ink);
+  background: var(--hd-hover);
+}
+
+.navItem:focus-visible,
+.profileButton:focus-visible,
+.menuItem:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+.navIcon {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+.navItemActive,
+.navItemActive:hover {
+  color: var(--hd-ink);
+  background: var(--hd-pill);
+  box-shadow: var(--hd-pill-shadow);
+}
+
+.navItemActive .navIcon {
+  color: var(--background);
+}
+
+/* Too narrow for labels: icon-only pills; the label stays for screen readers. */
+@media (min-width: 769px) and (max-width: 1180px) {
+  .navItem {
+    padding: 0 12px;
+  }
+
+  .navLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+/* Profile button + dropdown */
+.profileButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--hd-line);
+  border-radius: 999px;
+  background: var(--hd-pill);
+  color: var(--hd-muted);
+  cursor: pointer;
+  box-shadow: var(--hd-pill-shadow);
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.profileButton:hover,
+.profileButtonOpen {
+  color: var(--hd-ink);
+  border-color: color-mix(in srgb, var(--background) 40%, transparent);
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--background) 82%, #fff) 0%,
+    var(--background) 100%
+  );
+}
+
+.chevron {
+  display: flex;
+  transition: transform 0.2s;
+}
+
+.profileButtonOpen .chevron {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 248px;
+  padding: 6px;
+  border-radius: 18px;
+  background: var(--hd-menu);
+  box-shadow: var(--hd-menu-shadow);
+  animation: menuIn 0.16s ease-out;
+  transform-origin: top right;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    animation: none;
+  }
+}
+
+.menuGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.menuGroup + .menuGroup {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--hd-line);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  color: var(--hd-ink);
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.menuItem:hover {
+  background: var(--hd-hover);
+}
+
+.menuIcon {
+  display: flex;
+  flex: none;
+  color: var(--hd-muted);
+}
+
+.menuItemActive {
+  background: color-mix(in srgb, var(--background) 10%, transparent);
+}
+
+.menuItemActive .menuIcon {
+  color: var(--background);
+}
+
+.menuItemDanger,
+.menuItemDanger .menuIcon {
+  color: var(--hd-danger);
+}
+
+.menuItemDanger:hover {
+  background: color-mix(in srgb, var(--hd-danger) 8%, transparent);
 }

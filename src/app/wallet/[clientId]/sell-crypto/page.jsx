@@ -9,6 +9,7 @@ import {validateNumberInInput} from 'dok-wallet-blockchain-networks/helper';
 import {currencySymbol} from 'src/data/lists/currency';
 import ModalLoad from 'src/components/ModalLoad';
 import GeneralButton from 'components/Button';
+import HighlightedAddress from 'components/HighlightedAddress';
 import HomeSheet from 'components/Home/HomeSheet';
 import WalletSwitcher from 'components/Home/WalletSwitcher';
 import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
@@ -192,7 +193,7 @@ const SellCrypto = () => {
                   <div className={styles.addressRow}>
                     <span className={styles.addressLabel}>From</span>
                     <span className={styles.address} title={coin.walletAddress}>
-                      {coin.walletAddress}
+                      <HighlightedAddress address={coin.walletAddress} />
                     </span>
                     <button
                       type='button'

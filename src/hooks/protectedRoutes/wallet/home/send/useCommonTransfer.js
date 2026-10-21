@@ -12,6 +12,7 @@ import BigNumber from 'bignumber.js';
 import dayjs from 'dayjs';
 import {sendFunds} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {calculateEstimateFee} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
+import {currencySymbol} from 'src/data/lists/currency';
 import {
   delay,
   getCustomizePublicAddress,
@@ -55,8 +56,6 @@ export const useCommonTransfer = () => {
     exchangeToName,
     exchangeToAddress,
     selectedExchangeChain,
-    walletName,
-    fiatSymbol,
   } = useWallet();
   // Hedera: the recipient's ledger account id; a missing id means the
   // transfer will auto-create the account (sender pays).
@@ -576,6 +575,7 @@ export const useCommonTransfer = () => {
         : null,
   );
 
+  const fiatSymbol = currencySymbol[localCurrency] || '';
   const feeSymbol = isExchangeScreen
     ? selectedFromAsset?.chain_symbol
     : transferData?.currentCoin?.chain_symbol;
@@ -606,6 +606,7 @@ export const useCommonTransfer = () => {
       ? address
       : getCustomizePublicAddress(address);
 
+  const walletName = currentWallet?.walletName || 'Wallet';
   const fromParty = coin => ({
     name: walletName,
     sub: formatAddress(coin?.address),

@@ -1,9 +1,7 @@
 'use client';
 import React, {useMemo, useState} from 'react';
 import s from './Sidebar.module.css';
-import sidebarList from 'src/data/lists/sidebarList';
 import ActiveLink from 'components/ActiveLink';
-import {usePathname} from 'next/navigation';
 import ModalReset from 'components/ModalReset';
 import WalletConnectRequestModal from '../WalletConnectRequestModal';
 import {
@@ -25,13 +23,7 @@ import {
 import {setNewsModalVisible} from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
 import {slide as Menu} from 'react-burger-menu';
 import {useTranslations} from 'next-intl';
-import {publicRoutes, getActiveNavSegment} from 'utils/common';
-import {
-  getCryptoProviders,
-  getExchangeProviders,
-  getSellCryptoAllProviders,
-} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
-import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import useNavList from 'src/hooks/navigation/useNavList';
 
 // Order of the dividers-separated groups in the nav.
 const SECTIONS = ['wallet', 'general', 'account'];
@@ -39,8 +31,7 @@ const SECTIONS = ['wallet', 'general', 'account'];
 const Sidebar = () => {
   const t = useTranslations('home');
 
-  const path = usePathname();
-  const pathname = getActiveNavSegment(path);
+  const {navList, showNav, pathname} = useNavList();
 
   const [modal, setModal] = useState(false);
   const [page, setPage] = useState('');
@@ -53,29 +44,8 @@ const Sidebar = () => {
   );
   const isNewsModalVisible = useSelector(getNewsModalVisible);
   const newsMessage = useSelector(getNewsMessage);
-  const buyCryptoProvider = useSelector(getCryptoProviders);
-  const sellCryptoProvider = useSelector(getSellCryptoAllProviders);
-  const exchangeCryptoProvider = useSelector(getExchangeProviders);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
-
   const [isOpenMenu, setIsOpenMenu] = useState(false);
   const dispatch = useDispatch();
-
-  const filterSideBarList = useMemo(
-    () =>
-      sidebarList(currentWalletClientId).filter(item => {
-        if (item.key === 'buyCrypto') return buyCryptoProvider.length > 0;
-        if (item.key === 'sellCrypto') return sellCryptoProvider.length > 0;
-        if (item.key === 'swap') return exchangeCryptoProvider.length > 0;
-        return true;
-      }),
-    [
-      currentWalletClientId,
-      buyCryptoProvider.length,
-      exchangeCryptoProvider.length,
-      sellCryptoProvider.length,
-    ],
-  );
 
   const handleToggleMenu = () => {
     setIsOpenMenu(!isOpenMenu);
@@ -87,9 +57,9 @@ const Sidebar = () => {
   const sections = useMemo(
     () =>
       SECTIONS.map(section =>
-        filterSideBarList.filter(item => item.section === section),
+        navList.filter(item => item.section === section),
       ).filter(items => items.length > 0),
-    [filterSideBarList],
+    [navList],
   );
 
   const renderNav = onItemClick => (
@@ -116,14 +86,11 @@ const Sidebar = () => {
     </nav>
   );
 
-  const shouldDisplayMenu = () =>
-    pathname !== '/auth' &&
-    pathname !== '/' &&
-    !publicRoutes.includes(pathname);
+  // Desktop navigation lives in the Header; this drawer is phones only. The
+  // app-wide modals below still mount here on every screen size.
   return (
-    shouldDisplayMenu() && (
+    showNav && (
       <>
-        <aside className={s.container}>{renderNav()}</aside>
         <Menu
           onOpen={handleToggleMenu}
           onClose={handleToggleMenu}

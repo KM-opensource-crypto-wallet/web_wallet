@@ -52,6 +52,8 @@ export const useHome = () => {
   const sortButtonRef = useRef(null);
 
   const {
+    isStoreLoaded,
+    currentWalletClientId,
     localCurrency,
     totalAssets,
     isBackup,
@@ -128,6 +130,10 @@ export const useHome = () => {
   );
 
   return {
+    // Until the store rehydrates and this URL's wallet is active, the text
+    // below would show defaults ("Wallet", 0.00) or the previous wallet.
+    isLoading: !isStoreLoaded || currentWalletClientId !== clientId,
+
     // Wallet switcher
     walletName,
     switcherOpen,

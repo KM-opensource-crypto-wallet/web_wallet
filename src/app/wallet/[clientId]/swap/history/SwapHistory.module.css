@@ -97,9 +97,9 @@
 
 .list {
   width: 100%;
-  max-width: 560px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 14px 16px 24px;
+  padding: 14px var(--content-gutter) 24px;
 }
 
 .group {

@@ -6,6 +6,7 @@ import QRCode from 'react-qr-code';
 import useReceiveFunds from 'src/hooks/protectedRoutes/wallet/home/send/useReceiveFunds';
 import CoinIcon from 'components/CoinIcon';
 import GeneralButton from 'components/Button';
+import HighlightedAddress from 'components/HighlightedAddress';
 import WalletSwitcher from 'components/Home/WalletSwitcher';
 import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {selectCurrentWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -22,11 +23,13 @@ import s from './RecieveFunds.module.css';
 
 // Read-only value with a copy button; used for the address and, on Hedera,
 // the ledger account id.
-const CopyField = ({label, value, copied, onCopy, copyLabel}) => (
+const CopyField = ({label, value, copied, onCopy, copyLabel, highlight}) => (
   <div className={s.field}>
     <span className={s.fieldLabel}>{label}</span>
     <div className={s.fieldRow}>
-      <p className={s.fieldValue}>{value}</p>
+      <p className={s.fieldValue}>
+        {highlight ? <HighlightedAddress address={value} /> : value}
+      </p>
       <GeneralButton
         variant='unstyled'
         className={`${s.copy} ${copied ? s.copyDone : ''}`}
@@ -167,6 +170,7 @@ const ReceiveFunds = () => {
           <CopyField
             label={`Your ${symbol} address`}
             value={generating ? 'Creating address…' : address}
+            highlight={!generating}
             copied={addressCopied}
             onCopy={copyAddress}
             copyLabel='Copy address'

@@ -28,8 +28,6 @@ import useWallet from 'src/hooks/wallet/useWallet';
 import {useFormDraft} from 'src/hooks/useFormDraft';
 import {BUY_CRYPTO_CURRENCIES, OTC_DETAILS_ROUTE} from 'src/data/constants';
 
-// Quote cards: the best rate is the largest amount received; the others show
-// how far below it they are.
 const rankQuotes = providers => {
   const list = Array.isArray(providers) ? providers : [];
   const best = list.reduce((max, item) => {
@@ -51,8 +49,6 @@ const rankQuotes = providers => {
   });
 };
 
-// Logic for the Buy crypto screen (app/.../buy-crypto) and the OTC order
-// screen (app/.../buy-crypto/otc2).
 export const useBuyCrypto = () => {
   const router = useRouter();
   const {
