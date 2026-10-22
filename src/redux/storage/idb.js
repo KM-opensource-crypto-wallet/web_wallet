@@ -30,6 +30,59 @@ const transactionDone = tx =>
     tx.onabort = () => reject(tx.error || new Error('transaction aborted'));
   });
 
+// Waits before each re-open after a transient open failure (4 attempts, ~1.5 s
+// worst case). Android Chromium rejects open with `AbortError: The connection
+// was closed.` when its IndexedDB backend drops (memory pressure, tab resumed
+// from background); the next attempt normally succeeds. Retrying here is safe:
+// it happens before the storage bootstrap settles, so redux-persist never sees
+// the failure (see StateProvider on why a retry after rejection is not).
+export const OPEN_RETRY_DELAYS_MS = [100, 400, 1000];
+
+const TRANSIENT_OPEN_ERRORS = new Set(['AbortError', 'UnknownError']);
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/** One open attempt. Rejects with a SecureStoreError; `transient` marks a retryable one. */
+const openOnce = (dbName, storeNames) =>
+  new Promise((resolve, reject) => {
+    let request;
+    try {
+      request = indexedDB.open(dbName, 1);
+    } catch (error) {
+      reject(unavailable('IndexedDB open threw', error));
+      return;
+    }
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      for (const name of storeNames) {
+        if (!db.objectStoreNames.contains(name)) {
+          db.createObjectStore(name);
+        }
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => {
+      const error = unavailable('IndexedDB open failed', request.error);
+      error.transient = TRANSIENT_OPEN_ERRORS.has(request.error?.name);
+      reject(error);
+    };
+    request.onblocked = () =>
+      reject(unavailable('IndexedDB open blocked by another connection'));
+  });
+
+const openWithRetry = async (dbName, storeNames) => {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await openOnce(dbName, storeNames);
+    } catch (error) {
+      if (!error.transient || attempt >= OPEN_RETRY_DELAYS_MS.length) {
+        throw error;
+      }
+      await delay(OPEN_RETRY_DELAYS_MS[attempt]);
+    }
+  }
+};
+
 /**
  * Opens (lazily, once) `dbName` with the given object stores and returns a
  * store-scoped KV API. Multiple stores in one database share one connection.
@@ -44,24 +97,8 @@ export const openKvDatabase = (dbName, storeNames) => {
     if (!isIndexedDbAvailable()) {
       return Promise.reject(unavailable('IndexedDB is not available'));
     }
-    dbPromise = new Promise((resolve, reject) => {
-      let request;
-      try {
-        request = indexedDB.open(dbName, 1);
-      } catch (error) {
-        reject(unavailable('IndexedDB open threw', error));
-        return;
-      }
-      request.onupgradeneeded = () => {
-        const db = request.result;
-        for (const name of storeNames) {
-          if (!db.objectStoreNames.contains(name)) {
-            db.createObjectStore(name);
-          }
-        }
-      };
-      request.onsuccess = () => {
-        const db = request.result;
+    dbPromise = openWithRetry(dbName, storeNames)
+      .then(db => {
         // Another tab deleted/upgraded the database: drop our handle so the
         // next call reopens instead of failing forever.
         db.onversionchange = () => {
@@ -71,16 +108,12 @@ export const openKvDatabase = (dbName, storeNames) => {
         db.onclose = () => {
           dbPromise = null;
         };
-        resolve(db);
-      };
-      request.onerror = () =>
-        reject(unavailable('IndexedDB open failed', request.error));
-      request.onblocked = () =>
-        reject(unavailable('IndexedDB open blocked by another connection'));
-    }).catch(error => {
-      dbPromise = null;
-      throw error;
-    });
+        return db;
+      })
+      .catch(error => {
+        dbPromise = null;
+        throw error;
+      });
     return dbPromise;
   };
 

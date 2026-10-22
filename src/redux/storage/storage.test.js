@@ -163,6 +163,40 @@ describe('web storage', () => {
       global.indexedDB = saved;
       await expect(bootstrapStorage()).resolves.toBeDefined();
     });
+
+    // A request that fails like Android Chromium's dropped IndexedDB backend.
+    const failingOpen = name => () => {
+      const request = {error: {name, message: 'The connection was closed.'}};
+      setTimeout(() => request.onerror?.());
+      return request;
+    };
+
+    it('retries a transient open failure instead of failing the bootstrap', async () => {
+      const realOpen = global.indexedDB.open.bind(global.indexedDB);
+      const open = jest
+        .spyOn(global.indexedDB, 'open')
+        .mockImplementationOnce(failingOpen('AbortError'))
+        .mockImplementationOnce(failingOpen('AbortError'))
+        .mockImplementation(realOpen);
+      await expect(bootstrapStorage()).resolves.toBeDefined();
+      // The bootstrap also opens the secure store; count only dok-state.
+      const stateOpens = open.mock.calls.filter(
+        ([name]) => name === 'dok-state',
+      );
+      expect(stateOpens).toHaveLength(3);
+      expect(isStorageReady()).toBe(true);
+    });
+
+    it('does not retry a non-transient open failure', async () => {
+      const open = jest
+        .spyOn(global.indexedDB, 'open')
+        .mockImplementation(failingOpen('QuotaExceededError'));
+      await expect(bootstrapStorage()).rejects.toMatchObject({
+        name: 'SecureStoreError',
+        code: 'unavailable',
+      });
+      expect(open).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('plainStorage', () => {
