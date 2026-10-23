@@ -309,3 +309,7 @@
     transition: none;
   }
 }
+
+.restoreButton {
+  margin-bottom: 12px;
+}

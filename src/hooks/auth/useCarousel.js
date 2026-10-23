@@ -1,6 +1,8 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
+import {useDispatch} from 'react-redux';
 import data from 'src/data/lists/carousel';
+import {canRestoreFromVault} from 'security/vaultRecovery';
 import useWallet from 'src/hooks/wallet/useWallet';
 import {CAROUSEL_LAST_INDEX, SWIPE_THRESHOLD_PX} from 'src/data/constants';
 
@@ -11,6 +13,15 @@ export const useCarousel = () => {
   const {hasAccount: storePassword} = useWallet();
   const searchParams = useSearchParams();
   const swipeStartX = useRef(null);
+  const dispatch = useDispatch();
+  // Keys from earlier are still in this browser (vault without an account).
+  const [canRestore, setCanRestore] = useState(false);
+
+  useEffect(() => {
+    dispatch(canRestoreFromVault())
+      .then(setCanRestore)
+      .catch(() => setCanRestore(false));
+  }, [dispatch]);
 
   const isLast = index === CAROUSEL_LAST_INDEX;
 
@@ -27,6 +38,12 @@ export const useCarousel = () => {
     } else {
       router.push(`/auth/registration${searchParamsStr}`);
     }
+  };
+
+  const handleRestore = () => {
+    router.push(
+      `/auth/restore-from-device${searchParams ? `?${searchParams}` : ''}`,
+    );
   };
 
   useEffect(() => {
@@ -73,6 +90,8 @@ export const useCarousel = () => {
     trackStyle,
     goTo,
     handleGetStarted,
+    canRestore,
+    handleRestore,
     onPointerDown,
     onPointerUp,
     onPointerCancel,

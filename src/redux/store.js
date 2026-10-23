@@ -1,4 +1,9 @@
-import {createMigrate, persistReducer, persistStore} from 'redux-persist';
+import {
+  REHYDRATE,
+  createMigrate,
+  persistReducer,
+  persistStore,
+} from 'redux-persist';
 import {
   combineReducers,
   configureStore,
@@ -36,8 +41,10 @@ import {
   IMMEDIATE_VAULT_WRITE_ACTIONS,
   createVaultSync,
 } from 'dok-wallet-blockchain-networks/security/vaultSync';
+import {captureError, logger} from 'services/logger';
+import {isRestoringFromVault} from 'security/restoreState';
 import {rejectedActionBreadcrumb} from './sentryMiddleware';
-import {plainStorage} from './storage/plainStorage';
+import {blockWrites, plainStorage} from './storage/plainStorage';
 import {sealedStorage} from './storage/sealedStorage';
 import {
   createTimedSerialize,
@@ -160,10 +167,37 @@ export const rootReducer = combineReducers({
   ),
 });
 
+// A slice whose stored copy could not be read back is rehydrated from its
+// initial state, and redux-persist would then write that empty state over the
+// stored data (`hasAccount` or the settings gone for good). Its key is made
+// read-only for this page load before the reducer sees the REHYDRATE, so the
+// stored data survives for the next load, and the failure is reported. Only
+// plain slices can get here: sealed ones read nothing before unlock, and the
+// unlock flow rehydrates them itself and fails the unlock on an error.
+const guardFailedRehydrate = () => next => action => {
+  if (action?.type === REHYDRATE && action.err) {
+    blockWrites(`persist:${action.key}`);
+    logger.error('storage.rehydrate_failed', {slice: action.key});
+    captureError(action.err, {
+      tags: {area: 'storage', op: 'rehydrate_failed', slice: action.key},
+    });
+  }
+  return next(action);
+};
+
 // Mirrors wallet secrets into the vault (immediately for wallet-creating
 // actions, debounced otherwise); empties it on resetWallet, destroys it on
 // logOutSuccess. `flush()` runs on pagehide next to persistor.flush().
-export const vaultSync = createVaultSync();
+// While vaultRecovery rebuilds wallets with the vault locked on purpose, the
+// expected `write_while_locked` reports are dropped; everything else is kept.
+export const vaultSync = createVaultSync({
+  onError: (error, context) => {
+    if (isRestoringFromVault() && context?.tags?.op === 'write_while_locked') {
+      return;
+    }
+    captureError(error, context);
+  },
+});
 
 // Key material must be on disk before the tab can close: the same actions the
 // vault writes immediately for also flush redux-persist right away (and
@@ -186,7 +220,11 @@ const store = configureStore({
       serializableCheck: false,
       immutableCheck: false,
     })
-      .prepend(vaultSync.middleware, persistFlush.middleware)
+      .prepend(
+        guardFailedRehydrate,
+        vaultSync.middleware,
+        persistFlush.middleware,
+      )
       .concat(rejectedActionBreadcrumb),
   // The decrypted store (keys included) must not be inspectable in production.
   devTools: process.env.NODE_ENV !== 'production',

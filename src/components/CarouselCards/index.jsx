@@ -13,6 +13,8 @@ const CarouselCards = () => {
     trackStyle,
     goTo,
     handleGetStarted,
+    canRestore,
+    handleRestore,
     onPointerDown,
     onPointerUp,
     onPointerCancel,
@@ -95,6 +97,16 @@ const CarouselCards = () => {
               />
             ))}
           </div>
+
+          {canRestore && (
+            <GeneralButton
+              variant='secondary'
+              fullWidth
+              onClick={handleRestore}
+              className={styles.restoreButton}>
+              Restore wallets saved on this device
+            </GeneralButton>
+          )}
 
           <div className={styles.actions}>
             {index > 0 && (

@@ -9,6 +9,7 @@ import AuthLayout, {
   authStyles,
 } from 'components/AuthLayout';
 import GeneralButton from 'src/components/Button';
+import ModalConfirm from 'components/ModalConfirm';
 import styles from './Registration.module.css';
 
 const CheckIcon = ({size}) => (
@@ -27,139 +28,174 @@ const CheckIcon = ({size}) => (
 );
 
 const RegistrationScreen = () => {
-  const {initialValues, validationSchema, handleSubmit, getPasswordState} =
-    useRegistration();
+  const {
+    initialValues,
+    validationSchema,
+    handleSubmit,
+    getPasswordState,
+    vaultPrompt,
+    setVaultPrompt,
+    onRestoreInstead,
+    onConfirmDelete,
+    onCancelVaultPrompt,
+  } = useRegistration();
 
   return (
-    <AuthLayout
-      title='Create your password'
-      subtitle='This password unlocks your wallet on this device. It never leaves this browser.'>
-      <div className={styles.scope}>
-        <Formik
-          initialValues={initialValues}
-          validationSchema={validationSchema}
-          onSubmit={handleSubmit}>
-          {({values, handleChange, handleBlur, handleSubmit, isSubmitting}) => {
-            const {password, passConfirm} = values;
-            const {rules, strength, matched, mismatch, canSubmit} =
-              getPasswordState(values);
-            return (
-              <form
-                className={authStyles.form}
-                onSubmit={handleSubmit}
-                noValidate>
-                <div className={authStyles.card}>
-                  <div>
-                    <label htmlFor='password' className={authStyles.label}>
-                      New password
-                    </label>
-                    <PasswordInput
-                      id='password'
-                      placeholder='Enter new password'
-                      aria-label='New password'
-                      autoFocus={true}
-                      autoComplete='new-password'
-                      describedBy='password-strength password-rules'
-                      value={password}
-                      onChange={handleChange('password')}
-                      onBlur={handleBlur('password')}
-                    />
-                    <div
-                      id='password-strength'
-                      className={styles.strength}
-                      data-score={strength.score}>
-                      <div className={styles.segments} aria-hidden='true'>
-                        <span />
-                        <span />
-                        <span />
+    <>
+      <AuthLayout
+        title='Create your password'
+        subtitle='This password unlocks your wallet on this device. It never leaves this browser.'>
+        <div className={styles.scope}>
+          <Formik
+            initialValues={initialValues}
+            validationSchema={validationSchema}
+            onSubmit={handleSubmit}>
+            {({
+              values,
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              isSubmitting,
+            }) => {
+              const {password, passConfirm} = values;
+              const {rules, strength, matched, mismatch, canSubmit} =
+                getPasswordState(values);
+              return (
+                <form
+                  className={authStyles.form}
+                  onSubmit={handleSubmit}
+                  noValidate>
+                  <div className={authStyles.card}>
+                    <div>
+                      <label htmlFor='password' className={authStyles.label}>
+                        New password
+                      </label>
+                      <PasswordInput
+                        id='password'
+                        placeholder='Enter new password'
+                        aria-label='New password'
+                        autoFocus={true}
+                        autoComplete='new-password'
+                        describedBy='password-strength password-rules'
+                        value={password}
+                        onChange={handleChange('password')}
+                        onBlur={handleBlur('password')}
+                      />
+                      <div
+                        id='password-strength'
+                        className={styles.strength}
+                        data-score={strength.score}>
+                        <div className={styles.segments} aria-hidden='true'>
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                        <span className={styles.strengthLabel}>
+                          {strength.label}
+                        </span>
                       </div>
-                      <span className={styles.strengthLabel}>
-                        {strength.label}
-                      </span>
+                      <ul id='password-rules' className={styles.rules}>
+                        {rules.map(rule => (
+                          <li
+                            key={rule.label}
+                            className={`${styles.rule} ${
+                              rule.met ? styles.ruleMet : ''
+                            }`}>
+                            {rule.met ? (
+                              <CheckIcon size={15} />
+                            ) : (
+                              <svg
+                                width='15'
+                                height='15'
+                                viewBox='0 0 24 24'
+                                fill='none'
+                                stroke='currentColor'
+                                strokeWidth='2'
+                                aria-hidden='true'>
+                                <circle cx='12' cy='12' r='8' />
+                              </svg>
+                            )}
+                            {rule.label}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul id='password-rules' className={styles.rules}>
-                      {rules.map(rule => (
-                        <li
-                          key={rule.label}
-                          className={`${styles.rule} ${
-                            rule.met ? styles.ruleMet : ''
-                          }`}>
-                          {rule.met ? (
-                            <CheckIcon size={15} />
-                          ) : (
-                            <svg
-                              width='15'
-                              height='15'
-                              viewBox='0 0 24 24'
-                              fill='none'
-                              stroke='currentColor'
-                              strokeWidth='2'
-                              aria-hidden='true'>
-                              <circle cx='12' cy='12' r='8' />
-                            </svg>
-                          )}
-                          {rule.label}
-                        </li>
-                      ))}
-                    </ul>
+
+                    <div>
+                      <label htmlFor='passConfirm' className={authStyles.label}>
+                        Confirm password
+                      </label>
+                      <PasswordInput
+                        id='passConfirm'
+                        placeholder='Re-enter password'
+                        aria-label='Confirm password'
+                        autoComplete='new-password'
+                        invalid={mismatch}
+                        valid={matched}
+                        adornment={
+                          matched ? (
+                            <span className={styles.matchIcon}>
+                              <CheckIcon size={20} />
+                            </span>
+                          ) : null
+                        }
+                        describedBy={mismatch ? 'confirm-error' : undefined}
+                        value={passConfirm}
+                        onChange={handleChange('passConfirm')}
+                        onBlur={handleBlur('passConfirm')}
+                      />
+                      {mismatch ? (
+                        <p
+                          id='confirm-error'
+                          className={authStyles.error}
+                          role='alert'>
+                          Passwords don&apos;t match yet
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
 
-                  <div>
-                    <label htmlFor='passConfirm' className={authStyles.label}>
-                      Confirm password
-                    </label>
-                    <PasswordInput
-                      id='passConfirm'
-                      placeholder='Re-enter password'
-                      aria-label='Confirm password'
-                      autoComplete='new-password'
-                      invalid={mismatch}
-                      valid={matched}
-                      adornment={
-                        matched ? (
-                          <span className={styles.matchIcon}>
-                            <CheckIcon size={20} />
-                          </span>
-                        ) : null
-                      }
-                      describedBy={mismatch ? 'confirm-error' : undefined}
-                      value={passConfirm}
-                      onChange={handleChange('passConfirm')}
-                      onBlur={handleBlur('passConfirm')}
-                    />
-                    {mismatch ? (
-                      <p
-                        id='confirm-error'
-                        className={authStyles.error}
-                        role='alert'>
-                        Passwords don&apos;t match yet
-                      </p>
-                    ) : null}
+                  <InfoNote>
+                    We can&apos;t recover this password. If you forget it,
+                    you&apos;ll need your seed phrase to restore the wallet.
+                  </InfoNote>
+
+                  <div className={authStyles.footer}>
+                    <GeneralButton
+                      type='submit'
+                      fullWidth
+                      loading={isSubmitting}
+                      loadingLabel='Creating wallet…'
+                      disabled={!canSubmit}>
+                      Create account
+                    </GeneralButton>
+                    <NonCustodialNote />
                   </div>
-                </div>
-
-                <InfoNote>
-                  We can&apos;t recover this password. If you forget it,
-                  you&apos;ll need your seed phrase to restore the wallet.
-                </InfoNote>
-
-                <div className={authStyles.footer}>
-                  <GeneralButton
-                    type='submit'
-                    fullWidth
-                    loading={isSubmitting}
-                    loadingLabel='Creating wallet…'
-                    disabled={!canSubmit}>
-                    Create account
-                  </GeneralButton>
-                  <NonCustodialNote />
-                </div>
-              </form>
-            );
-          }}
-        </Formik>
-      </div>
-    </AuthLayout>
+                </form>
+              );
+            }}
+          </Formik>
+        </div>
+      </AuthLayout>
+      <ModalConfirm
+        visible={vaultPrompt === 'found'}
+        title='Wallets found on this device'
+        description='Wallets from earlier are still saved in this browser. You can restore them with the password you used before.'
+        yesButtonTitle='Restore wallets'
+        noButtonTitle='Delete and start over'
+        onPressYes={onRestoreInstead}
+        onPressNo={() => setVaultPrompt('confirmDelete')}
+      />
+      <ModalConfirm
+        visible={vaultPrompt === 'confirmDelete'}
+        title='Delete saved wallets?'
+        description='The saved wallets will be removed from this browser for good. Only continue if you have their recovery phrases or a backup.'
+        yesButtonTitle='Delete'
+        noButtonTitle='Cancel'
+        onPressYes={onConfirmDelete}
+        onPressNo={onCancelVaultPrompt}
+      />
+    </>
   );
 };
 

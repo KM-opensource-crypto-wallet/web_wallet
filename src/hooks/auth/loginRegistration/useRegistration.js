@@ -1,4 +1,4 @@
-import {useCallback} from 'react';
+import {useCallback, useState} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {useDispatch} from 'react-redux';
 import {toast} from 'react-toastify';
@@ -51,17 +51,26 @@ export const useRegistration = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
+  // Wallets from earlier are still saved in this browser: 'found' offers the
+  // restore, 'confirmDelete' is the second, explicit step before replacing.
+  const [vaultPrompt, setVaultPrompt] = useState(null);
+  const [pendingValues, setPendingValues] = useState(null);
+  const searchParamsStr = `${searchParams ? `?${searchParams}` : ''}`;
 
   // The password never gets stored: it wraps a fresh vault key, and sealed
   // persistence opens under the key derived from it.
   const handleSubmit = useCallback(
-    async values => {
-      const searchParamsStr = `${searchParams ? `?${searchParams}` : ''}`;
+    async (values, options) => {
       dispatch(loadingOn());
       try {
-        await dispatch(createAccount(values.password));
+        await dispatch(createAccount(values.password, options));
       } catch (error) {
         dispatch(loadingOff());
+        if (error?.code === UNLOCK_ERROR_CODES.VAULT_EXISTS) {
+          setPendingValues(values);
+          setVaultPrompt('found');
+          return;
+        }
         if (error?.code === UNLOCK_ERROR_CODES.ACCOUNT_EXISTS) {
           // Reached registration with an account on this device (e.g. a typed
           // URL inside the auto-lock window): never replace its vault here.
@@ -78,14 +87,41 @@ export const useRegistration = () => {
       dispatch(signUpSuccess());
       router.push(`/auth/reset-wallet${searchParamsStr}`);
     },
-    [dispatch, router, searchParams],
+    [dispatch, router, searchParamsStr],
   );
+
+  const onRestoreInstead = useCallback(() => {
+    setVaultPrompt(null);
+    setPendingValues(null);
+    router.replace(`/auth/restore-from-device${searchParamsStr}`);
+  }, [router, searchParamsStr]);
+
+  const onConfirmDelete = useCallback(() => {
+    const values = pendingValues;
+    setVaultPrompt(null);
+    setPendingValues(null);
+    if (values) {
+      handleSubmit(values, {discardExistingVault: true});
+    }
+  }, [handleSubmit, pendingValues]);
+
+  const onCancelVaultPrompt = useCallback(() => {
+    setVaultPrompt(null);
+    setPendingValues(null);
+  }, []);
 
   return {
     initialValues: REGISTRATION_INITIAL_VALUES,
     validationSchema: validationSchemaRegistration,
-    handleSubmit,
+    // Formik passes its helpers as the second argument; keep them out of the
+    // createAccount options.
+    handleSubmit: values => handleSubmit(values),
     getPasswordState,
+    vaultPrompt,
+    setVaultPrompt,
+    onRestoreInstead,
+    onConfirmDelete,
+    onCancelVaultPrompt,
   };
 };
 

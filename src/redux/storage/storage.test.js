@@ -10,6 +10,7 @@ import {
   generateDek,
 } from 'dok-wallet-blockchain-networks/security/vaultCore';
 import * as secureStore from 'security/secureStore';
+import {captureError, logger} from 'services/logger';
 import {
   SCHEMA_VERSION,
   STORAGE_KEYS,
@@ -19,7 +20,12 @@ import {
   resetBootstrap,
   setSchemaVersion,
 } from 'redux/storage/bootstrap';
-import {plainStorage} from 'redux/storage/plainStorage';
+import {
+  __resetBlockedWritesForTests,
+  blockWrites,
+  plainStorage,
+  releaseBlockedWrites,
+} from 'redux/storage/plainStorage';
 import {
   __resetSealedForTests,
   enableSealedWrites,
@@ -86,6 +92,7 @@ describe('web storage', () => {
     freshIndexedDb();
     resetBootstrap();
     __resetSealedForTests();
+    __resetBlockedWritesForTests();
     vault.__resetForTests();
   });
 
@@ -110,6 +117,36 @@ describe('web storage', () => {
       expect(await plainKv.get(STORAGE_KEYS.installId)).toBe(id);
     });
 
+    it('reports a vault without an account and never touches the vault', async () => {
+      await vault.createVault('pw');
+      vault.lock();
+      captureError.mockClear();
+      await bootstrapStorage();
+      expect(await vault.hasVault()).toBe(true);
+      expect(logger.error).toHaveBeenCalledWith(
+        'storage.vault_without_account',
+        expect.anything(),
+      );
+      expect(captureError).toHaveBeenCalledWith(
+        expect.objectContaining({message: 'Vault found without an account'}),
+        expect.anything(),
+      );
+    });
+
+    it('logs every load with whether an account is stored', async () => {
+      await bootstrapStorage();
+      await plainKv.set('persist:auth', JSON.stringify({hasAccount: 'true'}));
+      await vault.createVault('pw');
+      captureError.mockClear();
+      resetBootstrap();
+      await bootstrapStorage();
+      expect(logger.info).toHaveBeenLastCalledWith(
+        'storage.bootstrapped',
+        expect.objectContaining({hasAccount: true}),
+      );
+      expect(captureError).not.toHaveBeenCalled();
+    });
+
     it('schema version round-trips', async () => {
       await setSchemaVersion(SCHEMA_VERSION.migrated);
       expect(await getSchemaVersion()).toBe(2);
@@ -126,6 +163,40 @@ describe('web storage', () => {
       global.indexedDB = saved;
       await expect(bootstrapStorage()).resolves.toBeDefined();
     });
+
+    // A request that fails like Android Chromium's dropped IndexedDB backend.
+    const failingOpen = name => () => {
+      const request = {error: {name, message: 'The connection was closed.'}};
+      setTimeout(() => request.onerror?.());
+      return request;
+    };
+
+    it('retries a transient open failure instead of failing the bootstrap', async () => {
+      const realOpen = global.indexedDB.open.bind(global.indexedDB);
+      const open = jest
+        .spyOn(global.indexedDB, 'open')
+        .mockImplementationOnce(failingOpen('AbortError'))
+        .mockImplementationOnce(failingOpen('AbortError'))
+        .mockImplementation(realOpen);
+      await expect(bootstrapStorage()).resolves.toBeDefined();
+      // The bootstrap also opens the secure store; count only dok-state.
+      const stateOpens = open.mock.calls.filter(
+        ([name]) => name === 'dok-state',
+      );
+      expect(stateOpens).toHaveLength(3);
+      expect(isStorageReady()).toBe(true);
+    });
+
+    it('does not retry a non-transient open failure', async () => {
+      const open = jest
+        .spyOn(global.indexedDB, 'open')
+        .mockImplementation(failingOpen('QuotaExceededError'));
+      await expect(bootstrapStorage()).rejects.toMatchObject({
+        name: 'SecureStoreError',
+        code: 'unavailable',
+      });
+      expect(open).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('plainStorage', () => {
@@ -137,6 +208,90 @@ describe('web storage', () => {
       );
       await plainStorage.removeItem('persist:auth');
       expect(await plainStorage.getItem('persist:auth')).toBeNull();
+    });
+
+    it('a key whose stored copy failed to load is never overwritten', async () => {
+      await plainStorage.setItem('persist:settings', '{"kept":"1"}');
+      blockWrites('persist:settings');
+      // Refused, and reported as refused (not as written).
+      await expect(
+        plainStorage.setItem('persist:settings', '{"empty":"1"}'),
+      ).rejects.toThrow('blocked');
+      expect(await plainStorage.getItem('persist:settings')).toBe(
+        '{"kept":"1"}',
+      );
+    });
+
+    it('releasing a block writes the newest refused value and lifts it', async () => {
+      await plainStorage.setItem('persist:auth', '{"kept":"1"}');
+      blockWrites('persist:auth');
+      await plainStorage.setItem('persist:auth', '{"r":"1"}').catch(() => {});
+      await plainStorage.setItem('persist:auth', '{"r":"2"}').catch(() => {});
+      await releaseBlockedWrites('persist:auth');
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"r":"2"}');
+      await plainStorage.setItem('persist:auth', '{"r":"3"}');
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"r":"3"}');
+    });
+
+    it('a write refused while a release awaits bootstrap is the one written', async () => {
+      await plainStorage.setItem('persist:auth', '{"kept":"1"}');
+      blockWrites('persist:auth');
+      await plainStorage.setItem('persist:auth', '{"r":"1"}').catch(() => {});
+      const release = releaseBlockedWrites('persist:auth');
+      // Still blocked: the release has not resumed from its await yet.
+      await expect(
+        plainStorage.setItem('persist:auth', '{"r":"2"}'),
+      ).rejects.toThrow('blocked');
+      await release;
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"r":"2"}');
+    });
+
+    it('a failed release keeps the key blocked and the refused value queued', async () => {
+      await plainStorage.setItem('persist:auth', '{"kept":"1"}');
+      blockWrites('persist:auth');
+      await plainStorage.setItem('persist:auth', '{"r":"1"}').catch(() => {});
+      const spy = jest
+        .spyOn(plainKv, 'set')
+        .mockRejectedValueOnce(new Error('idb write failed'));
+      await expect(releaseBlockedWrites('persist:auth')).rejects.toThrow(
+        'idb write failed',
+      );
+      spy.mockRestore();
+      // Still blocked, stored copy untouched; a retry writes the queued value.
+      await expect(
+        plainStorage.setItem('persist:auth', '{"r":"2"}'),
+      ).rejects.toThrow('blocked');
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"kept":"1"}');
+      await releaseBlockedWrites('persist:auth');
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"r":"2"}');
+    });
+
+    it('a value refused while the release writes is written before the block lifts', async () => {
+      await plainStorage.setItem('persist:auth', '{"kept":"1"}');
+      blockWrites('persist:auth');
+      await plainStorage.setItem('persist:auth', '{"r":"1"}').catch(() => {});
+      const realSet = plainKv.set.bind(plainKv);
+      const spy = jest
+        .spyOn(plainKv, 'set')
+        .mockImplementationOnce(async (key, value) => {
+          // Refused: the release is still writing, so the key stays blocked.
+          await expect(
+            plainStorage.setItem('persist:auth', '{"r":"2"}'),
+          ).rejects.toThrow('blocked');
+          return realSet(key, value);
+        });
+      await releaseBlockedWrites('persist:auth');
+      spy.mockRestore();
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"r":"2"}');
+      await plainStorage.setItem('persist:auth', '{"r":"3"}');
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"r":"3"}');
+    });
+
+    it('releasing a block with nothing refused keeps the stored copy', async () => {
+      await plainStorage.setItem('persist:auth', '{"kept":"1"}');
+      blockWrites('persist:auth');
+      await releaseBlockedWrites('persist:auth');
+      expect(await plainStorage.getItem('persist:auth')).toBe('{"kept":"1"}');
     });
   });
 

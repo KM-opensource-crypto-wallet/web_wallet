@@ -223,7 +223,12 @@ export const useAppRouting = ({wlData}) => {
         })();
       } else {
         if (!hasAccount) {
-          if (pathname !== '/auth/registration') {
+          // Restore is reachable without an account: it is how the account
+          // comes back when only the vault survived.
+          if (
+            pathname !== '/auth/registration' &&
+            pathname !== '/auth/restore-from-device'
+          ) {
             routing.replace(searchString ? `/?${searchString}` : '/');
           }
         } else if (shouldSkipLockScreen()) {
