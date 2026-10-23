@@ -61,7 +61,7 @@ const SlippageEditor = ({slippage, backendSlippage, onCommit}) => {
           aria-label='Edit slippage tolerance'>
           <p className={s.value}>{`${displayValue}%`}</p>
           <EditIcon
-            sx={{fontSize: 14, color: 'var(--gray)', marginLeft: '6px'}}
+            sx={{fontSize: 14, color: 'var(--sw-muted)', marginLeft: '6px'}}
           />
         </button>
       )}

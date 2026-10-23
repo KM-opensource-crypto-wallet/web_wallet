@@ -1,0 +1,33 @@
+/* Shared page shell. `:where()` keeps these at zero specificity so the
+   screen's own class (passed as `className`) always wins, whatever order the
+   stylesheets load in. A screen tunes the glow with `--glow-strength`
+   (default 13%) on that class. */
+:where(.screen) {
+  position: relative;
+  min-height: calc(var(--app-height, 100vh) - 70px);
+  /* clip, not hidden: hidden would make this a scroll container and break
+     the sticky top bar. */
+  overflow: clip;
+  padding-bottom: 40px;
+  background: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
+}
+
+:where(:global([data-theme='dark']) .screen) {
+  background: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
+}
+
+.glow {
+  position: absolute;
+  top: -120px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--background) var(--glow-strength, 13%), transparent)
+      0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}

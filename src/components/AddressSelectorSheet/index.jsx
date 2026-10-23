@@ -7,10 +7,9 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {Box, CircularProgress, IconButton, Modal} from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import QrCode2Icon from '@mui/icons-material/QrCode2';
+import Modal from '@mui/material/Modal';
+import GeneralButton from 'components/Button';
+import {CheckIcon, CopyIcon, QrIcon} from 'components/Home/HomeIcons';
 import AddressTypeBadge from 'components/AddressTypeBadge';
 import AddressQRSheet from 'components/AddressQRSheet';
 import {copyToClipboard} from 'utils/copyToClipboard';
@@ -21,27 +20,12 @@ import {
 import {formatDeriveAddressBalance} from 'dok-wallet-blockchain-networks/helper/deriveAddressBalance';
 import s from './AddressSelectorSheet.module.css';
 
-const modalStyle = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '95%',
-  maxHeight: '85vh',
-  display: 'flex',
-  flexDirection: 'column',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  '@media (min-width: 768px)': {
-    width: '50%',
-    maxWidth: '560px',
-  },
-  overflow: 'hidden',
-};
+const TITLE_ID = 'address-selector-sheet-title';
 
 // Single-select derive-address picker. One mounted sheet serves any number of
 // trigger fields: everything row-specific arrives via present(payload), and
-// payload.context is handed back to onSelect with the chosen entry.
+// payload.context is handed back to onSelect with the chosen entry. Bottom
+// sheet on phones, centred dialog from 600px up.
 const AddressSelectorSheet = forwardRef(({onSelect}, ref) => {
   const contextRef = useRef(null);
   const qrSheetRef = useRef(null);
@@ -110,107 +94,103 @@ const AddressSelectorSheet = forwardRef(({onSelect}, ref) => {
         if (!applyingAddress) {
           setIsOpen(false);
         }
-      }}>
-      <Box sx={modalStyle}>
-        <div className={s.container}>
-          <p className={s.title}>Select Address</p>
-          <div className={s.list}>
-            {items.length ? (
-              items.map(item => {
-                const isSelected = item?.address === payload?.selectedAddress;
-                const isApplying = item?.address === applyingAddress;
-                return (
-                  <div
-                    key={item?.derivePath || item?.address}
-                    className={s.optionRow}>
-                    <button
-                      type='button'
-                      className={s.optionMain}
-                      aria-label={`Select address ${getCustomizePublicAddress(
-                        item?.address,
-                      )}`}
-                      aria-pressed={isSelected}
-                      disabled={!!applyingAddress}
-                      onClick={() => onPressItem(item)}>
-                      {/* Line 1: the shortened address never shrinks; line 2
-                          carries the path and the balance so nothing competes
-                          with it and no element has to ellipsize. */}
-                      <div className={s.optionLabelBox}>
-                        <p className={s.addressRow}>
-                          <span className={s.addressText} title={item?.address}>
-                            {getCustomizePublicAddress(item?.address)}
-                          </span>
-                          <AddressTypeBadge
-                            chain_name={payload?.chain_name}
-                            item={item}
-                          />
-                        </p>
-                        {(!!item?.derivePath || showBalance) && (
-                          <p className={s.metaRow}>
-                            <span className={s.derivePathText}>
-                              {item?.derivePath || ''}
-                            </span>
-                            {showBalance && (
-                              <span className={s.balanceText}>
-                                {formatDeriveAddressBalance({
-                                  balance: item?.balance,
-                                  decimal: payload?.decimal,
-                                  symbol: payload?.symbol,
-                                })}
-                              </span>
-                            )}
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                    <div className={s.actions}>
-                      <IconButton
-                        size='small'
-                        aria-label='Copy address'
-                        disabled={!!applyingAddress}
-                        className={s.iconButton}
-                        sx={{color: 'var(--gray)'}}
-                        onClick={() => onPressCopy(item)}>
-                        <ContentCopyIcon sx={{fontSize: 20}} />
-                      </IconButton>
-                      <IconButton
-                        size='small'
-                        aria-label='Show address QR code'
-                        disabled={!!applyingAddress}
-                        className={s.iconButton}
-                        sx={{color: 'var(--gray)'}}
-                        onClick={() => onPressQR(item)}>
-                        <QrCode2Icon sx={{fontSize: 20}} />
-                      </IconButton>
-                      {isApplying ? (
-                        <CircularProgress
-                          size={18}
-                          sx={{color: 'var(--background)', marginLeft: '8px'}}
+      }}
+      aria-labelledby={TITLE_ID}
+      slotProps={{backdrop: {className: s.backdrop}}}>
+      <div className={s.sheet}>
+        <div className={s.handle} />
+        <h2 id={TITLE_ID} className={s.title}>
+          Select Address
+        </h2>
+        <div className={s.list}>
+          {items.length ? (
+            items.map(item => {
+              const isSelected = item?.address === payload?.selectedAddress;
+              const isApplying = item?.address === applyingAddress;
+              return (
+                <div
+                  key={item?.derivePath || item?.address}
+                  className={`${s.optionRow} ${
+                    isSelected ? s.optionRowSelected : ''
+                  }`}>
+                  <button
+                    type='button'
+                    className={s.optionMain}
+                    aria-label={`Select address ${getCustomizePublicAddress(
+                      item?.address,
+                    )}`}
+                    aria-pressed={isSelected}
+                    disabled={!!applyingAddress}
+                    onClick={() => onPressItem(item)}>
+                    {/* Line 1: the shortened address never shrinks; line 2
+                        carries the path and the balance so nothing competes
+                        with it and no element has to ellipsize. */}
+                    <div className={s.optionLabelBox}>
+                      <p className={s.addressRow}>
+                        <span className={s.addressText} title={item?.address}>
+                          {getCustomizePublicAddress(item?.address)}
+                        </span>
+                        <AddressTypeBadge
+                          chain_name={payload?.chain_name}
+                          item={item}
                         />
-                      ) : (
-                        isSelected && (
-                          <CheckCircleIcon
-                            sx={{
-                              fontSize: 22,
-                              color: 'var(--background)',
-                              marginLeft: '8px',
-                            }}
-                          />
-                        )
+                      </p>
+                      {(!!item?.derivePath || showBalance) && (
+                        <p className={s.metaRow}>
+                          <span className={s.derivePathText}>
+                            {item?.derivePath || ''}
+                          </span>
+                          {showBalance && (
+                            <span className={s.balanceText}>
+                              {formatDeriveAddressBalance({
+                                balance: item?.balance,
+                                decimal: payload?.decimal,
+                                symbol: payload?.symbol,
+                              })}
+                            </span>
+                          )}
+                        </p>
                       )}
                     </div>
+                  </button>
+                  <div className={s.actions}>
+                    <GeneralButton
+                      variant='unstyled'
+                      aria-label='Copy address'
+                      disabled={!!applyingAddress}
+                      className={s.iconButton}
+                      onClick={() => onPressCopy(item)}>
+                      <CopyIcon size={17} />
+                    </GeneralButton>
+                    <GeneralButton
+                      variant='unstyled'
+                      aria-label='Show address QR code'
+                      disabled={!!applyingAddress}
+                      className={s.iconButton}
+                      onClick={() => onPressQR(item)}>
+                      <QrIcon size={17} />
+                    </GeneralButton>
+                    {isApplying ? (
+                      <span className={s.spinner} aria-hidden='true' />
+                    ) : (
+                      isSelected && (
+                        <span className={s.check} aria-hidden='true'>
+                          <CheckIcon size={12} />
+                        </span>
+                      )
+                    )}
                   </div>
-                );
-              })
-            ) : (
-              <p className={s.emptyText}>No addresses available yet.</p>
-            )}
-          </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className={s.emptyText}>No addresses available yet.</p>
+          )}
         </div>
         {/* Opens OVER this sheet; MUI stacks nested modals so the selector
             stays mounted (dimmed + non-interactive) underneath. */}
         <AddressQRSheet ref={qrSheetRef} />
-      </Box>
+      </div>
     </Modal>
   );
 });

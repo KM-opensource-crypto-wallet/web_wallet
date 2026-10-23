@@ -1,0 +1,14 @@
+/* Extension-only styles, loaded after the web wallet's globals.css. */
+
+/* next/font sets this variable on <body> in the web build; Roboto is loaded
+   by app.html. */
+.ext-font-variable {
+  --font-roboto: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  /* The side panel can be dragged narrower than any phone. */
+  min-width: 320px;
+}

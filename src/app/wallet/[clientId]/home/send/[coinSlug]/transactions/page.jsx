@@ -1,332 +1,238 @@
 'use client';
-import {useAppRoutes} from 'src/hooks/useAppRoutes';
-import {useCallback, useEffect, useMemo, useState} from 'react';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {useDispatch, useSelector} from 'react-redux';
-import {
-  selectCurrentCoin,
-  selectTransactionsByType,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import Transactions from 'components/Transactions';
+import Transactions, {formatSignedFiat} from 'components/Transactions';
 import ModalSortTransactions from 'components/ModalSortTransactions';
-const copyIcon = require(`assets/images/icons`).default;
-import {
-  getLocalCurrency,
-  getHideSmallTransactions,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {setHideSmallTransactions} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import s from './Transactions.module.css';
-import {refreshCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import Loading from 'components/Loading';
-import PageTitle from 'components/PageTitle';
+import GeneralButton from 'components/Button';
+import WalletSwitcher from 'components/Home/WalletSwitcher';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
 import {
-  getAddressDetailsUrl,
-  isBitcoinChain,
-  isPendingTransactionSupportedChain,
-} from 'dok-wallet-blockchain-networks/helper';
-import {useRouter} from 'next/navigation';
-
-const ALL_TRANSACTION_TYPES = [
-  {label: 'All', value: 'all'},
-  {label: 'Regular', value: 'regular'},
-  {label: 'Stake', value: 'stake'},
-  {label: 'Unstake', value: 'unstake'},
-  {label: 'Withdraw', value: 'withdraw'},
-  {label: 'Batch', value: 'batch'},
-];
-
-function computeRenderList(
-  transactions,
-  hideSmallTx,
-  currencyRate,
-  filter,
-  sort,
-  mineAddress,
-) {
-  const list = Array.isArray(transactions) ? [...transactions] : [];
-  const filtered = list.filter(tx => {
-    const isRegularTx = tx?.transactionType === 'regular';
-    if (hideSmallTx && isRegularTx) {
-      const usdValue =
-        tx.totalCourse != null
-          ? parseFloat(tx.totalCourse)
-          : parseFloat(tx.amount) * (currencyRate || 0);
-      if (usdValue < 1) return false;
-    }
-    if (!filter || filter === 'None') return true;
-    if (filter === 'Received')
-      return mineAddress?.toUpperCase() === tx?.to?.toUpperCase();
-    if (filter === 'Send')
-      return mineAddress?.toUpperCase() === tx?.from?.toUpperCase();
-    if (filter === 'Pending') return tx.status?.toUpperCase() !== 'SUCCESS';
-    return true;
-  });
-  return filtered.sort((a, b) => {
-    if (sort === 'Date Ascending') return new Date(a.date) - new Date(b.date);
-    if (sort === 'Amount Ascending') return Number(a.amount) - Number(b.amount);
-    if (sort === 'Amount Descending')
-      return Number(b.amount) - Number(a.amount);
-    return new Date(b.date) - new Date(a.date);
-  });
-}
-
-const ALL_ONLY_CHAINS = [
-  'ton',
-  'stellar',
-  'aptos',
-  'cardano',
-  'cosmos',
-  'filecoin',
-  'hedera',
-  'polkadot',
-  'ripple',
-  'tezos',
-  'thorchain',
-  'bitcoin_lightning',
-  'litecoin',
-  'dogecoin',
-  'bitcoin_cash',
-];
+  ChevronDownIcon,
+  ChevronRightIcon,
+  InfoIcon,
+} from 'components/Home/HomeIcons';
+import {SlidersIcon} from 'components/Transactions/TxIcons';
+import useTransaction from 'src/hooks/protectedRoutes/wallet/home/send/useTransaction';
+import Screen from 'components/Screen';
 
 const TransactionsList = () => {
-  const dispatch = useDispatch();
-  const localCurrency = useSelector(getLocalCurrency);
-  const currentCoin = useSelector(selectCurrentCoin);
-  const hideSmallTx = useSelector(getHideSmallTransactions);
-
-  const [modalVisible, setmodalVisible] = useState(false);
-  const [filter, setFilter] = useState('None');
-  const [sort, setSort] = useState('Date Descending');
-  const [selectedType, setSelectedType] = useState('all');
-  const [renderList, setRenderList] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showInfo, setShowInfo] = useState(false);
-  const router = useRouter();
-  const routes = useAppRoutes();
-
-  const coinId =
-    currentCoin?.address + currentCoin?.name + currentCoin?.chain_name;
-
-  const transactionsSelector = useMemo(
-    () => selectTransactionsByType(selectedType),
-    [selectedType],
-  );
-  const typedTransactions = useSelector(transactionsSelector);
-
-  const transactionTypes = useMemo(() => {
-    const chain = currentCoin?.chain_name;
-    if (chain === 'tron') {
-      return ALL_TRANSACTION_TYPES.filter(t => t.value !== 'batch');
-    }
-    if (chain === 'solana') {
-      return ALL_TRANSACTION_TYPES.filter(t =>
-        ['all', 'stake', 'unstake', 'withdraw'].includes(t.value),
-      );
-    }
-    if (ALL_ONLY_CHAINS.includes(chain) || isBitcoinChain(chain)) {
-      return ALL_TRANSACTION_TYPES.filter(t => t.value === 'all');
-    }
-    return ALL_TRANSACTION_TYPES;
-  }, [currentCoin?.chain_name]);
-
-  const isSupportUpdateTransaction = useMemo(() => {
-    return (
-      isPendingTransactionSupportedChain(currentCoin?.chain_name) &&
-      currentCoin?.type === 'coin'
-    );
-  }, [currentCoin?.chain_name, currentCoin?.type]);
-
-  const onPressUpdateTransaction = useCallback(() => {
-    router.push(routes.coin.updateTransaction());
-  }, [router, routes]);
-
-  useEffect(() => {
-    if (currentCoin?.address) {
-      dispatch(refreshCurrentCoin({fetchTransaction: true}))
-        .unwrap()
-        .then(() => {
-          setIsLoading(false);
-        })
-        .catch(e => {
-          setIsLoading(false);
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coinId, dispatch]);
-
-  useEffect(() => {
-    // Anonymous function: the react-hooks compiler lint flags setState calls
-    // made directly in an effect body; the same update here is accepted.
-    (() => {
-      setRenderList(
-        computeRenderList(
-          typedTransactions,
-          hideSmallTx,
-          currentCoin?.currencyRate,
-          filter,
-          sort,
-          currentCoin?.address,
-        ),
-      );
-    })();
-  }, [
-    typedTransactions,
-    hideSmallTx,
-    currentCoin?.currencyRate,
-    currentCoin?.address,
-    filter,
+  const {
+    walletName,
+    currentCoin,
+    localCurrency,
+    switcherOpen,
+    openSwitcher,
+    closeSwitcher,
+    onPressViewAll,
+    summary,
+    fiatSymbol,
+    netCoinText,
+    transactionTypes,
+    selectedType,
+    onPressTypeTab,
     sort,
-  ]);
+    filter,
+    hideSmallTx,
+    sortLabel,
+    filterLabel,
+    filterCount,
+    modalVisible,
+    openSortModal,
+    closeSortModal,
+    onPressApply,
+    onResetFilters,
+    renderList,
+    isLoading,
+    isGrouped,
+    isSupportUpdateTransaction,
+    onPressUpdateTransaction,
+    showInfo,
+    toggleInfo,
+  } = useTransaction('list');
 
-  const onPressViewAll = useCallback(() => {
-    const chain_name = currentCoin?.chain_name;
-    const type = currentCoin?.type;
-    const address = currentCoin?.address;
-    if (chain_name && type && address) {
-      const url = getAddressDetailsUrl(chain_name, type, address);
-      if (url) {
-        window.open(url, '_blank', 'noopener,noreferrer');
-      }
-    }
-  }, [currentCoin?.address, currentCoin?.chain_name, currentCoin?.type]);
-
-  const onPressApply = useCallback(
-    (sortValue, filterValue, hideSmallTxValue) => {
-      setSort(sortValue);
-      setFilter(filterValue);
-      dispatch(setHideSmallTransactions(hideSmallTxValue));
-    },
-    [dispatch],
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.heading}
+      aria-haspopup='dialog'
+      onClick={openSwitcher}>
+      <h1 className={s.headingTitle}>Transactions</h1>
+      <span className={s.headingSub}>
+        <span className={s.walletAvatar}>{walletName[0].toUpperCase()}</span>
+        <span className={s.headingSubText}>
+          {currentCoin?.name ? `${currentCoin.name} · ` : ''}
+          {walletName}
+        </span>
+        <ChevronDownIcon size={12} className={s.headingChevron} />
+      </span>
+    </GeneralButton>
   );
 
-  const onPressTypeTab = useCallback(value => {
-    setSelectedType(value);
-    setSort('Date Descending');
-    setFilter('None');
-  }, []);
+  const right = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.viewAll}
+      onClick={onPressViewAll}>
+      View all
+      <ChevronRightIcon size={12} />
+    </GeneralButton>
+  );
 
   return (
-    <>
-      {isLoading ? (
-        <Loading />
-      ) : (
-        <>
-          <PageTitle title='Transaction History' />
-          <div className={s.viewAllTransactionContainer}>
-            <div>
-              <div className={s.rowView}>
-                <p className={s.titleTrans}>Transactions</p>
-                {isSupportUpdateTransaction && (
-                  <button
-                    className={s.viewButton}
-                    onClick={onPressUpdateTransaction}>
-                    <p className={s.viewButtonText}>{'Update transaction'}</p>
-                  </button>
-                )}
-              </div>
-              <div className={s.rowView}>
-                <button
-                  className={s.subtitleRow}
-                  onClick={() => setShowInfo(v => !v)}>
-                  <p className={s.address}>Your last 20 transactions</p>
-                  <span className={s.infoIcon}>
-                    <InfoOutlinedIcon style={{fontSize: 16}} />
-                  </span>
-                </button>
-                <button className={s.viewButton} onClick={onPressViewAll}>
-                  <p className={s.viewButtonText}>{'View all'}</p>
-                </button>
-              </div>
-              {showInfo && (
-                <div className={s.infoCard}>
-                  <p className={s.infoCardTitle}>
-                    Why am I missing transactions?
-                  </p>
-                  <p className={s.infoCardLine}>
-                    {'• '}
-                    <span className={s.infoCardBold}>Only the last 20</span>
-                    {' transactions are fetched from the network.'}
-                  </p>
-                  <p className={s.infoCardLine}>
-                    {'• '}
-                    <span className={s.infoCardBold}>
-                      Small transactions ({'<'}$1)
-                    </span>
-                    {' may be hidden. Toggle in '}
-                    <button
-                      className={s.infoCardLink}
-                      onClick={() => setmodalVisible(true)}>
-                      Sort &amp; Filter
-                    </button>
-                    {'.'}
-                  </p>
-                  <p className={s.infoCardLine}>
-                    {'• A '}
-                    <span className={s.infoCardBold}>status filter</span>
-                    {' may be active.'}
-                  </p>
-                  <p className={s.infoCardLine}>
-                    {'• '}
-                    <button className={s.infoCardLink} onClick={onPressViewAll}>
-                      View all
-                    </button>
-                    {' transactions on the explorer.'}
-                  </p>
-                </div>
-              )}
-            </div>
+    <Screen className={s.page} center={center} right={right}>
+      <div className={s.column}>
+        <section className={s.summary} aria-label='Summary'>
+          <span className={s.stat}>
+            <span className={s.statLabel}>Net change</span>
+            <span
+              className={`${s.statValue} ${
+                summary.netFiat > 0 ? s.statPositive : ''
+              }`}>
+              {formatSignedFiat(summary.netFiat, fiatSymbol)}
+            </span>
+            <span className={s.statSub}>{netCoinText}</span>
+          </span>
+          <span className={s.statDivider} aria-hidden='true' />
+          <span className={`${s.stat} ${s.statCenter}`}>
+            <span className={s.statLabel}>Count</span>
+            <span className={s.statValue}>{renderList.length}</span>
+            <span className={s.statSub}>
+              {renderList.length === 1 ? 'transaction' : 'transactions'}
+            </span>
+          </span>
+          <span className={s.statDivider} aria-hidden='true' />
+          <span className={`${s.stat} ${s.statEnd}`}>
+            <span className={s.statLabel}>Pending</span>
+            <span
+              className={`${s.statValue} ${
+                summary.pending ? s.statWarning : ''
+              }`}>
+              {summary.pending}
+            </span>
+            <span className={s.statSub}>awaiting</span>
+          </span>
+        </section>
 
-            {transactionTypes.length > 1 && (
-              <div className={s.typeFilterRow}>
-                {transactionTypes.map(item => (
-                  <button
-                    key={item.value}
-                    className={
-                      selectedType === item.value
-                        ? s.typeFilterTabActive
-                        : s.typeFilterTab
-                    }
-                    onClick={() => onPressTypeTab(item.value)}>
-                    {item.label}
-                  </button>
-                ))}
+        {transactionTypes.length > 1 && (
+          <div className={s.chips} role='tablist' aria-label='Type'>
+            {transactionTypes.map(item => (
+              <button
+                key={item.value}
+                type='button'
+                role='tab'
+                aria-selected={selectedType === item.value}
+                className={`${s.chip} ${
+                  selectedType === item.value ? s.chipActive : ''
+                }`}
+                onClick={() => onPressTypeTab(item.value)}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <button
+          type='button'
+          className={s.sortBar}
+          aria-haspopup='dialog'
+          onClick={openSortModal}>
+          <span className={s.sortText}>
+            {sortLabel}
+            {filterLabel ? (
+              <span className={s.sortFilter}> · {filterLabel}</span>
+            ) : null}
+          </span>
+          {filterCount ? (
+            <span className={s.filterBadge}>{filterCount}</span>
+          ) : null}
+          <SlidersIcon size={18} />
+        </button>
+
+        <div className={s.list}>
+          <Transactions
+            renderList={renderList}
+            currentCoin={currentCoin}
+            localCurrency={localCurrency}
+            isLoading={isLoading}
+            grouped={isGrouped}
+            hasFilters={filterCount > 0}
+            onResetFilters={onResetFilters}
+            onPressViewAll={onPressViewAll}
+          />
+        </div>
+
+        {!isLoading ? (
+          <div className={s.footer}>
+            {isSupportUpdateTransaction ? (
+              <button
+                type='button'
+                className={s.footerButton}
+                onClick={onPressUpdateTransaction}>
+                Update transaction
+              </button>
+            ) : null}
+            <button
+              type='button'
+              className={s.footerNote}
+              aria-expanded={showInfo}
+              onClick={toggleInfo}>
+              <InfoIcon size={13} />
+              Showing your last 20 transactions
+            </button>
+            {showInfo && (
+              <div className={s.infoCard}>
+                <p className={s.infoCardTitle}>
+                  Why am I missing transactions?
+                </p>
+                <ul className={s.infoList}>
+                  <li>
+                    <strong>Only the last 20</strong> transactions are fetched
+                    from the network.
+                  </li>
+                  <li>
+                    <strong>Small transactions (&lt;$1)</strong> may be hidden.
+                    Toggle it in{' '}
+                    <button
+                      type='button'
+                      className={s.infoCardLink}
+                      onClick={openSortModal}>
+                      Sort &amp; filter
+                    </button>
+                    .
+                  </li>
+                  <li>
+                    A <strong>status filter</strong> may be active.
+                  </li>
+                  <li>
+                    <button
+                      type='button'
+                      className={s.infoCardLink}
+                      onClick={onPressViewAll}>
+                      View all
+                    </button>{' '}
+                    transactions on the explorer.
+                  </li>
+                </ul>
               </div>
             )}
-
-            <div className={s.borderBox}>
-              <div className={s.sortList}>
-                <div>
-                  <p className={s.sortTitle}>
-                    Sort by: <span className={s.titleItem}>{sort}</span>
-                  </p>
-                  {filter !== 'None' && (
-                    <p className={s.sortTitle}>
-                      Filter by: <span className={s.titleItem}>{filter}</span>
-                    </p>
-                  )}
-                </div>
-                <button onClick={() => setmodalVisible(true)}>
-                  <div style={{fill: 'var(--font)'}}>{copyIcon.filter}</div>
-                </button>
-              </div>
-            </div>
-            <Transactions
-              renderList={renderList}
-              currentCoin={currentCoin}
-              localCurrency={localCurrency}
-            />
-            <ModalSortTransactions
-              visible={modalVisible}
-              hideModal={() => setmodalVisible(false)}
-              onPressAppy={onPressApply}
-              initialHideSmallTx={hideSmallTx}
-              initialSort={sort}
-              initialFilter={filter}
-            />
           </div>
-        </>
-      )}
-    </>
+        ) : null}
+      </div>
+
+      <ModalSortTransactions
+        visible={modalVisible}
+        hideModal={closeSortModal}
+        onPressAppy={onPressApply}
+        initialHideSmallTx={hideSmallTx}
+        initialSort={sort}
+        initialFilter={filter}
+      />
+      <WalletSwitcher
+        visible={switcherOpen}
+        onClose={closeSwitcher}
+        hidden={switcherOpen && readHideBalances()}
+        localCurrency={localCurrency}
+      />
+    </Screen>
   );
 };
 

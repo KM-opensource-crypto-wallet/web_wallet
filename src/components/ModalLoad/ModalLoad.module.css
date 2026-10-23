@@ -1,13 +1,89 @@
-.container {
+/* Centred glass card with the accent spinner; same surface and backdrop as
+   the themed modals (ModalReset). */
+.card {
+  --ml-ink: #1a1613;
+  --ml-surface: rgba(255, 255, 255, 0.9);
+  --ml-border: rgba(255, 255, 255, 0.95);
+  --ml-track: rgba(26, 22, 19, 0.08);
+  position: absolute;
+  top: 50%;
+  left: 50%;
   display: flex;
-  gap: 16px;
-  height: 100%;
   align-items: center;
-  justify-content: center;
+  gap: 14px;
+  max-width: calc(100vw - 32px);
+  padding: 18px 24px 18px 20px;
+  border: 1px solid var(--ml-border);
+  border-radius: 22px;
+  background: var(--ml-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+  outline: none;
+  transform: translate(-50%, -50%);
+  animation: pop 0.25s ease;
+}
+
+:global([data-theme='dark']) .card {
+  --ml-ink: #f5f1ec;
+  --ml-surface: rgba(31, 31, 35, 0.92);
+  --ml-border: rgba(255, 255, 255, 0.12);
+  --ml-track: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8);
+}
+
+.backdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .backdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+.spinner {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--ml-track);
+  border-top-color: var(--background);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 .titleInfo {
-  color: var(--font);
-  font-size: 20px;
-  text-align: center;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--ml-ink);
+  overflow-wrap: anywhere;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 10px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+
+  .spinner {
+    animation-duration: 1.6s;
+  }
 }

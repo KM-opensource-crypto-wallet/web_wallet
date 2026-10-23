@@ -1,14 +1,6 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useContext,
-  useMemo,
-} from 'react';
+import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {useRouter} from 'next/navigation';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {useSelector, useDispatch} from 'react-redux';
-import CoinItem from 'components/CoinItem';
+import {useDispatch} from 'react-redux';
 import {DndContext, closestCenter} from '@dnd-kit/core';
 import {
   SortableContext,
@@ -16,23 +8,16 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import {rearrangeCurrentWalletCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {ThemeContext} from 'theme/ThemeContext';
-import {getPngIcons} from 'assets/images/icons/pngIcon';
 import SortableItem from 'components/Sortable/sortable';
 import {restrictToParentElement} from '@dnd-kit/modifiers';
+import ManageCoinRow from './ManageCoinRow';
+import s from './DraggableCryptoList.module.css';
 
-const DraggableCryptoList = ({
-  number,
-  list,
-  showSwitch,
-  currentWallet,
-  isSortSelected,
-}) => {
+// Manage coins list: show/hide switches, and drag or up/down reordering
+// while `isSortSelected` is on.
+const DraggableCryptoList = ({list, isSortSelected}) => {
   const [renderList, setRenderList] = useState([]);
-  const localCurrency = useSelector(getLocalCurrency);
   const dispatch = useDispatch();
-  const {themeType} = useContext(ThemeContext);
-  const PngIcons = getPngIcons(themeType);
 
   const router = useRouter();
   const uniqueIds = useMemo(() => {
@@ -73,23 +58,18 @@ const DraggableCryptoList = ({
       onDragEnd={onDragEnd}
       modifiers={[restrictToParentElement]}>
       <SortableContext items={uniqueIds} strategy={verticalListSortingStrategy}>
-        <ul style={{width: '100%', overflow: 'hidden'}}>
+        <ul className={s.list}>
           {renderList.map((item, index) => (
             <SortableItem key={item._id} id={item?._id}>
               {dragHandleProps => (
-                <CoinItem
+                <ManageCoinRow
                   item={item}
                   index={index}
-                  showSwitch={showSwitch}
-                  setRenderList={setRenderList}
-                  localCurrency={localCurrency}
-                  number={number}
-                  currentWallet={currentWallet}
+                  coinsLength={renderList.length}
                   dispatch={dispatch}
                   router={router}
-                  coinsLength={renderList.length}
+                  setRenderList={setRenderList}
                   isSortSelected={isSortSelected}
-                  PngIcons={PngIcons}
                   dragHandleProps={dragHandleProps}
                 />
               )}

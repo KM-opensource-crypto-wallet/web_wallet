@@ -1,68 +1,31 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow-y: auto;
-  max-height: 60vh;
-}
-
-.infoList {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  padding: 20px;
-}
-
-.titleInfo {
-  color: var(--font);
-  font-size: 20px;
-  text-align: center;
-  margin-bottom: 20px;
-  text-transform: uppercase;
-}
-
-.info {
-  color: var(--font);
-  font-size: 16px;
-  text-align: center;
-  margin-bottom: 12px;
-}
-
+/* Only the confirm field lives here; the sheet itself is styled by
+   ModalReset.module.css (and its --mr-* tokens). */
 .input {
   width: 100%;
-  background: transparent;
-  border: 1px solid var(--gray);
-  border-radius: 8px;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--mr-ink) 9%, transparent);
+  border-radius: 14px;
   outline: none;
-  color: var(--font);
+  background: color-mix(in srgb, var(--mr-ink) 4.5%, transparent);
+  font-family: inherit;
   font-size: 16px;
-  padding: 12px;
-  margin-top: 8px;
+  font-weight: 600;
+  color: var(--mr-ink);
+  text-align: left;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
-.btnList {
-  align-items: center;
-  border-top: 1px solid var(--gray);
-  display: flex;
-  justify-content: space-around;
+.input::placeholder {
+  font-weight: 500;
+  color: var(--mr-text);
+  opacity: 0.6;
 }
 
-.learnBox {
-  justify-content: center;
-  align-items: center;
-  height: 60px;
-  color: var(--background);
-  font-size: 17px;
-  width: 50%;
-  cursor: pointer;
-}
-
-.learnBox:first-child {
-  border-right: 1px solid var(--gray);
-}
-
-.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.input:focus {
+  border-color: var(--mr-danger);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--mr-danger) var(--mr-tint), transparent);
 }

@@ -97,3 +97,50 @@ export const getRouteNameFromPathname = pathname => {
   }
   return pathname;
 };
+
+// Wallet sections and coin screens that carry over to another wallet when
+// switching. Anything else (confirm steps, details, mid-send screens) holds
+// state from the old wallet and falls back to its parent screen.
+const SWITCHABLE_WALLET_SECTIONS = [
+  'home',
+  'manage-coins',
+  'buy-crypto',
+  'sell-crypto',
+  'swap',
+  'wallet-connect',
+  'receive-payment-url',
+];
+const SWITCHABLE_COIN_SCREENS = [
+  'send-funds',
+  'receive-funds',
+  'transactions',
+  'staking-list',
+  'custom-derivation',
+];
+
+// Where to go after switching to wallet `clientId` from `pathname`: the same
+// screen in the new wallet. `hasCoin(slug)` says whether the new wallet holds
+// the coin of a coin screen; without it the wallet's Home is used.
+export const switchWalletPath = (pathname, clientId, hasCoin = () => false) => {
+  const home = walletRoutes.home(clientId);
+  const match = stripTrailingSlash(pathname).match(/^\/wallet\/[^/]+\/(.+)$/);
+  if (!match) {
+    return home;
+  }
+  const [section, ...rest] = match[1].split('/');
+  if (section === 'home' && rest[0] === 'send' && rest[1]) {
+    const coinSlug = rest[1];
+    if (!hasCoin(coinSlug)) {
+      return home;
+    }
+    return SWITCHABLE_COIN_SCREENS.includes(rest[2])
+      ? `${coinBase(clientId, coinSlug)}/${rest[2]}`
+      : coinRoutes.send(clientId, coinSlug);
+  }
+  if (section === 'swap' && rest[0] === 'history') {
+    return walletRoutes.swapHistory(clientId);
+  }
+  return SWITCHABLE_WALLET_SECTIONS.includes(section)
+    ? `${walletBase(clientId)}/${section}`
+    : home;
+};

@@ -1,15 +1,12 @@
 import React, {useCallback} from 'react';
-// import { Dimensions, button, div } from "react-native";
-// import { Modal, p } from "react-native-paper";
-// import { ThemeConp } from "../../../ThemeConp";
-// import myStyles from "./ModalDeleteStyles";
-// import { isIpad } from "service/dimensions";
-
-// import {getLoading} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
-
+import Modal from '@mui/material/Modal';
+import GeneralButton from 'components/Button';
+// Same sheet / dialog look as the Reset Wallet and Log out confirmation.
+import styles from 'components/ModalReset/ModalReset.module.css';
 import s from './ModalDelete.module.css';
-import {Box, Modal} from '@mui/material';
 
+// Confirmation before deleting a wallet (from its Edit screen). Bottom sheet
+// on phones, centred dialog from 600px up.
 const ModalDelete = ({visible, onPressYes, onPressNo, walletName}) => {
   const handlerYes = useCallback(() => {
     onPressYes && onPressYes();
@@ -19,48 +16,60 @@ const ModalDelete = ({visible, onPressYes, onPressNo, walletName}) => {
     onPressNo && onPressNo();
   }, [onPressNo]);
 
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '95%',
-    bgcolor: 'var(--secondaryBackgroundColor)',
-    '@media (min-width: 768px)': {
-      width: '50%',
-    },
-    borderRadius: '10px',
-    overflow: 'hidden',
-  };
-
   return (
     <Modal
       open={visible}
-      onClose={() => handlerNo()}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={s.infoList}>
-          <p className={s.titleInfo}>{`Delete Wallet: ${walletName}`}</p>
-          <p className={s.info}>
+      onClose={handlerNo}
+      aria-labelledby='modal-delete-title'
+      aria-describedby='modal-delete-description'
+      slotProps={{backdrop: {className: styles.backdrop}}}>
+      <div className={styles.sheet}>
+        <div className={styles.handle} />
+        <span className={`${styles.tile} ${styles.danger}`}>
+          <svg
+            width='22'
+            height='22'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            aria-hidden='true'>
+            <path d='M3 6h18' />
+            <path d='M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2' />
+            <path d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6' />
+            <path d='M10 11v6M14 11v6' />
+          </svg>
+        </span>
+        <h2 id='modal-delete-title' className={styles.title}>
+          Delete wallet?
+        </h2>
+        {walletName ? (
+          <span className={s.walletChip}>
+            <span className={s.walletAvatar} aria-hidden='true'>
+              {walletName[0].toUpperCase()}
+            </span>
+            <span className={s.walletName}>{walletName}</span>
+          </span>
+        ) : null}
+        <div id='modal-delete-description' className={styles.body}>
+          <p className={`${styles.warning} ${styles.warningDanger}`}>
             Please make sure you have a copy of 12-word seed phrase. You will
             need it in order to restore your wallet. Without it you will NOT be
             able to restore your wallet and you will lose access to your funds.
           </p>
-          <p className={s.info}>Are you sure you want to proceed?</p>
+          <p className={styles.text}>Are you sure you want to proceed?</p>
         </div>
-        <div className={s.btnList}>
-          <div className={s.learnBorder}>
-            <button className={s.learnBox} onClick={() => handlerNo()}>
-              <p className={s.learnText}>No</p>
-            </button>
-          </div>
-
-          <button className={s.learnBox} onClick={() => handlerYes()}>
-            <p className={s.learnText}>Yes</p>
-          </button>
+        <div className={styles.actions}>
+          <GeneralButton variant='secondary' fullWidth onClick={handlerNo}>
+            Cancel
+          </GeneralButton>
+          <GeneralButton variant='danger' fullWidth onClick={handlerYes}>
+            Delete wallet
+          </GeneralButton>
         </div>
-      </Box>
+      </div>
     </Modal>
   );
 };

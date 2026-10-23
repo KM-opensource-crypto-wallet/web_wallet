@@ -1,93 +1,63 @@
-.modalContainer {
-  padding: 26px 22px 22px 22px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* Only the bits ModalReset.module.css doesn't cover; the sheet itself is
+   styled there (and its --mr-* tokens). */
+
+/* Amber tile: this asks before something you can't easily undo. */
+.warnTile.warnTile {
+  --cm-warn: #dc6803;
+  color: var(--cm-warn);
+  background: color-mix(in srgb, var(--cm-warn) var(--mr-tint), transparent);
 }
 
-.iconBadge {
-  width: 64px;
-  height: 64px;
-  border-radius: 32px;
-  background-color: rgba(245, 166, 35, 0.12);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 16px;
+:global([data-theme='dark']) .warnTile.warnTile {
+  --cm-warn: #fdb022;
 }
 
-.title {
-  color: var(--font);
-  font-size: 20px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 8px;
-}
-
-.subtitle {
-  color: var(--gray);
-  font-size: 14px;
-  line-height: 20px;
-  text-align: center;
-  margin-bottom: 18px;
+/* The icons are MUI's filled glyphs (callers may pass their own), so undo
+   the sheet's `svg { fill: none }` for them. Doubled for specificity. */
+.muiIcon.muiIcon {
+  fill: currentColor;
+  font-size: 26px;
 }
 
 .infoCard {
   display: flex;
-  flex-direction: row;
   align-items: flex-start;
   gap: 10px;
   width: 100%;
-  background-color: var(--lightBackground);
-  border-radius: 14px;
   padding: 12px 14px;
-  margin-bottom: 22px;
-  border: 1px solid var(--whiteOutline);
+  border: 1px solid color-mix(in srgb, var(--mr-ink) 8%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--mr-ink) 4%, transparent);
+  text-align: left;
+}
+
+.infoIcon.infoIcon {
+  flex: none;
+  margin-top: 1px;
+  font-size: 18px;
+  color: var(--mr-text);
 }
 
 .infoText {
   flex: 1;
-  color: var(--gray);
+  margin: 0;
   font-size: 13px;
-  line-height: 18px;
+  line-height: 1.5;
+  color: var(--mr-text);
 }
 
-.btnRow {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
+/* Destructive, but outlined so the safe dismiss stays the obvious default.
+   Doubled to beat GeneralButton's .secondary. */
+.confirmBtn.confirmBtn {
+  --cm-danger: #d92d20;
+  border-color: color-mix(in srgb, var(--cm-danger) 45%, transparent);
+  color: var(--cm-danger);
 }
 
-.btn {
-  flex: 1;
-  height: 52px;
-  border-radius: 14px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
+.confirmBtn.confirmBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cm-danger) 7%, transparent);
 }
 
-.confirmBtn {
-  background-color: transparent;
-  border-width: 1.5px;
-  border-style: solid;
-}
-
-.confirmText {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.dismissBtn {
-  background-color: var(--background);
-  border: none;
-}
-
-.dismissText {
-  color: #ffffff;
-  font-size: 16px;
-  font-weight: 600;
+:global([data-theme='dark']) .confirmBtn.confirmBtn {
+  --cm-danger: #f97066;
 }

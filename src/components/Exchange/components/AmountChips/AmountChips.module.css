@@ -10,14 +10,14 @@
 .chip {
   padding: 6px 14px;
   border-radius: 14px;
-  border: 1px solid var(--whiteOutline);
-  background-color: var(--backgroundColor);
+  border: 1px solid var(--sw-field-border);
+  background: var(--sw-glass-strong);
   margin-right: 8px;
   min-height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--font);
+  color: var(--sw-ink);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;

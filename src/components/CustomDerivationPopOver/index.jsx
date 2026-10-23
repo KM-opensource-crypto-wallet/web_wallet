@@ -41,8 +41,10 @@ const CustomDerivationPopOver = ({selectedItem}) => {
     } else {
       navigator.clipboard.writeText(selectedItem?.privateKey);
       showToast({
-        type: 'successToast',
-        title: 'Private Key copied',
+        type: 'copyToast',
+        title: 'Private key copied',
+        message: 'Paste it only into apps you trust.',
+        props: {warning: 'Never share your private key with anyone'},
       });
     }
   }, [

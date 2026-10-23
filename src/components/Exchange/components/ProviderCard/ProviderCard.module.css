@@ -3,9 +3,13 @@
   flex-direction: row;
   align-items: center;
   width: 100%;
-  background-color: var(--lightBackground);
   border-radius: 12px;
-  border: 1.5px solid transparent;
+  border: 1.5px solid var(--sw-glass-border);
+  background: var(--sw-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--sw-shadow);
+  transition: background-color 0.2s;
   padding: 10px 12px;
   margin-bottom: 8px;
   min-height: 64px;
@@ -13,8 +17,19 @@
   text-align: left;
 }
 
+.card:hover:not(.cardDisabled) {
+  background: var(--sw-glass-strong);
+}
+
 .cardSelected {
   border-color: var(--background);
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--background) 10%, transparent) 0%,
+      transparent 60%
+    ),
+    var(--sw-glass);
 }
 
 .cardDisabled {
@@ -28,7 +43,7 @@
   border-radius: 50%;
   overflow: hidden;
   margin-right: 10px;
-  background-color: var(--backgroundColor);
+  background-color: #fff;
   flex-shrink: 0;
 }
 
@@ -51,7 +66,7 @@
 }
 
 .title {
-  color: var(--font);
+  color: var(--sw-ink);
   font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
@@ -72,7 +87,7 @@
 }
 
 .minText {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 12px;
   margin-top: 3px;
   white-space: nowrap;
@@ -92,7 +107,7 @@
 }
 
 .amountText {
-  color: var(--font);
+  color: var(--sw-ink);
   font-size: 14px;
   font-weight: 700;
   max-width: 160px;
@@ -102,7 +117,7 @@
 }
 
 .amountFiat {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 12px;
   margin-top: 2px;
 }
@@ -114,7 +129,7 @@
 }
 
 .amountUnavailable {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 12px;
   font-style: italic;
 }

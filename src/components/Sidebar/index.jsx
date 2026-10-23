@@ -1,9 +1,7 @@
 'use client';
 import React, {useMemo, useState} from 'react';
 import s from './Sidebar.module.css';
-import sidebarList from 'data/sidebarList';
 import ActiveLink from 'components/ActiveLink';
-import {usePathname} from 'next/navigation';
 import ModalReset from 'components/ModalReset';
 import WalletConnectRequestModal from '../WalletConnectRequestModal';
 import {
@@ -25,19 +23,15 @@ import {
 import {setNewsModalVisible} from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
 import {slide as Menu} from 'react-burger-menu';
 import {useTranslations} from 'next-intl';
-import {publicRoutes, getActiveNavSegment} from 'utils/common';
-import {
-  getCryptoProviders,
-  getExchangeProviders,
-  getSellCryptoAllProviders,
-} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
-import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import useNavList from 'src/hooks/navigation/useNavList';
+
+// Order of the dividers-separated groups in the nav.
+const SECTIONS = ['wallet', 'general', 'account'];
 
 const Sidebar = () => {
   const t = useTranslations('home');
 
-  const path = usePathname();
-  const pathname = getActiveNavSegment(path);
+  const {navList, showNav, pathname} = useNavList();
 
   const [modal, setModal] = useState(false);
   const [page, setPage] = useState('');
@@ -50,29 +44,8 @@ const Sidebar = () => {
   );
   const isNewsModalVisible = useSelector(getNewsModalVisible);
   const newsMessage = useSelector(getNewsMessage);
-  const buyCryptoProvider = useSelector(getCryptoProviders);
-  const sellCryptoProvider = useSelector(getSellCryptoAllProviders);
-  const exchangeCryptoProvider = useSelector(getExchangeProviders);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
-
   const [isOpenMenu, setIsOpenMenu] = useState(false);
   const dispatch = useDispatch();
-
-  const filterSideBarList = useMemo(
-    () =>
-      sidebarList(currentWalletClientId).filter(item => {
-        if (item.key === 'buyCrypto') return buyCryptoProvider.length > 0;
-        if (item.key === 'sellCrypto') return sellCryptoProvider.length > 0;
-        if (item.key === 'swap') return exchangeCryptoProvider.length > 0;
-        return true;
-      }),
-    [
-      currentWalletClientId,
-      buyCryptoProvider.length,
-      exchangeCryptoProvider.length,
-      sellCryptoProvider.length,
-    ],
-  );
 
   const handleToggleMenu = () => {
     setIsOpenMenu(!isOpenMenu);
@@ -81,31 +54,50 @@ const Sidebar = () => {
   const handleCheckMenu = () => {
     setIsOpenMenu(!isOpenMenu);
   };
-  const shouldDisplayMenu = () =>
-    pathname !== '/auth' &&
-    pathname !== '/' &&
-    !publicRoutes.includes(pathname);
+  const sections = useMemo(
+    () =>
+      SECTIONS.map(section =>
+        navList.filter(item => item.section === section),
+      ).filter(items => items.length > 0),
+    [navList],
+  );
+
+  const renderNav = onItemClick => (
+    <nav className={s.nav}>
+      {sections.map((items, index) => (
+        <ul key={index} className={s.group}>
+          {items.map(({key, href, Icon, section}) => (
+            <li key={key} onClick={onItemClick}>
+              <ActiveLink
+                href={href}
+                setModal={setModal}
+                setPage={setPage}
+                className={`${s.item} ${section === 'account' ? s.itemAccount : ''}`}
+                activeClassName={s.itemActive}>
+                <span className={s.itemIcon}>
+                  <Icon />
+                </span>
+                <span className={s.itemLabel}>{t(key)}</span>
+              </ActiveLink>
+            </li>
+          ))}
+        </ul>
+      ))}
+    </nav>
+  );
+
+  // Desktop navigation lives in the Header; this drawer is phones only. The
+  // app-wide modals below still mount here on every screen size.
   return (
-    shouldDisplayMenu() && (
+    showNav && (
       <>
-        <aside className={s.container}>
-          <ul>
-            {filterSideBarList.map(({key, href, item}) => (
-              <li key={key}>
-                <ActiveLink href={href} setModal={setModal} setPage={setPage}>
-                  {item(t)}
-                </ActiveLink>
-              </li>
-            ))}
-          </ul>
-        </aside>
         <Menu
           onOpen={handleToggleMenu}
           onClose={handleToggleMenu}
           isOpen={isOpenMenu}
           disableOverlayClick={handleToggleMenu}
           left
-          width={280}
+          width={288}
           burgerButtonClassName={s.bmBurgerButton}
           burgerBarClassName={s.bmBurgerBars}
           crossButtonClassName={s.bmCrossButton}
@@ -114,15 +106,7 @@ const Sidebar = () => {
           morphShapeClassName={s.bmMorphShape}
           itemListClassName={s.bmItemList}
           overlayClassName={s.bmOverlay}>
-          <ul className={s.navList}>
-            {filterSideBarList.map(({key, href, item}) => (
-              <li key={key} onClick={handleCheckMenu}>
-                <ActiveLink href={href} setModal={setModal} setPage={setPage}>
-                  {item(t)}
-                </ActiveLink>
-              </li>
-            ))}
-          </ul>
+          {renderNav(handleCheckMenu)}
         </Menu>
         <ModalReset
           visible={modal}

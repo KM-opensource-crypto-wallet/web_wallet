@@ -1,9 +1,15 @@
 'use client';
 import React, {useEffect, useMemo, useState} from 'react';
-import {Box, Modal} from '@mui/material';
+import Modal from '@mui/material/Modal';
 import {getCommonAffixLengths} from 'dok-wallet-blockchain-networks/helper/addressPoisoning';
+import GeneralButton from 'components/Button';
+// Same sheet / dialog look as the Reset Wallet and Log out confirmation.
+import shell from 'components/ModalReset/ModalReset.module.css';
 import s from './ModalAddressPoisoningWarning.module.css';
 
+// Security warning before sending to an address that mimics one used before.
+// Continue stays disabled until the risk checkbox is ticked. Bottom sheet on
+// phones, centred dialog from 600px up.
 const ModalAddressPoisoningWarning = ({
   visible,
   suspiciousAddress,
@@ -62,25 +68,39 @@ const ModalAddressPoisoningWarning = ({
     );
   };
 
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    bgcolor: 'var(--secondaryBackgroundColor)',
-    borderRadius: '10px',
-    overflow: 'hidden',
-    padding: '24px',
-    maxWidth: '440px',
-    width: '90%',
-  };
-
   return (
-    <Modal open={!!visible} onClose={handleCancel} sx={{zIndex: 99999}}>
-      <Box sx={style}>
-        <div className={s.container}>
-          <div className={s.title}>Possible Address Poisoning</div>
-          <p className={s.subtitle}>
+    <Modal
+      open={!!visible}
+      onClose={handleCancel}
+      sx={{zIndex: 99999}}
+      aria-labelledby='address-poisoning-title'
+      aria-describedby='address-poisoning-description'
+      slotProps={{backdrop: {className: shell.backdrop}}}>
+      <div className={shell.sheet}>
+        <div className={shell.handle} />
+        <span className={`${shell.tile} ${shell.danger}`}>
+          <svg
+            width='22'
+            height='22'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            aria-hidden='true'>
+            <path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' />
+            <path d='M12 8v4' />
+            <path d='M12 16h.01' />
+          </svg>
+        </span>
+        <h2 id='address-poisoning-title' className={shell.title}>
+          Possible Address Poisoning
+        </h2>
+        <div className={`${shell.body} ${s.body}`}>
+          <p
+            id='address-poisoning-description'
+            className={`${shell.warning} ${shell.warningDanger}`}>
             This address closely resembles one you used before, but it is not
             the same. Scammers plant lookalike addresses to redirect your funds.
           </p>
@@ -112,24 +132,21 @@ const ModalAddressPoisoningWarning = ({
               I understand the risk and want to continue
             </span>
           </label>
-
-          <div className={s.actions}>
-            <button
-              className={s.continueBtn}
-              disabled={!checked}
-              style={{
-                backgroundColor: checked ? '#E5484D' : 'var(--gray)',
-                cursor: checked ? 'pointer' : 'not-allowed',
-              }}
-              onClick={handleContinue}>
-              Continue
-            </button>
-            <button className={s.cancelBtn} onClick={handleCancel}>
-              Cancel
-            </button>
-          </div>
         </div>
-      </Box>
+
+        <div className={shell.actions}>
+          <GeneralButton variant='secondary' fullWidth onClick={handleCancel}>
+            Cancel
+          </GeneralButton>
+          <GeneralButton
+            variant='danger'
+            fullWidth
+            disabled={!checked}
+            onClick={handleContinue}>
+            Continue
+          </GeneralButton>
+        </div>
+      </div>
     </Modal>
   );
 };

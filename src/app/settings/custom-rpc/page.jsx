@@ -3,15 +3,21 @@ import {useCallback, useMemo, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useRouter} from 'next/navigation';
 import Image from 'next/image';
-import {Menu, MenuItem} from '@mui/material';
 import {selectAllCustomRpc} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSelectors';
 import {deleteCustomRpc} from 'dok-wallet-blockchain-networks/redux/customRpc/customRpcSlice';
 import {selectVisibleWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import GoBackButton from 'components/GoBackButton';
+import GeneralButton from 'components/Button';
+import {PlusIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {TrashIcon} from 'components/Transactions/TxIcons';
+import {ServerIcon} from '../SettingsIcons';
+import {EditIcon, MoreIcon, WalletIcon} from './RpcIcons';
 import s from './CustomRpc.module.css';
 
 import {chainLogoMap} from 'assets/chain_logo';
 
+// Custom RPC: one glass card per chain + URL, with the wallets using it and an
+// edit / delete menu.
 const CustomRpc = () => {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -49,6 +55,16 @@ const CustomRpc = () => {
     setMenuState({anchor: null, item: null});
   }, []);
 
+  const onMenuKeyDown = useCallback(
+    e => {
+      if (e.key === 'Escape') {
+        menuState.anchor?.focus();
+        closeMenu();
+      }
+    },
+    [menuState.anchor, closeMenu],
+  );
+
   const onEdit = useCallback(() => {
     const item = menuState.item;
     closeMenu();
@@ -70,88 +86,123 @@ const CustomRpc = () => {
   }, [menuState.item, closeMenu, dispatch]);
 
   return (
-    <div className={s.container}>
-      <GoBackButton />
-      <div className={s.header}>
-        <p className={s.title}>Custom RPC</p>
-        <button
-          className={s.addBtn}
+    <Screen
+      className={s.page}
+      title='Custom RPC'
+      right={
+        <GeneralButton
+          variant='unstyled'
+          className={s.iconButton}
+          aria-label='Add RPC'
           onClick={() => router.push('/settings/add-custom-rpc')}>
-          + Add RPC
-        </button>
-      </div>
-
-      {groupedList.length === 0 ? (
-        <div className={s.empty}>
-          <p className={s.emptyText}>No Custom RPC URL is available</p>
-          <button
-            className={s.emptyBtn}
-            onClick={() => router.push('/settings/add-custom-rpc')}>
-            Add Custom RPC
-          </button>
-        </div>
-      ) : (
-        <div className={s.list}>
-          {groupedList.map(item => {
-            const chainLogo = chainLogoMap[item.chain_name?.toLowerCase()];
-            const walletNames = item.walletClientIds
-              .map(id => allWallets?.find(w => w.clientId === id)?.walletName)
-              .filter(Boolean);
-
-            return (
-              <div key={item.key} className={s.card}>
-                <div className={s.cardHeader}>
-                  <div className={s.chainRow}>
-                    {chainLogo ? (
-                      <Image
-                        src={chainLogo}
-                        alt={item.chain_name}
-                        width={24}
-                        height={24}
-                        className={s.chainIcon}
-                      />
-                    ) : (
-                      <div className={s.chainIconPlaceholder}>
-                        <span className={s.globeIcon}>🌐</span>
-                      </div>
-                    )}
-                    <p className={s.chainName}>{item.chain_display_name}</p>
-                  </div>
-                  <button
-                    className={s.menuTrigger}
-                    onClick={e => openMenu(e, item)}>
-                    ⋮
-                  </button>
-                </div>
-
-                <div className={s.divider} />
-
-                <p className={s.rpcUrl}>{item.customRpcUrl}</p>
-
-                {walletNames.length > 0 && (
-                  <div className={s.walletRow}>
-                    <span className={s.walletIcon}>👛</span>
-                    <p className={s.walletNames}>{walletNames.join(' · ')}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+          <PlusIcon size={22} />
+        </GeneralButton>
+      }>
+      {/* Click-away layer for the open card menu. */}
+      {menuState.item && (
+        <div className={s.backdrop} aria-hidden='true' onClick={closeMenu} />
       )}
 
-      <Menu
-        anchorEl={menuState.anchor}
-        open={Boolean(menuState.anchor)}
-        onClose={closeMenu}>
-        <MenuItem onClick={onEdit}>
-          <span className={s.menuItemEdit}>✏️ Edit</span>
-        </MenuItem>
-        <MenuItem onClick={onDelete}>
-          <span className={s.menuItemDelete}>🗑️ Delete</span>
-        </MenuItem>
-      </Menu>
-    </div>
+      <div className={s.column}>
+        {groupedList.length === 0 ? (
+          <section className={s.empty} aria-label='Custom RPC'>
+            <span className={s.emptyIcon}>
+              <ServerIcon size={26} />
+            </span>
+            <p className={s.emptyTitle}>No Custom RPC URL is available</p>
+            <p className={s.emptyText}>
+              Point a chain at your own node instead of the default one.
+            </p>
+            <GeneralButton
+              fullWidth
+              className={s.emptyButton}
+              onClick={() => router.push('/settings/add-custom-rpc')}>
+              <PlusIcon size={18} />
+              Add Custom RPC
+            </GeneralButton>
+          </section>
+        ) : (
+          <section className={s.section} aria-label='Custom RPC URLs'>
+            <div className={s.sectionHead}>
+              <h2 className={s.sectionLabel}>Your RPC URLs</h2>
+              <span className={s.count}>{groupedList.length}</span>
+            </div>
+            {groupedList.map(item => {
+              const chainLogo = chainLogoMap[item.chain_name?.toLowerCase()];
+              const walletNames = item.walletClientIds
+                .map(id => allWallets?.find(w => w.clientId === id)?.walletName)
+                .filter(Boolean);
+              const menuOpen = menuState.item?.key === item.key;
+
+              return (
+                <article
+                  key={item.key}
+                  className={`${s.card} ${menuOpen ? s.cardRaised : ''}`}>
+                  <div className={s.cardHead}>
+                    <span className={s.chainLogo}>
+                      {chainLogo ? (
+                        <Image
+                          src={chainLogo}
+                          alt={item.chain_name}
+                          width={40}
+                          height={40}
+                        />
+                      ) : (
+                        <ServerIcon size={19} />
+                      )}
+                    </span>
+                    <p className={s.chainName}>{item.chain_display_name}</p>
+                    <button
+                      type='button'
+                      className={s.menuTrigger}
+                      aria-label={`Options for ${item.chain_display_name}`}
+                      aria-haspopup='menu'
+                      aria-expanded={menuOpen}
+                      onClick={e => openMenu(e, item)}>
+                      <MoreIcon size={20} />
+                    </button>
+
+                    {menuOpen && (
+                      <div
+                        className={s.menu}
+                        role='menu'
+                        onKeyDown={onMenuKeyDown}>
+                        <button
+                          type='button'
+                          role='menuitem'
+                          autoFocus
+                          className={s.menuItem}
+                          onClick={onEdit}>
+                          <EditIcon size={17} />
+                          Edit
+                        </button>
+                        <button
+                          type='button'
+                          role='menuitem'
+                          className={`${s.menuItem} ${s.menuItemDanger}`}
+                          onClick={onDelete}>
+                          <TrashIcon size={17} />
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className={s.rpcUrl}>{item.customRpcUrl}</p>
+
+                  {walletNames.length > 0 && (
+                    <div className={s.walletRow}>
+                      <WalletIcon size={14} className={s.walletIcon} />
+                      <p className={s.walletNames}>{walletNames.join(' · ')}</p>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+        )}
+      </div>
+    </Screen>
   );
 };
 

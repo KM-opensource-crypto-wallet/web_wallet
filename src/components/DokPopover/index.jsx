@@ -9,7 +9,7 @@ const icons = require(`assets/images/icons`).default;
 import s from './DokPopover.module.css';
 
 // eslint-disable-next-line react/display-name
-const DokPopover = forwardRef(({children}, ref) => {
+const DokPopover = forwardRef(({children, paperClassName}, ref) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleClick = useCallback(event => {
@@ -50,7 +50,8 @@ const DokPopover = forwardRef(({children}, ref) => {
         transformOrigin={{
           vertical: 'top',
           horizontal: 'right',
-        }}>
+        }}
+        slotProps={paperClassName ? {paper: {className: paperClassName}} : {}}>
         {children}
       </Popover>
     </>

@@ -1,30 +1,20 @@
-import {Box, CircularProgress} from '@mui/material';
-import styles from './ModalLoad.module.css';
 import Modal from '@mui/material/Modal';
+import styles from './ModalLoad.module.css';
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  padding: '12px',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-};
-
+// Blocking loader over the page (e.g. Sell crypto). No onClose: it stays up
+// until the caller stops rendering it.
 const ModalLoad = ({open, title = 'Loading...'}) => {
   return (
     <Modal
       open={open}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={styles.container}>
-          <CircularProgress />
-          <p className={styles.titleInfo}>{title}</p>
-        </div>
-      </Box>
+      aria-labelledby='modal-load-title'
+      slotProps={{backdrop: {className: styles.backdrop}}}>
+      <div className={styles.card} role='status' aria-live='polite'>
+        <span className={styles.spinner} aria-hidden='true' />
+        <p id='modal-load-title' className={styles.titleInfo}>
+          {title}
+        </p>
+      </div>
     </Modal>
   );
 };

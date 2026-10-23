@@ -12,71 +12,86 @@ import {
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import Image from 'next/image';
 import s from './DeriveAddress.module.css';
-import {Switch} from '@mui/material';
-import GoBackButton from 'components/GoBackButton';
+import Screen from 'components/Screen';
+import {CheckIcon} from 'components/Home/HomeIcons';
+import {BranchesIcon} from '../SettingsIcons';
 import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 
+// Derive addresses: one switch per wallet that adds or removes the extra
+// EVM, SOL and TRX addresses.
 const DeriveAddress = () => {
   const currentWalletName = useSelector(selectCurrentWallet)?.walletName;
   const visibleWallets = useSelector(selectVisibleWallets);
   const dispatch = useDispatch();
 
+  const onToggle = (item, value) => {
+    if (value) {
+      dispatch(
+        addEVMAndTronDeriveAddresses({
+          clientId: item.clientId,
+          wallet: item,
+        }),
+      );
+    } else {
+      dispatch(removeEVMDeriveAddresses({clientId: item.clientId}));
+    }
+  };
+
   return (
-    <div className={s.container}>
-      <GoBackButton />
-      <div className={s.walletSection}>
-        <p className={s.title}>
-          Add or remove derive addresses for all EVM, SOL and TRX
-        </p>
-        <ul>
-          {visibleWallets.map(item => {
-            return (
-              <li className={s.walletBox} key={`dp_wallet_${item.clientId}`}>
-                <div className={s.walletList}>
-                  <div className={s.avatarWrapper}>
+    <Screen className={s.page} title='EVM, SOL & TRX addresses'>
+      <div className={s.column}>
+        <div className={s.intro}>
+          <span className={s.introIcon}>
+            <BranchesIcon size={19} />
+          </span>
+          <p className={s.introText}>
+            Add or remove derive addresses for all EVM, SOL and TRX
+          </p>
+        </div>
+
+        <section className={s.section} aria-label='Wallets'>
+          <h2 className={s.sectionLabel}>Wallets</h2>
+          <ul className={s.card}>
+            {visibleWallets.map(item => {
+              const checked = !!item.isEVMAddressesAdded;
+              const isCurrent = item?.walletName === currentWalletName;
+              return (
+                <li className={s.row} key={`dp_wallet_${item.clientId}`}>
+                  <span className={s.avatar}>
                     <Image
-                      className={s.avatarAvatar}
                       alt='avatar'
-                      width={54}
-                      height={54}
+                      width={26}
+                      height={26}
                       src={getAppIcon()}
                     />
-
-                    {item?.walletName === currentWalletName && (
-                      <span className={s.badge}>&#10004;</span>
+                    {isCurrent && (
+                      <span className={s.badge} title='Current wallet'>
+                        <CheckIcon size={9} />
+                      </span>
                     )}
-                  </div>
+                  </span>
 
-                  <div className={s.textContainer}>
-                    <p className={s.mainText}>{item?.walletName}</p>
-                    <p className={s.secondaryText}>Multi-Coin Wallet</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={!!item.isEVMAddressesAdded}
-                  onChange={e => {
-                    const value = e.target.checked;
-                    if (value) {
-                      dispatch(
-                        addEVMAndTronDeriveAddresses({
-                          clientId: item.clientId,
-                          wallet: item,
-                        }),
-                      );
-                    } else {
-                      dispatch(
-                        removeEVMDeriveAddresses({clientId: item.clientId}),
-                      );
-                    }
-                  }}
-                  color='warning'
-                />
-              </li>
-            );
-          })}
-        </ul>
+                  <span className={s.rowText}>
+                    <span className={s.rowTitle}>{item?.walletName}</span>
+                    <span className={s.rowHint}>Multi-Coin Wallet</span>
+                  </span>
+
+                  <button
+                    type='button'
+                    role='switch'
+                    aria-checked={checked}
+                    aria-label={`Derive addresses for ${item?.walletName}`}
+                    className={`${s.switch} ${checked ? s.switchOn : ''}`}
+                    onClick={() => onToggle(item, !checked)}>
+                    <span className={s.knob} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       </div>
-    </div>
+    </Screen>
   );
 };
 

@@ -1,47 +1,10 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
+/* Only the bits ModalReset.module.css doesn't cover; the sheet itself is
+   styled there. */
+.message {
+  white-space: pre-line;
 }
 
-.infoList {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  padding: 10px;
-}
-
-.titleInfo {
-  color: var(--font);
-  font-size: 20px;
-  text-align: center;
-  margin-bottom: 20px;
-  text-transform: uppercase;
-}
-
-.info {
-  color: var(--font);
-  font-size: 16px;
-  text-align: center;
-}
-
-.btnList {
-  align-items: center;
-  border-top: 1px solid var(--gray);
-  display: flex;
-  justify-content: space-around;
-}
-
-.learnBox {
-  justify-content: center;
-  align-items: center;
-  height: 60px;
-  color: var(--background);
-  font-size: 17px;
+.action {
   width: 100%;
+  margin-top: 6px;
 }
-
-/* .learnBox:first-child {
-  border-right: 1px solid var(--gray);
-} */

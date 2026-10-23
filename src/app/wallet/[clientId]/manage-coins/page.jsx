@@ -1,178 +1,226 @@
 'use client';
-import React, {useState, useEffect, useCallback} from 'react';
+import React from 'react';
 import s from './ManageCoins.module.css';
-
-const icons = require(`assets/images/icons`).default;
-import TextField from '@mui/material/TextField';
-import IconButton from '@mui/material/IconButton';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import ModalAddCoins from 'components/ModalAddCoins';
 import ModalAddToken from 'components/ModalAddToken';
-import {useSelector} from 'react-redux';
-
-import {selectCoinsForCurrentWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import DraggableCryptoList from 'components/DraggableCryptoList';
-import PageTitle from 'components/PageTitle';
+import GeneralButton from 'components/Button';
+import WalletSwitcher from 'components/Home/WalletSwitcher';
+import {readHideBalances} from 'src/hooks/protectedRoutes/wallet/home/useHome';
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  PlusIcon,
+  SearchIcon,
+} from 'components/Home/HomeIcons';
+import useManageCoin from 'src/hooks/protectedRoutes/wallet/manageCoin/useManageCoin';
+import Screen from 'components/Screen';
 
-import SwapVert from '@mui/icons-material/SwapVert';
+const MoreIcon = () => (
+  <svg width='20' height='20' viewBox='0 0 24 24' aria-hidden='true'>
+    <circle cx='5' cy='12' r='2' style={{fill: 'currentColor'}} />
+    <circle cx='12' cy='12' r='2' style={{fill: 'currentColor'}} />
+    <circle cx='19' cy='12' r='2' style={{fill: 'currentColor'}} />
+  </svg>
+);
 
 const ManageCoins = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const allCoins = useSelector(selectCoinsForCurrentWallet);
-  const [list, setList] = useState(Array.isArray(allCoins) ? allCoins : []);
-  const [modalAddCoinsVisible, setModalAddCoinsVisible] = useState(false);
+  const {
+    walletName,
+    switcherOpen,
+    openSwitcher,
+    closeSwitcher,
+    localCurrency,
+    menuOpen,
+    toggleMenu,
+    closeMenu,
+    hideZeroBalances,
+    showAll,
+    startReorder,
+    sorting,
+    finishReorder,
+    searchQuery,
+    onSearchChange,
+    clearSearch,
+    shownCount,
+    hiddenCount,
+    list,
+    hasVisibleCoins,
+    modalAddCoinsVisible,
+    setModalAddCoinsVisible,
+    openAddCoins,
+    modalAddTokenVisible,
+    setModalAddTokenVisible,
+    openAddToken,
+  } = useManageCoin();
 
-  //   const { theme } = useConp(ThemeConp);
-  //   const classNames = myclassNames(theme);
-  const [modalAddTokenVisible, setModalAddTokenVisible] = useState(false);
-  const [isSortSelected, setIsSortSelected] = useState(false);
+  const center = (
+    <GeneralButton
+      variant='unstyled'
+      className={s.heading}
+      aria-haspopup='dialog'
+      onClick={openSwitcher}>
+      <h1 className={s.headingTitle}>Manage coins</h1>
+      <span className={s.headingSub}>
+        <span className={s.walletAvatar}>{walletName[0].toUpperCase()}</span>
+        <span className={s.headingSubText}>{walletName}</span>
+        <ChevronDownIcon size={12} className={s.headingChevron} />
+      </span>
+    </GeneralButton>
+  );
 
-  useEffect(() => {
-    // Anonymous function: the react-hooks compiler lint flags setState calls
-    // made directly in an effect body; the same update here is accepted.
-    (() => {
-      if (Array.isArray(allCoins)) {
-        setList(allCoins);
-      }
-    })();
-  }, [allCoins]);
-
-  const handleSearch = event => {
-    let query = event.target.value;
-    setSearchQuery(query);
-    if (query) {
-      const newList = allCoins?.filter(item => {
-        return (
-          item?.name?.toLowerCase()?.includes(query?.toLowerCase()) ||
-          item?.symbol?.toUpperCase()?.includes(query?.toUpperCase())
-        );
-      });
-      setList(newList);
-    } else {
-      setList(allCoins);
-    }
-  };
-
-  const clearSearch = () => {
-    setSearchQuery('');
-    setList(allCoins);
-  };
-
-  const onPressToggle = useCallback(() => {
-    setIsSortSelected(prevState => !prevState);
-  }, []);
+  const right = (
+    <div className={s.menuWrap}>
+      <GeneralButton
+        variant='unstyled'
+        className={s.iconButton}
+        aria-label='More'
+        aria-haspopup='menu'
+        aria-expanded={menuOpen}
+        onClick={toggleMenu}>
+        <MoreIcon />
+      </GeneralButton>
+      {menuOpen ? (
+        <>
+          <button
+            type='button'
+            className={s.menuBackdrop}
+            aria-label='Close menu'
+            onClick={closeMenu}
+          />
+          <div className={s.menu} role='menu'>
+            <button
+              type='button'
+              role='menuitem'
+              className={s.menuItem}
+              onClick={hideZeroBalances}>
+              Hide zero balances
+            </button>
+            <button
+              type='button'
+              role='menuitem'
+              className={s.menuItem}
+              onClick={showAll}>
+              Show all coins
+            </button>
+            <button
+              type='button'
+              role='menuitem'
+              className={s.menuItem}
+              onClick={startReorder}>
+              Reorder coins
+            </button>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
 
   return (
-    <>
-      <PageTitle
-        title='Manage Coins'
-        extraElement={
-          searchQuery?.trim().length === 0 ? (
-            <div className={s.extraElementContainer}>
-              <IconButton
-                aria-label='sort-toggle'
-                onClick={onPressToggle}
-                edge='end'
-                sx={{
-                  '&  .MuiSvgIcon-root': {
-                    color: isSortSelected ? 'var(--background)' : 'var(--font)',
-                  },
-                }}>
-                <SwapVert />
-              </IconButton>
+    <Screen className={s.page} center={center} right={right}>
+      <div className={s.column}>
+        {sorting ? (
+          <div className={s.sortBanner}>
+            <span>Drag a coin, or use the arrows, to change its place.</span>
+            <button
+              type='button'
+              className={s.sortDone}
+              onClick={finishReorder}>
+              Done
+            </button>
+          </div>
+        ) : (
+          <>
+            <label className={s.search}>
+              <SearchIcon size={18} />
+              <input
+                value={searchQuery}
+                onChange={onSearchChange}
+                placeholder='Search coins in this wallet'
+                aria-label='Search coins'
+              />
+              {searchQuery ? (
+                <button
+                  type='button'
+                  className={s.clear}
+                  aria-label='Clear search'
+                  onClick={clearSearch}>
+                  <CloseIcon size={12} />
+                </button>
+              ) : null}
+            </label>
+            <div className={s.counts}>
+              <span>
+                {shownCount} shown on Home · {hiddenCount} hidden
+              </span>
+              {hiddenCount ? (
+                <button type='button' className={s.showAll} onClick={showAll}>
+                  Show all
+                </button>
+              ) : null}
             </div>
-          ) : null
-        }
-      />
-      <div className={s.mainView}>
-        <div className={s.searchView}>
-          <TextField
-            placeholder='Search'
-            variant='outlined'
-            id='search-bar'
-            fullWidth
-            value={searchQuery}
-            onChange={handleSearch}
-            sx={{
-              '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
-                {
-                  borderColor: 'var(--gray)',
-                },
-              '& .MuiOutlinedInput-root': {
-                border: '1px solid var(--gray)',
-                borderRadius: '10px',
-                marginTop: '10px',
-                marginBottom: '10px',
-                fontSize: '18px',
-              },
-            }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <IconButton type='submit' aria-label='search'>
-                    <SearchIcon
-                      sx={{
-                        color: 'gray',
-                        marginRight: '10px',
-                      }}
-                    />
-                  </IconButton>
-                ),
-                endAdornment: searchQuery && (
-                  <IconButton
-                    onClick={clearSearch}
-                    size='small'
-                    sx={{
-                      color: 'gray',
-                    }}>
-                    <ClearIcon />
-                  </IconButton>
-                ),
-              },
-            }}
-          />
-          <DraggableCryptoList
-            number={2}
-            list={list}
-            showSwitch
-            isSortSelected={isSortSelected && searchQuery?.trim().length === 0}
-          />
-        </div>
-        <div className={s.btnList}>
-          <button
-            className={s.btnAdd}
-            onClick={() => setModalAddCoinsVisible(true)}>
-            {icons.pluscircleo}
-            <div className={s.box}>
-              <p className={s.title}>Add Coin or Token</p>
-              <p className={s.text}>Select from the supported list</p>
-            </div>
-          </button>
+          </>
+        )}
 
-          {modalAddCoinsVisible && (
-            <ModalAddCoins
-              visible={modalAddCoinsVisible}
-              hideModal={setModalAddCoinsVisible}
-            />
+        <section className={s.card} aria-label='Coins'>
+          {hasVisibleCoins ? (
+            <DraggableCryptoList list={list} isSortSelected={sorting} />
+          ) : (
+            <div className={s.empty}>
+              <p className={s.emptyTitle}>No coins found</p>
+              <p className={s.emptyText}>Try a different name or symbol</p>
+            </div>
           )}
+        </section>
 
-          <button
-            className={s.btnAdd}
-            onClick={() => setModalAddTokenVisible(true)}>
-            {icons.pluscircleo}
-            <div className={s.box}>
-              <p className={s.title}>Add Custom Token</p>
-              <p className={s.text}>Add any ERC20/BEP20 Token</p>
-            </div>
-          </button>
-          <ModalAddToken
-            visible={modalAddTokenVisible}
-            hideModal={setModalAddTokenVisible}
-          />
-        </div>
+        {!sorting ? (
+          <div className={s.addDock}>
+            <section className={s.card} aria-label='Add coins'>
+              <button type='button' className={s.addRow} onClick={openAddCoins}>
+                <span className={s.addIcon}>
+                  <PlusIcon size={17} />
+                </span>
+                <span className={s.addText}>
+                  <span className={s.addTitle}>Add coin or token</span>
+                  <span className={s.addHint}>
+                    Select from the supported list
+                  </span>
+                </span>
+                <ChevronRightIcon size={16} className={s.addChevron} />
+              </button>
+              <button type='button' className={s.addRow} onClick={openAddToken}>
+                <span className={`${s.addIcon} ${s.addIconAccent}`}>
+                  <PlusIcon size={17} />
+                </span>
+                <span className={s.addText}>
+                  <span className={s.addTitle}>Add custom token</span>
+                  <span className={s.addHint}>Any ERC20 / BEP20 contract</span>
+                </span>
+                <ChevronRightIcon size={16} className={s.addChevron} />
+              </button>
+            </section>
+          </div>
+        ) : null}
       </div>
-    </>
+
+      {modalAddCoinsVisible && (
+        <ModalAddCoins
+          visible={modalAddCoinsVisible}
+          hideModal={setModalAddCoinsVisible}
+        />
+      )}
+      <ModalAddToken
+        visible={modalAddTokenVisible}
+        hideModal={setModalAddTokenVisible}
+      />
+      <WalletSwitcher
+        visible={switcherOpen}
+        onClose={closeSwitcher}
+        hidden={switcherOpen && readHideBalances()}
+        localCurrency={localCurrency}
+      />
+    </Screen>
   );
 };
 

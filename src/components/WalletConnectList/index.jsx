@@ -2,35 +2,24 @@ import React, {useRef, useContext, useState} from 'react';
 import styles from './WalletConnectList.module.css';
 import WalletConnectItem from 'components/WalletConnectItem';
 import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
+// Same sheet as the WalletConnect proposal / request modals.
+import sheet from 'components/WalletConnectRequestModal/WalletConnectSheet.module.css';
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '95%',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  minHeight: '80vh',
-  '@media (min-width: 768px)': {
-    width: '50%',
-  },
-};
-
+// Connected apps behind the header's "N Apps connected" pill. Bottom sheet on
+// phones, centred dialog from 600px up; the rows are WalletConnectItem's.
 const WalletConnectList = ({bottomSheetRef, visible, onClose}) => {
   return (
     <Modal
       open={visible}
       onClose={() => onClose(false)}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
+      aria-label='Connected apps'
+      slotProps={{backdrop: {className: sheet.backdrop}}}>
+      <div className={sheet.sheet}>
+        <div className={sheet.handle} />
         <div className={styles.mainView}>
           <WalletConnectItem />
         </div>
-      </Box>
+      </div>
     </Modal>
   );
 };

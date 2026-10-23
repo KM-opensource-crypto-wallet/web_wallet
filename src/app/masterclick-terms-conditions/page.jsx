@@ -1,12 +1,15 @@
 'use client';
 import s from './TermsConditions.module.css';
 
+// Public white-label legal page: a static document on the warm surface,
+// title above one glass card. Copy is legal text, kept verbatim.
 const MasterClickTermsConditionPage = () => {
   return (
-    <div className={s.oneArticle}>
-      <h1>Master Click Terms & Conditions</h1>
+    <main className={s.oneArticle}>
+      <div className={s.glow} aria-hidden='true' />
       <div className={s.container}>
-        <div className={s.articleContent}>
+        <h1 className={s.title}>Master Click Terms & Conditions</h1>
+        <article className={s.articleContent}>
           <div className={s.text}>
             <h2>1. RIGHTS AND OBLIGATIONS </h2>
             <p>
@@ -548,9 +551,9 @@ const MasterClickTermsConditionPage = () => {
               </a>
             </p>
           </div>
-        </div>
+        </article>
       </div>
-    </div>
+    </main>
   );
 };
 

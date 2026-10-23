@@ -3,12 +3,18 @@
 import styles from './Learn.module.css';
 import {useRouter} from 'next/navigation';
 import React, {useContext, useState} from 'react';
+import {KeyIcon} from 'components/Home/HomeIcons';
 
+// Seed phrase explainer, opened in a new tab from VerifyInfo's "Learn more".
+// A standalone read: no back affordance, the quote leads into a glass card.
 const Learn = () => {
   return (
-    <div className={styles.container}>
-      <div className={styles.goBack}></div>
+    <main className={styles.container}>
+      <div className={styles.glow} aria-hidden='true' />
       <div className={styles.infoList}>
+        <span className={styles.icon} aria-hidden='true'>
+          <KeyIcon size={24} />
+        </span>
         <p className={styles.titleInfo}>
           &quot;With great power comes great responsibility&quot;
         </p>
@@ -27,7 +33,7 @@ const Learn = () => {
           between you and keeping control of your assets.
         </p>
       </div>
-    </div>
+    </main>
   );
 };
 

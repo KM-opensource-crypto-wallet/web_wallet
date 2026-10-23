@@ -6,32 +6,20 @@ import React, {
   useImperativeHandle,
   useState,
 } from 'react';
-import {Box, Modal} from '@mui/material';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import Modal from '@mui/material/Modal';
 import QRCode from 'react-qr-code';
+import GeneralButton from 'components/Button';
+import HighlightedAddress from 'components/HighlightedAddress';
+import {CopyIcon} from 'components/Home/HomeIcons';
 import {copyToClipboard} from 'utils/copyToClipboard';
 import s from './AddressQRSheet.module.css';
 
 const TITLE_ID = 'address-qr-sheet-title';
 
-const modalStyle = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '95%',
-  maxWidth: '420px',
-  maxHeight: '85vh',
-  display: 'flex',
-  flexDirection: 'column',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-};
-
 // Displays one address as a QR code. Presented over another modal (e.g.
 // AddressSelectorSheet), which stays mounted underneath. Payload arrives via
-// present(data): {address, symbol?, chain_name?, derivePath?}.
+// present(data): {address, symbol?, chain_name?, derivePath?}. Bottom sheet on
+// phones, centred dialog from 600px up.
 const AddressQRSheet = forwardRef((_props, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [payload, setPayload] = useState(null);
@@ -56,33 +44,45 @@ const AddressQRSheet = forwardRef((_props, ref) => {
     <Modal
       open={isOpen}
       onClose={() => setIsOpen(false)}
-      aria-labelledby={TITLE_ID}>
-      <Box sx={modalStyle}>
-        <div className={s.container}>
-          <p id={TITLE_ID} className={s.headerTitle}>
-            Address QR
-          </p>
-          {/* Explicit white so the QR stays scannable in dark theme. */}
-          {!!payload?.address && (
-            <div className={s.qrContainer}>
+      aria-labelledby={TITLE_ID}
+      slotProps={{backdrop: {className: s.backdrop}}}>
+      <div className={s.sheet}>
+        <div className={s.handle} />
+        <h2 id={TITLE_ID} className={s.title}>
+          Address QR
+        </h2>
+        {/* Always dark-on-white, whatever the theme: scanners read it best. */}
+        {!!payload?.address && (
+          <div className={s.qrStage}>
+            <div className={s.qrTile}>
+              <span className={s.corners} aria-hidden='true' />
               <QRCode
                 value={payload.address}
                 size={220}
                 bgColor='#FFFFFF'
                 fgColor='#000000'
+                className={s.qr}
               />
             </div>
-          )}
-          <p className={s.addressText}>{payload?.address}</p>
+          </div>
+        )}
+        <div className={s.field}>
+          <p className={s.address}>
+            <HighlightedAddress address={payload?.address} />
+          </p>
           {!!payload?.derivePath && (
-            <p className={s.derivePathText}>{payload.derivePath}</p>
+            <p className={s.derivePath}>{payload.derivePath}</p>
           )}
-          <button type='button' className={s.copyButton} onClick={onPressCopy}>
-            <ContentCopyIcon sx={{fontSize: 20}} />
-            <span>Copy Address</span>
-          </button>
         </div>
-      </Box>
+        <GeneralButton
+          variant='unstyled'
+          fullWidth
+          className={s.copy}
+          onClick={onPressCopy}>
+          <CopyIcon size={18} />
+          <span>Copy Address</span>
+        </GeneralButton>
+      </div>
     </Modal>
   );
 });

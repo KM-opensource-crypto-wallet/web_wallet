@@ -1,95 +1,255 @@
-.safeArea {
+/* Scan coins: progress card, coins found (selectable once the scan
+   completes), and one pinned action. Same warm surface and glass as the
+   other wallet screens; the `--sc-*` tokens are also read by the CoinSync*
+   components. */
+.page {
+  --sc-ink: #1a1613;
+  --sc-muted: #6e655e;
+  --sc-faint: #8a7f76;
+  --sc-surface-solid: #f4ede6;
+  --sc-glass: rgba(255, 255, 255, 0.65);
+  --sc-glass-border: rgba(255, 255, 255, 0.9);
+  --sc-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --sc-line: rgba(26, 22, 19, 0.06);
+  --sc-outline: rgba(26, 22, 19, 0.16);
+  --sc-hover: rgba(26, 22, 19, 0.03);
+  --sc-chip: rgba(26, 22, 19, 0.06);
+  --sc-track: rgba(26, 22, 19, 0.08);
+  --sc-success: #0d8a4e;
+  --sc-danger: #d92d20;
+  --glow-strength: 14%;
   display: flex;
   flex-direction: column;
-  height: calc(var(--app-height, 100vh) - 60px);
-  background-color: var(--secondaryBackgroundColor);
+  /* The action button is pinned at the bottom; no Screen padding. */
+  padding-bottom: 0;
+}
+
+:global([data-theme='dark']) .page {
+  --sc-ink: #f5f1ec;
+  --sc-muted: #c9bfb6;
+  --sc-faint: #a89c92;
+  --sc-surface-solid: #100c0a;
+  --sc-glass: rgba(255, 255, 255, 0.05);
+  --sc-glass-border: rgba(255, 255, 255, 0.1);
+  --sc-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --sc-line: rgba(255, 255, 255, 0.06);
+  --sc-outline: rgba(255, 255, 255, 0.2);
+  --sc-hover: rgba(255, 255, 255, 0.03);
+  --sc-chip: rgba(255, 255, 255, 0.08);
+  --sc-track: rgba(255, 255, 255, 0.08);
+  --sc-success: #32d583;
+  --sc-danger: #f97066;
+}
+
+/* Header (in TopBar): keep it from shrinking in the flex-column page. */
+.page .topBar {
+  flex: none;
+}
+
+/* Body */
+.column {
   position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 16px var(--content-gutter) 0;
 }
 
-.container {
+.results {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  gap: 8px;
 }
 
-.navHeader {
+.resultsHead {
   display: flex;
-  flex-direction: row;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  padding: 8px 12px 8px 4px;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
-  flex-shrink: 0;
+  gap: 8px;
+  padding: 0 4px;
 }
 
-.title {
-  margin: 0;
-  font-size: 17px;
+.resultsLabel {
+  font-size: 12px;
   font-weight: 700;
-  font-family: var(--font-roboto);
-  color: var(--font);
-  flex: 1;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.placeholder {
-  width: 40px;
-  flex-shrink: 0;
-}
-
-.scrollArea {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.resultsHeader {
-  margin: 0;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--font-roboto);
-  color: var(--gray);
-  border-bottom: 1px solid rgba(128, 128, 128, 0.12);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: var(--sc-faint);
 }
 
-.blockerOverlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.resultsCount {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sc-muted);
+}
+
+.card {
+  overflow: hidden;
+  border: 1px solid var(--sc-glass-border);
+  border-radius: 18px;
+  background: var(--sc-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--sc-shadow);
+}
+
+/* "Creating wallets" blocker (MUI Modal portal - outside .page, so it
+   carries its own tokens). Same sheet as ModalReset: bottom sheet on
+   phones, centred dialog from 600px up. */
+.blockerBackdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .blockerBackdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
 }
 
 .blockerDialog {
+  --cb-ink: #1a1613;
+  --cb-text: #4a423b;
+  --cb-surface: rgba(255, 255, 255, 0.94);
+  --cb-handle: rgba(26, 22, 19, 0.2);
+  --cb-tint: 9%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 32px 40px;
-  border-radius: 16px;
-  background-color: var(--secondaryBackgroundColor);
+  gap: 12px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 14px 24px 34px;
+  border-radius: 28px 28px 0 0;
+  background: var(--cb-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.25);
+  text-align: center;
   outline: none;
+  animation: pop 0.25s ease;
+}
+
+:global([data-theme='dark']) .blockerDialog {
+  --cb-ink: #f5f1ec;
+  --cb-text: #c9bfb6;
+  --cb-surface: #1f1f23;
+  --cb-handle: rgba(245, 241, 236, 0.25);
+  --cb-tint: 14%;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.8);
+}
+
+.blockerHandle {
+  width: 40px;
+  height: 4px;
+  margin-bottom: 6px;
+  border-radius: 2px;
+  background: var(--cb-handle);
+}
+
+/* Icon tile holding the spinner. */
+.blockerTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--background) var(--cb-tint), transparent);
+}
+
+.blockerSpinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid color-mix(in srgb, var(--background) 25%, transparent);
+  border-top-color: var(--background);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .blockerTitle {
   margin: 0;
-  font-size: 17px;
+  font-size: 21px;
   font-weight: 700;
-  font-family: var(--font-roboto);
-  color: var(--font);
+  letter-spacing: -0.4px;
+  color: var(--cb-ink);
 }
 
 .blockerSubtitle {
   margin: 0;
-  font-size: 13px;
-  font-family: var(--font-roboto);
-  color: var(--gray);
-  text-align: center;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--cb-text);
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (min-width: 600px) {
+  .column {
+    padding-top: 24px;
+  }
+
+  .blockerDialog {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(400px, calc(100vw - 32px));
+    padding: 28px;
+    border-radius: 24px;
+    transform: translate(-50%, -50%);
+    animation-name: popCentered;
+  }
+
+  :global([data-theme='dark']) .blockerDialog {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .blockerHandle {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blockerDialog {
+    animation: none;
+  }
+
+  .blockerSpinner {
+    animation-duration: 1.6s;
+  }
 }

@@ -12,12 +12,15 @@ import {
 import {showToast} from 'utils/toast';
 import {useRouter} from 'next/navigation';
 import s from './Restore.module.css';
-import GoBackButton from 'components/GoBackButton';
+import GeneralButton from 'components/Button';
+import {InfoIcon} from 'components/Home/HomeIcons';
+import Screen from 'components/Screen';
+import {CloudDownIcon, LockIcon} from '../SettingsIcons';
+import WalletPicker from '../backup/WalletPicker';
 import UserMenu from 'components/UserMenu';
 import DriveGuideModal from 'components/DriveGuideModal';
 import ModalBackupPassword from 'components/ModalBackupPassword';
 import ModalDeleteBackup from 'components/ModalDeleteBackup';
-import WalletSelectionCard from 'components/WalletSelectionCard';
 import {useSession, signIn, signOut} from 'next-auth/react';
 import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
 
@@ -311,22 +314,13 @@ const RestorePage = () => {
     existingWallets.some(existing => existing.clientId === wallet.clientId);
 
   const renderContent = () => {
-    if (!hasMounted) {
+    if (!hasMounted || loading) {
       return (
-        <div className={`${s.container}`}>
-          <p className={s.loadingText}>Loading...</p>
-        </div>
-      );
-    }
-
-    if (loading) {
-      return (
-        <div className={`${s.center}`}>
-          <p className={s.loadingText}>
-            {status === 'authenticated'
-              ? 'Searching for backups...'
-              : 'Loading...'}
-          </p>
+        <div className={s.status} role='status'>
+          <span className={s.spinner} aria-hidden='true' />
+          {hasMounted && status === 'authenticated'
+            ? 'Searching for backups...'
+            : 'Loading...'}
         </div>
       );
     }
@@ -334,16 +328,21 @@ const RestorePage = () => {
     // Not Logged In
     if (status !== 'authenticated') {
       return (
-        <div className={`${s.center}`}>
-          <div className={s.emptyStateContainer}>
-            <p className={`${s.text} ${s.emptyStateDescription}`}>
-              Connect your Google Drive to restore wallet backups.
-            </p>
-            <button className={s.button} onClick={handleConnect}>
-              <p className={s.buttonTitle}>Connect Google Drive</p>
-            </button>
-          </div>
-        </div>
+        <section className={s.hero}>
+          <span className={s.heroIcon} aria-hidden='true'>
+            <CloudDownIcon size={28} />
+          </span>
+          <h2 className={s.heroTitle}>Google Drive</h2>
+          <p className={s.heroText}>
+            Connect your Google Drive to restore wallet backups.
+          </p>
+          <GeneralButton
+            fullWidth
+            className={s.heroButton}
+            onClick={handleConnect}>
+            Connect Google Drive
+          </GeneralButton>
+        </section>
       );
     }
 
@@ -352,116 +351,93 @@ const RestorePage = () => {
       const isPasswordRequired =
         error?.code === BACKUP_ERROR_CODES.PASSWORD_REQUIRED;
       return (
-        <div className={`${s.center}`}>
-          <div className={s.emptyStateContainer}>
-            <p
-              className={`${s.text} ${s.emptyStateTitle}`}
-              style={{color: 'red'}}>
-              {isPasswordRequired
-                ? 'Backup is password protected.'
-                : 'Failed to fetch backups.'}
-            </p>
-            <p className={`${s.subTitle} ${s.emptyStateDescription}`}>
-              {error.message ||
-                'Please check your internet connection and permissions.'}
-            </p>
-            <button className={s.button} onClick={handleRetry}>
-              <p className={s.buttonTitle}>
-                {isPasswordRequired ? 'Enter Password' : 'Retry Login'}
-              </p>
-            </button>
-          </div>
-        </div>
+        <section
+          className={`${s.hero} ${isPasswordRequired ? '' : s.heroDanger}`}
+          role='alert'>
+          <span className={s.heroIcon} aria-hidden='true'>
+            {isPasswordRequired ? (
+              <LockIcon size={26} />
+            ) : (
+              <InfoIcon size={26} />
+            )}
+          </span>
+          <h2 className={s.heroTitle}>
+            {isPasswordRequired
+              ? 'Backup is password protected.'
+              : 'Failed to fetch backups.'}
+          </h2>
+          <p className={s.heroText}>
+            {error.message ||
+              'Please check your internet connection and permissions.'}
+          </p>
+          <GeneralButton
+            fullWidth
+            className={s.heroButton}
+            onClick={handleRetry}>
+            {isPasswordRequired ? 'Enter Password' : 'Retry Login'}
+          </GeneralButton>
+        </section>
       );
     }
 
     // Logged In, Success
     return (
       <>
-        {restorableWallets.length > 0 && (
-          <div className={s.selectAllRow}>
-            <button onClick={toggleSelectAll} className={s.selectAllButton}>
-              <input
-                type='checkbox'
-                checked={isAllSelected}
-                readOnly
-                className={s.checkbox}
-                style={{marginRight: '0'}}
-              />
-              {isAllSelected ? 'Deselect All' : 'Select All'}
-            </button>
-            <span className={s.selectionCount}>
-              {selectedWalletIds.length}/{restorableWallets.length} Selected
-            </span>
-          </div>
-        )}
-
         {restorableWallets.length === 0 ? (
-          <div className={`${s.container} ${s.center}`}>
-            <p className={s.text}>No backups found in your Drive.</p>
-          </div>
+          <p className={s.empty}>No backups found in your Drive.</p>
         ) : (
-          <div className={s.walletSection}>
-            {restorableWallets.map(wallet => (
-              <WalletSelectionCard
-                key={
-                  wallet.clientId || `${wallet.walletName}-${wallet.chain_name}`
-                }
-                item={wallet}
-                isSelected={selectedWalletIds.includes(wallet.clientId)}
-                toggleSelect={toggleSelect}
-                isRestored={isWalletRestored(wallet)}
-              />
-            ))}
-          </div>
+          <WalletPicker
+            label='Wallets to restore'
+            wallets={restorableWallets}
+            selectedWalletIds={selectedWalletIds}
+            isAllSelected={isAllSelected}
+            toggleSelectAll={toggleSelectAll}
+            toggleSelect={toggleSelect}
+            isRestored={isWalletRestored}
+            getKey={wallet =>
+              wallet.clientId || `${wallet.walletName}-${wallet.chain_name}`
+            }
+          />
         )}
 
         <div className={s.footer}>
-          <button
-            className={`${s.button} ${
-              restoring ||
-              selectedWalletIds.length === 0 ||
-              restorableWallets.length === 0
-                ? s.buttonDisabled
-                : ''
-            }`}
-            onClick={handleRestorePress}
+          <GeneralButton
+            fullWidth
+            loading={restoring}
+            loadingLabel='Restoring...'
             disabled={
-              restoring ||
-              selectedWalletIds.length === 0 ||
-              restorableWallets.length === 0
-            }>
-            <p className={s.buttonTitle}>
-              {restoring ? 'Restoring...' : 'Restore Selected'}
-            </p>
-          </button>
+              selectedWalletIds.length === 0 || restorableWallets.length === 0
+            }
+            onClick={handleRestorePress}>
+            Restore Selected
+          </GeneralButton>
         </div>
       </>
     );
   };
 
   return (
-    <div className={s.container}>
-      <div className={s.headerContainer}>
-        <div className={s.headerLeft}>
-          <GoBackButton onBack={() => router.replace('/settings')} />
-          <div className={s.headerTitleRow}>
-            <p className={s.screenTitle}>Restore Wallets</p>
-            <p className={s.subTitle}>
-              Recover your wallets from Google Drive.
-            </p>
-          </div>
-        </div>
-        {session && session.user && (
-          <UserMenu
-            user={session.user}
-            onLogout={() => handleLogout()}
-            onDeleteBackup={() => setShowDeleteModal(true)}
-          />
-        )}
+    <Screen
+      className={s.page}
+      title='Restore Wallets'
+      // replace, not back(): history may end at the Google sign-in page
+      onBack={() => router.replace('/settings')}
+      right={
+        session &&
+        session.user && (
+          <span className={s.account}>
+            <UserMenu
+              user={session.user}
+              onLogout={() => handleLogout()}
+              onDeleteBackup={() => setShowDeleteModal(true)}
+            />
+          </span>
+        )
+      }>
+      <div className={s.column}>
+        <p className={s.lead}>Recover your wallets from Google Drive.</p>
+        {renderContent()}
       </div>
-
-      {renderContent()}
 
       <DriveGuideModal
         visible={showDriveGuideModal}
@@ -481,7 +457,7 @@ const RestorePage = () => {
         hideModal={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteBackup}
       />
-    </div>
+    </Screen>
   );
 };
 

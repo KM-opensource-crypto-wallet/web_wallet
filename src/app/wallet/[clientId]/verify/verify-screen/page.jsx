@@ -4,19 +4,21 @@ import {Formik} from 'formik';
 import {useDispatch, useSelector} from 'react-redux';
 import {setBackedUp} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {selectAllWallets} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import GoBackButton from 'components/GoBackButton';
 import styles from './Verify.module.css';
-import {
-  Checkbox,
-  FormControlLabel,
-  InputLabel,
-  OutlinedInput,
-  FormControl,
-} from '@mui/material';
 import {useParams, useRouter} from 'next/navigation';
 import {cryptoRandom} from 'utils/common';
+import GeneralButton from 'components/Button';
+import Screen from 'components/Screen';
+import {CheckIcon, CloseIcon, InfoIcon} from 'components/Home/HomeIcons';
+import {ShieldIcon} from 'components/Transactions/TxIcons';
 
-const icons = require(`assets/images/verify`).default;
+const ordinal = n => {
+  const tens = n % 100;
+  if (tens >= 11 && tens <= 13) {
+    return `${n}th`;
+  }
+  return `${n}${{1: 'st', 2: 'nd', 3: 'rd'}[n % 10] || 'th'}`;
+};
 
 export const Verify = () => {
   const [list, setList] = useState([]);
@@ -93,183 +95,169 @@ export const Verify = () => {
     return;
   }
 
+  const confirmedCount = list.filter(item => item.audit === true).length;
+  const isWrong = selectedItem?.audit === false;
+
   return (
-    <div className={styles.container}>
-      <div className={styles.goBack}>
-        <GoBackButton />
-      </div>
-      <div className={styles.section}>
-        <p className={styles.title}>Your{'\n'}seed phrase</p>
-        <p className={styles.textFirst}>
-          Verify that you`ve stored seed phrase.
-        </p>
-        <p className={styles.text}>
-          Enter the correct words of you seed phrase below.
-        </p>
-        <div className={styles.wordsList}>
-          {list.map((item, index) => (
-            <button
-              className={styles.wordsBox}
-              key={index}
-              onClick={() => setSelected(item.id)}
-              disabled={
-                item.audit === false ? true : item.random === false && true
-              }>
-              {item.random === false ? (
-                <>
-                  <p className={styles.number}>{item.id}</p>
-                </>
-              ) : (
-                <>
-                  <p
-                    className={styles.numberRandom}
-                    style={{
-                      borderColor: item.id === selected ? 'red' : 'transparent',
-                      borderWidth: '1px',
-                      borderStyle: 'solid',
-                      backgroundColor:
+    <Screen
+      className={styles.page}
+      topBarClassName={styles.topBar}
+      title='Confirm seed phrase'
+      subtitle={targetWallet.walletName}>
+      <Formik
+        innerRef={formikRef}
+        initialValues={{word: ''}}
+        onSubmit={handleSubmit}>
+        {({handleChange, handleBlur, handleSubmit, values}) => (
+          <form className={styles.column} onSubmit={handleSubmit} noValidate>
+            <div className={styles.intro}>
+              <span className={styles.introIcon} aria-hidden='true'>
+                <ShieldIcon size={22} />
+              </span>
+              <p className={styles.introTitle}>
+                Verify that you&apos;ve stored your seed phrase.
+              </p>
+              <p className={styles.introText}>
+                Enter the requested words from your seed phrase below.
+              </p>
+            </div>
+
+            <div className={styles.progress} aria-live='polite'>
+              <span className={styles.progressText}>
+                {confirmedCount} of 3 words confirmed
+              </span>
+              <span className={styles.progressDots} aria-hidden='true'>
+                {[0, 1, 2].map(i => (
+                  <span
+                    key={i}
+                    className={`${styles.progressDot} ${
+                      i < confirmedCount ? styles.progressDotOn : ''
+                    }`}
+                  />
+                ))}
+              </span>
+            </div>
+
+            <ol className={styles.wordsCard} aria-label='Seed phrase words'>
+              {list.map((item, index) => {
+                if (!item.random) {
+                  return (
+                    <li key={index} className={styles.slot}>
+                      <span className={styles.number}>{item.id}</span>
+                      <span className={styles.hidden} aria-hidden='true'>
+                        ••••
+                      </span>
+                    </li>
+                  );
+                }
+                const state =
+                  item.audit === true
+                    ? styles.slotDone
+                    : item.audit === false
+                      ? styles.slotWrong
+                      : styles.slotPending;
+                return (
+                  <li key={index}>
+                    <button
+                      type='button'
+                      className={`${styles.slot} ${styles.slotAsk} ${state} ${
+                        item.id === selected ? styles.slotSelected : ''
+                      }`}
+                      aria-pressed={item.id === selected}
+                      aria-label={`Word ${item.id}${
                         item.audit === true
-                          ? 'var(--background)'
-                          : '#CCC8C6' && item.audit === false
-                            ? '#FFF7E5'
-                            : '#CCC8C6',
-                      color:
-                        item.audit === true
-                          ? '#fff'
-                          : 'var(--background)' && item.audit === false
-                            ? '#FF647C'
-                            : 'var(--background)',
-                    }}>
-                    {item.id}
-                  </p>
-                </>
-              )}
-              {item.random === true && (
-                <>
-                  {item.audit === '' && (
-                    <div className={styles.icon}>{icons.сastle}</div>
-                  )}
+                          ? ', confirmed'
+                          : item.audit === false
+                            ? ', incorrect'
+                            : ''
+                      }`}
+                      onClick={() => setSelected(item.id)}
+                      disabled={item.audit === false}>
+                      <span className={styles.number}>{item.id}</span>
+                      <span className={styles.slotMark} aria-hidden='true'>
+                        {item.audit === true ? (
+                          <CheckIcon size={15} strokeWidth={2.6} />
+                        ) : item.audit === false ? (
+                          <CloseIcon size={13} />
+                        ) : (
+                          '?'
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
 
-                  {item.audit === false && (
-                    <div className={styles.cross}>{icons.cross}</div>
-                  )}
-
-                  {item.audit === true && (
-                    <div className={styles.check}>{icons.check}</div>
-                  )}
-                </>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className={styles.formInput}>
-        <p className={styles.info}>
-          {`Enter the ${selected}${
-            selected === 1
-              ? 'st'
-              : selected === 2
-                ? 'nd'
-                : selected === 3
-                  ? 'rd'
-                  : 'th'
-          } word`}
-        </p>
-        <Formik
-          innerRef={formikRef}
-          initialValues={{word: ''}}
-          onSubmit={handleSubmit}>
-          {({handleChange, handleBlur, handleSubmit, values}) => (
-            <form onSubmit={handleSubmit} className={styles.formList}>
-              <FormControl variant='outlined'>
-                <InputLabel
-                  sx={{
-                    color:
-                      selectedItem?.audit === false
-                        ? 'red'
-                        : 'var(--borderActiveColor)',
-                  }}
-                  focused={false}>
-                  Enter word here
-                </InputLabel>
-                <OutlinedInput
-                  editable={textInputEnabled}
-                  fullWidth
+            <section className={styles.card} aria-label='Enter word'>
+              <label className={styles.fieldLabel} htmlFor='word'>
+                Enter the {ordinal(selected)} word
+              </label>
+              <div
+                className={`${styles.inputRow} ${
+                  isWrong ? styles.inputError : ''
+                }`}>
+                <span className={styles.inputNumber}>#{selected}</span>
+                <input
                   id='word'
                   name='word'
+                  className={styles.input}
+                  placeholder='Enter word here'
+                  autoComplete='off'
+                  autoCapitalize='off'
+                  autoCorrect='off'
+                  spellCheck={false}
+                  readOnly={!textInputEnabled}
+                  aria-invalid={isWrong}
+                  aria-describedby={isWrong ? 'word-error' : undefined}
                   onChange={handleChange('word')}
                   onBlur={handleBlur('word')}
                   value={values.word}
-                  label='Enter word here'
-                  sx={{
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor:
-                        selectedItem?.audit === false
-                          ? 'red'
-                          : textInputEnabled
-                            ? 'var(--borderActiveColor)'
-                            : 'var(--headerBorder)',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor:
-                        selectedItem?.audit === false
-                          ? 'red'
-                          : 'var(--borderActiveColor)',
-                    },
-                    '& .MuiInputLabel-outlined': {
-                      color:
-                        selectedItem?.audit === false
-                          ? 'red'
-                          : 'var(--sidebarIcon)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'var(--sidebarIcon) !important',
-                    },
-                  }}
                 />
-              </FormControl>
-              {selectedItem?.audit === false && (
-                <p className={styles.textConfirm}>Invalid mnemonic word.</p>
-              )}
-              <div className={styles.checkbox}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={checked}
-                      onChange={() => {
-                        setChecked(!checked);
-                      }}
-                    />
-                  }
-                />
-
-                <p className={styles.checkText}>
-                  I acknowledge that I must safely store me seed phrase as I
-                  wiil not be able to access my funds
-                </p>
               </div>
-              <button
+              {isWrong ? (
+                <p id='word-error' className={styles.error} role='alert'>
+                  Invalid mnemonic word.
+                </p>
+              ) : null}
+            </section>
+
+            <button
+              type='button'
+              role='checkbox'
+              aria-checked={checked}
+              className={`${styles.ack} ${checked ? styles.ackOn : ''}`}
+              onClick={() => setChecked(!checked)}>
+              <span className={styles.tick} aria-hidden='true'>
+                {checked ? <CheckIcon size={13} strokeWidth={3} /> : null}
+              </span>
+              <span>
+                I acknowledge that I must safely store my seed phrase, as I will
+                not be able to access my funds without it.
+              </span>
+            </button>
+
+            <div className={styles.note}>
+              <InfoIcon size={18} />
+              <p>
+                Never share your seed phrase. Anyone with these words can take
+                your funds.
+              </p>
+            </div>
+
+            <div className={styles.footer}>
+              <GeneralButton
                 type='submit'
-                disabled={!checked}
-                className={styles.btn}
-                style={{
-                  backgroundColor: checked ? 'var(--background)' : '#708090',
-                }}
-                // onPress={() =>
-                //   verify === true
-                //     ? navigation.navigate("Create")
-                //     : handleSubmit()
-                // }
-                // onPress={handleSubmit}
-              >
+                fullWidth
+                className={styles.button}
+                disabled={!checked}>
                 Confirm
-              </button>
-            </form>
-          )}
-        </Formik>
-      </div>
-    </div>
+              </GeneralButton>
+            </div>
+          </form>
+        )}
+      </Formik>
+    </Screen>
   );
 };
 

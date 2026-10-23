@@ -1,49 +1,183 @@
-.container {
+/* Bottom sheet on phones, centred dialog from 600px up; same surface as
+   SeedPhraseInfoModal. */
+.sheet {
+  --mr-ink: #1a1613;
+  --mr-text: #4a423b;
+  --mr-surface: rgba(255, 255, 255, 0.94);
+  --mr-handle: rgba(26, 22, 19, 0.2);
+  --mr-tint: 9%;
+  --mr-danger: #d92d20;
+  --mr-warning-bg: rgba(247, 144, 9, 0.1);
+  --mr-warning-border: rgba(247, 144, 9, 0.3);
+  --mr-warning-ink: #93520a;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  max-height: calc(100dvh - 24px);
   overflow-y: auto;
-  max-height: 40vh;
-}
-
-.infoList {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  padding: 10px;
-}
-
-.titleInfo {
-  color: var(--font);
-  font-size: 20px;
+  padding: 14px 24px 30px;
+  border-radius: 28px 28px 0 0;
+  background: var(--mr-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.25);
   text-align: center;
-  margin-bottom: 20px;
-  text-transform: uppercase;
+  outline: none;
+  animation: pop 0.25s ease;
 }
 
-.info {
-  color: var(--font);
-  font-size: 16px;
-  text-align: center;
+:global([data-theme='dark']) .sheet {
+  --mr-ink: #f5f1ec;
+  --mr-text: #c9bfb6;
+  --mr-surface: #1f1f23;
+  --mr-handle: rgba(245, 241, 236, 0.25);
+  --mr-tint: 14%;
+  --mr-danger: #f97066;
+  --mr-warning-bg: rgba(253, 176, 34, 0.1);
+  --mr-warning-border: rgba(253, 176, 34, 0.28);
+  --mr-warning-ink: #fdb022;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.8);
 }
 
-.btnList {
-  align-items: center;
-  border-top: 1px solid var(--gray);
+.backdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .backdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+.sheet svg {
+  fill: none;
+}
+
+.handle {
+  width: 40px;
+  height: 4px;
+  margin-bottom: 6px;
+  border-radius: 2px;
+  background: var(--mr-handle);
+}
+
+.tile {
   display: flex;
-  justify-content: space-around;
-}
-
-.learnBox {
-  justify-content: center;
   align-items: center;
-  height: 60px;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
   color: var(--background);
-  font-size: 17px;
-  width: 50%;
+  background: color-mix(in srgb, var(--background) var(--mr-tint), transparent);
 }
 
-.learnBox:first-child {
-  border-right: 1px solid var(--gray);
+.tile.danger {
+  color: var(--mr-danger);
+  background: color-mix(in srgb, var(--mr-danger) var(--mr-tint), transparent);
+}
+
+.title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--mr-ink);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--mr-text);
+}
+
+.warning {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--mr-warning-border);
+  border-radius: 14px;
+  background: var(--mr-warning-bg);
+  color: var(--mr-warning-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.warningDanger {
+  border-color: color-mix(in srgb, var(--mr-danger) 28%, transparent);
+  background: color-mix(in srgb, var(--mr-danger) 8%, transparent);
+  color: var(--mr-danger);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+@media (min-width: 600px) {
+  .sheet {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(440px, calc(100vw - 32px));
+    padding: 28px;
+    border-radius: 24px;
+    transform: translate(-50%, -50%);
+    animation-name: popCentered;
+  }
+
+  :global([data-theme='dark']) .sheet {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .handle {
+    display: none;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
 }

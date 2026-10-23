@@ -1,116 +1,140 @@
 import {walletRoutes} from 'utils/routes';
-import React, {useState, useContext} from 'react';
+import React, {useState} from 'react';
 import {useSelector} from 'react-redux';
-
-const icons = require(`assets/images/verify`).default;
-// import {ThemeContext} from '../../../ThemeContext';
-// import myStyles from './VerifyInfoStyles';
-// import {useNavigation} from '@react-navigation/native';
 import styles from './VerifyInfoModal.module.css';
 import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
-// import { useRouter } from "next/navigation";
-import CryptoCheckbox from 'components/CheckBox';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '80%',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  '@media (min-width: 768px)': {
-    width: '40%',
-  },
-};
+const Icon = ({children, size = 20}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='2'
+    strokeLinecap='round'
+    strokeLinejoin='round'
+    aria-hidden='true'>
+    {children}
+  </svg>
+);
 
+// Shown on Home after a wallet is created: back up the seed phrase now or
+// later. Both actions unlock once "I understand" is ticked. Bottom sheet on
+// phones, centred dialog from 600px up (same look as SeedPhraseInfoModal).
 export const VerifyInfoModal = ({visible, onClose}) => {
   const [infoCheck, setInfoCheck] = useState(false);
   const router = useRouter();
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
 
   return (
-    <div>
-      <Modal
-        open={visible}
-        onClose={() => onClose(false)}
-        aria-labelledby='modal-modal-title'
-        aria-describedby='modal-modal-description'>
-        <Box sx={style}>
-          <div className={styles.container}>
-            <div className={styles.icon}>{icons.warning}</div>
+    <Modal
+      open={visible}
+      onClose={() => onClose(false)}
+      aria-labelledby='verify-info-title'
+      aria-describedby='verify-info-description'
+      slotProps={{backdrop: {className: styles.backdrop}}}>
+      <div className={styles.sheet}>
+        <div className={styles.handle} />
+        <div className={styles.header}>
+          <div className={styles.iconTile}>
+            <Icon size={26}>
+              <path d='M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6l8-3z' />
+              <path d='M12 8v4' />
+              <path d='M12 16h.01' />
+            </Icon>
+          </div>
+          <h2 id='verify-info-title' className={styles.title}>
+            Back up your seed phrase
+          </h2>
+        </div>
 
-            <p className={styles.title}>Important!</p>
-
-            <div className={styles.infoList}>
-              <p className={styles.info}>
-                Your account is ready. We used a &nbsp;
-                <span className={styles.span}>seed phrase</span>&nbsp; to create
-                the private key with which you control your funds.
-              </p>
-              <p className={styles.infoNext}>
-                It is very important that you keep the &nbsp;
-                <span className={styles.span}>seed phrase</span>&nbsp;somewhere
-                safe, outside of this device.
-              </p>
-
+        <ul id='verify-info-description' className={styles.points}>
+          <li>
+            <span className={styles.tile}>
+              <Icon>
+                <path d='M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L15.5 7.5m3 3L21 8m-3-3 3 3' />
+              </Icon>
+            </span>
+            <p>
+              <strong>Your account is ready.</strong> We used a seed phrase to
+              create the private key that controls your funds.
+            </p>
+          </li>
+          <li>
+            <span className={styles.tile}>
+              <Icon>
+                <path d='M12 20h9' />
+                <path d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z' />
+              </Icon>
+            </span>
+            <p>
+              <strong>Keep it somewhere safe,</strong> outside of this device.{' '}
               <Link
                 href='/verify/learn'
                 target='_blank'
-                className={styles.learnText}>
-                Learn more.
+                className={styles.learn}>
+                Learn more
               </Link>
+            </p>
+          </li>
+        </ul>
 
-              <p className={styles.infoRed}>
-                IMPORTANT:We do not keep your private key in our servers. It is
-                encrypted and stored on this device. If you lose the private
-                key, you will lose access to your funds! The &nbsp;
-                <span className={styles.spanRed}>seed phrase </span> is the only
-                means by which you can restore your key.
-              </p>
-            </div>
+        <div className={styles.warning} role='note'>
+          <span className={`${styles.tile} ${styles.danger}`}>
+            <Icon>
+              <path d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z' />
+              <path d='M12 9v4' />
+              <path d='M12 17h.01' />
+            </Icon>
+          </span>
+          <p>
+            <strong>We don&apos;t keep your private key.</strong> It is
+            encrypted and stored on this device. If you lose it, the seed phrase
+            is the only way to restore access to your funds.
+          </p>
+        </div>
 
-            <CryptoCheckbox
-              setInfoCheck={setInfoCheck}
-              number={'3'}
-              title={'I understand'}
-            />
+        <label className={styles.check}>
+          <input
+            type='checkbox'
+            checked={infoCheck}
+            onChange={e => setInfoCheck(e.target.checked)}
+          />
+          <span className={styles.box} aria-hidden='true'>
+            <Icon size={14}>
+              <path d='M5 12l5 5L20 7' />
+            </Icon>
+          </span>
+          I understand
+        </label>
 
-            <div className={styles.btnList}>
-              <button
-                disabled={!infoCheck}
-                className={styles.btnVerify}
-                style={{
-                  backgroundColor: infoCheck ? 'var(--background)' : '#708090',
-                }}
-                onClick={() => {
-                  onClose();
-                  router.push(walletRoutes.verifyCreate(currentWalletClientId));
-                }}>
-                Verify seed phrase
-              </button>
-
-              <button
-                disabled={!infoCheck}
-                className={styles.btnLater}
-                style={{
-                  color: infoCheck ? 'var(--background)' : '#708090',
-                }}
-                onClick={() => {
-                  router.push(walletRoutes.home(currentWalletClientId));
-                  onClose();
-                }}>
-                Do it later
-              </button>
-            </div>
-          </div>
-        </Box>
-      </Modal>
-    </div>
+        <div className={styles.actions}>
+          <button
+            type='button'
+            disabled={!infoCheck}
+            className={styles.button}
+            onClick={() => {
+              onClose();
+              router.push(walletRoutes.verifyCreate(currentWalletClientId));
+            }}>
+            Verify seed phrase
+          </button>
+          <button
+            type='button'
+            disabled={!infoCheck}
+            className={styles.later}
+            onClick={() => {
+              router.push(walletRoutes.home(currentWalletClientId));
+              onClose();
+            }}>
+            Do it later
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 };

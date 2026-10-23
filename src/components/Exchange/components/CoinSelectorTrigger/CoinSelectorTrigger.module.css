@@ -5,8 +5,9 @@
   min-height: 48px;
   padding: 6px 10px;
   border-radius: 24px;
-  border: 1px solid var(--whiteOutline);
-  background-color: var(--backgroundColor);
+  border: 1px solid var(--sw-field-border);
+  background: var(--sw-glass-strong);
+  box-shadow: 0 4px 14px rgba(63, 40, 22, 0.08);
   cursor: pointer;
 }
 
@@ -16,7 +17,7 @@
   border-radius: 50%;
   overflow: hidden;
   margin-right: 8px;
-  background-color: var(--lightBackground);
+  background-color: #fff;
   flex-shrink: 0;
 }
 
@@ -35,7 +36,7 @@
 }
 
 .symbol {
-  color: var(--font);
+  color: var(--sw-ink);
   font-size: 16px;
   font-weight: 700;
   white-space: nowrap;
@@ -44,7 +45,7 @@
 }
 
 .chain {
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 11px;
   white-space: nowrap;
   overflow: hidden;

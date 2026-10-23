@@ -1,37 +1,74 @@
-.container {
-  width: 100%;
-  margin: 0 auto;
-  padding: 20px;
+/* Seed phrase explainer, inside AuthLayout (its --ln-* tokens apply here).
+   Points match SeedPhraseInfoModal on the wallet setup screen. */
+.card {
+  padding: 24px 22px;
 }
 
-.infoList {
-  width: 100%;
-  margin: 0 auto;
+.points {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.titleInfo {
-  color: var(--font);
-  font-size: 20px;
-  text-align: center;
-  margin-bottom: 10px;
+.points li,
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
 }
 
-.info {
-  color: var(--font);
-  font-size: 17px;
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-.span {
-  color: var(--font);
-  font-size: 17px;
-  font-weight: bold;
+.points li + li {
   margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ln-field-border);
 }
 
-.learnText {
+.points p,
+.warning p {
+  padding-top: 1px;
+}
+
+.points p,
+.warning p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ln-muted);
+}
+
+.points strong,
+.warning strong {
+  color: var(--ln-ink);
+}
+
+.tile {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
   color: var(--background);
-  font-size: 17px;
-  text-align: left;
+  background: color-mix(in srgb, var(--background) 12%, transparent);
+}
+
+.tile.danger {
+  color: var(--ln-error);
+  background: color-mix(in srgb, var(--ln-error) 12%, transparent);
+}
+
+.warning {
+  margin-top: 16px;
+  padding: 20px 22px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--ln-error) 25%, transparent);
+  background: color-mix(in srgb, var(--ln-error) 6%, transparent);
+}
+
+/* authStyles.button, on a link. */
+.linkButton {
+  text-decoration: none;
 }

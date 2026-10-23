@@ -1,15 +1,14 @@
 'use client';
 import React from 'react';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
 import {showToast} from 'utils/toast';
+import {CopyIcon} from 'components/Home/HomeIcons';
+import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
 import s from './ExchangeDetailRow.module.css';
 
-// Label/value row for the details card. `copyable` shortens the value and
-// copies it on click; `onPress` (e.g. open in explorer) wins over copy.
-// `icon` (a React node, e.g. a MUI icon element) renders a tinted leading
-// circle before the label.
+// Label/value row for the swap details cards. `copyable` shortens the value
+// and copies it on click; `onPress` (e.g. open in explorer) wins over copy.
+// Rows after the first get a divider (`isFirst` skips it).
 const ExchangeDetailRow = ({
   label,
   value,
@@ -17,7 +16,6 @@ const ExchangeDetailRow = ({
   copyable,
   onPress,
   isFirst,
-  icon,
 }) => {
   if (value === null || value === undefined || value === '') {
     return null;
@@ -38,27 +36,22 @@ const ExchangeDetailRow = ({
   };
 
   return (
-    <>
-      {!isFirst && <div className={s.divider} />}
-      <div className={s.row}>
-        <div className={s.rowLabelWrap}>
-          {!!icon && <div className={s.iconCircle}>{icon}</div>}
-          <span className={s.rowLabel}>{label}</span>
-        </div>
-        {copyable || onPress ? (
-          <button className={s.rowValueRow} onClick={handleClick}>
-            <span className={s.rowValue}>{shownValue}</span>
-            {onPress ? (
-              <OpenInNewIcon className={s.rowIcon} />
-            ) : (
-              <ContentCopyIcon className={s.rowIcon} />
-            )}
-          </button>
-        ) : (
-          <span className={s.rowValueStatic}>{shownValue}</span>
-        )}
-      </div>
-    </>
+    <div className={`${s.row} ${isFirst ? '' : s.rowDivider}`}>
+      <span className={s.label}>{label}</span>
+      {copyable || onPress ? (
+        <button
+          type='button'
+          className={s.action}
+          title={stringValue}
+          aria-label={onPress ? `Open ${label}` : `Copy ${label}`}
+          onClick={handleClick}>
+          <span className={s.mono}>{shownValue}</span>
+          {onPress ? <ExternalLinkIcon size={14} /> : <CopyIcon size={14} />}
+        </button>
+      ) : (
+        <span className={s.value}>{shownValue}</span>
+      )}
+    </div>
   );
 };
 

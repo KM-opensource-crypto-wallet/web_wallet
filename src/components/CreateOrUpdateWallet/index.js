@@ -1,483 +1,236 @@
-import {walletRoutes} from 'utils/routes';
-import {skipLockOnNextLoad} from 'utils/lockScreen';
-import React, {
-  useState,
-  useEffect,
-  useContext,
-  useLayoutEffect,
-  useRef,
-  useCallback,
-} from 'react';
-// import {
-//   button,
-//   View,
-//   Text,
-//   TouchableWithoutFeedback,
-//   Keyboard,
-//   SafeAreaView,
-//   KeyboardAvoidingView,
-//   Platform,
-// } from "react-native";
-// import { TextInput } from "react-native-paper";
+import React from 'react';
 import {Formik} from 'formik';
-import * as Yup from 'yup';
-import {wallet} from 'data/data';
-// import myStyles from "./CreateWalletStyles";
-// import { useSelector, shallowEqual } from "react-redux";
-// import { isIpad, useFloatingHeight } from "service/dimensions";
-// import { ThemeContext } from "../../../../../ThemeContext";
-// import ThemedIcon from "components/ThemedIcon";
-// import { useDispatch } from "redux/utils/useDispatch";
-// import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-// import ModalDelete from "components/ModalDelete";
-import {
-  selectCurrentWalletClientId,
-  selectAllWalletName,
-  selectAllWallets,
-  selectCurrentWallet,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {
-  createWallet,
-  deleteWallet,
-  refreshCoins,
-  updateWalletName,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {
-  selectIsSyncing,
-  selectSyncingWalletClientId,
-  selectSyncingWalletName,
-} from 'dok-wallet-blockchain-networks/redux/coinSync/coinSyncSelectors';
-import useCoinScanCooldown from 'src/hooks/useCoinScanCooldown';
-// import Spinner from "components/Spinner";
-
-import s from './CreateOrUpdateWallet.module.css';
-import {useRouter, useSearchParams} from 'next/navigation';
-import allWallets from 'data/tmpAllWallets';
-const icons = require(`assets/images/icons`).default;
+import {useSearchParams} from 'next/navigation';
+import {wallet} from 'src/data/lists/data';
 import ModalDelete from 'components/ModalDelete';
-import {CircularProgress} from '@mui/material';
-import VisibilityOffOutlined from '@mui/icons-material/VisibilityOffOutlined';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import Radar from '@mui/icons-material/Radar';
-import ScheduleOutlined from '@mui/icons-material/ScheduleOutlined';
-import HourglassEmpty from '@mui/icons-material/HourglassEmpty';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
+import useUpdateWallet from 'src/hooks/auth/updateWallet/useUpdateWallet';
+import GeneralButton from 'src/components/Button';
 import {
-  getChainName,
-  getPhrase,
-  getPrivateKey,
-} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
-import {toast} from 'react-toastify';
-import GoBackButton from '../GoBackButton';
-import {
-  setChainName,
-  setPhrase,
-  setPrivateKey,
-} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
-import {resetPaymentUrl} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
+  ChevronRightIcon,
+  EyeIcon,
+  InfoIcon,
+  KeyIcon,
+  SearchIcon,
+} from 'components/Home/HomeIcons';
+import {ClockIcon, TrashIcon} from 'components/Transactions/TxIcons';
+import s from './CreateOrUpdateWallet.module.css';
+import NameNewWallet from './NameNewWallet';
+import Screen from 'components/Screen';
 
-const CreateOrUpdateWallet = () => {
-  // const { theme } = useContext(ThemeContext);
-  // const styles = myStyles(theme);
-  const formikRef = useRef(null);
-  const dispatch = useDispatch();
-  const searchParams = useSearchParams();
-  const walletName = searchParams.get('walletName');
-  const walletClientId = searchParams.get('walletClientId');
-  const phrase = useSelector(getPhrase);
-  const privateKey = useSelector(getPrivateKey);
-  const chain_name = useSelector(getChainName);
-  const router = useRouter();
+// A settings row: tinted icon, title + hint, optional trailing status pill
+// and chevron.
+const SettingsRow = ({
+  icon,
+  tone,
+  title,
+  hint,
+  pill,
+  pillTone,
+  onClick,
+  disabled,
+  chevron = true,
+}) => (
+  <button type='button' className={s.row} disabled={disabled} onClick={onClick}>
+    <span className={`${s.rowIcon} ${tone ? s[tone] : ''}`}>{icon}</span>
+    <span className={s.rowText}>
+      <span className={s.rowTitle}>{title}</span>
+      {hint ? <span className={s.rowHint}>{hint}</span> : null}
+    </span>
+    {pill ? (
+      <span className={`${s.pill} ${pillTone ? s[pillTone] : ''}`}>{pill}</span>
+    ) : null}
+    {chevron ? <ChevronRightIcon size={17} className={s.chevron} /> : null}
+  </button>
+);
 
-  const currentWallet = useSelector(selectCurrentWallet);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
-  const allWalletName = useSelector(selectAllWalletName, shallowEqual);
-  const allWallets = useSelector(selectAllWallets);
-  // The other wallets' names, captured once at mount (the schema below is
-  // rebuilt every render, so this must not be a ref read during render).
-  const [finalAllWallets] = useState(() =>
-    allWalletName.filter(subItem => subItem !== walletName),
+// Wallet settings (rename, backups, hide, scan, remove) for `?walletName=`.
+const UpdateWallet = () => {
+  const {
+    walletName,
+    initialValues,
+    validationSchema,
+    handleSubmit,
+    isSubmitting,
+    wrong,
+    validateNewWalletName,
+    canDelete,
+    showDeleteModal,
+    openDeleteModal,
+    onPressYes,
+    onPressNo,
+    isHidden,
+    isScanAvailable,
+    isScanningThisWallet,
+    isScanningOtherWallet,
+    isScanRowEnabled,
+    scanStatusLabel,
+    goToManualBackup,
+    goToHideWallet,
+    goToCoinSync,
+  } = useUpdateWallet();
+
+  const scanIcon = isScanningThisWallet ? (
+    <span className={s.spinner} aria-label='Scanning' />
+  ) : isScanningOtherWallet || !isScanAvailable ? (
+    <ClockIcon size={19} />
+  ) : (
+    <SearchIcon size={19} />
   );
-
-  const defaultNewWalletName = currentWallet?.walletName; //`Wallet ${allWallets.length}`;
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  // const floatingHeight = useFloatingHeight();
-
-  const [wrong, setWrong] = useState(false);
-  const isCurrentWallet = walletName === defaultNewWalletName;
-
-  // The wallet being edited (only reachable while it's visible), as opposed to
-  // `currentWallet` which is the globally active wallet.
-  const editingWallet =
-    allWallets.find(item => item?.clientId === walletClientId) || null;
-
-  // Coin scan (1 per 24h per wallet) targets the wallet being edited
-  const scanTargetClientId = walletClientId ?? currentWalletClientId;
-  const scanWallet = editingWallet ?? currentWallet;
-  const {isAvailable: isScanAvailable, remainingLabel: scanRemainingLabel} =
-    useCoinScanCooldown(scanWallet?.lastCoinsScanTimestamp);
-  const isCoinSyncRunning = useSelector(selectIsSyncing);
-  const syncingWalletClientId = useSelector(selectSyncingWalletClientId);
-  const syncingWalletName = useSelector(selectSyncingWalletName);
-  const isScanningThisWallet =
-    isCoinSyncRunning && syncingWalletClientId === scanTargetClientId;
-  // Only one scan can run at a time - lock the row while another wallet scans
-  const isScanningOtherWallet = isCoinSyncRunning && !isScanningThisWallet;
-  const isScanRowEnabled =
-    isScanningThisWallet || (isScanAvailable && !isScanningOtherWallet);
-  const ScanIcon = isScanningOtherWallet
-    ? HourglassEmpty
-    : isScanAvailable
-      ? Radar
-      : ScheduleOutlined;
-
-  useEffect(() => {
-    if (!walletName) {
-      let newWalletName = null;
-      if (allWallets.length !== 0) {
-        let newWalletIndex = allWallets.length + 1;
-        do {
-          newWalletName = `Wallet ${newWalletIndex}`;
-          newWalletIndex += 1;
-        } while (allWalletName.includes(newWalletName) === true);
-      }
-      setTimeout(() => {
-        formikRef.current?.setFieldValue(
-          'name',
-          newWalletName || 'Main Wallet',
-        );
-      }, 100);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // useLayoutEffect(() => {
-  //   if (!isCurrentWallet && walletName) {
-  //     navigation.setOptions({
-  //       headerRight: () => (
-  //         <button
-  //           className={{ padding: 10, paddingRight: isIpad ? 50 : 10 }}
-  //           onPress={() => {
-  //             setShowDeleteModal(true);
-  //           }}
-  //         >
-  //           <MaterialCommunityIcons
-  //             name="delete"
-  //             color={theme.font}
-  //             size={24}
-  //           />
-  //         </button>
-  //       ),
-  //     });
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, []);
-
-  const validateNewWalletName = value => {
-    if (currentWallet?.walletName !== value) {
-      const wrong = allWallets.some(({walletName}, index) => {
-        if (walletName === value && index !== currentWallet.id) {
-          return true;
-        }
-        return false;
-      });
-      setWrong(wrong);
-    }
-  };
-
-  const onPressYes = useCallback(() => {
-    setShowDeleteModal(false);
-    router.push(walletRoutes.home(currentWalletClientId));
-    setTimeout(() => {
-      if (walletClientId) {
-        dispatch(deleteWallet(walletClientId));
-      }
-    }, 1000);
-  }, [dispatch, router, walletClientId, currentWalletClientId]);
-
-  const onPressNo = useCallback(() => {
-    setShowDeleteModal(false);
-  }, []);
-
-  const handleSubmit = async values => {
-    const toastId = toast.loading(
-      walletName ? 'Updating Wallet' : 'Creating Wallet',
-      {
-        autoClose: false,
-      },
-    );
-    setIsSubmitting(true);
-    setTimeout(async () => {
-      try {
-        if (walletName) {
-          dispatch(
-            updateWalletName({
-              clientId: walletClientId ?? currentWalletClientId,
-              walletName: values.name,
-            }),
-          );
-          router.back();
-          setIsSubmitting(false);
-          toast.dismiss(toastId);
-          toast.success('Wallet updated successfully');
-        } else {
-          dispatch(resetPaymentUrl());
-          const created = await dispatch(
-            createWallet({
-              walletName: values.name || 'Main Wallet',
-              phrase,
-              privateKey,
-              chain_name,
-            }),
-          ).unwrap();
-          // The reducer makes the new wallet current, but this closure still
-          // holds the previous id; land on the wallet that was just created.
-          const newWalletClientId =
-            created?.newStoreWallet?.clientId || currentWalletClientId;
-          const redirectRoute = searchParams?.get('redirectRoute');
-          let searchParamsString = '';
-          for (const key of searchParams.keys()) {
-            if (key !== 'redirectRoute') {
-              searchParamsString += `${key}=${searchParams.get(key)}&`;
-            }
-          }
-          if (redirectRoute) {
-            // Same as login: an unknown deep link reloads into the 404 page.
-            skipLockOnNextLoad({ttlMs: 10000});
-          }
-          router.replace(
-            redirectRoute
-              ? `${redirectRoute}${
-                  searchParamsString ? '?' + searchParamsString : ''
-                }`
-              : `${walletRoutes.home(newWalletClientId)}${
-                  searchParamsString ? '?' + searchParamsString : ''
-                }`,
-          );
-          dispatch(refreshCoins());
-          setTimeout(() => {
-            dispatch(setPhrase(null));
-            dispatch(setPrivateKey(null));
-            dispatch(setChainName(null));
-          }, 500);
-          setIsSubmitting(false);
-          toast.dismiss(toastId);
-          toast.success('Wallet created successfully');
-        }
-      } catch (e) {
-        setIsSubmitting(false);
-        toast.dismiss(toastId);
-        toast.error('Something went wrong');
-        console.error('error in create wallet', e);
-      }
-    }, 300);
-  };
-
-  // const finalAllWallets = { current: allWallets };
-
-  const validationSchema = Yup.object().shape({
-    name: Yup.string()
-      .required('* Name cannot be empty')
-      .notOneOf(finalAllWallets, 'The name of wallet already existed'),
-  });
 
   return (
-    <div className={s.safeAreaView}>
-      <div className={s.container}>
-        {!!walletName && <GoBackButton />}
-        <div className={s.formInput}>
-          <p className={s.brand}>{walletName || ''}</p>
-          <Formik
-            enableReinitialize={true}
-            initialValues={{
-              name: walletName || '',
-            }}
-            innerRef={formikRef}
-            validationSchema={validationSchema}
-            onSubmit={handleSubmit}>
-            {({
-              handleChange,
-              handleBlur,
-              handleSubmit,
-              values,
-              errors,
-              touched,
-            }) => (
-              <div>
-                <div>
-                  <div className={s.inputWrtapper}>
-                    <input
-                      className={s.input}
-                      label='Name'
-                      style={{
-                        borderColor: errors.name ? 'red' : 'var(--gray)',
-                      }}
-                      name='name'
-                      autoFocus={!walletName}
-                      onChange={handleChange('name')}
-                      onBlur={() => {
-                        validateNewWalletName(values.name);
-                        handleBlur('currentPassword');
-                      }}
-                      value={values.name}
-                    />
-                    {!isCurrentWallet && walletName ? (
-                      <span
-                        className={s.deleteIcon}
-                        onClick={() => setShowDeleteModal(true)}>
-                        {icons.delete}
-                      </span>
-                    ) : null}
-                  </div>
-                  {errors.name && (
-                    <p className={s.textConfirm}>{errors.name}</p>
-                  )}
-
-                  {wrong === true && (
-                    <p className={s.textWarning}>
-                      * Choose a different wallet name
-                    </p>
-                  )}
-                  {walletName ? (
-                    <div>
-                      <p className={s.listTitle}>Secret phrase backups</p>
-                      {wallet.map((item, index) => (
-                        <button
-                          className={s.item}
-                          key={index}
-                          onClick={() => {
-                            if (item.title === 'Manual Backup') {
-                              router.push(
-                                walletRoutes.verifyCreate(walletClientId),
-                              );
-                              // navigation.push("VerifyLogin");
-                            }
-                          }}>
-                          <div className={s.itemIcon}>{item.icon}</div>
-
-                          <div className={s.itemSection}>
-                            <p className={s.itemName}>{item.title}</p>
-                            <p
-                              className={s.itemText}
-                              style={{
-                                color: item.body === 'Active' ? 'green' : 'red',
-                              }}>
-                              {item.body}
-                            </p>
-                          </div>
-                        </button>
-                      ))}
-                      <div className={s.infoContainer}>
-                        <div className={s.infoIcon}>
-                          {icons.exclamationcircle}
-                        </div>
-                        <p className={s.info}>
-                          We highly recommend completing manual backup options
-                          to help prevent the loss your crypto.
-                        </p>
-                      </div>
-
-                      <button
-                        type='button'
-                        className={s.item}
-                        style={{marginTop: 20}}
-                        onClick={() =>
-                          router.push(walletRoutes.hideWallet(walletClientId))
-                        }>
-                        <div className={s.itemIcon}>
-                          <VisibilityOffOutlined
-                            style={{color: 'var(--font)'}}
-                          />
-                        </div>
-                        <div className={s.itemSection}>
-                          <p className={s.itemName}>Hide Wallet</p>
-                          <p
-                            className={s.itemText}
-                            style={{color: 'var(--gray)'}}>
-                            {editingWallet?.hideSettings
-                              ? 'Hidden'
-                              : 'Not hidden'}
-                          </p>
-                        </div>
-                        <div className={s.rowSpacer} />
-                        <ChevronRight style={{color: 'var(--font)'}} />
-                      </button>
-
-                      <button
-                        type='button'
-                        className={s.item}
-                        style={{opacity: isScanRowEnabled ? 1 : 0.5}}
-                        disabled={!isScanRowEnabled}
-                        onClick={() =>
-                          router.push(walletRoutes.coinSync(scanTargetClientId))
-                        }>
-                        <div
-                          className={`${s.scanIconBubble} ${
-                            !isScanRowEnabled ? s.scanIconBubbleDisabled : ''
-                          }`}>
-                          {isScanningThisWallet ? (
-                            <CircularProgress
-                              size={20}
-                              sx={{color: 'var(--background)'}}
-                            />
-                          ) : (
-                            <ScanIcon
-                              style={{
-                                color: isScanRowEnabled
-                                  ? 'var(--background)'
-                                  : 'var(--gray)',
-                              }}
-                            />
-                          )}
-                        </div>
-                        <div className={s.itemSection}>
-                          <p className={s.itemName}>Scan Coins</p>
-                          <p
-                            className={s.itemText}
-                            style={{color: 'var(--gray)'}}>
-                            {isScanningThisWallet
-                              ? 'Scanning in progress — tap to view'
-                              : isScanningOtherWallet
-                                ? syncingWalletName
-                                  ? `Scanning "${syncingWalletName}"…`
-                                  : 'Another wallet is being scanned…'
-                                : isScanAvailable
-                                  ? 'Discover assets across 200+ coins'
-                                  : `Available in ${scanRemainingLabel}`}
-                          </p>
-                        </div>
-                        <div className={s.rowSpacer} />
-                        {isScanRowEnabled && (
-                          <ChevronRight style={{color: 'var(--font)'}} />
-                        )}
-                      </button>
-                    </div>
-                  ) : null}
+    <Screen className={s.page} title='Wallet settings' subtitle={walletName}>
+      <Formik
+        enableReinitialize={true}
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}>
+        {({handleChange, handleBlur, handleSubmit: submit, values, errors}) => (
+          <form
+            className={s.column}
+            noValidate
+            onSubmit={event => {
+              event.preventDefault();
+              submit();
+            }}>
+            <section className={s.nameCard} aria-label='Wallet name'>
+              <span className={s.avatar} aria-hidden='true'>
+                {(values.name || walletName || '?').trim()[0]?.toUpperCase()}
+              </span>
+              <div className={s.field}>
+                <label htmlFor='wallet-name' className={s.label}>
+                  Wallet name
+                </label>
+                <div
+                  className={`${s.inputBox} ${
+                    errors.name || wrong ? s.inputBoxError : ''
+                  }`}>
+                  <input
+                    id='wallet-name'
+                    className={s.input}
+                    name='name'
+                    autoComplete='off'
+                    onChange={handleChange('name')}
+                    onBlur={() => {
+                      validateNewWalletName(values.name);
+                      handleBlur('currentPassword');
+                    }}
+                    value={values.name}
+                  />
                 </div>
-                <button
-                  disabled={wrong || isSubmitting}
-                  className={s.button}
-                  style={{opacity: wrong || isSubmitting ? 0.5 : 1}}
-                  onClick={handleSubmit}>
-                  <p className={s.buttonTitle}>
-                    {walletName ? 'Update Wallet' : 'Create Wallet'}
+                {errors.name ? (
+                  <p className={s.error} role='alert'>
+                    {errors.name}
                   </p>
-                </button>
+                ) : wrong === true ? (
+                  <p className={s.error} role='alert'>
+                    Choose a different wallet name
+                  </p>
+                ) : null}
               </div>
-            )}
-          </Formik>
-        </div>
-        <ModalDelete
-          walletName={walletName}
-          onPressYes={onPressYes}
-          onPressNo={onPressNo}
-          visible={showDeleteModal}
-        />
-        {/* {isLoading && <Spinner />} */}
-      </div>
-    </div>
+            </section>
+
+            <section className={s.section} aria-label='Secret phrase backups'>
+              <span className={s.sectionLabel}>Secret phrase backups</span>
+              <div className={s.card}>
+                {wallet.map(item => {
+                  const active = item.body === 'Active';
+                  return (
+                    <SettingsRow
+                      key={item.title}
+                      icon={<KeyIcon size={19} />}
+                      title={item.title}
+                      hint='Write down your secret phrase'
+                      pill={item.body}
+                      pillTone={active ? 'pillOk' : 'pillWarn'}
+                      onClick={() => {
+                        if (item.title === 'Manual Backup') {
+                          goToManualBackup();
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <p className={s.note}>
+                <InfoIcon size={16} />
+                <span>
+                  We highly recommend completing a manual backup to help prevent
+                  the loss of your crypto.
+                </span>
+              </p>
+            </section>
+
+            <section className={s.section} aria-label='Wallet'>
+              <span className={s.sectionLabel}>Wallet</span>
+              <div className={s.card}>
+                <SettingsRow
+                  icon={<EyeIcon size={19} off />}
+                  tone='toneNeutral'
+                  title='Hide wallet'
+                  hint={
+                    isHidden
+                      ? 'Hidden · unlock it with its secret code'
+                      : 'Hide it behind a secret code'
+                  }
+                  pill={isHidden ? 'Hidden' : null}
+                  onClick={goToHideWallet}
+                />
+                <SettingsRow
+                  icon={scanIcon}
+                  title='Scan coins'
+                  hint={scanStatusLabel}
+                  disabled={!isScanRowEnabled}
+                  chevron={isScanRowEnabled}
+                  onClick={goToCoinSync}
+                />
+              </div>
+            </section>
+
+            {canDelete ? (
+              <section className={s.section} aria-label='Danger zone'>
+                <span className={s.sectionLabel}>Danger zone</span>
+                <div className={s.card}>
+                  <SettingsRow
+                    icon={<TrashIcon size={18} />}
+                    tone='toneDanger'
+                    title='Remove wallet'
+                    hint='Removes it from this device only'
+                    onClick={openDeleteModal}
+                  />
+                </div>
+              </section>
+            ) : null}
+
+            <div className={s.footer}>
+              <GeneralButton
+                type='submit'
+                fullWidth
+                className={s.save}
+                loading={isSubmitting}
+                loadingLabel='Saving…'
+                disabled={!!wrong}>
+                Save changes
+              </GeneralButton>
+            </div>
+          </form>
+        )}
+      </Formik>
+
+      <ModalDelete
+        walletName={walletName}
+        onPressYes={onPressYes}
+        onPressNo={onPressNo}
+        visible={showDeleteModal}
+      />
+    </Screen>
   );
+};
+
+// Without `walletName` this is the name step of a new (created or imported)
+// wallet; with it, the settings of an existing wallet.
+const CreateOrUpdateWallet = () => {
+  const walletName = useSearchParams().get('walletName');
+  return walletName ? <UpdateWallet /> : <NameNewWallet />;
 };
 
 export default CreateOrUpdateWallet;

@@ -1,11 +1,15 @@
-.container {
+/* A coin found by the scan. Colours come from the `--sc-*` tokens on the
+   coin-sync page. */
+.row {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  padding: 10px 16px;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.12);
-  gap: 10px;
-  transition: background-color 0.15s ease;
+  gap: 12px;
+  padding: 12px 14px;
+  transition: background-color 0.2s;
+}
+
+.row + .row {
+  border-top: 1px solid var(--sc-line);
 }
 
 .selectable {
@@ -13,79 +17,116 @@
 }
 
 .selectable:hover {
-  background-color: var(--walletItemColor);
+  background: var(--sc-hover);
 }
 
-.selectable:focus-visible {
+.selected {
+  background: color-mix(in srgb, var(--background) 5%, transparent);
+}
+
+.row:focus-visible {
   outline: 2px solid var(--background);
   outline-offset: -2px;
-  background-color: var(--walletItemColor);
 }
 
-.checkboxContainer {
-  flex-shrink: 0;
+.check {
   display: flex;
+  flex: none;
   align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--sc-outline);
+  border-radius: 7px;
+  color: #fff;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
-.list {
+.check svg {
+  fill: none;
+}
+
+.checkOn {
+  border-color: var(--background);
+  background: var(--background);
+}
+
+.icon {
+  display: flex;
+  flex: none;
+}
+
+/* CoinIcon brings its own margin and dark plate; resize and lighten. */
+.icon > div {
+  width: 38px;
+  height: 38px;
+  margin: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.text {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-width: 0;
 }
 
-.box {
+.titleRow {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.item {
-  flex: 1;
-  min-width: 0;
-}
-
-.rowStyle {
-  display: flex;
-  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
 
-.title {
-  margin: 0;
-  font-size: 14px;
+.symbol {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sc-ink);
+}
+
+.chip {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--sc-chip);
+  font-size: 11px;
   font-weight: 600;
-  font-family: var(--font-roboto);
-  color: var(--font);
-  white-space: nowrap;
+  color: var(--sc-muted);
+}
+
+.name {
+  margin-top: 2px;
   overflow: hidden;
+  font-size: 12.5px;
+  color: var(--sc-faint);
   text-overflow: ellipsis;
-  max-width: 100px;
-}
-
-.text {
-  margin: 2px 0 0;
-  font-size: 12px;
-  font-family: var(--font-roboto);
-  color: var(--gray);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.chainTag {
-  font-size: 10px;
-  font-family: var(--font-roboto);
-  color: var(--gray);
-  background-color: var(--walletItemColor);
-  border-radius: 4px;
-  padding: 1px 5px;
-  flex-shrink: 0;
-}
-
-.itemNumber {
+.amounts {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 45%;
   text-align: right;
-  flex-shrink: 0;
+}
+
+.amount {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sc-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiat {
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sc-faint);
 }

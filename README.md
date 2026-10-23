@@ -173,3 +173,28 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+### for Chrome Extension
+```
+yarn install                 # once, or when package.json changes
+```
+```
+yarn ext:dev                 # builds the extension, then keeps watching for changes
+```
+
+Leave that terminal open. When it prints app compiled and background compiled successfully, load the extension in Chrome:
+
+1. Open chrome://extensions.
+2. Turn on Developer mode (top right).
+3. Click Load unpacked and choose web_wallet/extension/dist/dokwallet.
+4. Pin the extension (puzzle icon → pin), then click its icon. The wallet
+
+### See your code changes
+
+yarn ext:dev rebuilds automatically every time you save a file, in src/, the submodule or extension/. Chrome doesn't reload the extension by itself, though, so after each rebuild:
+
+What you changed	What to do in Chrome
+Pages, components, redux, chain code (src/, dok-wallet-blockchain-networks/) or extension/src/app, overrides, shims	Right-click inside the side panel → Reload, or close and reopen the side panel
+extension/src/background/ (service worker)	Click the reload icon on the extension card in chrome://extensions
+extension/src/manifest.json, .env, or extension.config.js	Stop yarn ext:dev (Ctrl+C), start it again, then click the reload icon on the extension card
+If you're unsure, click the reload icon on the extension card. It covers every case.
