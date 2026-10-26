@@ -1,4 +1,162 @@
-.container {
-  background-color: var(--backgroundColor);
-  padding: 20px;
+/* Auto-lock: one glass card of radio rows, same surface and tokens as
+   Settings; the accent is the white-label `--background` colour. */
+.page {
+  --al-ink: #1a1613;
+  --al-muted: #6e655e;
+  --al-faint: #8a7f76;
+  --al-glass: rgba(255, 255, 255, 0.65);
+  --al-glass-border: rgba(255, 255, 255, 0.9);
+  --al-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --al-line: rgba(26, 22, 19, 0.06);
+  --al-hover: rgba(26, 22, 19, 0.04);
+  --al-ring: rgba(26, 22, 19, 0.2);
+  --al-tint: 10%;
+}
+
+:global([data-theme='dark']) .page {
+  --al-ink: #f5f1ec;
+  --al-muted: #a89c92;
+  --al-faint: #a89c92;
+  --al-glass: rgba(255, 255, 255, 0.05);
+  --al-glass-border: rgba(255, 255, 255, 0.1);
+  --al-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --al-line: rgba(255, 255, 255, 0.06);
+  --al-hover: rgba(255, 255, 255, 0.05);
+  --al-ring: rgba(255, 255, 255, 0.22);
+  --al-tint: 16%;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.page svg {
+  fill: none;
+}
+
+.column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 18px var(--content-gutter) 0;
+}
+
+.sectionLabel {
+  margin: 0;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--al-faint);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--al-glass-border);
+  border-radius: 22px;
+  background: var(--al-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--al-shadow);
+}
+
+/* Rows */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 62px;
+  padding: 10px 16px 10px 14px;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.row + .row {
+  border-top: 1px solid var(--al-line);
+}
+
+.row:hover {
+  background: var(--al-hover);
+}
+
+.rowActive,
+.rowActive:hover {
+  background: color-mix(in srgb, var(--background) 6%, transparent);
+}
+
+.iconTile {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--background) var(--al-tint), transparent);
+  color: var(--background);
+}
+
+.rowTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--al-ink);
+}
+
+/* Radio mark: empty ring, filled accent with a tick when selected. */
+.check {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--al-ring);
+  border-radius: 50%;
+  color: #fff;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.rowActive .check {
+  border-color: var(--background);
+  background: var(--background);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: -2px;
+}
+
+/* Note */
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--al-muted);
+}
+
+.note > svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+@media (min-width: 600px) {
+  .column {
+    padding-top: 26px;
+  }
+
+  .row {
+    padding: 12px 20px 12px 18px;
+  }
 }

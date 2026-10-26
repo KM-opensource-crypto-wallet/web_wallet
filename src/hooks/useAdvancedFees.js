@@ -1,10 +1,6 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import BigNumber from 'bignumber.js';
-import {useDispatch, useSelector} from 'react-redux';
-import {
-  getTransferData,
-  getTransferDataFeesOptions,
-} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSelector';
+import {useDispatch} from 'react-redux';
 import {updateFees} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
 import {
   GAS_CURRENCY,
@@ -12,6 +8,7 @@ import {
   validateNumberInInput,
   weiToGwei,
 } from 'dok-wallet-blockchain-networks/helper';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 const DEFAULT_FEES_TYPE = 'recommended';
 // Both custom inputs are denominated in gwei regardless of the coin's decimals.
@@ -37,8 +34,7 @@ const useAdvancedFees = ({
   isPauseCalculateFees: isPauseCalculateFeesRef,
 }) => {
   const dispatch = useDispatch();
-  const transferData = useSelector(getTransferData);
-  const feesOptions = useSelector(getTransferDataFeesOptions);
+  const {transferData, feesOptions} = useWallet();
 
   const [selectedFeesType, setSelectedFeesType] = useState(DEFAULT_FEES_TYPE);
   const selectedFeesTypeRef = useRef(DEFAULT_FEES_TYPE);

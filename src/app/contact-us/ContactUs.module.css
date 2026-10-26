@@ -1,113 +1,268 @@
-.container {
-    flex: 1;
-    background-color: var(--backgroundColor);
+/* Contact us: contact rows, the OTC entry and any connected apps, in the
+   Settings card style. The accent is the white-label `--background` colour. */
+.page {
+  --cu-ink: #1a1613;
+  --cu-muted: #6e655e;
+  --cu-faint: #8a7f76;
+  --cu-glass: rgba(255, 255, 255, 0.65);
+  --cu-glass-border: rgba(255, 255, 255, 0.9);
+  --cu-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --cu-line: rgba(26, 22, 19, 0.06);
+  --cu-header-line: rgba(26, 22, 19, 0.07);
+  --cu-hover: rgba(26, 22, 19, 0.04);
+  --cu-chip: rgba(26, 22, 19, 0.06);
+  --cu-danger: #d92d20;
+  --cu-tint: 10%;
 }
 
-.contentContainerStyle {
-    background-color: var(--backgroundColor);
-    padding: 20px;
+:global([data-theme='dark']) .page {
+  --cu-ink: #f5f1ec;
+  --cu-muted: #a89c92;
+  --cu-faint: #a89c92;
+  --cu-glass: rgba(255, 255, 255, 0.05);
+  --cu-glass-border: rgba(255, 255, 255, 0.1);
+  --cu-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --cu-line: rgba(255, 255, 255, 0.06);
+  --cu-header-line: rgba(255, 255, 255, 0.07);
+  --cu-hover: rgba(255, 255, 255, 0.05);
+  --cu-chip: rgba(255, 255, 255, 0.08);
+  --cu-danger: #f97066;
+  --cu-tint: 16%;
 }
 
-.mainImageStyle {
-    height: 80px;
-    align-self: 'center';
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.page svg {
+  fill: none;
 }
 
-.button {
-    background-color: var(--background);
-    height: 60px;
-    border-radius: 10px;
-    font-size: 20px;
-    align-items: center;
-    justify-content: center;
-    width: 50%;
-    margin-top: 30px;
+.column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 18px var(--content-gutter) 0;
 }
 
-.buttonTitle {
-    color: var(--title);
-    font-size: 16px;
+.lead {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--cu-muted);
 }
 
-.title {
-    color: var(--font);
-    font-size: 16px;
-    margin: 20px 24px;
+/* Sections */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.descriptions {
-    color: var(--gray);
-    font-size: 14px;
-    margin: 30px 20px 0 0;
-    text-align: center;
+.sectionLabel {
+  margin: 0;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cu-faint);
 }
 
-.borderView {
-    height: 1.5px;
-    background-color: var(--gray);
-    width: 100%;
-    margin: 24px 0;
-    align-self: center;
+.card,
+.otc {
+  border: 1px solid var(--cu-glass-border);
+  border-radius: 22px;
+  background: var(--cu-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--cu-shadow);
 }
 
-.btnWrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.cardBox {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    width: 325px;
-    height: 186px;
+/* Rows */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 16px 12px 14px;
+  text-align: left;
+  transition: background-color 0.2s;
 }
 
-.cardItemContainer {
-    width: 100%;
-    height: 100%;
-    position: relative;
+.row + .row {
+  border-top: 1px solid var(--cu-line);
 }
 
-.cardItem {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+button.row:hover {
+  background: var(--cu-hover);
 }
 
-.textContainer {
-    position: absolute;
-    bottom: 12px;
-    overflow: hidden;
-    width: 100%;
-    z-index: 999;
-    display: flex;
-    padding-left: 30px;
-    flex-direction: column;
+.rowIcon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--background) var(--cu-tint), transparent);
+  color: var(--background);
 }
 
-.cardTitle {
-    color: white;
-    font-size: 18px;
-    font-family: var(--font-roboto);
-    font-weight: 500;
-    text-align: left;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    white-space: pre-line;
+.rowText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.cardDescription {
-    color: white;
-    font-size: 16px;
-    font-family: var(--font-roboto);
-    font-weight: 500;
-    margin-top: 6px;
-    text-align: left;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.rowTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--cu-ink);
+}
+
+.rowHint {
+  overflow: hidden;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--cu-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowChevron {
+  flex: none;
+  color: var(--cu-faint);
+}
+
+/* OTC: the white-label card art as a thumbnail beside the label. */
+.otc {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 16px 10px 10px;
+  text-align: left;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.otc:hover {
+  transform: translateY(-1px);
+}
+
+.otcArt {
+  display: flex;
+  flex: none;
+  width: 112px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--cu-chip);
+}
+
+.otcArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Connected apps */
+.appIcon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--cu-line);
+  color: #1a1613;
+  font-weight: 800;
+}
+
+.appIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.disconnect {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--cu-danger) 10%, transparent);
+  color: var(--cu-danger);
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: background-color 0.2s;
+}
+
+.disconnect:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cu-danger) 16%, transparent);
+}
+
+.disconnect:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid color-mix(in srgb, var(--cu-danger) 25%, transparent);
+  border-top-color: var(--cu-danger);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.row:focus-visible,
+.otc:focus-visible,
+.disconnect:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: -2px;
+}
+
+/* Narrow phones: icon-only disconnect. */
+@media (max-width: 380px) {
+  .disconnect > span:last-child {
+    display: none;
+  }
+}
+
+@media (min-width: 600px) {
+  .column {
+    padding-top: 26px;
+  }
+
+  .row {
+    padding: 13px 20px 13px 18px;
+  }
+
+  .otcArt {
+    width: 132px;
+  }
 }

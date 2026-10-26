@@ -1,12 +1,17 @@
 'use client';
 import React, {memo, useMemo} from 'react';
-import ManageSearch from '@mui/icons-material/ManageSearch';
-import Close from '@mui/icons-material/Close';
-import Refresh from '@mui/icons-material/Refresh';
-import Add from '@mui/icons-material/Add';
-import Check from '@mui/icons-material/Check';
+import GeneralButton from 'components/Button';
+import {
+  CheckIcon,
+  CloseIcon,
+  PlusIcon,
+  SearchIcon,
+} from 'components/Home/HomeIcons';
+import {ResetIcon} from 'components/Transactions/TxIcons';
 import styles from './CoinSyncActionButton.module.css';
 
+// The scan's single main action: Start scan → Cancel → Add N coins / Done,
+// or Retry after an error. Pinned to the bottom of the screen.
 const CoinSyncActionButton = ({
   status,
   onStartSync,
@@ -16,15 +21,9 @@ const CoinSyncActionButton = ({
   totalCoinsWithBalance,
   disabled,
 }) => {
-  const buttonConfig = useMemo(() => {
+  const config = useMemo(() => {
     if (status === 'idle') {
-      return {
-        Icon: ManageSearch,
-        text: 'Start Scan',
-        isCancel: false,
-        onPress: onStartSync,
-        disabled: false,
-      };
+      return {Icon: SearchIcon, text: 'Start scan', onPress: onStartSync};
     }
     if (
       status === 'syncing' ||
@@ -32,9 +31,9 @@ const CoinSyncActionButton = ({
       status === 'fetching'
     ) {
       return {
-        Icon: Close,
-        text: 'Cancel',
-        isCancel: true,
+        Icon: CloseIcon,
+        text: 'Cancel scan',
+        variant: 'secondary',
         onPress: onCancel,
         disabled,
       };
@@ -42,23 +41,16 @@ const CoinSyncActionButton = ({
     if (status === 'completed') {
       const hasCoins = totalCoinsWithBalance > 0;
       return {
-        Icon: hasCoins ? Add : Check,
+        Icon: hasCoins ? PlusIcon : CheckIcon,
         text: hasCoins
-          ? `Add ${selectedCount} Coin${selectedCount !== 1 ? 's' : ''}`
+          ? `Add ${selectedCount} coin${selectedCount !== 1 ? 's' : ''}`
           : 'Done',
-        isCancel: false,
         onPress: onAddCoins,
         disabled: hasCoins && selectedCount === 0,
       };
     }
     if (status === 'error') {
-      return {
-        Icon: Refresh,
-        text: 'Retry',
-        isCancel: false,
-        onPress: onStartSync,
-        disabled: false,
-      };
+      return {Icon: ResetIcon, text: 'Retry', onPress: onStartSync};
     }
     return null;
   }, [
@@ -71,19 +63,21 @@ const CoinSyncActionButton = ({
     disabled,
   ]);
 
-  if (!buttonConfig) return null;
+  if (!config) return null;
 
-  const {Icon, text, isCancel, onPress, disabled: isDisabled} = buttonConfig;
+  const {Icon, text, variant, onPress, disabled: isDisabled} = config;
 
   return (
-    <div className={styles.container}>
-      <button
-        className={`${styles.button} ${isCancel ? styles.buttonCancel : ''} ${isDisabled ? styles.buttonDisabled : ''}`}
-        onClick={onPress}
-        disabled={isDisabled}>
-        <Icon sx={{color: 'white', fontSize: 22}} />
-        <span className={styles.buttonText}>{text}</span>
-      </button>
+    <div className={styles.footer}>
+      <GeneralButton
+        fullWidth
+        variant={variant}
+        className={styles.button}
+        disabled={!!isDisabled}
+        onClick={onPress}>
+        <Icon size={19} />
+        {text}
+      </GeneralButton>
     </div>
   );
 };

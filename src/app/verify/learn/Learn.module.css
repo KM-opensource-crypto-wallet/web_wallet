@@ -1,30 +1,119 @@
+/* Seed phrase explainer: key tile and quote as the intro (same as
+   verify-create), the explanation on the glass card. Warm surface; the
+   accent is the white-label `--background` colour. */
 .container {
-  padding: 20px;
-  background-color: var(--backgroundColor);
-  margin: 0 auto;
+  --le-ink: #1a1613;
+  --le-text: #4a423b;
+  --le-surface: linear-gradient(165deg, #fbf8f5 0%, #f6f0ea 55%, #f3ebe3 100%);
+  --le-glass: rgba(255, 255, 255, 0.65);
+  --le-glass-border: rgba(255, 255, 255, 0.9);
+  --le-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --le-tint: 12%;
+  position: relative;
+  min-height: calc(var(--app-height, 100vh) - 70px);
+  overflow: hidden;
+  padding: 0 0 40px;
+  background: var(--le-surface);
+}
+
+:global([data-theme='dark']) .container {
+  --le-ink: #f5f1ec;
+  --le-text: #c9bfb6;
+  --le-surface: linear-gradient(165deg, #17130f 0%, #120e0b 55%, #0e0b09 100%);
+  --le-glass: rgba(255, 255, 255, 0.05);
+  --le-glass-border: rgba(255, 255, 255, 0.1);
+  --le-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --le-tint: 16%;
+}
+
+.container svg {
+  fill: none;
+}
+
+.glow {
+  position: absolute;
+  top: -120px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--background) 14%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
 }
 
 .infoList {
-  margin-top: 20px;
-  align-self: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 32px var(--content-gutter) 0;
+}
+
+/* Intro */
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  color: var(--background);
+  background: color-mix(in srgb, var(--background) var(--le-tint), transparent);
 }
 
 .titleInfo {
-  color: var(--font);
-  font-size: 25px;
-  text-align: left;
-  margin-bottom: 20px;
+  margin: 0 0 6px;
+  padding: 0 8px;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.3px;
+  color: var(--le-ink);
+  text-align: center;
+  text-wrap: balance;
 }
 
+/* Explanation card */
 .info {
-  color: var(--font);
-  font-size: 16px;
-  margin-bottom: 20px;
+  width: 100%;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid var(--le-glass-border);
+  border-radius: 22px;
+  background: var(--le-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--le-shadow);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--le-text);
   text-align: left;
 }
 
 .span {
-  color: var(--font);
-  font-size: 16px;
-  font-weight: bold;
+  font-weight: 700;
+  color: var(--background);
+}
+
+@media (min-width: 600px) {
+  .infoList {
+    gap: 16px;
+    padding-top: 56px;
+  }
+
+  .titleInfo {
+    font-size: 25px;
+  }
+
+  .info {
+    padding: 26px 28px;
+    font-size: 16px;
+  }
 }

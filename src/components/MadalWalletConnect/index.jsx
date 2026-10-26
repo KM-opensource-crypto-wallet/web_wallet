@@ -1,15 +1,10 @@
-import React, {useRef, useContext, useState} from 'react';
-import styles from './MadalWalletConnect.module.css';
-import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
-
-const icons = require(`assets/images/connect`).default;
-import Chip from '@mui/material/Chip';
-import FormControl from '@mui/material/FormControl';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import walletConnect from 'data/walletConnect';
-import {createWalletConnection} from 'dok-wallet-blockchain-networks/service/walletconnect';
+import React, {useState} from 'react';
 import {parseUri} from '@walletconnect/utils';
+import {createWalletConnection} from 'dok-wallet-blockchain-networks/service/walletconnect';
+import HomeSheet from 'components/Home/HomeSheet';
+import GeneralButton from 'components/Button';
+import {CloseIcon} from 'components/Home/HomeIcons';
+import styles from './MadalWalletConnect.module.css';
 
 const isValidWalletConnectUri = value => {
   if (!value?.startsWith('wc:')) {
@@ -23,28 +18,20 @@ const isValidWalletConnectUri = value => {
   }
 };
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '95%',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  minHeight: '80vh',
-  '@media (min-width: 768px)': {
-    width: '50%',
-  },
-};
+const STEPS = [
+  'Open the dApp and choose WalletConnect.',
+  'Copy its connection link (it starts with “wc:”).',
+  'Paste it below and connect, then approve the request.',
+];
 
+// "New connection": pair with a dApp from its WalletConnect URI.
 const MadalWalletConnect = ({visible, onClose}) => {
   const [connectValue, setConnectValue] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const handleConnectChange = event => {
-    setConnectValue(event.target.value);
+  const setValue = value => {
+    setConnectValue(value);
     if (errorMessage) {
       setErrorMessage('');
     }
@@ -77,78 +64,91 @@ const MadalWalletConnect = ({visible, onClose}) => {
     }
   };
 
+  const onPaste = async () => {
+    try {
+      const text = (await navigator.clipboard.readText())?.trim();
+      if (text) {
+        setValue(text);
+      }
+    } catch (e) {
+      // Clipboard blocked: the field still accepts a manual paste.
+    }
+  };
+
   return (
-    <Modal
-      open={visible}
+    <HomeSheet
+      visible={visible}
       onClose={() => onClose(false)}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={styles.container}>
-          <p className={styles.header}>WalletConnect</p>
-          <div className={styles.borderView} />
-          <div className={styles.codeBox}>
-            <div className={styles.iconBox}>{icons.qr_icon}</div>
-            <button className={styles.button}>{'Scan QR code'}</button>
-          </div>
-          <p className={styles.info}>or use walletconnect uri</p>
+      title='New connection'
+      labelId='wallet-connect-title'>
+      <form
+        className={styles.form}
+        noValidate
+        onSubmit={event => {
+          event.preventDefault();
+          if (!isConnecting) {
+            handleSubmit(connectValue);
+          }
+        }}>
+        <ol className={styles.steps}>
+          {STEPS.map((step, index) => (
+            <li key={step} className={styles.step}>
+              <span className={styles.stepNumber}>{index + 1}</span>
+              <span>{step}</span>
+            </li>
+          ))}
+        </ol>
 
-          <div className={styles.formInput}>
-            <FormControl sx={{m: 1}} variant='outlined'>
-              <OutlinedInput
-                fullWidth
-                id='connect'
-                name='connect'
-                value={connectValue}
-                style={{paddingRight: 120}}
-                onChange={handleConnectChange}
-                endAdornment={
-                  <Chip
-                    label={isConnecting ? 'Connecting…' : 'Connect'}
-                    disabled={isConnecting}
-                    onClick={() => handleSubmit(connectValue)}
-                    sx={{
-                      color: 'white',
-                      backgroundColor: 'var(--background)',
-                      position: 'absolute',
-                      right: 20,
-                    }}
-                  />
-                }
-                sx={{
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--sidebarIcon)',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--borderActiveColor)',
-                  },
-                  '& .MuiInputLabel-outlined': {
-                    color: 'var(--sidebarIcon)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'var(--sidebarIcon) !important',
-                  },
-                }}
-              />
-            </FormControl>
-            {errorMessage ? (
-              <p className={styles.errorText}>{errorMessage}</p>
-            ) : null}
+        <div className={styles.field}>
+          <label htmlFor='wc-uri' className={styles.label}>
+            Connection link
+          </label>
+          <div
+            className={`${styles.inputBox} ${
+              errorMessage ? styles.inputBoxError : ''
+            }`}>
+            <input
+              id='wc-uri'
+              className={styles.input}
+              placeholder='wc:…'
+              autoComplete='off'
+              spellCheck={false}
+              value={connectValue}
+              onChange={event => setValue(event.target.value)}
+              aria-invalid={!!errorMessage}
+            />
+            {connectValue ? (
+              <button
+                type='button'
+                className={styles.clear}
+                aria-label='Clear'
+                onClick={() => setValue('')}>
+                <CloseIcon size={12} />
+              </button>
+            ) : (
+              <button type='button' className={styles.paste} onClick={onPaste}>
+                Paste
+              </button>
+            )}
           </div>
-
-          {/*<div className={styles.btnList}>*/}
-          {/*  {walletConnect.map((item) => (*/}
-          {/*    <button*/}
-          {/*      className={item?.isActive ? styles.btnActive : styles.btn}*/}
-          {/*      key={item.name}*/}
-          {/*    >*/}
-          {/*      {item.icon}*/}
-          {/*    </button>*/}
-          {/*  ))}*/}
-          {/*</div>*/}
+          {errorMessage ? (
+            <p className={styles.error} role='alert'>
+              {errorMessage}
+            </p>
+          ) : null}
         </div>
-      </Box>
-    </Modal>
+
+        <GeneralButton
+          type='submit'
+          fullWidth
+          className={styles.submit}
+          disabled={!connectValue.trim()}
+          loading={isConnecting}
+          loadingLabel='Connecting…'>
+          Connect
+        </GeneralButton>
+      </form>
+    </HomeSheet>
   );
 };
 

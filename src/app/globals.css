@@ -27,6 +27,12 @@
 
 } */
 
+/* Page content width, matched to Swap: cards and buttons fill the column. */
+:root {
+  --content-max-width: 720px;
+  --content-gutter: 20px;
+}
+
 :root[data-theme='light'] {
   --background: #f44d03;
   --font: #000000;
@@ -232,28 +238,6 @@ input[type='number']::-webkit-outer-spin-button {
   background-color: var(--lightBackground);
 }
 
-/* ///////scrollbar/////////////// */
-::-webkit-scrollbar {
-  width: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: var(--borderActiveColor);
-  border-radius: 6px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: #f44d03;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--secondaryBackgroundColor);
-}
-
-::-webkit-scrollbar-corner {
-  background: var(--secondaryBackgroundColor);
-}
-
 /* /////carousel //////////// */
 
 .carousel .control-arrow {
@@ -264,19 +248,29 @@ input[type='number']::-webkit-outer-spin-button {
   display: none;
 }
 
-/* toastify.css */
-.Toastify__toast--success .Toastify__toast-icon svg {
-  fill: green; /* Change to your desired color */
+
+/* Home tour (driver.js): follow the app theme and white-label accent. */
+.driver-popover.home-tour {
+  background: var(--backgroundColor);
+  color: var(--font);
+  border-radius: 14px;
 }
 
-.Toastify__toast--error .Toastify__toast-icon svg {
-  fill: red; /* Change to your desired color */
+.driver-popover.home-tour .driver-popover-title {
+  font-size: 16px;
 }
 
-.Toastify__toast--warning .Toastify__toast-icon svg {
-  fill: orange; /* Change to your desired color */
+.driver-popover.home-tour .driver-popover-arrow {
+  border-color: var(--backgroundColor);
 }
 
-.Toastify__toast--info .Toastify__toast-icon svg {
-  fill: blue; /* Change to your desired color */
+.driver-popover.home-tour .driver-popover-footer button {
+  border-radius: 8px;
+  text-shadow: none;
+}
+
+.driver-popover.home-tour .driver-popover-next-btn {
+  background: var(--background);
+  border-color: var(--background);
+  color: #fff;
 }

@@ -1,42 +1,54 @@
 import React from 'react';
 import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
+import GeneralButton from 'components/Button';
+// Same sheet / dialog look as the Reset Wallet and Log out confirmation.
+import styles from 'components/ModalReset/ModalReset.module.css';
 import s from './DriveGuideModal.module.css';
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '85%',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '20px',
-  overflow: 'hidden',
-  '@media (min-width: 500px)': {
-    width: '60%',
-  },
-  '@media (min-width: 768px)': {
-    width: '40%',
-  },
-};
-
+// Shown before the Google sign-in for Drive backup / restore. No onClose: it
+// only closes through its button. Bottom sheet on phones, centred dialog
+// from 600px up.
 const DriveGuideModal = ({visible, onContinue}) => {
   return (
-    <Modal open={visible} aria-labelledby='drive-guide-modal-title'>
-      <Box sx={style}>
-        <div className={s.content}>
-          <p id='drive-guide-modal-title' className={s.title}>
-            Important Step!
-          </p>
-          <p className={s.description}>
+    <Modal
+      open={visible}
+      aria-labelledby='drive-guide-modal-title'
+      aria-describedby='drive-guide-modal-description'
+      slotProps={{backdrop: {className: styles.backdrop}}}>
+      <div className={styles.sheet}>
+        <div className={styles.handle} />
+        <span className={styles.tile}>
+          <svg
+            width='22'
+            height='22'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            aria-hidden='true'>
+            <rect x='3' y='3' width='18' height='18' rx='4' />
+            <path d='m8 12 3 3 5-6' />
+          </svg>
+        </span>
+        <h2 id='drive-guide-modal-title' className={styles.title}>
+          Important Step!
+        </h2>
+        <div id='drive-guide-modal-description' className={styles.body}>
+          <p className={s.notice}>
             When signing in with Google, please make sure to CHECK the box to
             allow the app to access its own folder in your Google Drive.
           </p>
-          <button className={s.button} onClick={onContinue}>
-            I Understand, Continue
-          </button>
         </div>
-      </Box>
+        <GeneralButton
+          variant='primary'
+          fullWidth
+          className={s.action}
+          onClick={onContinue}>
+          I Understand, Continue
+        </GeneralButton>
+      </div>
     </Modal>
   );
 };

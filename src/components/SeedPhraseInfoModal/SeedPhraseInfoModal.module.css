@@ -1,0 +1,185 @@
+/* Bottom sheet on phones, centred dialog from 600px up. */
+.sheet {
+  --si-ink: #1a1613;
+  --si-text: #4a423b;
+  --si-surface: rgba(255, 255, 255, 0.94);
+  --si-handle: rgba(26, 22, 19, 0.2);
+  --si-tint: 9%;
+  --si-danger: #d92d20;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 14px 24px 34px;
+  border-radius: 28px 28px 0 0;
+  background: var(--si-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.25);
+  outline: none;
+  animation: pop 0.25s ease;
+}
+
+:global([data-theme='dark']) .sheet {
+  --si-ink: #f5f1ec;
+  --si-text: #c9bfb6;
+  --si-surface: #1f1f23;
+  --si-handle: rgba(245, 241, 236, 0.25);
+  --si-tint: 14%;
+  --si-danger: #f97066;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.8);
+}
+
+.backdrop {
+  background: rgba(20, 14, 10, 0.45) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .backdrop {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+.sheet svg {
+  fill: none;
+}
+
+.handle {
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--si-handle);
+}
+
+.title {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--si-ink);
+}
+
+.points {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.points li {
+  display: flex;
+  gap: 12px;
+}
+
+.points p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--si-text);
+}
+
+.points strong {
+  color: var(--si-ink);
+}
+
+.tile {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  color: var(--background);
+  background: color-mix(in srgb, var(--background) var(--si-tint), transparent);
+}
+
+.tile.danger {
+  color: var(--si-danger);
+  background: color-mix(in srgb, var(--si-danger) var(--si-tint), transparent);
+}
+
+.button {
+  width: 100%;
+  height: 56px;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--background) 88%, #fff) 0%,
+    var(--background) 100%
+  );
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--background) 35%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition:
+    filter 0.2s,
+    transform 0.1s;
+}
+
+.button:hover {
+  filter: brightness(1.05);
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 3px;
+}
+
+@media (min-width: 600px) {
+  .sheet {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(460px, calc(100vw - 32px));
+    padding: 28px;
+    border-radius: 24px;
+    transform: translate(-50%, -50%);
+    animation-name: popCentered;
+  }
+
+  :global([data-theme='dark']) .sheet {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .handle {
+    display: none;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}

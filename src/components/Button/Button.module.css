@@ -1,0 +1,195 @@
+/* GeneralButton. Same look as the AuthLayout and modal buttons; the accent is
+   the white-label `--background` colour. */
+.button {
+  --gb-ink: #1a1613;
+  --gb-line: rgba(26, 22, 19, 0.12);
+  --gb-hover: rgba(26, 22, 19, 0.05);
+  --gb-off: rgba(26, 22, 19, 0.12);
+  --gb-off-text: rgba(26, 22, 19, 0.35);
+  --gb-danger: #d92d20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    filter 0.2s,
+    background-color 0.2s,
+    transform 0.1s;
+}
+
+:global([data-theme='dark']) .button {
+  --gb-ink: #f5f1ec;
+  --gb-line: rgba(255, 255, 255, 0.14);
+  --gb-hover: rgba(255, 255, 255, 0.06);
+  --gb-off: #33333b;
+  --gb-off-text: #7c7c88;
+  --gb-danger: #f97066;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.button svg {
+  fill: none;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.primary,
+.danger {
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--gb-accent) 88%, #fff) 0%,
+    var(--gb-accent) 100%
+  );
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--gb-accent) 35%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.primary {
+  --gb-accent: var(--background);
+}
+
+.danger {
+  --gb-accent: var(--gb-danger);
+}
+
+.primary:hover:not(:disabled),
+.danger:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.secondary {
+  border: 1.5px solid var(--gb-line);
+  background: transparent;
+  color: var(--gb-ink);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--gb-hover);
+}
+
+/* Text-only, like an inline link. */
+.link {
+  min-height: 0;
+  padding: 8px 0 2px;
+  background: none;
+  font-size: 14px;
+  color: var(--background);
+}
+
+.link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.link:disabled:not([aria-busy='true']) {
+  color: var(--gb-off-text);
+}
+
+/* Square, icon-only (e.g. clear / show-password inside a field). Give it an
+   aria-label. The --ln-* tokens come from AuthLayout when it's inside one. */
+.icon {
+  width: 44px;
+  min-height: 0;
+  height: 44px;
+  padding: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--ln-muted, var(--gb-ink));
+}
+
+.icon:hover:not(:disabled) {
+  background: var(--ln-hover, var(--gb-hover));
+}
+
+/* Small pill, e.g. a suggestion. */
+.chip {
+  min-height: 0;
+  padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--background) 25%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background) 6%, transparent);
+  color: color-mix(in srgb, var(--background) 75%, var(--ln-ink, var(--gb-ink)));
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+.chip:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--background) 12%, transparent);
+}
+
+/* Full-width list row (icon, text, chevron); the content sets the look. */
+.row {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-align: left;
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 3px;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+}
+
+.button[aria-busy='true'] {
+  cursor: progress;
+}
+
+/* Disabled (not loading): greyed out. A loading button keeps its colour. */
+.primary:disabled:not([aria-busy='true']),
+.danger:disabled:not([aria-busy='true']) {
+  background: var(--gb-off);
+  color: var(--gb-off-text);
+  box-shadow: none;
+}
+
+.secondary:disabled:not([aria-busy='true']) {
+  color: var(--gb-off-text);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid color-mix(in srgb, currentColor 35%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.4s;
+  }
+}

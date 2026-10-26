@@ -1,31 +1,14 @@
 import React, {useCallback} from 'react';
-import {Modal, Box} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import CheckIcon from '@mui/icons-material/Check';
+import Modal from '@mui/material/Modal';
 import Image from 'next/image';
 import styles from './CoinGroupInfo.module.css';
 import {useGroupCoins} from 'src/hooks/useGroupCoins';
 import CoinIcons from 'src/components/CoinsIcons';
-import Button from '@mui/material/Button';
+import GeneralButton from 'components/Button';
+import {CheckIcon, CloseIcon, PlusIcon} from 'components/Home/HomeIcons';
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '95%',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  minHeight: '75vh',
-  maxHeight: '75vh',
-  '@media (min-width: 768px)': {
-    width: '50%',
-    minHeight: '75vh',
-    maxHeight: '75vh',
-  },
-};
-
+// A coin group's description and coins, with Add for the whole group. Bottom
+// sheet on phones, centred dialog from 600px up.
 const CoinGroupInfoModal = ({
   visible,
   onDismiss,
@@ -63,69 +46,68 @@ const CoinGroupInfoModal = ({
     <Modal
       open={visible}
       onClose={onDismiss}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'
-      slotProps={{
-        backdrop: {
-          style: {backgroundColor: 'transparent'},
-        },
-      }}>
-      <Box sx={style}>
-        <div className={styles.modalDiv}>
-          <div className={styles.contentBox}>
-            <div className={styles.scrollModalDiv}>
-              <div className={styles.header}>
-                <h3 className={styles.title}>{selectedGroup.name}</h3>
-                <div className={styles.headerActions}>
-                  <CoinIcons icons={icons} />
-                  <button className={styles.btnClose} onClick={onDismiss}>
-                    ×
-                  </button>
-                </div>
-              </div>
-              <p className={styles.description}>{selectedGroup.description}</p>
-              <h3 className={styles.subTitle}>Coins</h3>
-              {selectedGroup.coins.map((coin, index) => (
-                <div key={coin._id || index} className={styles.coinItem}>
-                  <div className={styles.coinIconWrapper}>
-                    <Image
-                      src={coin.icon}
-                      alt={coin.name}
-                      width={30}
-                      height={30}
-                      className={styles.coinIcon}
-                    />
-                  </div>
-                  <div className={styles.coinInfo}>
-                    <div className={styles.coinHeader}>
-                      <div className={styles.coinTitleGroup}>
-                        <span className={styles.coinSymbol}>{coin.symbol}</span>
-                        <span className={styles.chainName}>
-                          {coin.chain_display_name}
-                        </span>
-                      </div>
-                    </div>
-                    <span className={styles.coinName}>{coin.name}</span>
-                  </div>
-                </div>
-              ))}
-              <Button
-                onClick={onLocalAddPress}
-                disabled={isGroupCoinsAdded || isDisabledItem || isAdding}
-                className={`${styles.addButton} ${isDisabledItem ? styles.disabledButton : ''}`}
-                color={isGroupCoinsAdded ? 'success' : 'primary'}
-                data-state={
-                  isAdding ? 'adding' : isGroupCoinsAdded ? 'added' : 'default'
-                }
-                startIcon={isGroupCoinsAdded ? <CheckIcon /> : <AddIcon />}
-                fullWidth
-                variant='contained'>
-                {isAdding ? 'Adding...' : isGroupCoinsAdded ? 'Added' : 'Add'}
-              </Button>
-            </div>
+      aria-labelledby='coin-group-info-title'
+      aria-describedby='coin-group-info-description'
+      slotProps={{backdrop: {className: styles.backdrop}}}>
+      <div className={styles.sheet}>
+        <div className={styles.handle} />
+        <div className={styles.header}>
+          <h2 id='coin-group-info-title' className={styles.title}>
+            {selectedGroup.name}
+          </h2>
+          <div className={styles.headerActions}>
+            <CoinIcons icons={icons} />
+            <GeneralButton
+              variant='unstyled'
+              className={styles.btnClose}
+              aria-label='Close'
+              onClick={onDismiss}>
+              <CloseIcon size={15} />
+            </GeneralButton>
           </div>
         </div>
-      </Box>
+        <div className={styles.scroll}>
+          <p id='coin-group-info-description' className={styles.description}>
+            {selectedGroup.description}
+          </p>
+          <h3 className={styles.subTitle}>Coins</h3>
+          <div className={styles.coinList}>
+            {selectedGroup.coins.map((coin, index) => (
+              <div key={coin._id || index} className={styles.coinItem}>
+                <div className={styles.coinIconWrapper}>
+                  <Image
+                    src={coin.icon}
+                    alt={coin.name}
+                    width={30}
+                    height={30}
+                    className={styles.coinIcon}
+                  />
+                </div>
+                <div className={styles.coinInfo}>
+                  <div className={styles.coinTitleGroup}>
+                    <span className={styles.coinSymbol}>{coin.symbol}</span>
+                    <span className={styles.chainName}>
+                      {coin.chain_display_name}
+                    </span>
+                  </div>
+                  <span className={styles.coinName}>{coin.name}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <GeneralButton
+          fullWidth
+          onClick={onLocalAddPress}
+          disabled={isGroupCoinsAdded || isDisabledItem || isAdding}
+          className={styles.addButton}
+          data-state={
+            isAdding ? 'adding' : isGroupCoinsAdded ? 'added' : 'default'
+          }>
+          {isGroupCoinsAdded ? <CheckIcon size={18} /> : <PlusIcon size={18} />}
+          {isAdding ? 'Adding...' : isGroupCoinsAdded ? 'Added' : 'Add'}
+        </GeneralButton>
+      </div>
     </Modal>
   );
 };

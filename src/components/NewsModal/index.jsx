@@ -1,35 +1,46 @@
 import React from 'react';
-import styles from './NewsModal.module.css';
 import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
+// Same sheet / dialog look as the Reset Wallet and Log out confirmation.
+import styles from 'components/ModalReset/ModalReset.module.css';
+import s from './NewsModal.module.css';
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '95%',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  '@media (min-width: 768px)': {
-    width: '50%',
-  },
-};
-
+// "Important News!" notice from the backend. Closes on backdrop / Esc only.
+// Bottom sheet on phones, centred dialog from 600px up.
 const NewsModal = ({onClose, message, visible}) => {
   return (
     <Modal
       open={visible}
       onClose={() => onClose(false)}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={styles.container}>
-          <div className={styles.title}>{'Important News!'}</div>
-          <div className={styles.description}>{message}</div>
+      aria-labelledby='modal-news-title'
+      aria-describedby='modal-news-description'
+      slotProps={{backdrop: {className: styles.backdrop}}}>
+      <div className={styles.sheet}>
+        <div className={styles.handle} />
+        <span className={styles.tile}>
+          <svg
+            width='22'
+            height='22'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            aria-hidden='true'>
+            <path d='M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z' />
+            <path d='M16 8.5a5 5 0 0 1 0 7' />
+            <path d='M19 5.5a9 9 0 0 1 0 13' />
+          </svg>
+        </span>
+        <h2 id='modal-news-title' className={styles.title}>
+          {'Important News!'}
+        </h2>
+        <div
+          id='modal-news-description'
+          className={`${styles.text} ${s.description}`}>
+          {message}
         </div>
-      </Box>
+      </div>
     </Modal>
   );
 };

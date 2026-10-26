@@ -1,129 +1,360 @@
-.section {
-  width: 90%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--gray);
-  margin: 0 auto;
+/* Transaction list, grouped by day. Colours come from the `--tx-*` tokens
+   declared on the transactions page. */
+.group {
+  margin-bottom: 18px;
 }
 
-.list {
+.groupHead {
   display: flex;
-  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px 8px;
+}
+
+.groupLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tx-faint);
+}
+
+.groupNet {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-faint);
+  white-space: nowrap;
+}
+
+.groupNetIn {
+  color: var(--tx-success);
+}
+
+.card {
+  overflow: hidden;
+  border: 1px solid var(--tx-glass-border);
+  border-radius: 18px;
+  background: var(--tx-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--tx-shadow);
+}
+
+.itemDivider {
+  border-bottom: 1px solid var(--tx-line);
+}
+
+.row {
+  display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  text-align: left;
+  transition: background-color 0.2s;
 }
 
-.txIconCircle {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 18px;
+.row:hover:not(:disabled) {
+  background: var(--tx-row-hover);
+}
+
+.row:disabled {
+  cursor: default;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: -2px;
+}
+
+.iconWrap {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+
+.icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
 }
 
-.txIconCircle > svg {
-  width: 18px;
-  height: 18px;
-}
-.field {
-  display: flex;
-  margin-right: 5px;
+.toneIn {
+  background: var(--tx-success-bg);
+  color: var(--tx-success);
 }
 
-.box {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
+.toneOut {
+  background: var(--tx-danger-bg);
+  color: var(--tx-danger);
 }
 
-.item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+.tonePurple {
+  background: var(--tx-purple-bg);
+  color: var(--tx-purple);
 }
 
-.itemNumber {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+.toneBlue {
+  background: var(--tx-blue-bg);
+  color: var(--tx-blue);
 }
 
-.title {
-  color: var(--gray);
-  font-size: 14px;
-  margin-right: 5px;
+.statusDot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 13px;
+  height: 13px;
+  border: 2.5px solid var(--tx-dot-ring);
+  border-radius: 50%;
 }
 
-.hyphen {
-  color: var(--gray);
-  font-size: 14px;
-  margin: 0 5px;
+.dotPending {
+  background: #f79009;
+}
+
+.dotFailed {
+  background: #d92d20;
 }
 
 .text {
-  color: var(--gray);
-  font-size: 14px;
-}
-
-.arrow {
-  fill: var(--gray);
-  width: 30px;
   display: flex;
-  text-align: center;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.info {
-  color: var(--gray);
+.title {
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--tx-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--tx-faint);
+  overflow-wrap: anywhere;
+}
+
+.amounts {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 132px;
+  text-align: right;
+}
+
+.amount {
+  max-width: 100%;
+  overflow: hidden;
   font-size: 14px;
-  margin-top: 20px;
-  text-align: center;
-  width: 70%;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.rowView {
+.amountIn {
+  color: var(--tx-success);
+}
+
+.amountOut {
+  color: var(--tx-ink);
+}
+
+.amountFailed {
+  color: var(--tx-danger);
+}
+
+.fiat {
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-faint);
+  white-space: nowrap;
+}
+
+.fiatPending {
+  color: var(--tx-warning);
+}
+
+.fiatFailed {
+  color: var(--tx-danger);
+}
+
+.chevron {
+  flex: none;
+  color: var(--tx-chevron);
+}
+
+/* Speed up / Cancel under a pending row */
+.pendingActions {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 12px 66px;
+}
+
+.pendingButton {
   display: flex;
   align-items: center;
-  gap: 16px 24px;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1.5px solid color-mix(in srgb, var(--background) 30%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background) 6%, transparent);
+  color: var(--background);
+  font-size: 12.5px;
+  font-weight: 700;
 }
 
-.button {
+.pendingButton:hover {
+  background: color-mix(in srgb, var(--background) 12%, transparent);
+}
+
+.pendingCancel {
+  border-color: var(--tx-outline);
+  background: transparent;
+  color: var(--tx-ink);
+}
+
+.pendingCancel:hover {
+  background: var(--tx-hover);
+}
+
+.pendingButton:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+/* Loading skeleton */
+.skeletons {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid var(--tx-glass-border);
+  border-radius: 16px;
+  background: var(--tx-glass);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeletonIcon {
+  flex: none;
+  width: 40px;
   height: 40px;
-  background-color: var(--background);
+  border-radius: 50%;
+  background: var(--tx-skeleton);
+}
+
+.skeletonText {
+  flex: 1;
+  min-width: 0;
+}
+
+.skeletonLine,
+.skeletonLineSub,
+.skeletonAmount {
+  display: block;
+  border-radius: 5px;
+  background: var(--tx-skeleton);
+}
+
+.skeletonLine {
+  height: 13px;
+}
+
+.skeletonLineSub {
+  height: 11px;
+  margin-top: 7px;
+  opacity: 0.7;
+}
+
+.skeletonAmount {
+  flex: none;
+  width: 62px;
+  height: 13px;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Empty state */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 24px;
+  text-align: center;
+}
+
+.emptyIcon {
+  display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  margin: 0 12px;
-  flex-direction: row;
-  gap: 12px;
-  padding: 0 16px;
-  max-width: 220px;
-  color: white;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: var(--tx-hover);
+  color: var(--tx-faint);
+}
+
+.emptyTitle {
+  margin: 14px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tx-ink);
+}
+
+.emptyText {
+  max-width: 320px;
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--tx-faint);
+}
+
+.emptyAction {
+  margin-top: 16px;
+  padding: 11px 20px;
+  border: 1.5px solid color-mix(in srgb, var(--background) 30%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background) 6%, transparent);
+  color: var(--background);
   font-size: 14px;
-  font-family: var(--font-roboto);
-  font-weight: 600;
-}
-.cancelButton {
-
-}
-.button >  svg {
-  fill: white;
-  stroke: white;
-  height: 20px;
-  width: 20px;
+  font-weight: 700;
 }
 
-.cancelButton >  svg {
-  fill: white;
-  height: 12px;
-  width: 12px;
+.emptyAction:hover {
+  background: color-mix(in srgb, var(--background) 12%, transparent);
+}
+
+.emptyAction:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
 }

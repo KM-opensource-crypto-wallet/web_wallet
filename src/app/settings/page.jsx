@@ -1,42 +1,118 @@
 'use client';
 import {walletRoutes} from 'utils/routes';
 import React from 'react';
-import {useSelector, useDispatch} from 'react-redux';
-import {
-  getLocalCurrency,
-  getLockTime,
-  isWalletReset,
-} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {getTutorialVideos} from 'dok-wallet-blockchain-networks/redux/cryptoProviders/cryptoProvidersSelectors';
+import {useDispatch} from 'react-redux';
 import {setResetWallet} from 'dok-wallet-blockchain-networks/redux/settings/settingsSlice';
 import s from './Settings.module.css';
-
-const icons = require(`assets/images/settings`).default;
 import Link from 'next/link';
 import {getPrivacyUrl, getTermsUrl} from 'whitelabel/whiteLabelInfo';
-import {FormControlLabel, Radio, RadioGroup, Switch} from '@mui/material';
-import {Password, Security} from '@mui/icons-material';
 import {useLocale, useTranslations} from 'next-intl';
 import {setUserLocale} from 'src/utils/updateLocale';
 import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
 import {addBreadcrumb, captureError, logger} from 'services/logger';
 import {showToast} from 'utils/toast';
 import {getWebLockTimeLabel} from 'utils/autoLock';
+import Screen from 'components/Screen';
+import {ChevronRightIcon} from 'components/Home/HomeIcons';
+import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
+import useWallet from 'src/hooks/wallet/useWallet';
+import {
+  BranchesIcon,
+  BugIcon,
+  CloudDownIcon,
+  CloudUpIcon,
+  CoinsIcon,
+  CurrencyIcon,
+  DocIcon,
+  EyeOffIcon,
+  GlobeIcon,
+  LockIcon,
+  PaletteIcon,
+  PhraseIcon,
+  PlayIcon,
+  ResetIcon,
+  ServerIcon,
+  ShieldIcon,
+  TimerIcon,
+} from './SettingsIcons';
 
 // Debug-only row for verifying the Sentry pipeline end to end (event, log,
 // breadcrumb, scrubbing). Hidden in release unless SENTRY_DEV_TOOLS is set.
 const SHOW_SENTRY_DEV_TOOLS =
   process.env.ENV_MODE === 'DEV' || process.env.SENTRY_DEV_TOOLS === 'true';
 
-const Settings = ({navigation}) => {
+const locales = [
+  {
+    label: 'English',
+    value: 'en',
+  },
+  {
+    label: 'Hebrew',
+    value: 'he',
+  },
+];
+
+const RowBody = ({icon: Icon, title, text, trailing}) => (
+  <>
+    <span className={s.rowIcon}>
+      <Icon size={19} />
+    </span>
+    <span className={s.rowText}>
+      <span className={s.rowTitle}>{title}</span>
+      {text ? <span className={s.rowHint}>{text}</span> : null}
+    </span>
+    {trailing}
+  </>
+);
+
+// One settings entry: an in-app link, an external link, or a button.
+const Row = ({href, external, onClick, ...body}) => {
+  if (external) {
+    return (
+      <a
+        href={href}
+        target='_blank'
+        rel='noopener noreferrer'
+        className={s.row}>
+        <RowBody
+          {...body}
+          trailing={<ExternalLinkIcon size={16} className={s.rowChevron} />}
+        />
+      </a>
+    );
+  }
+  const trailing = <ChevronRightIcon size={17} className={s.rowChevron} />;
+  if (href) {
+    return (
+      <Link href={href} className={s.row}>
+        <RowBody {...body} trailing={trailing} />
+      </Link>
+    );
+  }
+  return (
+    <button type='button' className={s.row} onClick={onClick}>
+      <RowBody {...body} trailing={trailing} />
+    </button>
+  );
+};
+
+const Section = ({title, children}) => (
+  <section className={s.section} aria-label={title}>
+    <h2 className={s.sectionLabel}>{title}</h2>
+    <div className={s.card}>{children}</div>
+  </section>
+);
+
+const Settings = () => {
   const dispatch = useDispatch();
-  // const [isFingerprintEnabled, setIsFingerprintEnabled] = useState(false);
-  const localCurrency = useSelector(getLocalCurrency);
-  const lockTimeDisplay = getWebLockTimeLabel(useSelector(getLockTime));
-  const rateLimitCheck = useSelector(isWalletReset);
-  const tutorialVideos = useSelector(getTutorialVideos);
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
+  const {
+    localCurrency,
+    lockTime,
+    rateLimitCheck,
+    tutorialVideos,
+    currentWalletClientId,
+  } = useWallet();
+  const lockTimeDisplay = getWebLockTimeLabel(lockTime);
   // Before a wallet exists (password set, wallets reset or all deleted) the
   // legacy /manage-coins forwarder resolves this once one does, instead of
   // linking at /wallet/undefined/manage-coins.
@@ -46,26 +122,17 @@ const Settings = ({navigation}) => {
   const currentLocale = useLocale();
   const t = useTranslations('settings');
 
-  const locales = [
-    {
-      label: 'English',
-      value: 'en',
-    },
-    {
-      label: 'Hebrew',
-      value: 'he',
-    },
-  ];
-
-  const onChangeLocale = async e => {
+  const onChangeLocale = async value => {
+    if (value === currentLocale) {
+      return;
+    }
     try {
-      await setUserLocale(e.target.value);
+      await setUserLocale(value);
     } catch (e) {
       showToast({type: 'errorToast', title: 'Failed to change language'});
     }
   };
-  const onChangeApplyRateLimit = e => {
-    const value = e?.target.checked;
+  const onChangeApplyRateLimit = value => {
     dispatch(setResetWallet(value));
   };
 
@@ -94,194 +161,165 @@ const Settings = ({navigation}) => {
       message: 'Check the dashboard for the event and log',
     });
   };
-  return (
-    <div className={s.container}>
-      <div className={s.list}>
-        <p className={s.title}>Account settings</p>
-        <Link href='/settings/local-currency' className={s.btn}>
-          {icons.localCurrency}
-          <div className={s.box}>
-            <p className={s.btnTitle}>{t('localCurrency')}</p>
-            <p className={s.btnText}>{localCurrency}</p>
-          </div>
-        </Link>
-        <Link href={manageCoinsHref} className={s.btn}>
-          {icons.setCurrency}
-          <div className={s.box}>
-            <p className={s.btnTitle}>{t('coinList')}</p>
-            <p className={s.btnText}>Manage your coin list</p>
-          </div>
-        </Link>
-        <Link href='/settings/display-theme' className={s.btn}>
-          {icons.setCurrency}
-          <div className={s.box}>
-            <p className={s.btnTitle}>{t('theme')}</p>
-            <p className={s.btnText}>Manage your app theme</p>
-          </div>
-        </Link>
-        <p className={s.title}>Security</p>
-        <Link href='/settings/change-password' className={s.btn}>
-          <Password />
-          <div className={s.box}>
-            <p className={s.btnTitle}>{t('changePassword')}</p>
-            <p className={s.btnText}>Change or reset your password</p>
-          </div>
-        </Link>
-        <Link href='/settings/autolock' className={s.btn}>
-          {icons.change}
-          <div className={s.box}>
-            <p className={s.btnTitle}>{t('autoLock')}</p>
-            <p className={s.btnText}>{lockTimeDisplay}</p>
-          </div>
-        </Link>
-        <Link href='/verify/verify-login' className={s.btn}>
-          {icons.showPhrase}
 
-          <div className={s.box}>
-            <p className={s.btnTitle}>{t('showSeedPhrase')}</p>
-            <p className={s.btnText}>Manage your seed phrase</p>
-          </div>
-        </Link>
-        <p className={s.title}>General</p>
-        <div className={s.btn}>
-          {icons.changeLanguage}
-          <div className={s.box}>
-            <p className={s.btnTitle}>Change Language</p>
-            <div>
-              <RadioGroup value={currentLocale} onChange={onChangeLocale} row>
-                {locales.map(locale => (
-                  <FormControlLabel
-                    key={locale.value}
-                    value={locale.value}
-                    control={<Radio color='warning' />}
-                    label={locale.label}
-                  />
-                ))}
-              </RadioGroup>
-            </div>
-          </div>
-        </div>
-        {SHOW_SENTRY_DEV_TOOLS && (
-          <div
-            role='button'
-            tabIndex={0}
-            onClick={onPressSentryTest}
-            onKeyDown={e => e.key === 'Enter' && onPressSentryTest()}
-            className={s.btn}
-            style={{cursor: 'pointer'}}>
-            {icons.change}
-            <div className={s.box}>
-              <p className={s.btnTitle}>Send Sentry test event</p>
-              <p className={s.btnText}>
-                Debug only: verifies error, log and redaction
-              </p>
-            </div>
-          </div>
-        )}
-        {tutorialVideos?.length > 0 && (
-          <Link href='/settings/tutorial-videos' className={s.btn}>
-            {icons.tutorialVideos}
-            <div className={s.box}>
-              <p className={s.btnTitle}>Tutorial Videos</p>
-              <p className={s.btnText}>Learn how to use wallet features</p>
-            </div>
-          </Link>
-        )}
-        <a
-          href={getTermsUrl()}
-          target='_blank'
-          rel='noopener noreferrer'
-          className={s.btn}>
-          {icons.mail}
-          <div className={s.box}>
-            <p className={s.btnTitle}>{t('termsAndConditions')}</p>
-          </div>
-        </a>
-        {/* /////////////////////////////// */}
-        <a
-          href={getPrivacyUrl()}
-          target='_blank'
-          rel='noopener noreferrer'
-          className={s.btn}>
-          {icons.privacy}
-          <div className={s.box}>
-            <p className={s.btnTitle}>{t('privacyPolicy')}</p>
-          </div>
-        </a>
-        <p className={s.title}>Wallet Settings</p>
-        {isBackupRestoreEnabled() && (
-          <>
-            <Link href='/settings/backup' className={s.btn}>
-              {icons.showPhrase}
-              <div className={s.box}>
-                <p className={s.btnTitle}>Backup Wallets</p>
-                <p className={s.btnText}>Backup wallets to Google Drive</p>
-              </div>
-            </Link>
-            <Link href='/settings/restore' className={s.btn}>
-              {icons.showPhrase}
-              <div className={s.box}>
-                <p className={s.btnTitle}>Restore Wallets</p>
-                <p className={s.btnText}>Restore wallets from Google Drive</p>
-              </div>
-            </Link>
-          </>
-        )}
-        <Link href='/settings/custom-rpc' className={s.btn}>
-          {icons.link}
-          <div className={s.box}>
-            <p className={s.btnTitle}>{'Custom RPC'}</p>
-            <p className={s.btnText}>{'Add your custom RPC URLs.'}</p>
-          </div>
-        </Link>
-        <Link href='/settings/derive-address' className={s.btn}>
-          {icons.setCurrency}
-          <div className={s.box}>
-            <p className={s.btnTitle}>{'EVM, SOL & TRX addresses'}</p>
-            <p className={s.btnText}>
-              {'Manage multiple addresses for EVM, SOL and TRX'}
-            </p>
-          </div>
-        </Link>
-        <div className={s.btn}>
-          <Security />
-          <div className={s.box}>
-            <div className={s.subBox}>
-              <p className={s.btnTitle}>{'Wallet Reset on Failure'}</p>
-              <p className={s.btnText}>
-                {
-                  'The wallet resets automatically after 5 failed password attempts.'
-                }
-              </p>
-            </div>
-            <Switch
-              checked={rateLimitCheck}
-              defaultChecked={rateLimitCheck}
-              onChange={onChangeApplyRateLimit}
-              color='warning'
+  return (
+    <Screen className={s.page} title='Settings'>
+      <div className={s.column}>
+        <Section title='Account'>
+          <Row
+            href='/settings/local-currency'
+            icon={CurrencyIcon}
+            title={t('localCurrency')}
+            text={localCurrency}
+          />
+          <Row
+            href={manageCoinsHref}
+            icon={CoinsIcon}
+            title={t('coinList')}
+            text='Manage your coin list'
+          />
+          <Row
+            href='/settings/display-theme'
+            icon={PaletteIcon}
+            title={t('theme')}
+            text='Manage your app theme'
+          />
+        </Section>
+
+        <Section title='Security'>
+          <Row
+            href='/settings/change-password'
+            icon={LockIcon}
+            title={t('changePassword')}
+            text='Change or reset your password'
+          />
+          <Row
+            href='/settings/autolock'
+            icon={TimerIcon}
+            title={t('autoLock')}
+            text={lockTimeDisplay}
+          />
+          <Row
+            href='/verify/verify-login'
+            icon={PhraseIcon}
+            title={t('showSeedPhrase')}
+            text='Manage your seed phrase'
+          />
+        </Section>
+
+        <Section title='General'>
+          <div className={s.row}>
+            <RowBody
+              icon={GlobeIcon}
+              title='Language'
+              trailing={
+                <div
+                  className={s.segmented}
+                  role='radiogroup'
+                  aria-label='Language'>
+                  {locales.map(locale => (
+                    <button
+                      key={locale.value}
+                      type='button'
+                      role='radio'
+                      aria-checked={currentLocale === locale.value}
+                      className={`${s.segment} ${
+                        currentLocale === locale.value ? s.segmentActive : ''
+                      }`}
+                      onClick={() => onChangeLocale(locale.value)}>
+                      {locale.label}
+                    </button>
+                  ))}
+                </div>
+              }
             />
           </div>
-        </div>
-        <Link href={'/settings/privacy-mode'} className={s.btn}>
-          <Security />
-          <div className={s.box}>
-            <p className={s.btnTitle}>{'Privacy Mode'}</p>
-            <p className={s.btnText}>
-              {'Enhance privacy by auto-resetting addresses on app restart'}
-            </p>
+          {SHOW_SENTRY_DEV_TOOLS && (
+            <Row
+              onClick={onPressSentryTest}
+              icon={BugIcon}
+              title='Send Sentry test event'
+              text='Debug only: verifies error, log and redaction'
+            />
+          )}
+          {tutorialVideos?.length > 0 && (
+            <Row
+              href='/settings/tutorial-videos'
+              icon={PlayIcon}
+              title='Tutorial Videos'
+              text='Learn how to use wallet features'
+            />
+          )}
+          <Row
+            external
+            href={getTermsUrl()}
+            icon={DocIcon}
+            title={t('termsAndConditions')}
+          />
+          <Row
+            external
+            href={getPrivacyUrl()}
+            icon={ShieldIcon}
+            title={t('privacyPolicy')}
+          />
+        </Section>
+
+        <Section title='Wallet'>
+          {isBackupRestoreEnabled() && (
+            <>
+              <Row
+                href='/settings/backup'
+                icon={CloudUpIcon}
+                title='Backup Wallets'
+                text='Backup wallets to Google Drive'
+              />
+              <Row
+                href='/settings/restore'
+                icon={CloudDownIcon}
+                title='Restore Wallets'
+                text='Restore wallets from Google Drive'
+              />
+            </>
+          )}
+          <Row
+            href='/settings/custom-rpc'
+            icon={ServerIcon}
+            title='Custom RPC'
+            text='Add your custom RPC URLs.'
+          />
+          <Row
+            href='/settings/derive-address'
+            icon={BranchesIcon}
+            title='EVM, SOL & TRX addresses'
+            text='Manage multiple addresses for EVM, SOL and TRX'
+          />
+          <div className={s.row}>
+            <RowBody
+              icon={ResetIcon}
+              title='Wallet Reset on Failure'
+              text='The wallet resets automatically after 5 failed password attempts.'
+              trailing={
+                <button
+                  type='button'
+                  role='switch'
+                  aria-checked={!!rateLimitCheck}
+                  aria-label='Wallet reset on failure'
+                  className={`${s.switch} ${rateLimitCheck ? s.switchOn : ''}`}
+                  onClick={() => onChangeApplyRateLimit(!rateLimitCheck)}>
+                  <span className={s.knob} />
+                </button>
+              }
+            />
           </div>
-        </Link>
+          <Row
+            href='/settings/privacy-mode'
+            icon={EyeOffIcon}
+            title='Privacy Mode'
+            text='Enhance privacy by auto-resetting addresses on app restart'
+          />
+        </Section>
       </div>
-      {/* <ModalFingerprint
-        visible={showModalVarify}
-        hideModal={setShowModalVarify}
-        navigation={navigation}
-      />
-      <ModalFingerprintVerification
-        visible={showModalPass}
-        hideModal={setShowModalPass}
-      /> */}
-    </div>
+    </Screen>
   );
 };
 

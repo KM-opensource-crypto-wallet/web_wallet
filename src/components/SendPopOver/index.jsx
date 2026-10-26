@@ -7,6 +7,7 @@ import {useRouter} from 'next/navigation';
 import DokPopover from 'components/DokPopover';
 import {isCustomDerivedChecked} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {useSelector} from 'react-redux';
+import {BranchIcon, RowsIcon} from 'components/Home/HomeIcons';
 
 const SendPopOver = ({isBitcoin, isDeriveAddressChain}) => {
   const [showCustomDerivationModal, setShowCustomDerivationModal] =
@@ -44,18 +45,38 @@ const SendPopOver = ({isBitcoin, isDeriveAddressChain}) => {
   }, []);
   return (
     <>
-      <DokPopover ref={popoverRef}>
+      <DokPopover ref={popoverRef} paperClassName={s.paper}>
         <div className={s.popoverContainer}>
           {isBitcoin && (
-            <button className={s.popoverItemView} onClick={handleSelectUTXOs}>
-              <p className={s.popoverItemText}>{'Select UTXOs'}</p>
+            <button
+              type='button'
+              className={s.popoverItemView}
+              onClick={handleSelectUTXOs}>
+              <span className={s.popoverItemIcon}>
+                <RowsIcon size={16} />
+              </span>
+              <span className={s.popoverItemTextBox}>
+                <span className={s.popoverItemText}>Select UTXOs</span>
+                <span className={s.popoverItemSub}>
+                  Choose which coins to spend
+                </span>
+              </span>
             </button>
           )}
           {isDeriveAddressChain && (
             <button
+              type='button'
               className={s.popoverItemView}
               onClick={handleCustomDerivation}>
-              <p className={s.popoverItemText}>{'Custom Derivation'}</p>
+              <span className={s.popoverItemIcon}>
+                <BranchIcon size={16} />
+              </span>
+              <span className={s.popoverItemTextBox}>
+                <span className={s.popoverItemText}>Custom derivation</span>
+                <span className={s.popoverItemSub}>
+                  Enter your own derivation path
+                </span>
+              </span>
             </button>
           )}
         </div>

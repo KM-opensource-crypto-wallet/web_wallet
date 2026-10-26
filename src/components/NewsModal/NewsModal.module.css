@@ -1,20 +1,7 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow-y: auto;
-  max-height: var(--app-height);
-  padding:20px
-}
-.title{
-  font-size: 16px;
-  color: var(--font);
-  font-family: var(--font-roboto);
-  font-weight: 700;
-  margin-bottom: 20px;
-}
-.description{
-  font-size: 14px;
-  color: var(--primary);
-  font-family: var(--font-roboto);
+/* Only the bits ModalReset.module.css doesn't cover; the sheet itself is
+   styled there. */
+.description {
+  width: 100%;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
 }

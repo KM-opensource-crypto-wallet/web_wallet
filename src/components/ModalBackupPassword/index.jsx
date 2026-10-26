@@ -1,38 +1,20 @@
 import React, {useEffect, useState} from 'react';
 import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import {Formik} from 'formik';
 import {
   validationSchemaBackupPasswordCreate,
   validationSchemaBackupPasswordEnter,
 } from 'utils/validationSchema';
+import GeneralButton from 'components/Button';
+import {CloseIcon, EyeIcon} from 'components/Home/HomeIcons';
 import s from './ModalBackupPassword.module.css';
-
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '80%',
-  bgcolor: 'var(--secondaryBackgroundColor)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  '@media (min-width: 500px)': {
-    width: '60%',
-  },
-  '@media (min-width: 768px)': {
-    width: '40%',
-  },
-};
 
 const LOST_PASSWORD_WARNING =
   'If you lose this password, your backup can NEVER be restored. It is not stored anywhere — not on your device, not on any server. Write it down and keep it safe.';
 
+// Create (with confirm field) or enter the Google Drive backup password. No
+// onClose: it only closes through the header's close button. Bottom sheet on
+// phones, centred dialog from 600px up.
 const ModalBackupPassword = ({
   visible,
   hideModal,
@@ -61,56 +43,93 @@ const ModalBackupPassword = ({
   };
 
   return (
-    <Modal open={visible} aria-labelledby='backup-password-modal-title'>
-      <Box sx={style}>
-        <div className={s.container}>
-          <div className={s.header}>
-            <p id='backup-password-modal-title' className={s.title}>
-              {isCreate
-                ? 'Create a Backup Password'
-                : 'Enter Your Backup Password'}
-            </p>
-            <IconButton
-              onClick={hideModal}
-              size='small'
-              aria-label='Close'
-              sx={{color: 'var(--font)'}}>
-              <CloseIcon fontSize='small' />
-            </IconButton>
+    <Modal
+      open={visible}
+      aria-labelledby='backup-password-modal-title'
+      slotProps={{backdrop: {className: s.backdrop}}}>
+      <div className={s.sheet}>
+        <div className={s.handle} />
+        <div className={s.header}>
+          <span className={s.tile}>
+            <svg
+              width='20'
+              height='20'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              aria-hidden='true'>
+              <rect x='4' y='11' width='16' height='10' rx='2.5' />
+              <path d='M8 11V7a4 4 0 0 1 8 0v4' />
+            </svg>
+          </span>
+          <h2 id='backup-password-modal-title' className={s.title}>
+            {isCreate
+              ? 'Create a Backup Password'
+              : 'Enter Your Backup Password'}
+          </h2>
+          <button
+            type='button'
+            className={s.close}
+            onClick={hideModal}
+            aria-label='Close'>
+            <CloseIcon size={15} />
+          </button>
+        </div>
+
+        {isCreate && (
+          <div className={s.warningCard}>
+            <svg
+              className={s.warningIcon}
+              width='18'
+              height='18'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              aria-hidden='true'>
+              <circle cx='12' cy='12' r='9' />
+              <path d='M12 7.5V12' />
+              <path d='M12 16h.01' />
+            </svg>
+            <p className={s.warningText}>{LOST_PASSWORD_WARNING}</p>
           </div>
+        )}
 
-          {isCreate && (
-            <div className={s.warningCard}>
-              <ErrorOutlineIcon
-                fontSize='small'
-                sx={{color: '#e5b409', flexShrink: 0}}
-              />
-              <p className={s.warningText}>{LOST_PASSWORD_WARNING}</p>
-            </div>
-          )}
-
-          <Formik
-            key={`${mode}-${visible}`}
-            initialValues={{
-              backupPassword: '',
-              backupPasswordConfirm: '',
-            }}
-            validationSchema={
-              isCreate
-                ? validationSchemaBackupPasswordCreate
-                : validationSchemaBackupPasswordEnter
-            }
-            onSubmit={onSubmit}>
-            {({
-              handleChange,
-              handleBlur,
-              handleSubmit,
-              values,
-              errors,
-              touched,
-            }) => (
+        <Formik
+          key={`${mode}-${visible}`}
+          initialValues={{
+            backupPassword: '',
+            backupPasswordConfirm: '',
+          }}
+          validationSchema={
+            isCreate
+              ? validationSchemaBackupPasswordCreate
+              : validationSchemaBackupPasswordEnter
+          }
+          onSubmit={onSubmit}>
+          {({
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            values,
+            errors,
+            touched,
+          }) => {
+            const passwordError =
+              errors.backupPassword && touched.backupPassword;
+            const confirmError =
+              errors.backupPasswordConfirm && touched.backupPasswordConfirm;
+            return (
               <form className={s.form} onSubmit={handleSubmit}>
-                <div className={s.inputWrapper}>
+                <div
+                  className={`${s.inputRow} ${
+                    passwordError ? s.inputError : ''
+                  }`}>
                   <input
                     className={s.input}
                     type={hide ? 'password' : 'text'}
@@ -118,72 +137,88 @@ const ModalBackupPassword = ({
                     placeholder='Backup password'
                     autoCapitalize='none'
                     autoFocus
+                    aria-invalid={!!passwordError}
+                    aria-describedby={
+                      passwordError ? 'backup-password-error' : undefined
+                    }
                     value={values.backupPassword}
                     onChange={handleChange('backupPassword')}
                     onBlur={handleBlur('backupPassword')}
                   />
-                  <IconButton
+                  <button
+                    type='button'
+                    className={s.reveal}
                     onClick={() => setHide(prev => !prev)}
-                    size='small'
-                    aria-label={hide ? 'Show password' : 'Hide password'}
-                    sx={{color: 'var(--gray)'}}>
-                    {hide ? (
-                      <Visibility fontSize='small' />
-                    ) : (
-                      <VisibilityOff fontSize='small' />
-                    )}
-                  </IconButton>
+                    aria-label={hide ? 'Show password' : 'Hide password'}>
+                    <EyeIcon size={18} off={!hide} />
+                  </button>
                 </div>
-                {errors.backupPassword && touched.backupPassword && (
-                  <p className={s.errorText}>{errors.backupPassword}</p>
+                {passwordError && (
+                  <p id='backup-password-error' className={s.errorText}>
+                    {errors.backupPassword}
+                  </p>
                 )}
 
                 {isCreate && (
                   <>
-                    <div className={s.inputWrapper}>
+                    <div
+                      className={`${s.inputRow} ${
+                        confirmError ? s.inputError : ''
+                      }`}>
                       <input
                         className={s.input}
                         type={hideConfirm ? 'password' : 'text'}
                         name='backupPasswordConfirm'
                         placeholder='Confirm backup password'
                         autoCapitalize='none'
+                        aria-invalid={!!confirmError}
+                        aria-describedby={
+                          confirmError
+                            ? 'backup-password-confirm-error'
+                            : undefined
+                        }
                         value={values.backupPasswordConfirm}
                         onChange={handleChange('backupPasswordConfirm')}
                         onBlur={handleBlur('backupPasswordConfirm')}
                       />
-                      <IconButton
+                      <button
+                        type='button'
+                        className={s.reveal}
                         onClick={() => setHideConfirm(prev => !prev)}
-                        size='small'
                         aria-label={
                           hideConfirm ? 'Show password' : 'Hide password'
-                        }
-                        sx={{color: 'var(--gray)'}}>
-                        {hideConfirm ? (
-                          <Visibility fontSize='small' />
-                        ) : (
-                          <VisibilityOff fontSize='small' />
-                        )}
-                      </IconButton>
+                        }>
+                        <EyeIcon size={18} off={!hideConfirm} />
+                      </button>
                     </div>
-                    {errors.backupPasswordConfirm &&
-                      touched.backupPasswordConfirm && (
-                        <p className={s.errorText}>
-                          {errors.backupPasswordConfirm}
-                        </p>
-                      )}
+                    {confirmError && (
+                      <p
+                        id='backup-password-confirm-error'
+                        className={s.errorText}>
+                        {errors.backupPasswordConfirm}
+                      </p>
+                    )}
                   </>
                 )}
 
-                {!!errorText && <p className={s.errorText}>{errorText}</p>}
+                {!!errorText && (
+                  <p className={`${s.errorText} ${s.alert}`} role='alert'>
+                    {errorText}
+                  </p>
+                )}
 
-                <button className={s.submitButton} type='submit'>
+                <GeneralButton
+                  type='submit'
+                  variant='primary'
+                  fullWidth
+                  className={s.submit}>
                   {isCreate ? 'Set Password' : 'Unlock Backup'}
-                </button>
+                </GeneralButton>
               </form>
-            )}
-          </Formik>
-        </div>
-      </Box>
+            );
+          }}
+        </Formik>
+      </div>
     </Modal>
   );
 };

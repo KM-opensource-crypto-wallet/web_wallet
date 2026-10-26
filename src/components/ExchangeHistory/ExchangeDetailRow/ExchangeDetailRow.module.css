@@ -1,90 +1,65 @@
-.divider {
-  height: 1px;
-  background-color: var(--headerBorder);
-  opacity: 0.4;
-}
-
+/* Swap details row. Colours come from the `--sd-*` tokens on the swap
+   details page. */
 .row {
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 0;
   gap: 12px;
+  min-height: 48px;
+  padding: 10px 0;
 }
 
-.rowLabelWrap {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-shrink: 0;
+.rowDivider {
+  border-top: 1px solid var(--sd-line);
 }
 
-.iconCircle {
-  width: 28px;
-  height: 28px;
-  border-radius: 14px;
-  /* theme.background + '14' on mobile (~8% alpha) */
-  background-color: color-mix(in srgb, var(--background) 8%, transparent);
-  color: var(--background);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 10px;
-  flex-shrink: 0;
+.label {
+  flex: none;
+  font-size: 13.5px;
+  color: var(--sd-faint);
 }
 
-.iconCircle svg {
-  width: 15px;
-  height: 15px;
-  font-size: 15px;
-}
-
-.rowLabel {
-  color: var(--gray);
-  font-size: 13px;
-}
-
-.rowValueRow {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+.value {
   min-width: 0;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
+  overflow-wrap: anywhere;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--sd-ink);
+  text-align: right;
 }
 
-.rowValue {
-  color: var(--font);
-  font-size: 13px;
-  font-weight: 500;
-  text-align: right;
+.action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 10px;
+  margin-right: -10px;
+  border-radius: 10px;
+  color: var(--sd-ink);
+  transition: background-color 0.2s;
+}
+
+.action > svg {
+  flex: none;
+  fill: none;
+  color: var(--sd-faint);
+}
+
+.action:hover {
+  background: var(--sd-hover);
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 2px;
+}
+
+.mono {
   min-width: 0;
   overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.rowValueStatic {
-  color: var(--font);
-  font-size: 13px;
-  font-weight: 500;
-  text-align: right;
-  min-width: 0;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow-wrap: anywhere;
-}
-
-.rowValueRow .rowIcon {
-  margin-left: 6px;
-  color: var(--gray);
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
-  flex-shrink: 0;
 }

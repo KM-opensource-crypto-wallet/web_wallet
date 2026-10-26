@@ -1,6 +1,4 @@
-import {Box, Modal} from '@mui/material';
-import s from './ModalCreateWallet.module.css';
-import Image from 'next/image';
+import Modal from '@mui/material/Modal';
 import {useRouter} from 'next/navigation';
 import {
   setChainName,
@@ -8,34 +6,47 @@ import {
   setPrivateKey,
 } from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
 import {useDispatch} from 'react-redux';
+import GeneralButton from 'components/Button';
+import {ChevronRightIcon, PlusIcon} from 'components/Home/HomeIcons';
+// Same sheet / dialog look as the Reset Wallet and Log out confirmation.
+import styles from 'components/ModalReset/ModalReset.module.css';
+import s from './ModalCreateWallet.module.css';
 
+const DownloadIcon = () => (
+  <svg
+    width='20'
+    height='20'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='2'
+    strokeLinecap='round'
+    strokeLinejoin='round'
+    aria-hidden='true'>
+    <path d='M12 3v12' />
+    <path d='m7 10 5 5 5-5' />
+    <path d='M5 21h14' />
+  </svg>
+);
+
+// Create or import a wallet (from the Wallets list and the wallet switcher).
+// Bottom sheet on phones, centred dialog from 600px up.
 const ModalCreateWallet = ({visible, hideModal}) => {
   const router = useRouter();
   const dispatch = useDispatch();
 
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    // width: "95%",
-    bgcolor: 'var(--secondaryBackgroundColor)',
-    borderRadius: '10px',
-    '@media (max-width: 769px)': {
-      width: '95%',
-    },
-    overflow: 'hidden',
-  };
   return (
     <Modal
       open={visible}
       onClose={() => hideModal(false)}
-      aria-labelledby='modal-modal-title'
-      aria-describedby='modal-modal-description'>
-      <Box sx={style}>
-        <div className={s.mainView}>
-          <button
-            className={s.itemView}
+      slotProps={{backdrop: {className: styles.backdrop}}}>
+      <div className={styles.sheet}>
+        <div className={styles.handle} />
+        <div className={s.options}>
+          <GeneralButton
+            variant='unstyled'
+            fullWidth
+            className={s.option}
             onClick={() => {
               hideModal(false);
               dispatch(setPhrase(null));
@@ -43,41 +54,37 @@ const ModalCreateWallet = ({visible, hideModal}) => {
               dispatch(setChainName(null));
               router.push('/wallets/create-wallet');
             }}>
-            <Image
-              src={'/images/icons/plus-icon.png'}
-              className={s.plusIcon}
-              width={20}
-              height={20}
-              alt='icon'
-            />
-            <div>
-              <p className={s.title}>{"I don't have a wallet"}</p>
-              <p className={s.description}>
+            <span className={s.optionIcon}>
+              <PlusIcon size={20} />
+            </span>
+            <span className={s.optionText}>
+              <span className={s.optionTitle}>{"I don't have a wallet"}</span>
+              <span className={s.optionDescription}>
                 {'Create a new multi-chain wallet'}
-              </p>
-            </div>
-          </button>
-          <button
-            className={s.itemView}
+              </span>
+            </span>
+            <ChevronRightIcon size={18} className={s.chevron} />
+          </GeneralButton>
+          <GeneralButton
+            variant='unstyled'
+            fullWidth
+            className={s.option}
             onClick={() => {
               hideModal(false);
               hideModal(false);
               router.push('/wallets/import-wallet');
             }}>
-            <Image
-              src={'/images/icons/download.png'}
-              className={s.downloadIcon}
-              width={20}
-              height={20}
-              alt='icon'
-            />
-            <div>
-              <p className={s.title}>{'I already have a wallet'}</p>
-              <p className={s.description}>{'Import a wallet'}</p>
-            </div>
-          </button>
+            <span className={s.optionIcon}>
+              <DownloadIcon />
+            </span>
+            <span className={s.optionText}>
+              <span className={s.optionTitle}>{'I already have a wallet'}</span>
+              <span className={s.optionDescription}>{'Import a wallet'}</span>
+            </span>
+            <ChevronRightIcon size={18} className={s.chevron} />
+          </GeneralButton>
         </div>
-      </Box>
+      </div>
     </Modal>
   );
 };

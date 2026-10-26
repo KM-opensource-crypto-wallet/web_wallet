@@ -1,149 +1,54 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow-y: auto;
-  max-height: 90vh;
-}
+/* Only the bits ModalReset.module.css doesn't cover; the sheet itself is
+   styled there (and its --mr-* tokens). */
 
-.infoList {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  flex-direction: column;
-  padding: 25px;
-  flex: 1;
-}
-
-.iconContainer {
-  margin-bottom: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.warningIcon {
-  font-size: 48px;
-  text-align: center;
-  line-height: 1;
-}
-
-.titleInfo {
-  color: var(--font);
-  font-size: 22px;
-  text-align: center;
-  margin: 0 0 20px 0;
-  font-weight: bold;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-.messageContainer {
+/* Recommendations checklist, left-aligned under the warning. */
+.card {
   width: 100%;
-  padding: 0 5px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.info {
-  color: var(--font);
-  font-size: 15px;
-  text-align: center;
-  margin: 0 0 15px 0;
-  line-height: 1.47;
-  padding: 0 5px;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-.infoHighlight {
-  color: #FF6B6B;
-  font-size: 15px;
-  text-align: center;
-  margin: 0 0 20px 0;
-  line-height: 1.47;
-  font-weight: 500;
-  padding: 0 5px;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--mr-ink) 8%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--mr-ink) 4%, transparent);
+  text-align: left;
 }
 
 .recommendation {
-  color: var(--font);
-  font-size: 16px;
-  margin: 0 0 15px 0;
-  font-weight: 600;
-  text-align: center;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--mr-text);
 }
 
 .bulletList {
-  list-style: none;
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin: 0;
-  width: 100%;
+  padding: 0;
+  list-style: none;
 }
 
 .bulletPoint {
-  color: var(--font);
-  font-size: 14px;
-  margin-bottom: 8px;
-  text-align: left;
-  padding: 0 15px;
-  line-height: 1.43;
   position: relative;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--mr-ink);
 }
 
 .bulletPoint::before {
-  content: '•';
-  color: var(--font);
-  font-weight: bold;
+  content: '';
   position: absolute;
-  left: 0;
+  top: 0.55em;
+  left: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--background);
 }
 
-.btnList {
-  align-items: center;
-  border-top: 1px solid var(--gray);
-  border-bottom-left-radius: 15px;
-  border-bottom-right-radius: 15px;
-  overflow: hidden;
-  display: flex;
-}
-
-.learnBox {
+.action {
   width: 100%;
-  justify-content: center;
-  align-items: center;
-  height: 80px;
-  background-color: var(--background);
-  border: none;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-  display: flex;
-}
-
-.learnBox:hover {
-  opacity: 0.9;
-}
-
-.learnText {
-  color: var(--title);
-  font-size: 18px;
-  font-weight: 600;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-@media (max-width: 768px) {
-  .infoList {
-    padding: 20px;
-  }
-
-  .titleInfo {
-    font-size: 20px;
-  }
-
-  .warningIcon {
-    font-size: 40px;
-  }
+  margin-top: 6px;
 }

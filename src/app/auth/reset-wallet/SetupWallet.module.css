@@ -1,0 +1,219 @@
+/* Set up your wallet: two option cards (create / import) with small
+   illustrated tiles. Page layout, heading and notes are the shared auth ones
+   (components/AuthLayout); colours follow the white-label accent. */
+.options {
+  --sw-chevron: #b3a89e;
+  --sw-arrow: #1a1613;
+  --sw-import-from: color-mix(in srgb, var(--background) 12%, #fff);
+  --sw-import-to: color-mix(in srgb, var(--background) 22%, #fff);
+  --sw-import-border: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 30px;
+}
+
+:global([data-theme='dark']) .options {
+  --sw-chevron: #6b6259;
+  --sw-arrow: #fff;
+  --sw-import-from: color-mix(in srgb, var(--background) 22%, #1a1613);
+  --sw-import-to: color-mix(in srgb, var(--background) 14%, #120e0b);
+  --sw-import-border: color-mix(in srgb, var(--background) 25%, transparent);
+}
+
+.learnMore {
+  font-size: inherit;
+  font-weight: 700;
+  color: var(--background);
+}
+
+.learnMore:hover {
+  text-decoration: underline;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px;
+  border: 1px solid var(--ln-glass-border);
+  border-radius: 22px;
+  background: var(--ln-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--ln-card-shadow);
+  text-align: left;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.1s;
+}
+
+.option:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--background) 50%, transparent);
+  box-shadow: 0 12px 44px color-mix(in srgb, var(--background) 16%, transparent);
+}
+
+.option:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.option:disabled {
+  cursor: progress;
+}
+
+.option:disabled:not(.optionBusy) {
+  opacity: 0.55;
+}
+
+.optionBusy {
+  border-color: color-mix(in srgb, var(--background) 50%, transparent);
+}
+
+.spinner {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid color-mix(in srgb, var(--background) 25%, transparent);
+  border-top-color: var(--background);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.learnMore:focus-visible,
+.option:focus-visible {
+  outline: 2px solid var(--background);
+  outline-offset: 3px;
+}
+
+.tile {
+  position: relative;
+  flex: none;
+  width: 92px;
+  height: 92px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.tileCreate {
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--background) 82%, #fff) 0%,
+    var(--background) 100%
+  );
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--background) 30%, transparent);
+}
+
+.tileImport {
+  border: 1px solid var(--sw-import-border);
+  background: linear-gradient(
+    150deg,
+    var(--sw-import-from) 0%,
+    var(--sw-import-to) 100%
+  );
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--background) 16%, transparent);
+}
+
+.tileArt {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -46%);
+}
+
+.fillSoft {
+  fill: color-mix(in srgb, var(--background) 12%, #fff);
+}
+
+.fillAccent {
+  fill: var(--background);
+}
+
+.strokeArrow {
+  stroke: var(--sw-arrow);
+}
+
+.coin {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  background: #fff;
+  animation: float 3.4s ease-in-out infinite alternate;
+}
+
+.coinTopLeft {
+  top: 8px;
+  left: 8px;
+}
+
+.coinBottomRight {
+  right: 9px;
+  bottom: 9px;
+  animation-direction: alternate-reverse;
+  animation-duration: 3.8s;
+}
+
+.plus {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #1a1613;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--background);
+}
+
+.optionText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.optionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--ln-ink);
+}
+
+.optionBody {
+  margin-top: 5px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ln-muted);
+}
+
+.chevron {
+  flex: none;
+  color: var(--sw-chevron);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float {
+  from {
+    transform: translateY(-3px);
+  }
+  to {
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coin {
+    animation: none;
+  }
+}

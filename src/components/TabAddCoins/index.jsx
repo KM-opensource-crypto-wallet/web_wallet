@@ -1,12 +1,8 @@
 import React, {useState, useEffect, useRef, useCallback} from 'react';
 import CryptoList from 'components/CryptoList';
 
-const icons = require(`assets/images/icons`).default;
-import styles from './TabAddCoins.module.css';
-import TextField from '@mui/material/TextField';
-import IconButton from '@mui/material/IconButton';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
+import styles from 'components/ModalAddCoins/ModalAddCoins.module.css';
+import {CloseIcon, SearchIcon} from 'components/Home/HomeIcons';
 import Loading from 'components/Loading';
 import {reportThunkRejection} from 'utils/thunkErrors';
 import {selectCurrentWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -103,50 +99,31 @@ const TabAddCoins = () => {
   }, [dispatch, isAvailable, isSearchCoinsAvailable, searchQuery]);
 
   return (
-    <div className={styles.tabContent}>
-      <TextField
-        className={styles.search}
-        placeholder='Search'
-        variant='outlined'
-        id='search-bar'
-        fullWidth
-        value={searchQuery}
-        onChange={handleSearch}
-        sx={{
-          '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
-            {
-              borderColor: 'var(--gray)',
-            },
-          '& .MuiOutlinedInput-root': {
-            border: '1px solid var(--gray)',
-            borderRadius: '10px',
-            marginTop: '10px',
-            marginBottom: '10px',
-            fontSize: '18px',
-          },
-        }}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <IconButton type='submit' aria-label='search'>
-                <SearchIcon sx={{color: 'gray', marginRight: '10px'}} />
-              </IconButton>
-            ),
-            endAdornment: searchQuery && (
-              <IconButton
-                onClick={() => setSearchQuery('')}
-                size='small'
-                sx={{color: 'gray'}}>
-                <ClearIcon />
-              </IconButton>
-            ),
-          },
-        }}
-      />
+    <div className={styles.tab}>
+      <label className={styles.search}>
+        <SearchIcon size={17} />
+        <input
+          value={searchQuery}
+          onChange={handleSearch}
+          placeholder='Search coins'
+          aria-label='Search coins'
+        />
+        {searchQuery ? (
+          <button
+            type='button'
+            className={styles.clear}
+            aria-label='Clear search'
+            onClick={() => setSearchQuery('')}>
+            <CloseIcon size={12} />
+          </button>
+        ) : null}
+      </label>
       {isSearchAllCoinLoading || isAllCoinLoading ? (
-        <Loading />
+        <div className={styles.loader}>
+          <Loading />
+        </div>
       ) : (
-        <div className={styles.scrollModalDiv}>
+        <div className={styles.scroll}>
           <InfiniteScroll
             initialLoad={false}
             pageStart={1}

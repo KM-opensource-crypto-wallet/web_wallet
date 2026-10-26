@@ -3,6 +3,7 @@ import {
   getRouteNameFromPathname,
   paymentLinkPath,
   stripTrailingSlash,
+  switchWalletPath,
   walletRoutes,
 } from './routes';
 
@@ -153,5 +154,90 @@ describe('getRouteNameFromPathname', () => {
     expect(getRouteNameFromPathname('/wallet/w1/home/send/ethereum-eth/')).toBe(
       '/wallet/w1/home/send/ethereum-eth/',
     );
+  });
+});
+
+describe('switchWalletPath', () => {
+  const hasEth = slug => slug === 'ethereum-eth';
+
+  it('keeps wallet sections, with or without a trailing slash', () => {
+    expect(switchWalletPath('/wallet/w1/home/', 'w2')).toBe('/wallet/w2/home');
+    expect(switchWalletPath('/wallet/w1/manage-coins', 'w2')).toBe(
+      '/wallet/w2/manage-coins',
+    );
+    expect(switchWalletPath('/wallet/w1/swap/', 'w2')).toBe('/wallet/w2/swap');
+    expect(switchWalletPath('/wallet/w1/wallet-connect', 'w2')).toBe(
+      '/wallet/w2/wallet-connect',
+    );
+  });
+
+  it('steps back from confirm and detail pages to their section', () => {
+    expect(switchWalletPath('/wallet/w1/sell-crypto/confirm', 'w2')).toBe(
+      '/wallet/w2/sell-crypto',
+    );
+    expect(switchWalletPath('/wallet/w1/buy-crypto/otc2', 'w2')).toBe(
+      '/wallet/w2/buy-crypto',
+    );
+    expect(switchWalletPath('/wallet/w1/swap/history/tx1', 'w2')).toBe(
+      '/wallet/w2/swap/history',
+    );
+    expect(switchWalletPath('/wallet/w1/home/coin-sync', 'w2')).toBe(
+      '/wallet/w2/home',
+    );
+    expect(switchWalletPath('/wallet/w1/verify/verify-screen', 'w2')).toBe(
+      '/wallet/w2/home',
+    );
+  });
+
+  it('keeps coin screens when the new wallet holds the coin', () => {
+    expect(
+      switchWalletPath(
+        '/wallet/w1/home/send/ethereum-eth/receive-funds/',
+        'w2',
+        hasEth,
+      ),
+    ).toBe('/wallet/w2/home/send/ethereum-eth/receive-funds');
+    expect(
+      switchWalletPath('/wallet/w1/home/send/ethereum-eth', 'w2', hasEth),
+    ).toBe('/wallet/w2/home/send/ethereum-eth');
+    expect(
+      switchWalletPath(
+        '/wallet/w1/home/send/ethereum-eth/transactions/0xabc',
+        'w2',
+        hasEth,
+      ),
+    ).toBe('/wallet/w2/home/send/ethereum-eth/transactions');
+    expect(
+      switchWalletPath(
+        '/wallet/w1/home/send/ethereum-eth/send-funds/transfer',
+        'w2',
+        hasEth,
+      ),
+    ).toBe('/wallet/w2/home/send/ethereum-eth/send-funds');
+    expect(
+      switchWalletPath(
+        '/wallet/w1/home/send/ethereum-eth/confirm-staking',
+        'w2',
+        hasEth,
+      ),
+    ).toBe('/wallet/w2/home/send/ethereum-eth');
+  });
+
+  it("goes to Home when the new wallet doesn't hold the coin", () => {
+    expect(
+      switchWalletPath(
+        '/wallet/w1/home/send/bitcoin-btc/receive-funds',
+        'w2',
+        hasEth,
+      ),
+    ).toBe('/wallet/w2/home');
+    expect(
+      switchWalletPath('/wallet/w1/home/send/ethereum-eth/receive-funds', 'w2'),
+    ).toBe('/wallet/w2/home');
+  });
+
+  it('goes to Home from paths outside a wallet', () => {
+    expect(switchWalletPath('/settings', 'w2')).toBe('/wallet/w2/home');
+    expect(switchWalletPath(null, 'w2')).toBe('/wallet/w2/home');
   });
 });

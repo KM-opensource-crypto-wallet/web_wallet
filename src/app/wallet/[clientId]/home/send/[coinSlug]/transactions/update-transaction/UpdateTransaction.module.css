@@ -1,90 +1,213 @@
-
-.infoContainer {
-  margin-top: 16px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
+/* Update transaction: pending-only warning, a glass card with the tx hash
+   field and Fetch, then the fetched details and the speed up / cancel
+   actions. Same warm surface and glass as the transaction history; the
+   accent is the white-label `--background` colour. */
+.page {
+  --ut-ink: #1a1613;
+  --ut-muted: #6e655e;
+  --ut-faint: #8a7f76;
+  --ut-glass: rgba(255, 255, 255, 0.65);
+  --ut-glass-border: rgba(255, 255, 255, 0.9);
+  --ut-shadow: 0 12px 40px rgba(63, 40, 22, 0.08);
+  --ut-line: rgba(26, 22, 19, 0.06);
+  --ut-field: rgba(26, 22, 19, 0.045);
+  --ut-field-border: rgba(26, 22, 19, 0.08);
+  --ut-placeholder: rgba(26, 22, 19, 0.3);
+  --ut-error: #d92d20;
 }
 
-.info {
-  color: red;
-  font-size: 14px;
-  margin-left: 10px;
+:global([data-theme='dark']) .page {
+  --ut-ink: #f5f1ec;
+  --ut-muted: #c9bfb6;
+  --ut-faint: #a89c92;
+  --ut-glass: rgba(255, 255, 255, 0.05);
+  --ut-glass-border: rgba(255, 255, 255, 0.1);
+  --ut-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --ut-line: rgba(255, 255, 255, 0.06);
+  --ut-field: rgba(255, 255, 255, 0.06);
+  --ut-field-border: rgba(255, 255, 255, 0.1);
+  --ut-placeholder: rgba(255, 255, 255, 0.3);
+  --ut-error: #f97066;
+}
+
+/* globals.css sets `svg { fill: inherit }`, which beats fill="none". */
+.page svg {
+  fill: none;
+}
+
+/* Body */
+.formView {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 14px var(--content-gutter) 0;
+}
+
+/* Pending-only warning */
+.infoContainer {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--ut-error) 28%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ut-error) 9%, transparent);
+  color: var(--ut-error);
 }
 
 .infoIcon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.info {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* Hash field + Fetch */
+.card {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 16px;
+  border: 1px solid var(--ut-glass-border);
+  border-radius: 22px;
+  background: var(--ut-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--ut-shadow);
 }
 
-.infoIcon > svg {
-  width: 20px;
-  height: 20px;
-  fill: red;
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.formView{
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ut-faint);
+}
+
+.inputBox {
+  border: 1.5px solid var(--ut-field-border);
+  border-radius: 14px;
+  background: var(--ut-field);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.inputBox:focus-within {
+  border-color: var(--background);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background) 14%, transparent);
+}
+
+.inputBoxError,
+.inputBoxError:focus-within {
+  border-color: var(--ut-error);
+  box-shadow: none;
+}
+
+.input {
   width: 100%;
-  padding: 20px;
+  min-width: 0;
+  padding: 14px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ut-ink);
+}
+
+.input::placeholder {
+  color: var(--ut-placeholder);
 }
 
 .errorText {
-  margin-top: -15px;
-  margin-bottom: 20px;
-  color: red;
-  margin-left: 10px;
-  font-size: 12px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ut-error);
 }
 
-.button {
-  width: 100%;
-  background-color: var(--background);
-  min-height: 60px;
-  border-radius: 10px;
+.errorText:empty {
+  display: none;
+}
+
+/* Fetched details */
+.formInput {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--title);
-  font-size: 16px;
-  margin: 20px 0;
+  flex-direction: column;
+  gap: 14px;
 }
-
 
 .box {
-  background-color: var(--whiteOutline);
-  padding: 16px;
-  border-radius: 8px;
   overflow: hidden;
-  margin-top: 24px;
+  padding: 4px 16px;
+  border: 1px solid var(--ut-glass-border);
+  border-radius: 18px;
+  background: var(--ut-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--ut-shadow);
 }
 
 .itemView {
   display: flex;
-  flex-direction: row;
-  height: 40px;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  padding: 10px 0;
 }
 
+.itemView + .itemView {
+  border-top: 1px solid var(--ut-line);
+}
+
+.label {
+  flex: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ut-muted);
+}
 
 .boxBalance {
-  color: var(--gray);
-  font-size: 16px;
-  text-align: left;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ut-ink);
+  text-align: right;
   text-transform: capitalize;
-  align-self: center;
 }
 
-.formInput {
-  width: 100%; /* Замініть на потрібний розмір */
-  flex: 1;
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.title {
-  color: var(--font);
-  font-size: 16px;
-  text-align: left;
+@media (min-width: 600px) {
+  .formView {
+    padding-top: 24px;
+  }
+
+  .card {
+    padding: 22px 20px;
+  }
+
+  .actions {
+    flex-direction: row;
+  }
 }

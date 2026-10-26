@@ -1,146 +1,95 @@
 'use client';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import {selectCurrentCoin} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
+import React from 'react';
 
 import styles from './UpdateTransaction.module.css';
 
-import PageTitle from 'components/PageTitle';
+import GeneralButton from 'components/Button';
+import {InfoIcon} from 'components/Home/HomeIcons';
 
-import {useRouter} from 'next/navigation';
 import {Formik} from 'formik';
-import {updateTransactionValidation} from 'utils/validationSchema';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import {getUpdateTransactionData} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSelector';
-import {
-  fetchTransactionData,
-  resetUpdateTransactionData,
-} from 'dok-wallet-blockchain-networks/redux/currentTransfer/currentTransferSlice';
-import {sendPendingTransactions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {
-  getCustomizePublicAddress,
-  isCustomAddressNotSupportedChain,
-} from 'dok-wallet-blockchain-networks/helper';
 import Loading from 'components/Loading';
 import ModalConfirmTransaction from 'components/ModalConfirmTransaction';
-const icons = require(`assets/images/icons`).default;
+import useTransaction from 'src/hooks/protectedRoutes/wallet/home/send/useTransaction';
+import Screen from 'components/Screen';
 
 const UpdateTransaction = () => {
-  const currentCoin = useSelector(selectCurrentCoin);
-  const transactionData = useSelector(getUpdateTransactionData);
-  const dispatch = useDispatch();
-  const isLoading = transactionData?.isLoading;
-  const isSubmitting = transactionData?.isSubmitting;
-  const success = transactionData?.success;
-  const [showModal, setShowModal] = useState(false);
-  const isCancelTransactionRef = useRef(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    return () => {
-      dispatch(resetUpdateTransactionData());
-    };
-  }, [dispatch]);
-
-  const onSubmit = useCallback(
-    values => {
-      dispatch(fetchTransactionData({txHash: values?.tx}));
-    },
-    [dispatch],
-  );
-
-  const onSuccess = useCallback(() => {
-    setShowModal(false);
-    const tx = transactionData?.transactionData;
-    dispatch(
-      sendPendingTransactions({
-        from: tx?.extraPendingTransactionData?.from,
-        to: tx?.extraPendingTransactionData?.to,
-        value: tx?.extraPendingTransactionData?.value,
-        data: tx?.extraPendingTransactionData?.data,
-        nonce: tx?.extraPendingTransactionData?.nonce,
-        pendingTxHash: tx?.extraPendingTransactionData?.txHash,
-        isCancelTransaction: isCancelTransactionRef.current,
-        router: router,
-        isFromUpdateScreen: true,
-      }),
-    );
-  }, [dispatch, router, transactionData?.transactionData]);
-
-  const onPressCancelTransaction = useCallback(() => {
-    isCancelTransactionRef.current = true;
-    setShowModal(true);
-  }, []);
-
-  const onPressSpeedupTransaction = useCallback(() => {
-    isCancelTransactionRef.current = false;
-    setShowModal(true);
-  }, []);
+  const {
+    currentCoin,
+    updateTransactionData,
+    isUpdateLoading,
+    isUpdateSubmitting,
+    updateSuccess,
+    updateTransactionValidation,
+    onFetchUpdateTransaction,
+    formatUpdateAddress,
+    onPressSpeedupTransaction,
+    onPressCancelTransaction,
+    showUpdateModal,
+    closeUpdateModal,
+    onUpdateConfirmed,
+  } = useTransaction('update');
 
   const renderBox = () => {
-    const tx = transactionData?.transactionData;
+    const tx = updateTransactionData?.transactionData;
     if (!tx) {
       return null;
     }
     const contractDetails = tx?.contractDetails;
     return (
       <div className={styles.formInput}>
-        <div className={styles.box}>
+        <section className={styles.box} aria-label='Transaction'>
           <div className={styles.itemView}>
-            <p className={styles.title}>{'Chain'}</p>
-            <p className={styles.boxBalance}>
+            <span className={styles.label}>{'Chain'}</span>
+            <span className={styles.boxBalance}>
               {currentCoin?.chain_display_name}
-            </p>
+            </span>
           </div>
           <div className={styles.itemView}>
-            <p className={styles.title}>{'Amount'}</p>
-            <p className={styles.boxBalance}>{`${tx?.amount} ${
-              contractDetails?.symbol || currentCoin?.symbol
-            }`}</p>
+            <span className={styles.label}>{'Amount'}</span>
+            <span className={styles.boxBalance}>
+              {`${tx?.amount} ${
+                contractDetails?.symbol || currentCoin?.symbol
+              }`}
+            </span>
           </div>
           <div className={styles.itemView}>
-            <p className={styles.title}>{'Asset'}</p>
-            <p className={styles.boxBalance}>{`${
-              contractDetails?.name || currentCoin?.name
-            } (${contractDetails?.symbol || currentCoin?.symbol})`}</p>
+            <span className={styles.label}>{'Asset'}</span>
+            <span className={styles.boxBalance}>
+              {`${
+                contractDetails?.name || currentCoin?.name
+              } (${contractDetails?.symbol || currentCoin?.symbol})`}
+            </span>
           </div>
           <div className={styles.itemView}>
-            <p className={styles.title}>{'From'}</p>
-            <p className={styles.boxBalance}>{`${
-              isCustomAddressNotSupportedChain(currentCoin?.chain_name)
-                ? tx.from
-                : getCustomizePublicAddress(tx?.from)
-            }`}</p>
+            <span className={styles.label}>{'From'}</span>
+            <span className={styles.boxBalance}>
+              {`${formatUpdateAddress(tx?.from)}`}
+            </span>
           </div>
           <div className={styles.itemView}>
-            <p className={styles.title}>{'To'}</p>
-            <p className={styles.boxBalance}>{`${
-              isCustomAddressNotSupportedChain(currentCoin?.chain_name)
-                ? tx?.to
-                : getCustomizePublicAddress(tx?.to)
-            }`}</p>
+            <span className={styles.label}>{'To'}</span>
+            <span className={styles.boxBalance}>
+              {`${formatUpdateAddress(tx?.to)}`}
+            </span>
           </div>
-        </div>
-        <div className={styles.box}>
+        </section>
+        <section className={styles.box} aria-label='Network fee'>
           <div className={styles.itemView}>
-            <p className={styles.title}>{'Network Fee'}</p>
-            <p className={styles.boxBalance}>
-              {`${transactionData.transactionFee} ${currentCoin?.chain_symbol}`}
-            </p>
+            <span className={styles.label}>{'Network Fee'}</span>
+            <span className={styles.boxBalance}>
+              {`${updateTransactionData.transactionFee} ${currentCoin?.chain_symbol}`}
+            </span>
           </div>
-        </div>
+        </section>
       </div>
     );
   };
 
   return (
-    <div>
-      <PageTitle title='Update Transaction' />
+    <Screen className={styles.page} title='Update Transaction'>
       <div className={styles.formView}>
         <div className={styles.infoContainer}>
-          <div className={styles.infoIcon}>{icons.exclamationcircle}</div>
+          <InfoIcon size={18} className={styles.infoIcon} />
           <p className={styles.info}>
             {`Please ensure that the transaction belongs to the ${currentCoin?.chain_display_name} chain and its status is pending.`}
           </p>
@@ -150,7 +99,7 @@ const UpdateTransaction = () => {
             tx: '',
           }}
           validationSchema={updateTransactionValidation}
-          onSubmit={onSubmit}>
+          onSubmit={onFetchUpdateTransaction}>
           {({
             handleChange,
             handleBlur,
@@ -160,99 +109,69 @@ const UpdateTransaction = () => {
             touched,
             isValid,
           }) => {
-            const isDisabledButton = !values.tx || !isValid || isLoading;
+            const isDisabledButton = !values.tx || !isValid || isUpdateLoading;
+            const hasError = errors.tx && touched.tx;
             return (
-              <>
-                <FormControl variant='outlined' fullWidth>
-                  <InputLabel
-                    sx={{
-                      color:
-                        errors.tx && touched.tx
-                          ? 'red'
-                          : 'var(--borderActiveColor)',
-                    }}>
+              <section className={styles.card}>
+                <div className={styles.field}>
+                  <label htmlFor='tx' className={styles.fieldLabel}>
                     Transaction Hash
-                  </InputLabel>
-                  <OutlinedInput
-                    fullWidth
-                    id='tx'
-                    type={'text'}
-                    name='tx'
-                    onChange={handleChange('tx')}
-                    onBlur={handleBlur('tx')}
-                    value={values.tx}
-                    placeholder='Enter Tx hash'
-                    label='Tx hash'
-                    sx={{
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor:
-                          errors.tx && touched.tx
-                            ? 'red'
-                            : 'var(--sidebarIcon)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor:
-                          errors.tx && touched.tx
-                            ? 'red'
-                            : 'var(--borderActiveColor)',
-                      },
-                      '& .MuiInputLabel-outlined': {
-                        color:
-                          errors.tx && touched.tx
-                            ? 'red'
-                            : 'var(--sidebarIcon)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'var(--sidebarIcon) !important',
-                      },
-                    }}
-                  />
-                  <button
-                    className={styles.button}
-                    onClick={handleSubmit}
-                    disabled={isDisabledButton}
-                    style={
-                      isDisabledButton ? {backgroundColor: 'var(--gray)'} : {}
-                    }>
-                    Fetch
-                  </button>
-                </FormControl>
-
-                {errors.tx && touched.tx && (
-                  <p className={styles.errorText}>{errors.fullname}</p>
-                )}
-              </>
+                  </label>
+                  <div
+                    className={`${styles.inputBox} ${
+                      hasError ? styles.inputBoxError : ''
+                    }`}>
+                    <input
+                      className={styles.input}
+                      id='tx'
+                      type={'text'}
+                      name='tx'
+                      onChange={handleChange('tx')}
+                      onBlur={handleBlur('tx')}
+                      value={values.tx}
+                      placeholder='Enter Tx hash'
+                      spellCheck={false}
+                    />
+                  </div>
+                  {errors.tx && touched.tx && (
+                    <p className={styles.errorText}>{errors.fullname}</p>
+                  )}
+                </div>
+                <GeneralButton
+                  fullWidth
+                  onClick={handleSubmit}
+                  disabled={isDisabledButton}>
+                  Fetch
+                </GeneralButton>
+              </section>
             );
           }}
         </Formik>
-        {isLoading ? <Loading height={300} /> : renderBox()}
-        {!!success && !isLoading && (
-          <>
-            <button
-              className={styles.button}
+        {isUpdateLoading ? <Loading height={300} /> : renderBox()}
+        {!!updateSuccess && !isUpdateLoading && (
+          <div className={styles.actions}>
+            <GeneralButton
+              fullWidth
               onClick={onPressSpeedupTransaction}
-              disabled={isSubmitting}
-              style={isSubmitting ? {backgroundColor: 'var(--gray)'} : {}}>
+              disabled={isUpdateSubmitting}>
               Speed up transaction
-            </button>
-            <button
-              className={styles.button}
+            </GeneralButton>
+            <GeneralButton
+              variant='secondary'
+              fullWidth
               onClick={onPressCancelTransaction}
-              disabled={isSubmitting}
-              style={isSubmitting ? {backgroundColor: 'var(--gray)'} : {}}>
+              disabled={isUpdateSubmitting}>
               Cancel transaction
-            </button>
-          </>
+            </GeneralButton>
+          </div>
         )}
       </div>
       <ModalConfirmTransaction
-        hideModal={() => {
-          setShowModal(false);
-        }}
-        visible={showModal}
-        onSuccess={onSuccess}
+        hideModal={closeUpdateModal}
+        visible={showUpdateModal}
+        onSuccess={onUpdateConfirmed}
       />
-    </div>
+    </Screen>
   );
 };
 

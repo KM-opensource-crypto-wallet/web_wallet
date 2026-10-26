@@ -1,12 +1,8 @@
 import {useMemo} from 'react';
 import {useParams} from 'next/navigation';
-import {useSelector} from 'react-redux';
-import {
-  selectCurrentCoin,
-  selectCurrentWalletClientId,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {getCoinSlug} from 'utils/common';
 import {coinRoutes, walletRoutes} from 'utils/routes';
+import useWallet from 'src/hooks/wallet/useWallet';
 
 const bind = (routes, ...boundArgs) =>
   Object.fromEntries(
@@ -22,8 +18,7 @@ const bind = (routes, ...boundArgs) =>
 // when no coin is known, so callers can guard on them.
 export const useAppRoutes = () => {
   const params = useParams();
-  const currentWalletClientId = useSelector(selectCurrentWalletClientId);
-  const currentCoin = useSelector(selectCurrentCoin);
+  const {currentWalletClientId, currentCoin} = useWallet();
 
   const clientId = params?.clientId ?? currentWalletClientId;
   const coinSlug = params?.coinSlug ?? getCoinSlug(currentCoin);

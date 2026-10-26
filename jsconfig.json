@@ -15,8 +15,10 @@
       "utils/*": ["./src/utils/*"],
       "myWallet/*": ["./src/myWallet/*"],
       "security/*": ["./src/security/*"],
-      "theme/*": ["./src/theme/*"]
+      "theme/*": ["./src/theme/*"],
+      "@ext/*": ["./extension/src/*"]
     }
-  }
+  },
+  "include": ["src/**/*", "dok-wallet-blockchain-networks/**/*", "extension/src/**/*"],
+  "exclude": ["node_modules", ".next", "out", "build", "extension/dist", "coverage"]
 }
-

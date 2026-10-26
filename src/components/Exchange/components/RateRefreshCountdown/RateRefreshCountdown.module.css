@@ -1,13 +1,13 @@
 .pill {
   border-radius: 12px;
-  border: 1px solid var(--whiteOutline);
+  border: 1px solid var(--sw-field-border);
   background-color: transparent;
   padding: 3px 10px;
   min-width: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--gray);
+  color: var(--sw-muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   cursor: pointer;

@@ -1,392 +1,332 @@
 'use client';
-import {walletRoutes} from 'utils/routes';
-import React, {useState, useEffect, useCallback, useMemo, useRef} from 'react';
-import {currencySymbol} from 'data/currency';
-import CryptoList from 'components/CryptoList';
-import classNames from './Home.module.css';
-
-const icons = require(`assets/images/icons`).default;
-import Link from 'next/link';
-import {useParams, useSearchParams} from 'next/navigation';
+import React from 'react';
+import useHome from 'src/hooks/protectedRoutes/wallet/home/useHome';
+import useHomeTour from 'src/hooks/protectedRoutes/wallet/home/useHomeTour';
+import {COIN_SORT_OPTIONS} from 'src/data/lists/coinSortOptions';
 import WalletConnectStatus from 'components/WalletConnectStatus';
-import WalletConnectRequestModal from 'components/WalletConnectRequestModal';
-import WalletConnectTransactionModal from 'components/WalletConnectTransactionModal';
-import {shallowEqual, useDispatch, useSelector} from 'react-redux';
 import SortMenu from 'components/SortMenu';
-import {selectCurrentWalletSortOption} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {sortCurrentWalletCoins} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-
-// import myclassNames from './HomeScreenclassNames';
-// import {ModalQR} from 'components/ModalQR';
-// import {shallowEqual, useSelector} from 'react-redux';
-// import isJson from 'dok-wallet-blockchain-networks/service/isJson';
-// import isValidHttpUrl from 'dok-wallet-blockchain-networks/service/isValidHttpUrl';
-// import {ErrorBoundary} from 'react-error-boundary';
-// import {ThemeConp} from '../../../../../ThemeConp';
-// import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {
-  countTotalAssets,
-  selectCurrentWallet,
-  selectIsBackedUp,
-  selectUserCoins,
-  isImportWalletWithPrivateKey,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {
-  refreshCoins,
-  removeAllWalletConnectSession,
-  setCurrentCoin,
-  syncCoinsWithServer,
-} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {toast} from 'react-toastify';
-import {
-  setWalletConnectRequestModal,
-  setWalletConnectTransactionModal,
-} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSlice';
-// import {foundCoinInCurrentWallet} from 'dok-wallet-blockchain-networks/service/redux.service';
-// import {VerifyInfoModal} from 'components/VerifyInfo';
-import {
-  getNewsMessage,
-  isAskedBackedUpModal,
-} from 'dok-wallet-blockchain-networks/redux/currency/currencySelectors';
-// import {setIsAskedBackupModal} from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
-// import WalletConnectRequestModal from 'components/WalletConnectRequestModal';
-import {
-  selectRequestedModalVisible,
-  selectTransactionModalVisible,
-} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
-import {selectAllNewCoins} from 'dok-wallet-blockchain-networks/redux/currency/currencySelectors';
-import {
-  setIsAskedBackupModal,
-  setNewCoins,
-  setNewsMessage,
-  setNewsModalVisible,
-} from 'dok-wallet-blockchain-networks/redux/currency/currencySlice';
-import IconButton from '@mui/material/IconButton';
-import Close from '@mui/icons-material/Close';
+import GeneralButton from 'components/Button';
 import {VerifyInfoModal} from 'components/VerifyInfo';
-import TextField from '@mui/material/TextField';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import BatchTransactionBanner from 'components/BatchTransactionBanner';
 import CoinSyncBanner from 'components/CoinSyncBanner';
-// import {
-//   setWalletConnectRequestModal,
-//   setWalletConnectTransactionModal,
-// } from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSlice';
-// import {subscribeWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
-// import WalletConnectStatus from 'components/WalletConnectStatus';
-// import WalletConnectTransactionModal from 'components/WalletConnectTransactionModal';
-// import {triggerHapticFeedbackHeavy} from 'helper/hapticFeedback';
-// import {MainNavigation} from 'helper/navigation';
+import AssetRow from './AssetRow';
+import WalletSwitcher from './WalletSwitcher';
+import CoinPicker from './CoinPicker';
+import {
+  ChevronDownIcon,
+  CloseIcon,
+  EyeIcon,
+  PlusIcon,
+  SearchIcon,
+  SortIcon,
+} from './HomeIcons';
+import s from './Home.module.css';
+import PriceChange from 'components/PriceChange';
+import Skeleton from 'components/Skeleton';
 
-const COIN_SORT_OPTIONS = [
-  {label: 'Default', value: 'default', showDivider: true},
-  {label: 'Value: High to Low', value: 'value_desc'},
-  {label: 'Value: Low to High', value: 'value_asc'},
-  {label: 'Balance: High to Low', value: 'balance_desc'},
-  {label: 'Balance: Low to High', value: 'balance_asc', showDivider: true},
-  {label: 'Name: A to Z', value: 'name_asc'},
-  {label: 'Name: Z to A', value: 'name_desc'},
-  {label: 'Symbol: A to Z', value: 'symbol_asc'},
-  {label: 'Symbol: Z to A', value: 'symbol_desc'},
+// Allocation slices: the brand accent first, then fixed hues; "Other" last.
+const SLICE_COLORS = [
+  'var(--background)',
+  '#f79009',
+  '#2e90fa',
+  '#12b76a',
+  'var(--hm-dot)',
 ];
 
+const Notice = ({children, actionLabel, onAction, onClose}) => (
+  <div className={s.notice}>
+    <p className={s.noticeText}>{children}</p>
+    <GeneralButton
+      variant='unstyled'
+      className={s.noticeAction}
+      onClick={onAction}>
+      {actionLabel}
+    </GeneralButton>
+    <GeneralButton
+      variant='unstyled'
+      className={s.noticeClose}
+      aria-label='Dismiss'
+      onClick={onClose}>
+      <CloseIcon size={16} />
+    </GeneralButton>
+  </div>
+);
+
 const Home = () => {
-  const {clientId} = useParams();
-  const searchParams = useSearchParams();
-  const walletConnect = searchParams.get('connect');
-  const [number, setNumber] = useState(1);
-  const [list, setList] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortMenuVisible, setSortMenuVisible] = useState(false);
-  const filterButtonRef = useRef(null);
+  const {
+    isLoading,
+    walletName,
+    switcherOpen,
+    openSwitcher,
+    closeSwitcher,
+    showNews,
+    openNews,
+    dismissNews,
+    newCoinsMessage,
+    syncNewCoins,
+    dismissNewCoins,
+    hidden,
+    toggleHidden,
+    balanceText,
+    actions,
+    change24h,
+    allocation,
+    formatFiat,
+    searchQuery,
+    onSearchChange,
+    clearSearch,
+    sortButtonRef,
+    sortMenuVisible,
+    toggleSortMenu,
+    closeSortMenu,
+    handleSortApply,
+    coinsSortOption,
+    coins,
+    visibleCoins,
+    shareById,
+    localCurrency,
+    openCoin,
+    goToManageCoins,
+    pickerMode,
+    closePicker,
+    onPickFromPicker,
+    backupModalVisible,
+    closeBackupModal,
+  } = useHome();
 
-  // const { theme } = useConp(ThemeConp);
-  // const classNames = myclassNames(theme);
-  const dispatch = useDispatch();
-
-  // const [modalVisible, setmodalVisible] = useState(false);
-  const [backupModalVisible, setBackupModalVisible] = useState(false);
-  // const [number, setNumber] = useState(1);
-  const userCoins = useSelector(selectUserCoins, shallowEqual);
-  const localCurrency = useSelector(getLocalCurrency);
-  const totalAssets = useSelector(countTotalAssets);
-  const allNewCoins = useSelector(selectAllNewCoins);
-  const isBackup = useSelector(selectIsBackedUp);
-  const currentWallet = useSelector(selectCurrentWallet);
-  const isAskedBackup = useSelector(isAskedBackedUpModal);
-  const isImportWithPrivateKey = useSelector(isImportWalletWithPrivateKey);
-  const newsMessage = useSelector(getNewsMessage);
-  const coinsSortOption = useSelector(selectCurrentWalletSortOption);
-
-  const handleSortApply = useCallback(
-    newSortOption => {
-      dispatch(sortCurrentWalletCoins({sortOption: newSortOption}));
-    },
-    [dispatch],
+  useHomeTour(
+    !isLoading && !backupModalVisible && !switcherOpen && !pickerMode,
   );
-
-  // const showModal = route.params?.showModal;
-  // const qrAddress = route.params?.qrAddress;
-  // const qrScheme = route.params?.qrScheme;
-  // const qrAmount = route.params?.qrAmount;
-  // const newDateToString = route.params?.newDateToString;
-
-  const coinsNames = useMemo(() => {
-    const tempNewCoins = Array.isArray(allNewCoins) ? allNewCoins : [];
-    return tempNewCoins.map(item => item.name).join(', ');
-  }, [allNewCoins]);
-
-  // useEffect(() => {
-  // Update any contract address for testnet
-  // dispatch(
-  //   updateContractAddress({
-  //     chain_name: 'ton',
-  //     symbol: 'USDT',
-  //     contractAddress: 'kQD5l75tbhYoCcYMAPzlD1GRTAIdJZ9y-fgI-5xTnEeVIitl',
-  //   }),
-  // );
-  // }, []);
-
-  useEffect(() => {
-    if (!isBackup && !isAskedBackup[currentWallet?.walletName]) {
-      setTimeout(() => setBackupModalVisible(true), 1000);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    // Anonymous function: the react-hooks compiler lint flags setState calls
-    // made directly in an effect body; the same update here is accepted.
-    (() => {
-      setList(userCoins);
-    })();
-  }, [userCoins]);
-
-  // useEffect(() => {}, [newItem, dispatch]);
-
-  // useEffect(() => {
-  //   setmodalVisible(showModal || false);
-  // }, [newDateToString, showModal]);
-
-  // useEffect(() => {
-  //   if (qrAddress && qrScheme) {
-  //     const foundCoin = foundCoinInCurrentWallet(qrScheme);
-  //     if (foundCoin !== null) {
-  //       dispatch(setCurrentCoin(foundCoin?._id));
-  //       setTimeout(() => {
-  //         navigation.navigate("SendFunds", { qrAddress, qrAmount });
-  //       }, 500);
-  //     }
-  //   }
-  // }, [newDateToString, qrAddress, qrScheme, qrAmount]);
-  //////////////////////////////////////
-
-  // const handleNavigateManage = () => {
-  //   router.push("/manage-coins");
-  // };
-
-  const onPressClose = useCallback(() => {
-    dispatch(setNewCoins([]));
-  }, [dispatch]);
-
-  const onPressNewsClose = useCallback(() => {
-    dispatch(setNewsMessage(''));
-  }, [dispatch]);
-
-  const onPressSync = useCallback(() => {
-    dispatch(setNewCoins([]));
-    dispatch(syncCoinsWithServer());
-  }, [dispatch]);
-
-  const handleSearch = event => {
-    let query = event.target.value;
-    setSearchQuery(query);
-    if (query) {
-      const newList = userCoins?.filter(item => {
-        return (
-          item?.name?.toLowerCase()?.includes(query?.toLowerCase()) ||
-          item?.symbol?.toUpperCase()?.includes(query?.toUpperCase())
-        );
-      });
-      setList(newList);
-    } else {
-      setList(userCoins);
-    }
-  };
-
-  const clearSearch = () => {
-    setSearchQuery('');
-    setList(userCoins);
-  };
 
   return (
     <>
-      {/* <ErrorBoundary
-        fallbackRender={({ error, resetErrorBoundary }) => (
-          <div>
-            <p>Something went wrong in HomeScreen</p>
+      <main className={s.page}>
+        <div className={s.glow} aria-hidden='true' />
+        <div className={s.column}>
+          <div className={s.topRow}>
+            <GeneralButton
+              variant='unstyled'
+              className={s.walletPill}
+              data-tour='wallet'
+              aria-haspopup='dialog'
+              onClick={openSwitcher}>
+              <span className={s.walletPillAvatar}>
+                {walletName[0].toUpperCase()}
+              </span>
+              <span className={s.walletPillName}>{walletName}</span>
+              <ChevronDownIcon size={16} className={s.walletPillChevron} />
+            </GeneralButton>
           </div>
-        )}
-      > */}
-      <main className={classNames.container}>
-        <div>
-          <BatchTransactionBanner />
-          <CoinSyncBanner />
-          {!!newsMessage && (
-            <div className={classNames.syncView}>
-              <div className={classNames.syncTitle}>{`Important News!`}</div>
-              <button
-                className={classNames.syncButton}
-                onClick={() => {
-                  dispatch(setNewsModalVisible(true));
-                }}>
-                <div className={classNames.syncButtonTitle}>View</div>
-              </button>
-              <IconButton
-                aria-label='closeSyncDiv'
-                onClick={onPressNewsClose}
-                edge='end'
-                sx={{
-                  '&  .MuiSvgIcon-root': {
-                    color: 'var(--font)',
-                  },
-                }}>
-                <Close />
-              </IconButton>
-            </div>
-          )}
-          {!!coinsNames && !isImportWithPrivateKey && (
-            <div className={classNames.syncView}>
-              <div className={classNames.syncTitle}>
-                {`New ${
-                  allNewCoins?.length === 1
-                    ? 'cryptocurrency'
-                    : 'cryptocurrencies'
-                }, such as ${coinsNames} ${
-                  allNewCoins?.length === 1 ? 'is' : 'are'
-                } now accessible.`}
+
+          <div className={s.alerts}>
+            <BatchTransactionBanner />
+            <CoinSyncBanner />
+            {showNews ? (
+              <Notice
+                actionLabel='View'
+                onAction={openNews}
+                onClose={dismissNews}>
+                Important news!
+              </Notice>
+            ) : null}
+            {newCoinsMessage ? (
+              <Notice
+                actionLabel='Sync'
+                onAction={syncNewCoins}
+                onClose={dismissNewCoins}>
+                {newCoinsMessage}
+              </Notice>
+            ) : null}
+          </div>
+
+          <aside className={s.side}>
+            <section
+              className={s.balanceCard}
+              aria-label='Total balance'
+              data-tour='balance'>
+              <div className={s.balanceLabel}>
+                Total balance
+                <GeneralButton
+                  variant='unstyled'
+                  className={s.eye}
+                  aria-label={hidden ? 'Show balances' : 'Hide balances'}
+                  aria-pressed={hidden}
+                  onClick={toggleHidden}>
+                  <EyeIcon size={15} off={hidden} />
+                </GeneralButton>
               </div>
-              <button className={classNames.syncButton} onClick={onPressSync}>
-                <div className={classNames.syncButtonTitle}>Sync</div>
-              </button>
-              <IconButton
-                aria-label='closeSyncDiv'
-                onClick={onPressClose}
-                edge='end'
-                sx={{
-                  '&  .MuiSvgIcon-root': {
-                    color: 'var(--font)',
-                  },
-                }}>
-                <Close />
-              </IconButton>
-            </div>
-          )}
-          <TextField
-            placeholder='Search'
-            variant='outlined'
-            id='search-bar'
-            fullWidth
-            value={searchQuery}
-            onChange={handleSearch}
-            sx={{
-              padding: '16px',
-              '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
-                {
-                  borderColor: 'var(--gray)',
-                },
-              '& .MuiOutlinedInput-root': {
-                border: '1px solid var(--gray)',
-                borderRadius: '10px',
-                marginBottom: '10px',
-                fontSize: '18px',
-              },
-            }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <IconButton type='submit' aria-label='search'>
-                    <SearchIcon
-                      sx={{
-                        color: 'gray',
-                        marginRight: '10px',
+              <p className={s.balanceValue}>
+                <Skeleton loading={isLoading} width='5em'>
+                  {balanceText}
+                </Skeleton>
+              </p>
+              {change24h != null && !hidden && !isLoading ? (
+                <Skeleton loading={isLoading} width='5em'>
+                  <p className={s.balanceChange}>
+                    <PriceChange value={change24h} />
+                    <span>past 24h</span>
+                  </p>
+                </Skeleton>
+              ) : null}
+              <div
+                className={s.actions}
+                style={{'--action-count': actions.length}}>
+                {actions.map(({key, label, Icon, onClick}) => (
+                  <GeneralButton
+                    key={key}
+                    variant='unstyled'
+                    className={s.action}
+                    onClick={onClick}>
+                    <span className={s.actionIcon}>
+                      <Icon size={20} />
+                    </span>
+                    <span className={s.actionLabel}>{label}</span>
+                  </GeneralButton>
+                ))}
+              </div>
+            </section>
+
+            {allocation.length ? (
+              <section className={s.allocation} aria-label='Allocation'>
+                <div className={s.cardHeader}>
+                  <span>Allocation</span>
+                  <span>
+                    {coins.length} {coins.length === 1 ? 'asset' : 'assets'}
+                  </span>
+                </div>
+                <div className={s.allocationBar} aria-hidden='true'>
+                  {allocation.map((slice, index) => (
+                    <span
+                      key={slice.key}
+                      className={s.allocationSlice}
+                      style={{
+                        width: `${slice.share}%`,
+                        '--slice': SLICE_COLORS[index],
                       }}
                     />
-                  </IconButton>
-                ),
-                endAdornment: searchQuery && (
-                  <IconButton
-                    onClick={clearSearch}
-                    size='small'
-                    sx={{
-                      color: 'gray',
-                    }}>
-                    <ClearIcon />
-                  </IconButton>
-                ),
-              },
-            }}
-          />
-          <div className={classNames.header}>
-            <p className={classNames.headerTitle}>Total Assets</p>
-            <div className={classNames.headerRight}>
-              <p className={classNames.headerNumber}>
-                {currencySymbol[localCurrency] + totalAssets}
-              </p>
-              <button
-                ref={filterButtonRef}
-                className={classNames.filterButton}
-                onClick={() => setSortMenuVisible(prev => !prev)}>
-                {icons.filter}
-              </button>
+                  ))}
+                </div>
+                <ul className={s.allocationList}>
+                  {allocation.map((slice, index) => (
+                    <li key={slice.key} className={s.allocationItem}>
+                      <span
+                        className={s.allocationDot}
+                        style={{'--slice': SLICE_COLORS[index]}}
+                      />
+                      <span className={s.allocationLabel}>{slice.label}</span>
+                      <span className={s.allocationValue}>
+                        <Skeleton loading={isLoading} width='5em'>
+                          {formatFiat(slice.value)}
+                        </Skeleton>
+                      </span>
+                      <span className={s.allocationShare}>
+                        <Skeleton loading={isLoading} width='5em'>
+                          {slice.share.toFixed(1)}%
+                        </Skeleton>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+          </aside>
+
+          <div className={s.main}>
+            <div className={s.toolbar} data-tour='search'>
+              <label className={s.search}>
+                <SearchIcon size={17} />
+                <input
+                  value={searchQuery}
+                  onChange={onSearchChange}
+                  placeholder='Search assets'
+                  aria-label='Search assets'
+                />
+                {searchQuery ? (
+                  <GeneralButton
+                    variant='unstyled'
+                    className={s.searchClear}
+                    aria-label='Clear search'
+                    onClick={clearSearch}>
+                    <CloseIcon size={14} />
+                  </GeneralButton>
+                ) : null}
+              </label>
+              <GeneralButton
+                ref={sortButtonRef}
+                variant='unstyled'
+                className={s.sortButton}
+                aria-label='Sort coins'
+                onClick={toggleSortMenu}>
+                <SortIcon size={18} />
+              </GeneralButton>
+              <SortMenu
+                visible={sortMenuVisible}
+                onClose={closeSortMenu}
+                onSelect={handleSortApply}
+                currentSort={coinsSortOption}
+                anchorRef={sortButtonRef}
+                sortOptions={COIN_SORT_OPTIONS}
+                title='Sort Coins'
+              />
             </div>
+
+            <section className={s.assets} aria-label='Assets'>
+              <div className={s.assetsHeader}>
+                <span>Assets</span>
+                <span className={s.assetsHeaderShare}>Share</span>
+                <span className={s.assetsHeaderCount}>
+                  {coins.length} {coins.length === 1 ? 'asset' : 'assets'}
+                </span>
+              </div>
+              {visibleCoins.map(item => (
+                <AssetRow
+                  key={item._id}
+                  item={item}
+                  hidden={hidden}
+                  localCurrency={localCurrency}
+                  share={shareById[item._id]}
+                  onPick={openCoin}
+                />
+              ))}
+              {visibleCoins.length === 0 ? (
+                <p className={s.empty}>
+                  {searchQuery ? 'No coins match your search' : 'No coins yet'}
+                </p>
+              ) : null}
+            </section>
+
+            <GeneralButton
+              variant='unstyled'
+              className={s.moreCoins}
+              data-tour='more-coins'
+              onClick={goToManageCoins}>
+              <PlusIcon size={16} />
+              More coins
+            </GeneralButton>
+
+            <WalletConnectStatus />
           </div>
-          <div className={classNames.sortMenuWrapper}>
-            <SortMenu
-              visible={sortMenuVisible}
-              onClose={() => setSortMenuVisible(false)}
-              onSelect={handleSortApply}
-              currentSort={coinsSortOption}
-              anchorRef={filterButtonRef}
-              sortOptions={COIN_SORT_OPTIONS}
-              title='Sort Coins'
-            />
-          </div>
-          <CryptoList number={number} list={list} />
-        </div>
-        <WalletConnectStatus />
-        <div className={classNames.btnBox}>
-          <Link
-            href={walletRoutes.manageCoins(clientId)}
-            className={classNames.btn}>
-            {icons.addCircle}
-            <p className={classNames.btnText}>More Coins</p>
-          </Link>
         </div>
       </main>
-      {/* <ModalQR
-              visible={modalVisible}
-              hideModal={setmodalVisible}
-              data={
-                route?.params?.data
-                  ? isJson(route?.params?.data)
-                    ? JSON.parse(route?.params?.data).address
-                    : isValidHttpUrl(route?.params?.data)
-                    ? ""
-                    : route?.params?.data
-                  : ""
-              }
-              qrScheme={qrScheme}
-            /> */}
-      {/* </ErrorBoundary> */}
+
+      <WalletSwitcher
+        visible={switcherOpen}
+        onClose={closeSwitcher}
+        hidden={hidden}
+        localCurrency={localCurrency}
+      />
+      <CoinPicker
+        visible={!!pickerMode}
+        onClose={closePicker}
+        title={pickerMode === 'receive' ? 'Receive' : 'Send'}
+        coins={coins}
+        hidden={hidden}
+        localCurrency={localCurrency}
+        onPick={onPickFromPicker}
+      />
       <VerifyInfoModal
         visible={backupModalVisible}
-        onClose={() => {
-          setBackupModalVisible(false);
-          dispatch(setIsAskedBackupModal(currentWallet?.walletName));
-        }}
+        onClose={closeBackupModal}
       />
     </>
   );

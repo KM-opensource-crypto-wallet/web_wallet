@@ -1,9 +1,8 @@
 import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import styles from './TabAddCoinsGroup.module.css';
+import styles from 'components/ModalAddCoins/ModalAddCoins.module.css';
+import {CloseIcon, SearchIcon} from 'components/Home/HomeIcons';
 import {reportThunkRejection} from 'utils/thunkErrors';
-import {TextField, IconButton} from '@mui/material';
-import {Search as SearchIcon, Clear as ClearIcon} from '@mui/icons-material';
 import {
   fetchAllCoins,
   fetchAllSearchCoinsGroup,
@@ -104,50 +103,31 @@ const TabAddCoinsGroup = () => {
   }, [dispatch, isAvailable, isSearchGroupCoinsAvailable, searchQuery]);
 
   return (
-    <div className={styles.tabContent}>
-      <TextField
-        className={styles.search}
-        placeholder='Search'
-        variant='outlined'
-        id='search-bar'
-        fullWidth
-        value={searchQuery}
-        onChange={handleSearch}
-        sx={{
-          '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
-            {
-              borderColor: 'var(--gray)',
-            },
-          '& .MuiOutlinedInput-root': {
-            border: '1px solid var(--gray)',
-            borderRadius: '10px',
-            marginTop: '10px',
-            marginBottom: '10px',
-            fontSize: '18px',
-          },
-        }}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <IconButton type='submit' aria-label='search'>
-                <SearchIcon sx={{color: 'gray', marginRight: '10px'}} />
-              </IconButton>
-            ),
-            endAdornment: searchQuery && (
-              <IconButton
-                onClick={() => setSearchQuery('')}
-                size='small'
-                sx={{color: 'gray'}}>
-                <ClearIcon />
-              </IconButton>
-            ),
-          },
-        }}
-      />
+    <div className={styles.tab}>
+      <label className={styles.search}>
+        <SearchIcon size={17} />
+        <input
+          value={searchQuery}
+          onChange={handleSearch}
+          placeholder='Search coin groups'
+          aria-label='Search coin groups'
+        />
+        {searchQuery ? (
+          <button
+            type='button'
+            className={styles.clear}
+            aria-label='Clear search'
+            onClick={() => setSearchQuery('')}>
+            <CloseIcon size={12} />
+          </button>
+        ) : null}
+      </label>
       {isSearchAllGroupCoinLoading || isAllCoinLoading ? (
-        <Loading />
+        <div className={styles.loader}>
+          <Loading />
+        </div>
       ) : (
-        <div className={styles.scrollModalDiv}>
+        <div className={styles.scroll}>
           <InfiniteScroll
             initialLoad={false}
             pageStart={1}

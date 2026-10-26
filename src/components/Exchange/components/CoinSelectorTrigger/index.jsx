@@ -34,7 +34,7 @@ const CoinSelectorTrigger = ({option, onPress}) => {
         <p className={s.symbol}>{symbol || 'Select coin'}</p>
         {!!chainName && <p className={s.chain}>{chainName}</p>}
       </div>
-      <KeyboardArrowDownIcon sx={{fontSize: 18, color: 'var(--gray)'}} />
+      <KeyboardArrowDownIcon sx={{fontSize: 18, color: 'var(--sw-muted)'}} />
     </button>
   );
 };

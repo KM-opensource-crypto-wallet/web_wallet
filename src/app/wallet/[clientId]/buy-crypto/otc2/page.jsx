@@ -1,316 +1,268 @@
 'use client';
-import {walletRoutes} from 'utils/routes';
 import styles from './OTC2Screen.module.css';
-import React, {useContext, useState, useCallback, useMemo} from 'react';
-import SelectInputExchange from 'components/SelectInputExchange';
-import {Checkbox} from '@mui/material';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
-import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
-import CryptoCheckbox from 'components/CheckBox';
-import {useParams, useRouter} from 'next/navigation';
-import GoBackButton from 'components/GoBackButton';
-
-import {shallowEqual, useSelector} from 'react-redux';
-import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
-import {addOTC} from 'dok-wallet-blockchain-networks/service/dokApi';
-import {getUserCoinsOptions} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
-import {ThemeContext} from 'theme/ThemeContext';
-import {getOTCData} from 'dok-wallet-blockchain-networks/redux/extraData/extraSelectors';
-import {currencyIcon} from 'data/currency';
-import {toast} from 'react-toastify';
-import {getAppIcon, getAppIconDark} from 'whitelabel/whiteLabelInfo';
-
-const amountOptions = [
-  {
-    label: '5,000 to 10,000',
-    value: '5,000 to 10,000',
-  },
-  {
-    label: '10,000 to 20,000',
-    value: '10,000 to 20,000',
-  },
-  {
-    label: '20,000 to 50,000',
-    value: '20,000 to 50,000',
-  },
-  {
-    label: '50,000 to 100,000',
-    value: '50,000 to 100,000',
-  },
-  {
-    label: 'More than 100,000',
-    value: 'More than 100,000',
-  },
-];
-const sourceOfFundList = [
-  {label: 'Employment'},
-  {label: 'Investment'},
-  {label: 'Other'},
-];
+import React from 'react';
+import {currencySymbol} from 'src/data/lists/currency';
+import {CONSENTS, amountOptions, sourceOfFundList} from 'src/data/lists/otc';
+import CoinIcon from 'components/CoinIcon';
+import GeneralButton from 'components/Button';
+import HomeSheet from 'components/Home/HomeSheet';
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  SearchIcon,
+} from 'components/Home/HomeIcons';
+import {ExternalLinkIcon} from 'components/Transactions/TxIcons';
+import hs from 'components/Home/Home.module.css';
+import useBuyCrypto from 'src/hooks/protectedRoutes/wallet/buyCrypto/useBuyCrypto';
+import Screen from 'components/Screen';
 
 const OTC2Screen = () => {
-  const [state, setState] = useState({
-    isBuy: true,
-    selectedCryptoCoin: {},
-    selectedAmount: '',
-    sourceOfFund: '',
-    terms: false,
-    risk: false,
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const {themeType} = useContext(ThemeContext);
-  const router = useRouter();
-  const {clientId} = useParams();
-
-  const coinOptions = useSelector(getUserCoinsOptions, shallowEqual);
-  const otcData = useSelector(getOTCData);
-
-  const localCurrency = useSelector(getLocalCurrency);
-
-  const otherOptions = {
-    label: 'Other',
-    value: 'Other',
-    options: {
-      icon: themeType === 'light' ? getAppIcon() : getAppIconDark(),
-      title: 'Other',
-    },
-  };
-
-  const finalAmountOptions = useMemo(() => {
-    return amountOptions.map(item => ({
-      ...item,
-      options: {
-        icon: currencyIcon[localCurrency],
-      },
-    }));
-  }, [localCurrency]);
-
-  const [dropDownList, setDropDownList] = useState(
-    Array.isArray(coinOptions)
-      ? [...coinOptions, otherOptions]
-      : [otherOptions],
-  );
-
-  const onChangeCryptoCoin = useCallback(
-    event => {
-      const value = event.target.value;
-
-      const foundItem = dropDownList.find(item => item.value === value);
-      if (foundItem) {
-        setState(prevState => ({
-          ...prevState,
-          selectedCryptoCoin: foundItem,
-        }));
-      }
-    },
-    [dropDownList],
-  );
-
-  const onChangeAmount = useCallback(event => {
-    const value = event.target.value;
-    setState(prevState => ({
-      ...prevState,
-      selectedAmount: value,
-    }));
-  }, []);
-
-  const {isBuy, risk, selectedAmount, selectedCryptoCoin, sourceOfFund, terms} =
-    state;
-  const selectedChainName = selectedCryptoCoin?.options?.chain_name;
-  const selectedSymbol = selectedCryptoCoin?.options?.symbol;
-  const selectedWalletAddress = selectedCryptoCoin?.options?.walletAddress;
-
-  const onSubmit = useCallback(async () => {
-    const toastId = toast.loading('OTC Request Submitting', {
-      autoClose: false,
-    });
-    try {
-      const previousOTCData = otcData;
-      if (previousOTCData) {
-        setIsSubmitting(true);
-        const postCode = previousOTCData?.zipcode;
-        const payload = {
-          fullName: previousOTCData?.fullname,
-          email: previousOTCData?.email,
-          address1: previousOTCData?.address1,
-          city: previousOTCData?.city,
-          postCode: postCode,
-          country: previousOTCData?.country,
-          fundSource: sourceOfFund?.toLowerCase(),
-          chain: selectedChainName,
-          asset: selectedSymbol,
-          type: isBuy ? 'buy' : 'sell',
-          amount: `${selectedAmount} ${localCurrency}`,
-          walletAddress: selectedWalletAddress,
-        };
-        if (previousOTCData?.address2) {
-          payload.address2 = previousOTCData?.address2;
-        }
-        const resp = await addOTC(payload);
-        setIsSubmitting(false);
-        if (resp?.status === 200) {
-          toast.dismiss(toastId);
-          toast.success('OTC Request submitted successfully');
-          router.push(walletRoutes.home(clientId));
-        } else {
-          toast.dismiss(toastId);
-          toast.error('Something went wrong');
-        }
-      }
-    } catch (e) {
-      console.error(' Error in add OTC', e);
-      setIsSubmitting(false);
-      toast.dismiss(toastId);
-      toast.error('Something went wrong');
-    }
-  }, [
-    otcData,
-    sourceOfFund,
-    selectedChainName,
-    selectedSymbol,
-    selectedWalletAddress,
-    isBuy,
-    selectedAmount,
+  const {
     localCurrency,
-    router,
-    clientId,
-  ]);
+    isBuy,
+    setIsBuy,
+    selectedCryptoCoin,
+    selectedAmount,
+    onChangeOtcAmount,
+    sourceOfFund,
+    setSourceOfFund,
+    otcConsents,
+    toggleOtcConsent,
+    isOtcDisabled,
+    isOtcSubmitting,
+    onOtcSubmit,
+    otcCoinPickerOpen,
+    openOtcCoinPicker,
+    closeOtcCoinPicker,
+    otcCoinQuery,
+    onOtcCoinQueryChange,
+    otcCoinResults,
+    pickOtcCoin,
+  } = useBuyCrypto();
 
-  const isDisabled =
-    !risk ||
-    !selectedAmount ||
-    !selectedCryptoCoin ||
-    !sourceOfFund ||
-    !terms ||
-    isSubmitting;
+  const fiatSymbol = currencySymbol[localCurrency] || '';
+  const selectedCoin = selectedCryptoCoin?.options;
 
   return (
-    <main className={styles.container}>
-      <div className={styles.goBack}>
-        <GoBackButton />
-      </div>
-      <div className={styles.formInput}>
-        <p className={styles.title}>{'Choose your options'}</p>
-        <div className={styles.buttonBox}>
-          <div className={styles.mainOptionsdiv}>
+    <Screen className={styles.page} title='OTC order'>
+      <div className={styles.column}>
+        <div
+          className={styles.segmented}
+          role='radiogroup'
+          aria-label='Order type'>
+          {[
+            {label: 'Buy Crypto', buy: true},
+            {label: 'Sell Crypto', buy: false},
+          ].map(option => (
             <button
-              onClick={() => {
-                setState(prevState => ({
-                  ...prevState,
-                  isBuy: true,
-                }));
-              }}
-              className={[
-                isBuy ? styles.selectedMainOptions : styles.mainSubViewOptions,
-              ]}
-              style={{
-                borderTopRightRadius: '0',
-                borderBottomRightRadius: '0',
-                borderTopLeftRadius: '4px',
-                borderBottomLeftRadius: '4px',
-              }}>
-              {'Buy Crypto'}
+              key={option.label}
+              type='button'
+              role='radio'
+              aria-checked={isBuy === option.buy}
+              className={`${styles.segment} ${
+                isBuy === option.buy ? styles.segmentActive : ''
+              }`}
+              onClick={() => setIsBuy(option.buy)}>
+              {option.label}
             </button>
-            <button
-              onClick={() => {
-                setState(prevState => ({
-                  ...prevState,
-                  isBuy: false,
-                }));
-              }}
-              className={[
-                !isBuy ? styles.selectedMainOptions : styles.mainSubViewOptions,
-              ]}
-              style={{
-                borderTopRightRadius: '4px',
-                borderBottomRightRadius: '4px',
-                borderTopLeftRadius: '0',
-                borderBottomLeftRadius: '0',
-              }}>
-              {'Sell Crypto'}
-            </button>
-          </div>
-        </div>
-
-        <p className={styles.textStyle}>{'Select Crypto'}</p>
-        <div className={styles.dropdownContainer}>
-          <SelectInputExchange
-            listData={dropDownList}
-            onValueChange={onChangeCryptoCoin}
-            selectedValue={state.selectedCryptoCoin?.value}
-            placeholder={'Select Crypto'}
-          />
-        </div>
-
-        <p className={styles.textStyle}>{'Select amount'}</p>
-        <div className={styles.dropdownContainer}>
-          <SelectInputExchange
-            listData={finalAmountOptions}
-            onValueChange={onChangeAmount}
-            selectedValue={state.selectedAmount}
-            placeholder={'Select amount'}
-          />
-        </div>
-
-        <p className={styles.textStyle}>{'Source of Funds'}</p>
-        <div className={styles.itemSection}>
-          {sourceOfFundList?.map((item, index) => (
-            <div className={styles.itemBox} key={index}>
-              <Checkbox
-                checked={state.sourceOfFund === item.label}
-                onChange={() => {
-                  setState(prevState => ({
-                    ...prevState,
-                    sourceOfFund: item.label,
-                  }));
-                }}
-                inputProps={{'aria-label': 'controlled'}}
-                icon={<RadioButtonUncheckedIcon />}
-                checkedIcon={<RadioButtonCheckedIcon />}
-              />
-
-              <p className={styles.item}>{item.label}</p>
-            </div>
           ))}
         </div>
+
+        <section className={styles.card} aria-label='Order details'>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel} id='otc-coin-label'>
+              Crypto
+            </span>
+            <button
+              type='button'
+              className={styles.coinButton}
+              aria-haspopup='dialog'
+              aria-labelledby='otc-coin-label'
+              onClick={openOtcCoinPicker}>
+              {selectedCoin ? (
+                <>
+                  <span className={styles.coinIcon}>
+                    <CoinIcon item={selectedCoin} />
+                  </span>
+                  <span className={styles.coinText}>
+                    <span className={styles.coinSymbol}>
+                      {selectedCoin.symbol || selectedCoin.title}
+                      {selectedCoin.chain_display_name ? (
+                        <span className={styles.network}>
+                          {selectedCoin.chain_display_name}
+                        </span>
+                      ) : null}
+                    </span>
+                    {selectedCoin.symbol ? (
+                      <span className={styles.coinName}>
+                        {selectedCoin.title}
+                      </span>
+                    ) : null}
+                  </span>
+                </>
+              ) : (
+                <span className={styles.placeholder}>Select Crypto</span>
+              )}
+              <ChevronDownIcon size={18} className={styles.chevron} />
+            </button>
+          </div>
+
+          <div className={styles.field}>
+            <span className={styles.fieldLabel} id='otc-amount-label'>
+              Amount ({localCurrency})
+            </span>
+            <div
+              className={styles.chips}
+              role='radiogroup'
+              aria-labelledby='otc-amount-label'>
+              {amountOptions.map(item => (
+                <button
+                  key={item.value}
+                  type='button'
+                  role='radio'
+                  aria-checked={selectedAmount === item.value}
+                  className={`${styles.chip} ${
+                    selectedAmount === item.value ? styles.chipActive : ''
+                  }`}
+                  onClick={() => onChangeOtcAmount(item.value)}>
+                  {fiatSymbol}
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.field}>
+            <span className={styles.fieldLabel} id='otc-source-label'>
+              Source of funds
+            </span>
+            <div
+              className={styles.chips}
+              role='radiogroup'
+              aria-labelledby='otc-source-label'>
+              {sourceOfFundList.map(item => (
+                <button
+                  key={item.label}
+                  type='button'
+                  role='radio'
+                  aria-checked={sourceOfFund === item.label}
+                  className={`${styles.chip} ${
+                    sourceOfFund === item.label ? styles.chipActive : ''
+                  }`}
+                  onClick={() => setSourceOfFund(item.label)}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section} aria-labelledby='otc-consent'>
+          <h2 className={styles.sectionLabel} id='otc-consent'>
+            Agreements
+          </h2>
+          <p className={styles.provider}>
+            This service is provided by ozaraglobal.com.
+          </p>
+          <div className={styles.consentCard}>
+            {CONSENTS.map(consent => {
+              const checked = otcConsents[consent.key];
+              return (
+                <div key={consent.key} className={styles.consent}>
+                  <button
+                    type='button'
+                    role='checkbox'
+                    aria-checked={checked}
+                    aria-label={`I accept the ${consent.label}`}
+                    className={`${styles.tick} ${checked ? styles.tickOn : ''}`}
+                    onClick={() => toggleOtcConsent(consent.key)}>
+                    {checked ? <CheckIcon size={13} strokeWidth={3} /> : null}
+                  </button>
+                  <span className={styles.consentText}>
+                    I accept the{' '}
+                    <a
+                      href={consent.url}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className={styles.consentLink}>
+                      {consent.label}
+                      <ExternalLinkIcon size={12} />
+                    </a>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <GeneralButton
+          fullWidth
+          disabled={isOtcDisabled}
+          loading={isOtcSubmitting}
+          loadingLabel='Submitting…'
+          onClick={onOtcSubmit}>
+          Next
+        </GeneralButton>
       </div>
 
-      <div>
-        <p className={styles.textStyle}>
-          {'This service is provided by ozaraglobal.com.'}
-        </p>
-        <CryptoCheckbox
-          number={'1'}
-          title={'terms and conditions'}
-          setTermsCheck={isChecked => {
-            setState(prevState => ({
-              ...prevState,
-              terms: isChecked,
-            }));
-          }}
-        />
-
-        <CryptoCheckbox
-          number={'2'}
-          title={'Risk disclaimer'}
-          setRiskCheck={isChecked => {
-            setState(prevState => ({
-              ...prevState,
-              risk: isChecked,
-            }));
-          }}
-        />
-      </div>
-      <button
-        disabled={isDisabled}
-        className={styles.button}
-        style={{
-          backgroundColor: isDisabled ? 'var(--gray)' : 'var(--background)',
-        }}
-        onClick={onSubmit}>
-        {'Next'}
-      </button>
-    </main>
+      <HomeSheet
+        visible={otcCoinPickerOpen}
+        onClose={closeOtcCoinPicker}
+        title={isBuy ? 'Buy which coin?' : 'Sell which coin?'}
+        labelId='otc-coin-picker-title'>
+        <label className={hs.sheetSearch}>
+          <SearchIcon size={17} />
+          <input
+            autoFocus={true}
+            value={otcCoinQuery}
+            onChange={onOtcCoinQueryChange}
+            placeholder='Search coins'
+            aria-label='Search coins'
+          />
+        </label>
+        <div className={hs.pickerList} role='listbox' aria-label='Coins'>
+          {otcCoinResults.map(item => {
+            const active = item.value === selectedCryptoCoin?.value;
+            return (
+              <button
+                key={item.value}
+                type='button'
+                role='option'
+                aria-selected={active}
+                className={`${styles.option} ${
+                  active ? styles.optionActive : ''
+                }`}
+                onClick={() => pickOtcCoin(item.value)}>
+                <span className={styles.coinIcon}>
+                  <CoinIcon item={item.options} />
+                </span>
+                <span className={styles.coinText}>
+                  <span className={styles.optionTitle}>
+                    {item.options?.symbol || item.options?.title}
+                    {item.options?.chain_display_name ? (
+                      <span className={styles.optionNetwork}>
+                        {item.options.chain_display_name}
+                      </span>
+                    ) : null}
+                  </span>
+                  {item.options?.symbol ? (
+                    <span className={styles.optionHint}>
+                      {item.options?.title}
+                    </span>
+                  ) : null}
+                </span>
+                {active ? (
+                  <CheckIcon size={18} className={styles.optionCheck} />
+                ) : null}
+              </button>
+            );
+          })}
+          {otcCoinResults.length === 0 ? (
+            <p className={hs.sheetEmpty}>No coins found</p>
+          ) : null}
+        </div>
+      </HomeSheet>
+    </Screen>
   );
 };
 
