@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import useHome from 'src/hooks/protectedRoutes/wallet/home/useHome';
+import useHomeTour from 'src/hooks/protectedRoutes/wallet/home/useHomeTour';
 import {COIN_SORT_OPTIONS} from 'src/data/lists/coinSortOptions';
 import WalletConnectStatus from 'components/WalletConnectStatus';
 import SortMenu from 'components/SortMenu';
@@ -93,6 +94,10 @@ const Home = () => {
     closeBackupModal,
   } = useHome();
 
+  useHomeTour(
+    !isLoading && !backupModalVisible && !switcherOpen && !pickerMode,
+  );
+
   return (
     <>
       <main className={s.page}>
@@ -102,6 +107,7 @@ const Home = () => {
             <GeneralButton
               variant='unstyled'
               className={s.walletPill}
+              data-tour='wallet'
               aria-haspopup='dialog'
               onClick={openSwitcher}>
               <span className={s.walletPillAvatar}>
@@ -134,7 +140,10 @@ const Home = () => {
           </div>
 
           <aside className={s.side}>
-            <section className={s.balanceCard} aria-label='Total balance'>
+            <section
+              className={s.balanceCard}
+              aria-label='Total balance'
+              data-tour='balance'>
               <div className={s.balanceLabel}>
                 Total balance
                 <GeneralButton
@@ -223,7 +232,7 @@ const Home = () => {
           </aside>
 
           <div className={s.main}>
-            <div className={s.toolbar}>
+            <div className={s.toolbar} data-tour='search'>
               <label className={s.search}>
                 <SearchIcon size={17} />
                 <input
@@ -289,6 +298,7 @@ const Home = () => {
             <GeneralButton
               variant='unstyled'
               className={s.moreCoins}
+              data-tour='more-coins'
               onClick={goToManageCoins}>
               <PlusIcon size={16} />
               More coins

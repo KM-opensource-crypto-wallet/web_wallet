@@ -107,7 +107,7 @@ const Header = () => {
           <nav className={s.nav} aria-label='Main'>
             <ul className={s.navList}>
               {primaryItems.map(({key, href, Icon}) => (
-                <li key={key}>
+                <li key={key} data-tour={`nav-${key}`}>
                   <ActiveLink
                     href={href}
                     setModal={setModal}
@@ -124,7 +124,7 @@ const Header = () => {
             </ul>
           </nav>
 
-          <div className={s.profile} ref={menuRef}>
+          <div className={s.profile} ref={menuRef} data-tour='nav-profile'>
             <button
               type='button'
               className={`${s.profileButton} ${

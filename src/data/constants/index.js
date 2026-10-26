@@ -66,6 +66,8 @@ export const TRANSACTION_STATUS_LABEL = {
 // Home
 // Per-browser preference: show balances as dots.
 export const HIDE_BALANCES_KEY = 'home.hideBalances';
+// Per-browser flag: the home tour has been shown once.
+export const HOME_TOUR_KEY = 'home.tourSeen';
 export const ALLOCATION_SLICES = 4;
 
 // Swap
