@@ -87,4 +87,25 @@ describe('browser Sentry init', () => {
     expect(options.tracesSampleRate).toBe(0);
     expect(options.enableLogs).toBe(true);
   });
+
+  it('tunnels browser events through the first-party route', () => {
+    expect(options.tunnel).toBe('/monitoring/');
+  });
+
+  it('denies errors thrown from the reCAPTCHA script only', () => {
+    const denied = url => options.denyUrls.some(pattern => pattern.test(url));
+    expect(
+      denied(
+        'app:///recaptcha/releases/kemdRjWFxNjgsGdhRslyEPwU/recaptcha__en.js',
+      ),
+    ).toBe(true);
+    expect(
+      denied(
+        'https://www.gstatic.com/recaptcha/releases/BnqMGSY_YP4cCmbNINHpJPkd/recaptcha__en.js',
+      ),
+    ).toBe(true);
+    expect(denied('app:///_next/static/chunks/7986-292993ad1b32aa6d.js')).toBe(
+      false,
+    );
+  });
 });

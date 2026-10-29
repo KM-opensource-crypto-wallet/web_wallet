@@ -145,7 +145,10 @@ const SellCrypto = () => {
   const launchWebView = useCallback(
     async url => {
       handlePageLoading('Please complete the transaction in the popup window');
-      popupCenter({url, callback: handleWebViewClose});
+      const cleanup = await popupCenter({url, callback: handleWebViewClose});
+      if (cleanup === null) {
+        toast.error('Please allow pop-ups to continue');
+      }
     },
     [handleWebViewClose, handlePageLoading],
   );

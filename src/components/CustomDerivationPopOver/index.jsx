@@ -32,6 +32,12 @@ const CustomDerivationPopOver = ({selectedItem}) => {
       dispatch(
         deleteDeriveAddressInCurrentCoin({address: selectedItem?.address}),
       );
+    } else if (!selectedItem?.privateKey) {
+      // Keys are stripped from memory while locked; never copy "undefined".
+      showToast({
+        type: 'errorToast',
+        title: 'Private key unavailable. Please log in again.',
+      });
     } else {
       navigator.clipboard.writeText(selectedItem?.privateKey);
       showToast({

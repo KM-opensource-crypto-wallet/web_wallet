@@ -1,4 +1,9 @@
-import {findCoinByCurrency, findCoinBySlug, getCoinSlug} from './common';
+import {
+  findCoinByCurrency,
+  findCoinBySlug,
+  getCoinSlug,
+  popupCenter,
+} from './common';
 
 const eth = {
   _id: '1',
@@ -65,5 +70,78 @@ describe('findCoinByCurrency', () => {
     expect(findCoinByCurrency(coins, '')).toBeNull();
     expect(findCoinByCurrency(coins, undefined)).toBeNull();
     expect(findCoinByCurrency(undefined, 'ethereum:ETH')).toBeNull();
+  });
+});
+
+describe('popupCenter', () => {
+  const stubWindow = open => {
+    global.window = {
+      screenLeft: 0,
+      screenTop: 0,
+      innerWidth: 1000,
+      innerHeight: 800,
+      screen: {availWidth: 1000},
+      open,
+    };
+  };
+
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => {
+    jest.useRealTimers();
+    delete global.window;
+  });
+
+  it('opens without noopener so the handle can be polled', async () => {
+    const open = jest.fn(() => ({closed: false, close: jest.fn()}));
+    stubWindow(open);
+    await popupCenter({url: 'https://example.com', callback: jest.fn()});
+    expect(open.mock.calls[0][2]).not.toMatch(/noopener/);
+  });
+
+  it('cuts the opener on the opened window', async () => {
+    const popup = {closed: false, opener: {}, close: jest.fn()};
+    stubWindow(() => popup);
+    await popupCenter({url: 'https://example.com', callback: jest.fn()});
+    expect(popup.opener).toBeNull();
+  });
+
+  it('reports a blocked popup as closed and returns null without polling', async () => {
+    stubWindow(() => null);
+    const callback = jest.fn();
+    const result = await popupCenter({url: 'https://example.com', callback});
+    expect(result).toBeNull();
+    expect(callback).toHaveBeenCalledWith(false);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('calls back once and stops polling when the popup is closed', async () => {
+    const popup = {closed: false, close: jest.fn()};
+    stubWindow(() => popup);
+    const callback = jest.fn();
+    await popupCenter({url: 'https://example.com', callback});
+    jest.advanceTimersByTime(1000);
+    expect(callback).not.toHaveBeenCalled();
+    popup.closed = true;
+    jest.advanceTimersByTime(3000);
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback).toHaveBeenCalledWith(false);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('passes the send-funds query params back on success', async () => {
+    const popup = {
+      closed: false,
+      close: jest.fn(),
+      location: {href: 'https://app.test/send-funds?transactionId=abc'},
+    };
+    stubWindow(() => popup);
+    const callback = jest.fn();
+    await popupCenter({url: 'https://example.com', callback});
+    jest.advanceTimersByTime(1000);
+    expect(popup.close).toHaveBeenCalled();
+    expect(callback).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({transactionId: 'abc'}),
+    );
   });
 });

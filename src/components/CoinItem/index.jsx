@@ -59,6 +59,11 @@ const CoinItem = ({
   };
 
   const onPressItem = useCallback(() => {
+    // A catalog coin that isn't in the wallet has no wallet entry to select;
+    // setCurrentCoin would throw "Coin id does not exist".
+    if (isAddCoin && !item?.isInWallet) {
+      return;
+    }
     dispatch(setCurrentCoin(item?._id));
     // Without an active wallet id the legacy forwarder resolves /home/send.
     router.push(
@@ -66,7 +71,7 @@ const CoinItem = ({
         ? coinRoutes.send(currentWalletClientId, getCoinSlug(item))
         : '/home/send',
     );
-  }, [dispatch, item, currentWalletClientId, router]);
+  }, [dispatch, item, isAddCoin, currentWalletClientId, router]);
 
   const onChangeValue = useCallback(() => {
     dispatch(addOrToggleCoinInWallet(item));

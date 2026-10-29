@@ -24,13 +24,15 @@ const ImportWalletByPrivateKey = () => {
   const searchParams = useSearchParams();
 
   const onSubmit = useCallback(
-    values => {
+    async values => {
       try {
         const chainName = networkInput;
         const privateKey = values?.privateKey;
         if (chainName && privateKey) {
           const chain = getChain(chainName);
-          const isValid = chain.isValidPrivateKey({privateKey});
+          // Several chains validate asynchronously; an un-awaited Promise is
+          // always truthy and would let any key through.
+          const isValid = await chain.isValidPrivateKey({privateKey});
           if (isValid) {
             dispatch(setPhrase(null));
             dispatch(setChainName(chainName));
@@ -87,6 +89,7 @@ const ImportWalletByPrivateKey = () => {
             values,
             errors,
             touched,
+            isSubmitting,
           }) => (
             <div>
               <div className={s.addressViev}>
@@ -136,11 +139,11 @@ const ImportWalletByPrivateKey = () => {
                 className={s.button}
                 onClick={handleSubmit}
                 style={
-                  !networkInput || !values.privateKey
+                  !networkInput || !values.privateKey || isSubmitting
                     ? {backgroundColor: 'var(--gray)'}
                     : {}
                 }
-                disabled={!networkInput || !values.privateKey}>
+                disabled={!networkInput || !values.privateKey || isSubmitting}>
                 <p className={s.buttonTitle}>Import</p>
               </button>
             </div>

@@ -192,3 +192,41 @@
   color: var(--warning);
   font-weight: 500;
 }
+
+.dangerBanner {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e5484d;
+}
+
+.dangerBannerText {
+  flex: 1;
+  font-size: 13px;
+  color: #e5484d;
+  font-weight: 600;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  margin-top: 16px;
+  padding: 4px 0;
+}
+
+.checkboxRow input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.checkboxText {
+  font-size: 14px;
+  color: var(--font);
+}

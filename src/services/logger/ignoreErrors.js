@@ -29,6 +29,10 @@ export const ignoreErrors = [
   // Promise executor when the relay socket closes mid-subscribe. The relayer
   // reconnects on its own; the event has no app frames.
   /Connection interrupted while trying to subscribe/,
+  // Next.js deploy skew: a page from an older/newer deployment (or a bot
+  // replaying a stale request) posts a Server Action id this build doesn't
+  // have. Next answers it itself; nothing in the app can fix the request.
+  /Failed to find Server Action/,
   // Browser: stale deploy chunks and layout observers.
   /Loading chunk \d+ failed/,
   /Failed to fetch dynamically imported module/,

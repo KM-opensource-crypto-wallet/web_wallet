@@ -35,7 +35,10 @@ export const Verify = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const random = targetWallet.phrase.split(' ').map(w => ({word: w}));
+    // Guarded: after lockSession the phrase is stripped from memory until re-login.
+    const random = (targetWallet?.phrase?.split(' ') ?? []).map(w => ({
+      word: w,
+    }));
     let randomWords = [...random].sort(() => 0.5 - cryptoRandom());
     let randomNumbers = randomWords.slice(0, 3);
     let randomIds = randomNumbers.map(item => item.word);

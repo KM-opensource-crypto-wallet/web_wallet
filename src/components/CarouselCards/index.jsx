@@ -1,24 +1,49 @@
-import React, {useContext, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import data from 'data/carousel';
 import styles from './CarouselCardsStyles.module.css';
 import {Carousel} from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import {useRouter, useSearchParams} from 'next/navigation';
-import {useSelector} from 'react-redux';
-import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import {useDispatch, useSelector} from 'react-redux';
+import {getHasAccount} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
 import Image from 'next/image';
 import {getAppAssets} from 'whitelabel/whiteLabelInfo';
 import {ThemeContext} from 'theme/ThemeContext';
+import {canRestoreFromVault} from 'security/vaultRecovery';
 
 const CarouselCards = () => {
   const [index, setIndex] = useState(0);
   const router = useRouter();
-  const storePassword = useSelector(getUserPassword);
+  const storePassword = useSelector(getHasAccount);
   const {themeType} = useContext(ThemeContext);
   const searchParams = useSearchParams();
+  const dispatch = useDispatch();
+  // Keys from earlier are still in this browser (vault without an account).
+  const [canRestore, setCanRestore] = useState(false);
+
+  useEffect(() => {
+    dispatch(canRestoreFromVault())
+      .then(setCanRestore)
+      .catch(() => setCanRestore(false));
+  }, [dispatch]);
 
   return (
     <div className={styles.container}>
+      {canRestore && (
+        <div className={styles.section}>
+          <button
+            className={`${styles.button} ${styles.restoreButton}`}
+            onClick={() =>
+              router.push(
+                `/auth/restore-from-device${
+                  searchParams ? `?${searchParams}` : ''
+                }`,
+              )
+            }>
+            Restore wallets saved on this device
+          </button>
+        </div>
+      )}
       <Carousel
         showIndicators={false}
         showThumbs={false}

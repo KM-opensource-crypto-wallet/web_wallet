@@ -147,26 +147,24 @@ const nextConfig = {
 };
 
 // Sentry wraps last so it sees the final webpack config (next-intl included).
-// org/project/authToken are read from SENTRY_ORG / SENTRY_PROJECT /
-// SENTRY_AUTH_TOKEN; without the token no source maps or releases are
-// uploaded and the build stays silent about it.
+// No source maps: the plugin neither generates nor uploads them, and no Sentry
+// release is created. Generating them doubled the build's memory and put
+// ~140 MB of server maps into the Amplify Lambda bundle (over its 220 MB cap).
 module.exports = withSentryConfig(withNextIntl(nextConfig), {
   silent: !process.env.CI,
   telemetry: false,
-  widenClientFileUpload: true,
   webpack: {
     // Strip the SDK's own debug logging from the bundles, unless a developer
     // asked for it (SENTRY_DEBUG=true also flips `debug` in Sentry.init).
     treeshake: {removeDebugLogging: process.env.SENTRY_DEBUG !== 'true'},
     automaticVercelMonitors: false,
   },
-  // Events go through our own origin so ad blockers cannot drop them. The
-  // trailing slash matches `trailingSlash: true`, so the POST is served
-  // directly instead of bouncing through Next's 308 redirect.
-  tunnelRoute: '/monitoring/',
-  sourcemaps: {disable: !process.env.SENTRY_AUTH_TOKEN},
+  // No `tunnelRoute`: browser events still go through our own origin, but via
+  // the src/app/monitoring route handler (services/logger/tunnel.js). The
+  // rewrite-based tunnel tripped Next 16.3's MaxListenersExceededWarning.
+  sourcemaps: {disable: true},
   release: {
-    create: Boolean(process.env.SENTRY_AUTH_TOKEN),
+    create: false,
     // Must equal `releaseName()` in src/services/logger/sentryOptions.js.
     name: `${name}@${version}`,
   },

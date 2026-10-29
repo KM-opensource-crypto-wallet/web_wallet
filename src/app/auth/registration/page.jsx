@@ -12,11 +12,16 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 import {validationSchemaRegistration} from 'utils/validationSchema';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {VerifyInfoModal} from 'components/VerifyInfo';
+import ModalConfirm from 'components/ModalConfirm';
 import {
+  loadingOff,
   loadingOn,
   signUpSuccess,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {useDispatch} from 'react-redux';
+import {UNLOCK_ERROR_CODES, createAccount} from 'security/unlockFlow';
+import {captureError} from 'services/logger';
+import {toast} from 'react-toastify';
 
 // import {loadingOn, signUpSuccess} from 'redux/auth/authSlice';
 // import myStyles from './RegistrationScreenStyles';
@@ -33,19 +38,59 @@ const RegistrationScreen = () => {
   const confirmPasswordRef = useRef();
   const buttonRef = useRef();
   const searchParams = useSearchParams();
+  // Wallets from earlier are still saved in this browser: 'found' offers the
+  // restore, 'confirmDelete' is the second, explicit step before replacing.
+  const [vaultPrompt, setVaultPrompt] = useState(null);
+  const [pendingValues, setPendingValues] = useState(null);
+  const searchString = searchParams ? `?${searchParams}` : '';
 
   // const {theme} = useContext(ThemeContext);
   // const styles = myStyles(theme);
   const dispatch = useDispatch();
 
-  const handleSubmit = values => {
+  // The password never gets stored: it wraps a fresh vault key, and sealed
+  // persistence opens under the key derived from it.
+  const handleSubmit = async (values, options) => {
     dispatch(loadingOn());
-    setTimeout(() => {
-      dispatch(signUpSuccess(values.password));
-      router.push(
-        `/auth/reset-wallet${searchParams ? `?${searchParams}` : ''}`,
+    try {
+      await dispatch(createAccount(values.password, options));
+    } catch (error) {
+      dispatch(loadingOff());
+      if (error?.code === UNLOCK_ERROR_CODES.VAULT_EXISTS) {
+        setPendingValues(values);
+        setVaultPrompt('found');
+        return;
+      }
+      if (error?.code === UNLOCK_ERROR_CODES.ACCOUNT_EXISTS) {
+        // Reached registration with an account on this device (e.g. a typed
+        // URL inside the auto-lock window): never replace its vault here.
+        toast.error(error.message);
+        router.replace(`/auth/login${searchParams ? `?${searchParams}` : ''}`);
+        return;
+      }
+      captureError(error, {tags: {area: 'vault', op: 'create'}});
+      toast.error(
+        'Could not create secure storage for your wallet. Please try again.',
       );
-    }, 200);
+      return;
+    }
+    dispatch(signUpSuccess());
+    router.push(`/auth/reset-wallet${searchString}`);
+  };
+
+  const onRestoreInstead = () => {
+    setVaultPrompt(null);
+    setPendingValues(null);
+    router.replace(`/auth/restore-from-device${searchString}`);
+  };
+
+  const onConfirmDelete = () => {
+    const values = pendingValues;
+    setVaultPrompt(null);
+    setPendingValues(null);
+    if (values) {
+      handleSubmit(values, {discardExistingVault: true});
+    }
   };
 
   // useEffect(() => {
@@ -87,7 +132,7 @@ const RegistrationScreen = () => {
         <Formik
           initialValues={{password: '', passConfirm: ''}}
           validationSchema={validationSchemaRegistration}
-          onSubmit={handleSubmit}>
+          onSubmit={values => handleSubmit(values)}>
           {({
             values,
             handleChange,
@@ -234,6 +279,27 @@ const RegistrationScreen = () => {
           )}
         </Formik>
       </div>
+      <ModalConfirm
+        visible={vaultPrompt === 'found'}
+        title='Wallets found on this device'
+        description='Wallets from earlier are still saved in this browser. You can restore them with the password you used before.'
+        yesButtonTitle='Restore wallets'
+        noButtonTitle='Delete and start over'
+        onPressYes={onRestoreInstead}
+        onPressNo={() => setVaultPrompt('confirmDelete')}
+      />
+      <ModalConfirm
+        visible={vaultPrompt === 'confirmDelete'}
+        title='Delete saved wallets?'
+        description='The saved wallets will be removed from this browser for good. Only continue if you have their recovery phrases or a backup.'
+        yesButtonTitle='Delete'
+        noButtonTitle='Cancel'
+        onPressYes={onConfirmDelete}
+        onPressNo={() => {
+          setVaultPrompt(null);
+          setPendingValues(null);
+        }}
+      />
     </>
   );
 };

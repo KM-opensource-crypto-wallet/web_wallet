@@ -1,9 +1,9 @@
 import React, {useState, useEffect, useContext, useLayoutEffect} from 'react';
-// import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
-import {
-  logOutSuccess,
-  // fingerprintAuthOut,
-} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
+import {logOutSuccess} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
+import {lockSession} from 'security/unlockFlow';
+import {persistor} from 'redux/store';
+import {wipeAllLocalData} from 'redux/storage/wipe';
+import {captureError} from 'services/logger';
 import {useDispatch} from 'react-redux';
 import {resetWallet} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {addBreadcrumb} from 'services/logger';
@@ -35,7 +35,6 @@ const ModalReset = ({visible, hideModal, page, link}) => {
   //   const {theme} = useContext(ThemeContext);
   //   const styles = myStyles(theme);
   const dispatch = useDispatch();
-  // const storePassword = useSelector(getUserPassword);
   const [list, setList] = useState('');
   const router = useRouter();
 
@@ -57,7 +56,7 @@ const ModalReset = ({visible, hideModal, page, link}) => {
     }
   };
 
-  const handlerYes = () => {
+  const handlerYes = async () => {
     // The masterClientId is discarded with the store, so user attribution
     // ends here (AppRouting clears it when the selector goes empty).
     addBreadcrumb('wallet', 'reset', {reason: list});
@@ -66,14 +65,29 @@ const ModalReset = ({visible, hideModal, page, link}) => {
       hideModal(false);
       router.push('/auth/reset-wallet');
     } else if (list === 'Forgot') {
+      // Forgot password provably means the vault is unrecoverable: the account,
+      // its wallets, the vault and every local trace go (seed phrase or nothing).
+      // Pause redux-persist first so the reset dispatches below cannot stage
+      // writes that would re-open the databases while the wipe deletes them.
+      persistor.pause();
       dispatch(logOutSuccess());
       dispatch(resetWallet());
       dispatch(resetCurrentTransferData());
       dispatch(resetBatchTransactions());
-      setTimeout(() => {
-        router.push('/auth/registration');
-      }, 200);
+      try {
+        await wipeAllLocalData({persistor});
+      } catch (e) {
+        captureError(e, {tags: {area: 'storage', op: 'wipe'}});
+      }
+      // Full page load, not a client-side push: it drops every IndexedDB
+      // connection (a delete blocked by one only completes then) and boots
+      // the empty profile from scratch instead of the reset in-memory store.
+      window.location.replace('/auth/registration');
     } else {
+      // Log out (W2): zeroise keys in memory and pause sealed persistence
+      // until the next login. Awaited: the keys must be gone before the
+      // login page renders.
+      await dispatch(lockSession());
       hideModal(false);
       router.push('/auth/login');
     }

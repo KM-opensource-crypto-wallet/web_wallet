@@ -15,6 +15,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {
   selectRequestedModalVisible,
   selectTransactionModalVisible,
+  selectWalletConnectTransactionData,
 } from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
 import NewsModal from '../NewsModal';
 import {
@@ -42,6 +43,11 @@ const Sidebar = () => {
   const [page, setPage] = useState('');
   const requestedModalVisible = useSelector(selectRequestedModalVisible);
   const transactionModalVisible = useSelector(selectTransactionModalVisible);
+  // The transaction modal snapshots the request it was mounted for; keying by
+  // request id remounts it (and resets its acknowledgement) per request.
+  const transactionRequestId = useSelector(
+    state => selectWalletConnectTransactionData(state)?.id,
+  );
   const isNewsModalVisible = useSelector(getNewsModalVisible);
   const newsMessage = useSelector(getNewsMessage);
   const buyCryptoProvider = useSelector(getCryptoProviders);
@@ -131,6 +137,7 @@ const Sidebar = () => {
           }}
         />
         <WalletConnectTransactionModal
+          key={transactionRequestId ?? 'idle'}
           visible={transactionModalVisible}
           onClose={() => {
             dispatch(setWalletConnectTransactionModal(false));

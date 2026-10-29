@@ -4,13 +4,19 @@ import {
   convertToSmallAmount,
   parseBalance,
 } from 'dok-wallet-blockchain-networks/helper';
+import {sha256, toUtf8Bytes} from 'ethers';
+
+// Map keys must not be the mnemonic itself: a Map key is a live string that
+// survives for the process lifetime and shows up in heap dumps. A SHA-256 of
+// it is enough to tell wallets apart (W5 in the secure-storage plan).
+const sdkKeyOf = mnemonic => sha256(toUtf8Bytes(String(mnemonic ?? '')));
 
 let prepareSendResponse;
-// Connected instances, keyed by mnemonic. This is the single source of truth:
+// Connected instances, keyed by sdkKeyOf(mnemonic). This is the single source of truth:
 // never gate a lookup on a mutable "current instance" global, or a failed
 // connect for one wallet makes the next call re-connect an already-live one.
 const sdkMap = new Map();
-// In-flight connects, keyed by mnemonic. Keying matters: a single shared
+// In-flight connects, keyed by sdkKeyOf(mnemonic). Keying matters: a single shared
 // promise would hand wallet B the SDK of whichever wallet connected first.
 const connectingMap = new Map();
 // Only for callers that pass no phrase at all (getChain is called with
@@ -41,7 +47,7 @@ const commonConnectSdk = async mnemonic => {
     const sdk = await sdkBuilder.build();
 
     // await sdk.addEventListener(eventListener);
-    sdkMap.set(mnemonic, sdk);
+    sdkMap.set(sdkKeyOf(mnemonic), sdk);
     lastConnectedSdk = sdk;
     return sdk;
   } catch (err) {
@@ -66,22 +72,22 @@ async function connectToSdk(phrase) {
   if (!mnemonic) {
     return lastConnectedSdk;
   }
-  const existing = sdkMap.get(mnemonic);
+  const existing = sdkMap.get(sdkKeyOf(mnemonic));
   if (existing) {
     return existing;
   }
   // Per mnemonic, so a concurrent connect for a DIFFERENT wallet is never
   // handed this wallet's in-flight promise.
-  const inflight = connectingMap.get(mnemonic);
+  const inflight = connectingMap.get(sdkKeyOf(mnemonic));
   if (inflight) {
     return inflight;
   }
   const promise = commonConnectSdk(mnemonic);
-  connectingMap.set(mnemonic, promise);
+  connectingMap.set(sdkKeyOf(mnemonic), promise);
   try {
     return await promise;
   } finally {
-    connectingMap.delete(mnemonic);
+    connectingMap.delete(sdkKeyOf(mnemonic));
   }
 }
 

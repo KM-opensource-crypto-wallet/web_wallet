@@ -130,11 +130,10 @@ NEXT_PUBLIC_SENTRY_DSN=
 SENTRY_ENABLE_IN_DEV=
 SENTRY_DEV_TOOLS=
 SENTRY_DEBUG=
-# Build only: source-map and release upload. Skipped when the token is absent.
-SENTRY_ORG=
-SENTRY_PROJECT=
-SENTRY_AUTH_TOKEN=
 ```
+
+Source maps are not generated or uploaded (`sourcemaps.disable` in
+`next.config.js`), so no Sentry build token is needed.
 
 To verify the pipeline locally run `SENTRY_ENABLE_IN_DEV=true yarn dev`, open
 Settings → "Send Sentry test event" and check that the issue and the log arrive

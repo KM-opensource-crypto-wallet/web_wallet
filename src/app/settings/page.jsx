@@ -4,7 +4,7 @@ import React from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
   getLocalCurrency,
-  getLockTimeDisplay,
+  getLockTime,
   isWalletReset,
 } from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {selectCurrentWalletClientId} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -22,6 +22,7 @@ import {setUserLocale} from 'src/utils/updateLocale';
 import {isBackupRestoreEnabled} from 'whitelabel/whiteLabelInfo';
 import {addBreadcrumb, captureError, logger} from 'services/logger';
 import {showToast} from 'utils/toast';
+import {getWebLockTimeLabel} from 'utils/autoLock';
 
 // Debug-only row for verifying the Sentry pipeline end to end (event, log,
 // breadcrumb, scrubbing). Hidden in release unless SENTRY_DEV_TOOLS is set.
@@ -32,7 +33,7 @@ const Settings = ({navigation}) => {
   const dispatch = useDispatch();
   // const [isFingerprintEnabled, setIsFingerprintEnabled] = useState(false);
   const localCurrency = useSelector(getLocalCurrency);
-  const lockTimeDisplay = useSelector(getLockTimeDisplay);
+  const lockTimeDisplay = getWebLockTimeLabel(useSelector(getLockTime));
   const rateLimitCheck = useSelector(isWalletReset);
   const tutorialVideos = useSelector(getTutorialVideos);
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);

@@ -11,8 +11,10 @@ import Input from '@mui/material/Input';
 import IconButton from '@mui/material/IconButton';
 import {validationSchemaChangePassword} from 'utils/validationSchema';
 import GoBackButton from 'components/GoBackButton';
-import {useDispatch, useSelector} from 'react-redux';
-import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import {useDispatch} from 'react-redux';
+import * as vault from 'dok-wallet-blockchain-networks/security/vault';
+import {VAULT_ERROR_CODES} from 'dok-wallet-blockchain-networks/security/errors';
+import {captureError} from 'services/logger';
 import {toast} from 'react-toastify';
 import {useRouter} from 'next/navigation';
 import {changePasswordSuccess} from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
@@ -25,22 +27,33 @@ const ChangePassword = () => {
   const router = useRouter();
 
   const dispatch = useDispatch();
-  const storePassword = useSelector(getUserPassword);
+  const [busy, setBusy] = useState(false);
   const newPasswordRef = useRef();
   const buttonRef = useRef();
   const confirmPasswordRef = useRef();
 
-  const validateCurrentPassword = (value, storedPassword) => {
-    if (value !== storedPassword) {
-      setWrong(true);
+  // Re-wraps the vault key under the new password; the current password is
+  // enforced by the unwrap (previously a wrong one only set a flag — W3).
+  const handleSubmit = async values => {
+    if (busy) {
       return;
     }
+    setBusy(true);
+    try {
+      await vault.changePassword(values.currentPassword, values.newPassword);
+    } catch (error) {
+      setBusy(false);
+      if (error?.code === VAULT_ERROR_CODES.INVALID_PASSWORD) {
+        setWrong(true);
+        return;
+      }
+      captureError(error, {tags: {area: 'vault', op: 'change_password'}});
+      toast.error('Password not updated: secure storage is unavailable.');
+      return;
+    }
+    setBusy(false);
     setWrong(false);
-    return;
-  };
-
-  const handleSubmit = values => {
-    dispatch(changePasswordSuccess(values.newPassword));
+    dispatch(changePasswordSuccess());
     toast.success('Password updated sucessfully. Please do login again');
     router.replace('/auth/login');
   };
@@ -110,10 +123,7 @@ const ChangePassword = () => {
                   onChange={handleChange('currentPassword')}
                   onKeyDown={onCurrentPasswordKeyDown}
                   onBlur={() => {
-                    validateCurrentPassword(
-                      values.currentPassword,
-                      storePassword,
-                    );
+                    setWrong(false);
                     handleBlur('currentPassword');
                   }}
                   value={values.currentPassword}

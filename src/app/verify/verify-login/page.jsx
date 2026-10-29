@@ -36,7 +36,7 @@ import {
   logInSuccess,
 } from 'dok-wallet-blockchain-networks/redux/auth/authSlice';
 import {useDispatch, useSelector} from 'react-redux';
-import {getUserPassword} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
+import * as vault from 'dok-wallet-blockchain-networks/security/vault';
 import {
   selectAllWallets,
   selectCurrentWalletClientId,
@@ -55,7 +55,6 @@ const VerifyLoginScreen = () => {
 
   const dispatch = useDispatch();
   //   const [wrong, setWrong] = useState(false);
-  const storePassword = useSelector(getUserPassword);
   const currentWalletClientId = useSelector(selectCurrentWalletClientId);
   const buttonRef = useRef();
   //   const fingerprint = useSelector(isFingerprint);
@@ -123,8 +122,10 @@ const VerifyLoginScreen = () => {
   //   }, [dispatch, fingerprint, navigation, hasWallet]);
 
   const onClickLogin = useCallback(
-    values => {
-      if (storePassword === values.password) {
+    async values => {
+      // Verified by unwrapping the vault key, not by comparing a stored value.
+      const ok = await vault.verifyPassword(values.password).catch(() => false);
+      if (ok) {
         router.push(
           `${walletRoutes.verifyCreate(currentWalletClientId)}?showSeedPhrase=true`,
         );
@@ -133,7 +134,7 @@ const VerifyLoginScreen = () => {
         dispatch(loadingOff());
       }
     },
-    [dispatch, router, storePassword, currentWalletClientId],
+    [dispatch, router, currentWalletClientId],
   );
 
   const onKeyDown = useCallback(e => {

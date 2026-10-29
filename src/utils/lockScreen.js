@@ -1,11 +1,10 @@
-// One-shot "skip the lock screen on the next full page load".
+// One-shot "don't replay the redirectRoute on the next full page load".
 //
-// AppRouting locks on every full load unless the auto-lock window is open.
-// Some flows legitimately reload right after the user has authenticated:
-// the Google OAuth round-trip for Drive backup/restore, and the post-login
-// replay of a deep link that turns out to be an unknown URL (Next loads the
-// 404 page as a new document). Without this flag those flows bounce straight
-// back to login, and the unknown-URL case loops forever.
+// Every full load locks (the vault key lives only in memory), so AppRouting
+// always sends it to login. The post-login replay of a deep link that turns
+// out to be an unknown URL reloads into the 404 page as a new document; with
+// this flag set, AppRouting sends that load to login WITHOUT the
+// redirectRoute, so the unknown URL is not replayed again in a loop.
 const SKIP_LOCK_SCREEN_KEY = 'skip_lock_screen';
 
 const hasSession = () =>
@@ -13,8 +12,7 @@ const hasSession = () =>
 
 // `ttlMs`: clear the flag again if no reload consumed it in time, so a soft
 // (client-side) navigation does not leave a stale skip behind for a manual
-// reload hours later. The OAuth flows omit it: the provider round-trip can
-// take a while and always ends in a full load.
+// reload hours later.
 export const skipLockOnNextLoad = ({ttlMs} = {}) => {
   if (!hasSession()) {
     return;

@@ -1,4 +1,5 @@
 import {
+  isExtensionOnlyError,
   isNonBrowserRuntime,
   isUnsupportedBrowser,
   shouldDropEvent,
@@ -75,11 +76,51 @@ describe('isNonBrowserRuntime', () => {
   });
 });
 
+describe('isExtensionOnlyError', () => {
+  const APP_FRAME = {
+    filename: 'https://app.dokwallet.com/_next/static/chunks/2736.js',
+    function: 'o.r',
+  };
+
+  it('drops stacks made only of injected extension scripts', () => {
+    // DOKWALLET-WALLET-WEB-P, exactly as the SDK sent it.
+    const inpage = {filename: 'app:///inpage.bundle.js'};
+    expect(isExtensionOnlyError(withFrames([inpage, inpage, inpage]))).toBe(
+      true,
+    );
+    expect(
+      isExtensionOnlyError(
+        withFrames([{filename: 'chrome-extension://abc/inpage.js'}]),
+      ),
+    ).toBe(true);
+    expect(
+      isExtensionOnlyError(
+        withFrames([{filename: 'moz-extension://uuid/content/script.js'}]),
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps any stack with an app frame and events without frames', () => {
+    expect(
+      isExtensionOnlyError(
+        withFrames([{filename: 'app:///inpage.bundle.js'}, APP_FRAME]),
+      ),
+    ).toBe(false);
+    expect(isExtensionOnlyError(withFrames([APP_FRAME]))).toBe(false);
+    expect(isExtensionOnlyError(withFrames([]))).toBe(false);
+    expect(isExtensionOnlyError({message: 'plain'})).toBe(false);
+    expect(isExtensionOnlyError(undefined)).toBe(false);
+  });
+});
+
 describe('shouldDropEvent', () => {
-  it('combines both predicates', () => {
+  it('combines the predicates', () => {
     expect(shouldDropEvent(withBrowser('Chrome', '79'))).toBe(true);
     expect(
       shouldDropEvent(withFrames([{filename: 'ext:deno_web/02_event.js'}])),
+    ).toBe(true);
+    expect(
+      shouldDropEvent(withFrames([{filename: 'app:///inpage.bundle.js'}])),
     ).toBe(true);
     expect(shouldDropEvent(withBrowser('Chrome', '120'))).toBe(false);
   });

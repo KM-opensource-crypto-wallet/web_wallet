@@ -1,5 +1,4 @@
 'use client';
-import {skipLockOnNextLoad} from 'utils/lockScreen';
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {useSelector} from 'react-redux';
 import {
@@ -153,7 +152,6 @@ const BackupPage = () => {
   };
 
   const handleLogin = async () => {
-    skipLockOnNextLoad();
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('backup_pending', 'true');
       sessionStorage.setItem(
