@@ -5,7 +5,7 @@ import BigNumber from 'bignumber.js';
 import {currencySymbol} from 'data/currency';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {
-  checkBatchDelegation,
+  confirmBatchDelegationRemoved,
   revokeDelegation,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {showToast} from 'src/utils/toast';
@@ -65,8 +65,9 @@ const ModalBatchDelegation = ({notice, onClose}) => {
           : {type: 'successToast', title: 'Batch Sending Switched Off'},
       );
       onClose();
-      // Marks the address as done once the chain shows the delegation gone.
-      dispatch(checkBatchDelegation({force: true}));
+      // Keeps re-checking (a pending revoke still reads as delegated) and
+      // marks the address as done once the chain shows the delegation gone.
+      dispatch(confirmBatchDelegationRemoved({address: notice.address}));
     } catch (e) {
       showToast({
         type: 'errorToast',

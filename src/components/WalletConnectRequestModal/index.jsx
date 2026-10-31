@@ -82,7 +82,9 @@ const WalletConnectRequestModal = props => {
   const allCoins = useSelector(selectAllCoins);
   const currentWallet = useSelector(selectCurrentWallet);
   const [chainData, setChainData] = useState([]);
-  const [verifyAcknowledged, setVerifyAcknowledged] = useState(false);
+  // The tick belongs to one proposal: a different proposal starts unticked
+  // (this modal stays mounted across proposals).
+  const [acknowledgedProposalId, setAcknowledgedProposalId] = useState(null);
   const [unsupportedRequiredChains, setUnsupportedRequiredChains] = useState(
     [],
   );
@@ -92,6 +94,7 @@ const WalletConnectRequestModal = props => {
   const title = requestData?.name || '';
   const url = requestData?.url || '';
   const id = requestData?.id || '';
+  const verifyAcknowledged = !!id && acknowledgedProposalId === id;
   const sessionId = requestData?.sessionId || '';
   const relays = requestData?.relays || {};
 
@@ -255,7 +258,9 @@ const WalletConnectRequestModal = props => {
             url={url}
             verifyContext={requestData?.verifyContext}
             acknowledged={verifyAcknowledged}
-            onToggleAcknowledged={() => setVerifyAcknowledged(prev => !prev)}
+            onToggleAcknowledged={() =>
+              setAcknowledgedProposalId(prev => (prev === id ? null : id))
+            }
           />
           <p className={styles.chainTitle}>{'Chains'}</p>
           {chainData.map((item, index) => (

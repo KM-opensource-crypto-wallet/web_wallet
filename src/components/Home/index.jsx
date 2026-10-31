@@ -26,6 +26,7 @@ import {sortCurrentWalletCoins} from 'dok-wallet-blockchain-networks/redux/walle
 // import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {
   countTotalAssets,
+  getEthereumCoin,
   selectCurrentWallet,
   selectIsBackedUp,
   selectUserCoins,
@@ -119,6 +120,7 @@ const Home = () => {
   const allNewCoins = useSelector(selectAllNewCoins);
   const isBackup = useSelector(selectIsBackedUp);
   const currentWallet = useSelector(selectCurrentWallet);
+  const ethereumAddress = useSelector(state => getEthereumCoin(state)?.address);
   const isAskedBackup = useSelector(isAskedBackedUpModal);
   const isImportWithPrivateKey = useSelector(isImportWalletWithPrivateKey);
   const newsMessage = useSelector(getNewsMessage);
@@ -168,22 +170,35 @@ const Home = () => {
     })();
   }, [userCoins]);
 
-  // Page load and wallet switch; the thunk throttles and skips unlisted
-  // addresses without any network call.
+  // Page load, wallet or Ethereum address switch, tab back in view and network
+  // recovery. The thunk throttles (10 min per wallet address; a failed read
+  // does not count) and skips unlisted addresses without any network call.
   useEffect(() => {
     let active = true;
-    dispatch(checkBatchDelegation())
-      .unwrap()
-      .then(notice => {
-        if (active && notice) {
-          setBatchDelegationNotice(notice);
-        }
-      })
-      .catch(() => {});
+    const runCheck = () => {
+      dispatch(checkBatchDelegation())
+        .unwrap()
+        .then(notice => {
+          if (active && notice) {
+            setBatchDelegationNotice(notice);
+          }
+        })
+        .catch(() => {});
+    };
+    runCheck();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        runCheck();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', runCheck);
     return () => {
       active = false;
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', runCheck);
     };
-  }, [currentWallet?.clientId, dispatch]);
+  }, [currentWallet?.clientId, ethereumAddress, dispatch]);
 
   // useEffect(() => {}, [newItem, dispatch]);
 

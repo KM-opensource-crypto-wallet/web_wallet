@@ -313,9 +313,9 @@ const WalletConnectTransactionModal = props => {
     }
   }, [transactionData, walletData, evmReview]);
 
-  // personal_sign / eth_sign of a 32-byte message: unreadable ones need an
-  // acknowledgement; a listed account that still has batch sending set up is
-  // not offered the signature at all (the walletConnect thunk refuses too).
+  // personal_sign / eth_sign: any unreadable message (blind signing) needs an
+  // acknowledgement; a 32-byte one from a listed account that still has batch
+  // sending set up is not offered at all (the walletConnect thunk refuses too).
   const signReview = useMemo(
     () =>
       EVM_MESSAGE_SIGN_METHODS.includes(method) && !isNonEVMChain(chainId)
@@ -331,8 +331,7 @@ const WalletConnectTransactionModal = props => {
   );
   const isSignerExposed = useSelector(selectIsSignerExposed);
   const isSignBlocked = !!signReview?.digestSized && isSignerExposed;
-  const isOpaqueSign =
-    !!signReview?.digestSized && !signReview.readable && !isSignBlocked;
+  const isOpaqueSign = !!signReview && !signReview.readable && !isSignBlocked;
 
   // Approving signs with the wallet key: the same password / biometric gate as
   // every other send applies (D2). The dApp request itself is executed by
