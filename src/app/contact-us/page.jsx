@@ -1,14 +1,16 @@
 'use client';
-import React, {useCallback, useContext} from 'react';
+import React, {useCallback, useContext, useEffect, useState} from 'react';
 import Image from 'next/image';
 import WalletConnectItem from 'components/WalletConnectItem';
 import styles from './ContactUs.module.css';
-import {toast} from 'react-toastify';
+import {getAppAssets} from 'src/whitelabel/whiteLabelInfo';
 import {
-  getAppName,
-  getAppAssets,
-  getContactUsEmail,
-} from 'src/whitelabel/whiteLabelInfo';
+  getSupportTelegramUrl,
+  openSupportEmail,
+  openSupportTelegram,
+} from 'utils/contactSupport';
+import {copyToClipboard} from 'utils/copyToClipboard';
+import {getSupportId} from 'services/logger';
 import {ThemeContext} from 'theme/ThemeContext';
 import {useSelector} from 'react-redux';
 import {currencySymbol} from 'data/currency';
@@ -21,22 +23,13 @@ const ContactUs = () => {
   const {themeType} = useContext(ThemeContext);
   const localCurrency = useSelector(getLocalCurrency);
 
-  const handleContactViaEmail = useCallback(() => {
-    try {
-      window.open(`mailto:${getContactUsEmail()}`);
-    } catch (e) {
-      console.error('error in open emails', e);
-      toast.error(`Couldn't open an email client`);
-    }
-  }, []);
-
-  const onPressContactViaTelegram = useCallback(() => {
-    try {
-      window.open('https://t.me/dokwallet');
-    } catch (e) {
-      console.error('error in open Telegram', e);
-      toast.error(`Couldn't open a telegram`);
-    }
+  // Browser-only (Sentry user), so it is read after mount to keep the server
+  // and client markup identical.
+  const [supportId, setSupportId] = useState('');
+  useEffect(() => {
+    // Anonymous function: the react-hooks compiler lint flags setState calls
+    // made directly in an effect body; the same update here is accepted.
+    (() => setSupportId(getSupportId()))();
   }, []);
 
   const handleOTCClick = useCallback(() => {
@@ -52,23 +45,29 @@ const ContactUs = () => {
           touch shortly.
         </div>
         <div className={styles.btnWrapper}>
-          <button className={styles.button} onClick={handleContactViaEmail}>
+          <button className={styles.button} onClick={openSupportEmail}>
             <div className={styles.buttonTitle}>{'Contact via Email'}</div>
           </button>
         </div>
-        {getAppName() === 'dokwallet' && (
+        {!!getSupportTelegramUrl() && (
           <>
             <div className={styles.descriptions}>{'OR'}</div>
             <div className={styles.btnWrapper}>
-              <button
-                className={styles.button}
-                onClick={onPressContactViaTelegram}>
+              <button className={styles.button} onClick={openSupportTelegram}>
                 <div className={styles.buttonTitle}>
                   {'Contact via Telegram'}
                 </div>
               </button>
             </div>
           </>
+        )}
+        {!!supportId && (
+          <button
+            type='button'
+            className={styles.supportId}
+            onClick={() => copyToClipboard(supportId, 'Support ID copied')}>
+            {`Support ID: ${supportId} (tap to copy)`}
+          </button>
         )}
         <div className={styles.borderView} />
         {/* --- OTC Card --- */}

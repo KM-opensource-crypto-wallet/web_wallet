@@ -111,3 +111,16 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+.supportId {
+    display: block;
+    margin: 20px auto 0;
+    padding: 0 20px;
+    background: none;
+    border: none;
+    color: var(--gray);
+    font-size: 13px;
+    text-align: center;
+    word-break: break-all;
+    cursor: pointer;
+}
