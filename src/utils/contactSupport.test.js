@@ -1,5 +1,9 @@
 import {getSupportId} from 'services/logger';
-import {getAppName, getContactUsEmail} from 'whitelabel/whiteLabelInfo';
+import {
+  getAppName,
+  getContactUsEmail,
+  isWhiteLabelInfoLoaded,
+} from 'whitelabel/whiteLabelInfo';
 import {
   buildSupportEmailUrl,
   buildSupportTelegramUrl,
@@ -10,11 +14,13 @@ jest.mock('services/logger', () => ({getSupportId: jest.fn()}));
 jest.mock('whitelabel/whiteLabelInfo', () => ({
   getAppName: jest.fn(),
   getContactUsEmail: jest.fn(),
+  isWhiteLabelInfoLoaded: jest.fn(),
 }));
 jest.mock('utils/wlData', () => ({WL_APP_NAME: 'Dok Wallet'}));
 jest.mock('react-toastify', () => ({toast: {error: jest.fn()}}));
 
 beforeEach(() => {
+  isWhiteLabelInfoLoaded.mockReturnValue(true);
   getAppName.mockReturnValue('dokwallet');
   getContactUsEmail.mockReturnValue('support@dokwallet.com');
   getSupportId.mockReturnValue('abc-123');
@@ -42,6 +48,12 @@ describe('Telegram', () => {
     );
     getAppName.mockReturnValue('kimlwallet');
     expect(getSupportTelegramUrl()).toBe('https://t.me/kimlwallet');
+  });
+
+  it('offers no Telegram link before the brand is loaded', () => {
+    isWhiteLabelInfoLoaded.mockReturnValue(false);
+    expect(getSupportTelegramUrl()).toBe('');
+    expect(buildSupportTelegramUrl()).toBe('');
   });
 
   it('offers no Telegram link for other brands', () => {

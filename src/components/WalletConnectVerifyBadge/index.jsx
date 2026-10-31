@@ -13,7 +13,8 @@ const describe = (status, origin, appUrl) => {
   const host = verifyHost(origin) || verifyHost(appUrl);
   switch (status) {
     case 'verified':
-      return {label: 'Verified site', detail: host};
+      // The verified origin only, never the dApp's self-reported appUrl.
+      return {label: 'Verified site', detail: verifyHost(origin)};
     case 'mismatch':
       return {
         label: 'Domain mismatch',

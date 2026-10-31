@@ -1,5 +1,9 @@
 import {toast} from 'react-toastify';
-import {getAppName, getContactUsEmail} from 'whitelabel/whiteLabelInfo';
+import {
+  getAppName,
+  getContactUsEmail,
+  isWhiteLabelInfoLoaded,
+} from 'whitelabel/whiteLabelInfo';
 import {WL_APP_NAME} from 'utils/wlData';
 import {getSupportId} from 'services/logger';
 
@@ -16,8 +20,10 @@ const supportIdDraft = () => {
   return supportId ? `Support ID: ${supportId}\n\n` : '';
 };
 
-// Telegram is offered only for brands that have a support account.
-export const getSupportTelegramUrl = () => SUPPORT_TELEGRAM[getAppName()] || '';
+// Telegram is offered only for brands that have a support account, and only
+// once the brand is known: before that getAppName() falls back to dokwallet.
+export const getSupportTelegramUrl = () =>
+  (isWhiteLabelInfoLoaded() && SUPPORT_TELEGRAM[getAppName()]) || '';
 
 export const buildSupportEmailUrl = () => {
   const subject = encodeURIComponent(`${WL_APP_NAME} support`);

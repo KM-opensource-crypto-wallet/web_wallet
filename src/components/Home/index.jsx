@@ -27,6 +27,7 @@ import {sortCurrentWalletCoins} from 'dok-wallet-blockchain-networks/redux/walle
 import {
   countTotalAssets,
   getEthereumCoin,
+  isBatchDelegationExposed,
   selectCurrentWallet,
   selectIsBackedUp,
   selectUserCoins,
@@ -113,6 +114,11 @@ const Home = () => {
   // const [modalVisible, setmodalVisible] = useState(false);
   const [backupModalVisible, setBackupModalVisible] = useState(false);
   const [batchDelegationNotice, setBatchDelegationNotice] = useState(null);
+  // A null check result (throttled, failed read) keeps the notice; it hides
+  // only once its address is marked cleared (e.g. by the post-revoke checks).
+  const isNoticeAddressExposed = useSelector(state =>
+    isBatchDelegationExposed(state, batchDelegationNotice?.address),
+  );
   // const [number, setNumber] = useState(1);
   const userCoins = useSelector(selectUserCoins, shallowEqual);
   const localCurrency = useSelector(getLocalCurrency);
@@ -420,7 +426,7 @@ const Home = () => {
             /> */}
       {/* </ErrorBoundary> */}
       <ModalBatchDelegation
-        notice={batchDelegationNotice}
+        notice={isNoticeAddressExposed ? batchDelegationNotice : null}
         onClose={() => setBatchDelegationNotice(null)}
       />
       <VerifyInfoModal
