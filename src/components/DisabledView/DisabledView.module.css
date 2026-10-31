@@ -38,3 +38,11 @@
     text-decoration-line: underline;
     cursor: pointer;
 }
+.supportIdText {
+    margin-top: 12px;
+    color: var(--gray);
+    font-size: 13px;
+    font-family: var(--font-roboto);
+    user-select: text;
+    word-break: break-all;
+}

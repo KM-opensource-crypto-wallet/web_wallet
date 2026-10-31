@@ -58,6 +58,10 @@ export const getAppName = () => {
   return whiteLabelInfo?.name?.toLowerCase() || 'dokwallet';
 };
 
+// False until setWhiteLabelInfo has the brand (getAppName then still returns
+// the Dok Wallet fallback), e.g. on a crash screen before AppRouting mounted.
+export const isWhiteLabelInfoLoaded = () => !!whiteLabelInfo?._id;
+
 export const getAppSubTitle = () => {
   return whiteLabelInfo?.subTitle || 'DOK WALLET';
 };
