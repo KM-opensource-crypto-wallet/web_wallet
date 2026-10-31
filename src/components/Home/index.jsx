@@ -32,11 +32,13 @@ import {
   isImportWalletWithPrivateKey,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
+  checkBatchDelegation,
   refreshCoins,
   removeAllWalletConnectSession,
   setCurrentCoin,
   syncCoinsWithServer,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import ModalBatchDelegation from 'components/ModalBatchDelegation';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
 import {toast} from 'react-toastify';
 import {
@@ -68,7 +70,8 @@ import {VerifyInfoModal} from 'components/VerifyInfo';
 import TextField from '@mui/material/TextField';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import BatchTransactionBanner from 'components/BatchTransactionBanner';
+// Batch sending is paused.
+// import BatchTransactionBanner from 'components/BatchTransactionBanner';
 import CoinSyncBanner from 'components/CoinSyncBanner';
 // import {
 //   setWalletConnectRequestModal,
@@ -108,6 +111,7 @@ const Home = () => {
 
   // const [modalVisible, setmodalVisible] = useState(false);
   const [backupModalVisible, setBackupModalVisible] = useState(false);
+  const [batchDelegationNotice, setBatchDelegationNotice] = useState(null);
   // const [number, setNumber] = useState(1);
   const userCoins = useSelector(selectUserCoins, shallowEqual);
   const localCurrency = useSelector(getLocalCurrency);
@@ -163,6 +167,23 @@ const Home = () => {
       setList(userCoins);
     })();
   }, [userCoins]);
+
+  // Page load and wallet switch; the thunk throttles and skips unlisted
+  // addresses without any network call.
+  useEffect(() => {
+    let active = true;
+    dispatch(checkBatchDelegation())
+      .unwrap()
+      .then(notice => {
+        if (active && notice) {
+          setBatchDelegationNotice(notice);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [currentWallet?.clientId, dispatch]);
 
   // useEffect(() => {}, [newItem, dispatch]);
 
@@ -232,7 +253,9 @@ const Home = () => {
       > */}
       <main className={classNames.container}>
         <div>
+          {/* Batch sending is paused.
           <BatchTransactionBanner />
+          */}
           <CoinSyncBanner />
           {!!newsMessage && (
             <div className={classNames.syncView}>
@@ -381,6 +404,10 @@ const Home = () => {
               qrScheme={qrScheme}
             /> */}
       {/* </ErrorBoundary> */}
+      <ModalBatchDelegation
+        notice={batchDelegationNotice}
+        onClose={() => setBatchDelegationNotice(null)}
+      />
       <VerifyInfoModal
         visible={backupModalVisible}
         onClose={() => {

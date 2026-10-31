@@ -31,6 +31,10 @@ import {
 } from 'dok-wallet-blockchain-networks/helper/walletConnectSession';
 import {showToast} from 'utils/toast';
 import WalletConnectModalHeader from 'components/WalletConnectModalHeader';
+import {
+  getWalletConnectVerifyStatus,
+  isRiskyVerifyStatus,
+} from 'dok-wallet-blockchain-networks/helper/walletConnectVerify';
 import WalletConnectChainRow from 'components/WalletConnectChainRow';
 
 const style = {
@@ -78,6 +82,7 @@ const WalletConnectRequestModal = props => {
   const allCoins = useSelector(selectAllCoins);
   const currentWallet = useSelector(selectCurrentWallet);
   const [chainData, setChainData] = useState([]);
+  const [verifyAcknowledged, setVerifyAcknowledged] = useState(false);
   const [unsupportedRequiredChains, setUnsupportedRequiredChains] = useState(
     [],
   );
@@ -137,6 +142,11 @@ const WalletConnectRequestModal = props => {
     unsupportedRequiredChains.length === 0 &&
     missingRequired.length === 0 &&
     Object.keys(namespaces).length > 0;
+  // A flagged or mismatched domain needs an explicit acknowledgement.
+  const isVerifyRisky = isRiskyVerifyStatus(
+    getWalletConnectVerifyStatus(requestData?.verifyContext).status,
+  );
+  const approveDisabled = !canApprove || (isVerifyRisky && !verifyAcknowledged);
   let errorText = '';
   if (unsupportedRequiredChains.length) {
     errorText = `The dApp requires ${unsupportedRequiredChains.join(
@@ -239,7 +249,14 @@ const WalletConnectRequestModal = props => {
       aria-describedby='modal-modal-description'>
       <Box sx={style}>
         <div className={styles.container}>
-          <WalletConnectModalHeader image={image} title={title} url={url} />
+          <WalletConnectModalHeader
+            image={image}
+            title={title}
+            url={url}
+            verifyContext={requestData?.verifyContext}
+            acknowledged={verifyAcknowledged}
+            onToggleAcknowledged={() => setVerifyAcknowledged(prev => !prev)}
+          />
           <p className={styles.chainTitle}>{'Chains'}</p>
           {chainData.map((item, index) => (
             <div className={styles.itemView} key={item.key + index}>
@@ -303,9 +320,9 @@ const WalletConnectRequestModal = props => {
                 {'Reject'}
               </button>
               <button
-                disabled={!canApprove}
+                disabled={approveDisabled}
                 style={{
-                  backgroundColor: !canApprove
+                  backgroundColor: approveDisabled
                     ? 'var(--gray)'
                     : 'var(--background)',
                 }}
