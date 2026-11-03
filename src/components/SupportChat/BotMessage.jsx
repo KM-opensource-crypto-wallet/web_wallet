@@ -7,18 +7,25 @@ import styles from './SupportChat.module.css';
 
 const MARKDOWN_COMPONENTS = {a: SafeLink};
 
-const BotMessage = ({message, disabled, onPick, t}) => {
+// Related questions belong to the latest answer only, and skip what was asked.
+const BotMessage = ({message, latest, asked, disabled, onPick, t}) => {
   if (message.kind === 'answer') {
+    const related = latest
+      ? message.related.filter(chip => !asked.has(chip.title))
+      : [];
     return (
       <>
-        <div className={`${styles.bubble} ${styles.bot}`} dir='auto'>
+        <div
+          className={`${styles.bubble} ${styles.bot}`}
+          data-answer='true'
+          dir='auto'>
           <Markdown components={MARKDOWN_COMPONENTS} {...MARKDOWN_PROPS}>
             {message.text}
           </Markdown>
         </div>
         <Chips
           title='related'
-          chips={message.related}
+          chips={related}
           disabled={disabled}
           onPick={onPick}
           t={t}

@@ -164,6 +164,35 @@ describe('SupportChat behaviour', () => {
     expect(getStarters).toHaveBeenCalledTimes(1);
   });
 
+  it('shows related questions only under the latest answer and skips asked ones', async () => {
+    send
+      .mockResolvedValueOnce(
+        answer('First answer', {
+          related: [
+            {id: 'r1', title: 'Related one'},
+            {id: 'r2', title: 'Related two'},
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        answer('Second answer', {
+          related: [
+            {id: 'r2', title: 'Related two'},
+            {id: 'r3', title: 'Related three'},
+          ],
+        }),
+      );
+    render(<SupportChat />);
+    await openChat();
+    await ask('first question');
+    expect(screen.getByText('Related one')).toBeTruthy();
+    await ask('Related two');
+    expect(screen.queryByText('Related one')).toBeNull();
+    expect(screen.getByText('Related three')).toBeTruthy();
+    // "Related two" was asked, so it appears only as the user's own bubble.
+    expect(screen.getAllByText('Related two')).toHaveLength(1);
+  });
+
   it('does not refetch starters when reopened', async () => {
     render(<SupportChat />);
     await openChat();

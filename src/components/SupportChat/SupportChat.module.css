@@ -137,8 +137,10 @@
 .newConversation {
   border: none;
   background: none;
-  color: var(--background);
-  font-size: 13px;
+  /* Brand orange blended with the text colour: at least 5:1 in both themes. */
+  color: color-mix(in srgb, var(--background) 55%, var(--font));
+  font-weight: 600;
+  font-size: 14px;
   font-family: inherit;
   cursor: pointer;
   padding: 4px 8px;
@@ -146,10 +148,10 @@
 
 .notice {
   margin: 0;
-  padding: 8px 16px;
-  font-size: 12px;
-  background-color: var(--lightBackground);
-  color: color-mix(in srgb, var(--font) 68%, transparent);
+  padding: 0 16px 10px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--font) 80%, transparent);
 }
 
 .log {
@@ -165,11 +167,11 @@
 }
 
 .bubble {
-  max-width: 88%;
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 14px;
-  line-height: 1.45;
+  max-width: 90%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 15px;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
@@ -185,6 +187,14 @@
 .bubble ul {
   margin: 0 0 8px;
   padding-left: 1.4em;
+}
+
+.bubble ol {
+  list-style: decimal;
+}
+
+.bubble ul {
+  list-style: disc;
 }
 
 .bubble ol:last-child,
@@ -204,18 +214,23 @@
 
 .bot {
   align-self: flex-start;
-  background-color: var(--lightBackground);
+  /* A soft filled surface: the answer is the main thing on screen. */
+  background-color: color-mix(
+    in srgb,
+    var(--font) 9%,
+    var(--secondaryBackgroundColor)
+  );
   color: var(--font);
-  border: solid 1px var(--whiteOutline);
 }
 
 .error {
   border-inline-start: solid 3px var(--error);
 }
 
+/* 15% black keeps the brand orange but gives white text 4.7:1 (AA). */
 .user {
   align-self: flex-end;
-  background-color: var(--background);
+  background-color: color-mix(in srgb, var(--background) 85%, black);
   color: var(--title);
 }
 
@@ -266,15 +281,17 @@
   width: 100%;
   margin: 0;
   font-size: 12px;
-  color: color-mix(in srgb, var(--font) 68%, transparent);
+  color: color-mix(in srgb, var(--font) 85%, transparent);
 }
 
+/* Orange outline and tint with normal text colour: 8:1 or better, unlike
+   orange text (3.6:1) on the dark panel. */
 .chip {
-  border: solid 1px var(--background);
-  background: none;
-  color: var(--background);
+  border: solid 1px color-mix(in srgb, var(--background) 65%, transparent);
+  background-color: color-mix(in srgb, var(--background) 7%, transparent);
+  color: var(--font);
   border-radius: 16px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   font-size: 13px;
   font-family: inherit;
   text-align: start;
@@ -283,7 +300,8 @@
 
 .chip:hover:not(:disabled),
 .chip:focus-visible {
-  background-color: color-mix(in srgb, var(--background) 12%, transparent);
+  background-color: color-mix(in srgb, var(--background) 18%, transparent);
+  border-color: var(--background);
 }
 
 .chip:disabled {
@@ -373,12 +391,10 @@
 }
 
 .input:focus {
+  outline: none;
   border-color: var(--background);
-}
-
-.input:focus-visible {
-  outline: 2px solid var(--background);
-  outline-offset: 1px;
+  /* One ring (border plus a 1px shadow), still clearly visible for keyboards. */
+  box-shadow: 0 0 0 1px var(--background);
 }
 
 .srOnly {

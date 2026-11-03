@@ -27,10 +27,33 @@ const ChatBody = ({
   const busy = state.pending !== null;
   const messageCount = state.messages.length;
 
+  // A new answer scrolls to its first line, so long answers are read from the
+  // top; everything else (your message, the loading bubble) scrolls to the end.
   useEffect(() => {
     const el = logRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    const last = state.messages[messageCount - 1];
+    const answers = el.querySelectorAll('[data-answer]');
+    if (
+      !busy &&
+      last?.role === 'bot' &&
+      last.kind === 'answer' &&
+      answers.length
+    ) {
+      const top =
+        answers[answers.length - 1].getBoundingClientRect().top -
+        el.getBoundingClientRect().top +
+        el.scrollTop;
+      el.scrollTop = Math.max(0, top - 8);
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
+    // Only a new message or a change of the busy flag moves the scroll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messageCount, busy]);
+  const asked = new Set(
+    state.messages.filter(m => m.role === 'user').map(m => m.text),
+  );
 
   return (
     <>
@@ -50,11 +73,14 @@ const ChatBody = ({
           onClick={onReset}>
           {t('newConversation')}
         </button>
-        <IconButton aria-label={t('close')} onClick={onClose} size='small'>
+        <IconButton
+          aria-label={t('close')}
+          onClick={onClose}
+          size='small'
+          sx={{color: 'var(--font)'}}>
           <CloseIcon fontSize='small' />
         </IconButton>
       </div>
-      <p className={styles.notice}>{t('notice')}</p>
       <div
         ref={logRef}
         className={styles.log}
@@ -80,7 +106,8 @@ const ChatBody = ({
             <ContactOptions t={t} />
           </div>
         ) : null}
-        {state.starters ? (
+        {/* Once the conversation starts, the answer is the focus: no starters. */}
+        {state.starters && state.messages.length === 0 ? (
           <Chips
             title='startersTitle'
             chips={state.starters}
@@ -89,7 +116,7 @@ const ChatBody = ({
             t={t}
           />
         ) : null}
-        {state.messages.map(message =>
+        {state.messages.map((message, index) =>
           message.role === 'user' ? (
             <div
               key={message.id}
@@ -103,6 +130,8 @@ const ChatBody = ({
             <BotMessage
               key={message.id}
               message={message}
+              latest={index === messageCount - 1}
+              asked={asked}
               disabled={busy}
               onPick={onPick}
               t={t}
@@ -128,10 +157,16 @@ const ChatBody = ({
           type='submit'
           aria-label={t('send')}
           disabled={busy || input.trim() === ''}
-          color='primary'>
+          sx={{
+            color: 'var(--background)',
+            '&.Mui-disabled': {
+              color: 'color-mix(in srgb, var(--font) 35%, transparent)',
+            },
+          }}>
           <SendIcon />
         </IconButton>
       </form>
+      <p className={styles.notice}>{t('notice')}</p>
     </>
   );
 };
