@@ -45,8 +45,11 @@ import {getLockTime} from 'dok-wallet-blockchain-networks/redux/settings/setting
 import Loading from '../Loading';
 import {
   getWalletConnectDetails,
+  isSupportChatBrand,
   setWhiteLabelInfo,
 } from 'whitelabel/whiteLabelInfo';
+import SupportChat from 'components/SupportChat';
+import {isSupportChatHidden} from 'components/SupportChat/policy';
 import {captchaRef} from 'utils/apiCaptcha';
 import {
   GoogleReCaptchaProvider,
@@ -401,6 +404,9 @@ function AppRouting({children, wlData}) {
           )}
         </div>
         <CoinSyncWidget />
+        {rountingDone && !disableMessage && isSupportChatBrand() ? (
+          <SupportChat hidden={isSupportChatHidden(pathname)} />
+        ) : null}
         <ToastContainer
           position='bottom-right'
           draggable

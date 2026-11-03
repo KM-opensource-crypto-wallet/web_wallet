@@ -46,6 +46,15 @@ export const isBackupRestoreEnabled = () => {
   return whiteLabelId === DOK_WALLET_ID || whiteLabelId === KIML_WALLET_ID;
 };
 
+// Brands that ship the support chat. Add KIML_WALLET_ID for the Kiml release.
+export const SUPPORT_CHAT_BRAND_IDS = [DOK_WALLET_ID];
+
+// False until setWhiteLabelInfo has run, so the default Dok id from
+// getWhiteLabelId() never enables the chat by accident.
+export const isSupportChatBrand = () =>
+  Boolean(whiteLabelInfo?._id) &&
+  SUPPORT_CHAT_BRAND_IDS.includes(whiteLabelInfo._id);
+
 export const getHostName = () => {
   if (typeof window !== 'undefined') {
     const currentHostName = window?.location?.hostname;
