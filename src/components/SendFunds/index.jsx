@@ -29,6 +29,7 @@ import {
   validateNumberInInput,
   isBitcoinChain,
   isEip7702SupportedChain,
+  isBatchSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
 import PageTitle from 'components/PageTitle';
 import s from './SendFunds.module.css';
@@ -619,8 +620,7 @@ const SendFunds = () => {
                       )}
                     </div>
                   </div>
-                  {/* Batch sending is paused.
-                  {isEip7702SupportedChain(currentCoin?.chain_name) && (
+                  {isBatchSupportedChain(currentCoin?.chain_name) && (
                     <button
                       disabled={!isValid}
                       className={s.button}
@@ -633,7 +633,6 @@ const SendFunds = () => {
                       <p className={s.buttonTitle}>Add to Batch</p>
                     </button>
                   )}
-                  */}
                   <button
                     disabled={!isValid}
                     className={s.button}
