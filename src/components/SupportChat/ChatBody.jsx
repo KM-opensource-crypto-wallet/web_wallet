@@ -6,7 +6,13 @@ import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import {getAppTitle} from 'whitelabel/whiteLabelInfo';
 import BotMessage from './BotMessage';
-import {Chips, ContactOptions, ERROR_KEYS, LoadingStatus} from './ChatParts';
+import {
+  BrandAvatar,
+  Chips,
+  ContactOptions,
+  ERROR_KEYS,
+  LoadingStatus,
+} from './ChatParts';
 import styles from './SupportChat.module.css';
 
 const MAX_INPUT = 1000;
@@ -58,12 +64,7 @@ const ChatBody = ({
   return (
     <>
       <div className={styles.header}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className={styles.avatar}
-          src='/images/support-chat-launcher.png'
-          alt=''
-        />
+        <BrandAvatar />
         <h2 id={titleId} className={styles.title}>
           {t('title')}
         </h2>

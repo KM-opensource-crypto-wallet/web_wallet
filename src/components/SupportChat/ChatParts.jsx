@@ -3,9 +3,52 @@ import React, {createContext, useContext, useEffect, useState} from 'react';
 import Link from 'next/link';
 import {useSelector} from 'react-redux';
 import {getIsVaultUnlocked} from 'dok-wallet-blockchain-networks/redux/auth/authSelectors';
-import {getContactUsEmail, getWhiteLabelId} from 'whitelabel/whiteLabelInfo';
+import {
+  DOK_WALLET_ID,
+  getAppIcon,
+  getAppIconDark,
+  getContactUsEmail,
+  getWhiteLabelId,
+} from 'whitelabel/whiteLabelInfo';
+import {ThemeContext} from 'theme/ThemeContext';
 import {getContactOptions, isAllowedHref} from './policy';
 import styles from './SupportChat.module.css';
+
+// Chat bubble on a squircle filled with the white label's theme colour
+// (--background), so every brand gets its own colour with no per-brand asset.
+export const ChatIcon = ({className = ''}) => (
+  <span className={`${styles.chatIcon} ${className}`} aria-hidden='true'>
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img src='/images/support-chat-glyph.png' alt='' />
+  </span>
+);
+
+// getAppIcon() falls back to the Dok icon when a white label has none, so that
+// fallback is only trusted for Dok; other brands then get the coloured ChatIcon.
+const DOK_DEFAULT_ICON = '/dokwallet.ico';
+
+// The header avatar is the white label's own app icon (light or dark, as
+// elsewhere in the app), falling back to ChatIcon if missing or broken.
+export const BrandAvatar = () => {
+  const {themeType} = useContext(ThemeContext);
+  const [failedSrc, setFailedSrc] = useState(null);
+  const icon = themeType === 'dark' ? getAppIconDark() : getAppIcon();
+  const usable =
+    Boolean(icon) &&
+    (icon !== DOK_DEFAULT_ICON || getWhiteLabelId() === DOK_WALLET_ID);
+  if (!usable || failedSrc === icon) {
+    return <ChatIcon className={styles.avatar} />;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      className={styles.avatar}
+      src={icon}
+      alt=''
+      onError={() => setFailedSrc(icon)}
+    />
+  );
+};
 
 export const ERROR_KEYS = {
   invalid: 'errors.invalid',

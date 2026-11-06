@@ -25,11 +25,20 @@
   outline-offset: 3px;
 }
 
-.launcher img {
+.chatIcon {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 13px;
+  background: var(--background);
+  -webkit-mask: url('/images/support-chat-shape.png') center / 100% 100%
+    no-repeat;
+  mask: url('/images/support-chat-shape.png') center / 100% 100% no-repeat;
+}
+
+.chatIcon img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .bounce {
@@ -103,8 +112,10 @@
 }
 
 .avatar {
+  flex-shrink: 0;
   width: 28px;
   height: 28px;
+  object-fit: contain;
   margin-right: 10px;
   border-radius: 8px;
 }
@@ -260,7 +271,8 @@
 }
 
 .contactList a {
-  color: var(--background);
+  /* Same mix as the title: the raw brand colour is under 4.5:1 on white. */
+  color: color-mix(in srgb, var(--background) 55%, var(--font));
   font-weight: 600;
   text-decoration: none;
 }

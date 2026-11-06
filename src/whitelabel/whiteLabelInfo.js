@@ -46,8 +46,9 @@ export const isBackupRestoreEnabled = () => {
   return whiteLabelId === DOK_WALLET_ID || whiteLabelId === KIML_WALLET_ID;
 };
 
-// Brands that ship the support chat. Add KIML_WALLET_ID for the Kiml release.
-export const SUPPORT_CHAT_BRAND_IDS = [DOK_WALLET_ID];
+// Brands that ship the support chat. The backend must enable the same ids in
+// utils/supportChat/brands.js, otherwise the widget hides itself (404 disabled).
+export const SUPPORT_CHAT_BRAND_IDS = [DOK_WALLET_ID, KIML_WALLET_ID];
 
 // False until setWhiteLabelInfo has run, so the default Dok id from
 // getWhiteLabelId() never enables the chat by accident.

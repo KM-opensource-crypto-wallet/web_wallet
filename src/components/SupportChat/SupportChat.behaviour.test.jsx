@@ -43,6 +43,8 @@ jest.mock('@mui/material/useMediaQuery', () => ({
 }));
 jest.mock('whitelabel/whiteLabelInfo', () => ({
   DOK_WALLET_ID: 'dok-id',
+  getAppIcon: () => '/brand-icon.png',
+  getAppIconDark: () => '/brand-icon-dark.png',
   getAppTitle: () => 'Dok Wallet',
   getContactUsEmail: () => 'help@example.com',
   getWhiteLabelId: () => 'dok-id',

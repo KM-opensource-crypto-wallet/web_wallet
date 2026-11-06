@@ -19,7 +19,7 @@ import {getStarters, mapResponse, send} from './supportChatApi';
 import {findSecret} from './secretDetector';
 import {getRoutePattern} from './policy';
 import ChatBody from './ChatBody';
-import {LinkHostsContext, NavigateContext} from './ChatParts';
+import {ChatIcon, LinkHostsContext, NavigateContext} from './ChatParts';
 import {useLauncherAttention} from './useLauncherAttention';
 import styles from './SupportChat.module.css';
 
@@ -248,8 +248,7 @@ const SupportChat = ({hidden = false}) => {
         aria-expanded={panelOpen}
         className={`${styles.launcher} ${bounce ? styles.bounce : ''}`}
         onClick={handleToggle}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src='/images/support-chat-launcher.png' alt='' />
+        <ChatIcon />
       </button>
       {isMobile ? (
         <Dialog
