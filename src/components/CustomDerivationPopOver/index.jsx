@@ -8,6 +8,7 @@ import {
   refreshCurrentCoin,
   setSelectedDeriveAddress,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
+import {delay} from 'dok-wallet-blockchain-networks/helper';
 import {showToast} from 'utils/toast';
 import {reportThunkRejection} from 'utils/thunkErrors';
 import DokPopover from 'components/DokPopover';
@@ -54,26 +55,21 @@ const CustomDerivationPopOver = ({selectedItem}) => {
 
   const onSelectAddress = useCallback(async () => {
     popoverRef.current?.close();
-    setTimeout(() => {
-      dispatch(
-        setSelectedDeriveAddress({
-          address: selectedItem?.address,
-          chain_name: currentCoin?.chain_name,
-        }),
-      );
-    }, 400);
-    await dispatch(
-      refreshCurrentCoin({
-        currentCoin: {
-          ...currentCoin,
-          address: selectedItem?.address,
-          privateKey: selectedItem?.privateKey,
-        },
+    // Let the close animation finish, then select first and refresh from the
+    // store. Refreshing before the selection (it used to run 400 ms later in
+    // a setTimeout) snapshotted the native coin on its old address and wrote
+    // it back afterwards, silently reverting the selection.
+    await delay(400);
+    dispatch(
+      setSelectedDeriveAddress({
+        address: selectedItem?.address,
+        chain_name: currentCoin?.chain_name,
       }),
-    )
+    );
+    await dispatch(refreshCurrentCoin({}))
       .unwrap()
       .catch(reportThunkRejection({area: 'coin', op: 'refresh_address'}));
-  }, [currentCoin, dispatch, selectedItem?.address, selectedItem?.privateKey]);
+  }, [currentCoin?.chain_name, dispatch, selectedItem?.address]);
 
   const onPressCopyAddress = useCallback(() => {
     popoverRef.current?.close();
