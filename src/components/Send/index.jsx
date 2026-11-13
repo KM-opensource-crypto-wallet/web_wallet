@@ -160,21 +160,15 @@ const SendScreen = () => {
           chain_name: currentCoin?.chain_name,
         }),
       );
-
-      await dispatch(
-        refreshCurrentCoin({
-          isFetchUnclaimDeposit: true,
-          currentCoin: {
-            ...currentCoin,
-            address: subItem?.address,
-            privateKey: subItem?.privateKey || currentCoin?.privateKey,
-          },
-        }),
-      )
+      // No coin override: the thunk reads the coin the reducer just wrote,
+      // with the key that belongs to the new address. Building the coin here
+      // from the render-time closure paired the new address with the old key
+      // whenever the entry had none ("transaction from mismatch").
+      await dispatch(refreshCurrentCoin({isFetchUnclaimDeposit: true}))
         .unwrap()
         .catch(reportThunkRejection({area: 'coin', op: 'refresh_address'}));
     },
-    [currentCoin, dispatch],
+    [currentCoin?.chain_name, dispatch],
   );
 
   const onSuccessOfPrivateKey = useCallback(() => {
