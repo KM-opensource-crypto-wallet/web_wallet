@@ -53,7 +53,7 @@ export const SUPPORT_CHAT_BRAND_IDS = [DOK_WALLET_ID, KIML_WALLET_ID];
 // False until setWhiteLabelInfo has run, so the default Dok id from
 // getWhiteLabelId() never enables the chat by accident.
 export const isSupportChatBrand = () =>
-  Boolean(whiteLabelInfo?._id) &&
+  isWhiteLabelInfoLoaded() &&
   SUPPORT_CHAT_BRAND_IDS.includes(whiteLabelInfo._id);
 
 export const getHostName = () => {

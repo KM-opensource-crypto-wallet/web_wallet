@@ -12,6 +12,10 @@ jest.mock('whitelabel/whiteLabelInfo', () => ({
   getContactUsEmail: () => '',
   getWhiteLabelId: () => mockWl.id,
 }));
+jest.mock('utils/contactSupport', () => ({
+  buildSupportEmailUrl: () => 'mailto:help@example.com?subject=support',
+  buildSupportTelegramUrl: () => 'https://t.me/dokwallet',
+}));
 
 const render = (themeType = 'light') =>
   renderToString(

@@ -1,58 +1,9 @@
-jest.mock('whitelabel/whiteLabelInfo', () => ({
-  DOK_WALLET_ID: 'dok-id',
-  getAppIcon: () => '/brand-icon.png',
-  getAppIconDark: () => '/brand-icon-dark.png',
-}));
-
 import {
   getContactOptions,
   getRoutePattern,
   isAllowedHref,
-  isSupportChatHidden,
   MARKDOWN_PROPS,
-  SUPPORT_CHAT_HIDDEN_ROUTES,
 } from './policy';
-
-describe('isSupportChatHidden', () => {
-  it.each(SUPPORT_CHAT_HIDDEN_ROUTES)('hides %s in every form', route => {
-    expect(isSupportChatHidden(route)).toBe(true);
-    expect(isSupportChatHidden(`${route}/`)).toBe(true);
-    expect(isSupportChatHidden(`/wallet/abc123${route}`)).toBe(true);
-    expect(isSupportChatHidden(`/wallet/abc123${route}/`)).toBe(true);
-    expect(isSupportChatHidden(`${route}/sub/page`)).toBe(true);
-  });
-
-  it('covers every /verify screen', () => {
-    for (const s of [
-      'verify-create',
-      'verify-screen',
-      'verify-login',
-      'verify-learn',
-    ]) {
-      expect(isSupportChatHidden(`/verify/${s}`)).toBe(true);
-    }
-  });
-
-  it.each([
-    '/auth/login',
-    '/auth/registration',
-    '/auth/create-wallet',
-    '/auth/reset-wallet',
-    '/wallets/create-wallet',
-    '/wallet/abc/home',
-    '/settings',
-    '/verifyx',
-    '/settings/change-password-x',
-    '/',
-  ])('shows %s', path => {
-    expect(isSupportChatHidden(path)).toBe(false);
-  });
-
-  it('handles a missing pathname', () => {
-    expect(isSupportChatHidden(undefined)).toBe(false);
-    expect(isSupportChatHidden(null)).toBe(false);
-  });
-});
 
 describe('isAllowedHref', () => {
   const hosts = ['t.me', 'dokwallet.com', 'www.dokwallet.com'];
@@ -107,38 +58,33 @@ describe('isAllowedHref', () => {
 });
 
 describe('getContactOptions', () => {
-  it('returns email, telegram (Dok only) and contact us (unlocked only), in order', () => {
+  const emailHref = 'mailto:a@b.com?subject=Dok%20support';
+  const telegramHref = 'https://t.me/kimlwallet?text=Support%20ID';
+
+  it('returns email, telegram and contact us (unlocked only), in order', () => {
     expect(
-      getContactOptions({
-        email: 'a@b.com',
-        whiteLabelId: 'dok-id',
-        unlocked: true,
-      }),
+      getContactOptions({emailHref, telegramHref, unlocked: true}),
     ).toEqual([
-      {type: 'email', href: 'mailto:a@b.com'},
-      {type: 'telegram', href: 'https://t.me/dokwallet'},
+      {type: 'email', href: emailHref},
+      {type: 'telegram', href: telegramHref},
       {type: 'contactUs', href: '/contact-us'},
     ]);
   });
 
   it('omits what does not apply', () => {
     expect(
-      getContactOptions({
-        email: 'a@b.com',
-        whiteLabelId: 'other',
-        unlocked: false,
-      }),
-    ).toEqual([{type: 'email', href: 'mailto:a@b.com'}]);
+      getContactOptions({emailHref, telegramHref: '', unlocked: false}),
+    ).toEqual([{type: 'email', href: emailHref}]);
     expect(
-      getContactOptions({email: '', whiteLabelId: 'other', unlocked: false}),
+      getContactOptions({emailHref: '', telegramHref: '', unlocked: false}),
     ).toEqual([]);
     expect(
       getContactOptions({
-        email: undefined,
-        whiteLabelId: 'dok-id',
+        emailHref: undefined,
+        telegramHref,
         unlocked: false,
       }),
-    ).toEqual([{type: 'telegram', href: 'https://t.me/dokwallet'}]);
+    ).toEqual([{type: 'telegram', href: telegramHref}]);
   });
 });
 

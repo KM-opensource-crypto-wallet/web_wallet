@@ -49,6 +49,19 @@ jest.mock('whitelabel/whiteLabelInfo', () => ({
   getContactUsEmail: () => 'help@example.com',
   getWhiteLabelId: () => 'dok-id',
 }));
+jest.mock('utils/contactSupport', () => ({
+  buildSupportEmailUrl: () => 'mailto:help@example.com?subject=support',
+  buildSupportTelegramUrl: () => 'https://t.me/dokwallet',
+}));
+// web3.js needs TextEncoder at load, which jsdom lacks; no case here sends a
+// Solana key (secretDetector.test.js covers that against the real library).
+jest.mock('@solana/web3.js', () => ({
+  Keypair: {
+    fromSecretKey: () => {
+      throw new Error('not a key');
+    },
+  },
+}));
 jest.mock('./supportChatApi', () => ({
   ...jest.requireActual('./supportChatApi'),
   getStarters: jest.fn(),
@@ -294,19 +307,6 @@ describe('SupportChat behaviour', () => {
       });
       expect(screen.queryByText('Too late')).toBeNull();
     });
-  });
-
-  it('closes on a hidden route and keeps the conversation when shown again', async () => {
-    const {rerender} = render(<SupportChat />);
-    await openChat();
-    await ask('kept question');
-    rerender(<SupportChat hidden />);
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(screen.queryByLabelText('launcher')).toBeNull();
-    rerender(<SupportChat />);
-    await openChat();
-    expect(screen.getByText('kept question')).toBeTruthy();
-    expect(screen.getByText('First answer')).toBeTruthy();
   });
 
   it('removes the launcher when the backend reports disabled', async () => {

@@ -1,30 +1,3 @@
-import {stripTrailingSlash} from 'utils/routes';
-import {DOK_WALLET_ID} from 'whitelabel/whiteLabelInfo';
-
-// Single source of truth for the routes where the widget is hidden.
-export const SUPPORT_CHAT_HIDDEN_ROUTES = [
-  '/auth/import-wallet',
-  '/auth/import-wallet-by-private-key',
-  '/auth/restore-from-device',
-  '/wallets/import-wallet',
-  '/wallets/import-wallet-by-private-key',
-  '/wallets/hide-wallet',
-  '/verify',
-  '/settings/change-password',
-  '/settings/restore',
-  '/settings/backup',
-];
-
-export const isSupportChatHidden = pathname => {
-  const path = stripTrailingSlash(pathname || '').replace(
-    /^\/wallet\/[^/]+/,
-    '',
-  );
-  return SUPPORT_CHAT_HIDDEN_ROUTES.some(
-    route => path === route || path.startsWith(`${route}/`),
-  );
-};
-
 const APP_ORIGIN = 'https://app.invalid';
 // Control characters, whitespace and backslashes are never valid in a KB link.
 const UNSAFE_HREF = /[\u0000- \u007f-\u009f\\]/;
@@ -78,13 +51,15 @@ export const isAllowedHref = (href, linkHosts) => {
   }
 };
 
-export const getContactOptions = ({email, whiteLabelId, unlocked}) => {
+// The hrefs come from utils/contactSupport (subject and Support ID prefilled,
+// Telegram only for brands with a support account); empty means not offered.
+export const getContactOptions = ({emailHref, telegramHref, unlocked}) => {
   const options = [];
-  if (typeof email === 'string' && email) {
-    options.push({type: 'email', href: `mailto:${email}`});
+  if (typeof emailHref === 'string' && emailHref) {
+    options.push({type: 'email', href: emailHref});
   }
-  if (whiteLabelId === DOK_WALLET_ID) {
-    options.push({type: 'telegram', href: 'https://t.me/dokwallet'});
+  if (typeof telegramHref === 'string' && telegramHref) {
+    options.push({type: 'telegram', href: telegramHref});
   }
   if (unlocked) {
     options.push({type: 'contactUs', href: '/contact-us'});

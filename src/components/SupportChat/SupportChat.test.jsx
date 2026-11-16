@@ -20,6 +20,10 @@ jest.mock('whitelabel/whiteLabelInfo', () => ({
   getContactUsEmail: () => 'help@example.com',
   getWhiteLabelId: () => 'dok-id',
 }));
+jest.mock('utils/contactSupport', () => ({
+  buildSupportEmailUrl: () => 'mailto:help@example.com?subject=support',
+  buildSupportTelegramUrl: () => 'https://t.me/dokwallet',
+}));
 jest.mock('./supportChatApi', () => ({
   getStarters: jest.fn(() => new Promise(() => {})),
   send: jest.fn(() => new Promise(() => {})),
@@ -31,9 +35,5 @@ describe('SupportChat', () => {
     const html = renderToString(<SupportChat />);
     expect(html).toContain('aria-label="launcher"');
     expect(html).not.toContain('role="log"');
-  });
-
-  it('renders nothing while hidden', () => {
-    expect(renderToString(<SupportChat hidden />)).toBe('');
   });
 });

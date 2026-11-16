@@ -48,13 +48,17 @@ import {
   isSupportChatBrand,
   setWhiteLabelInfo,
 } from 'whitelabel/whiteLabelInfo';
-import SupportChat from 'components/SupportChat';
-import {isSupportChatHidden} from 'components/SupportChat/policy';
 import {captchaRef} from 'utils/apiCaptcha';
 import {
   GoogleReCaptchaProvider,
   useGoogleReCaptcha,
 } from 'react-google-recaptcha-v3';
+import dynamic from 'next/dynamic';
+
+// Own chunk (react-markdown, bip39 wordlist): fetched only for chat brands.
+const SupportChat = dynamic(() => import('components/SupportChat'), {
+  ssr: false,
+});
 
 const CaptchaSetup = () => {
   const {executeRecaptcha} = useGoogleReCaptcha();
@@ -405,7 +409,7 @@ function AppRouting({children, wlData}) {
         </div>
         <CoinSyncWidget />
         {rountingDone && !disableMessage && isSupportChatBrand() ? (
-          <SupportChat hidden={isSupportChatHidden(pathname)} />
+          <SupportChat />
         ) : null}
         <ToastContainer
           position='bottom-right'

@@ -9,15 +9,13 @@ describe('useLauncherAttention', () => {
   });
   afterEach(() => jest.useRealTimers());
 
-  test('bounces and shows the teaser once after the first delay', () => {
+  test('shows the teaser once after the first delay, then hides it', () => {
     const {result} = renderHook(() => useLauncherAttention(true));
     expect(result.current.teaser).toBe(false);
     act(() => jest.advanceTimersByTime(10000));
-    expect(result.current.bounce).toBe(true);
     expect(result.current.teaser).toBe(true);
     act(() => jest.advanceTimersByTime(10000));
     expect(result.current.teaser).toBe(false);
-    expect(result.current.bounce).toBe(false);
   });
 
   test('does not show the teaser twice in one session', () => {
@@ -27,7 +25,6 @@ describe('useLauncherAttention', () => {
     const second = renderHook(() => useLauncherAttention(true));
     act(() => jest.advanceTimersByTime(10000));
     expect(second.result.current.teaser).toBe(false);
-    expect(second.result.current.bounce).toBe(true);
   });
 
   test('stays quiet when inactive and clears when it turns inactive', () => {
@@ -36,21 +33,17 @@ describe('useLauncherAttention', () => {
       {initialProps: {active: false}},
     );
     act(() => jest.advanceTimersByTime(60000));
-    expect(result.current.bounce).toBe(false);
     expect(result.current.teaser).toBe(false);
     rerender({active: true});
     act(() => jest.advanceTimersByTime(10000));
     expect(result.current.teaser).toBe(true);
     rerender({active: false});
     expect(result.current.teaser).toBe(false);
-    expect(result.current.bounce).toBe(false);
   });
 
-  test('repeats the bounce on an interval', () => {
-    const {result} = renderHook(() => useLauncherAttention(true));
-    act(() => jest.advanceTimersByTime(12000));
-    expect(result.current.bounce).toBe(false);
-    act(() => jest.advanceTimersByTime(33000));
-    expect(result.current.bounce).toBe(true);
+  test('leaves no timers running once the teaser is done', () => {
+    renderHook(() => useLauncherAttention(true));
+    act(() => jest.advanceTimersByTime(20000));
+    expect(jest.getTimerCount()).toBe(0);
   });
 });

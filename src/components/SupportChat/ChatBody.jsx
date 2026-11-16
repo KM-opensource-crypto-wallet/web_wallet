@@ -112,7 +112,6 @@ const ChatBody = ({
           <Chips
             title='startersTitle'
             chips={state.starters}
-            disabled={busy}
             onPick={onPick}
             t={t}
           />

@@ -11,6 +11,10 @@ import {
   getWhiteLabelId,
 } from 'whitelabel/whiteLabelInfo';
 import {ThemeContext} from 'theme/ThemeContext';
+import {
+  buildSupportEmailUrl,
+  buildSupportTelegramUrl,
+} from 'utils/contactSupport';
 import {getContactOptions, isAllowedHref} from './policy';
 import styles from './SupportChat.module.css';
 
@@ -131,8 +135,8 @@ export const ContactOptions = ({t}) => {
   const onNavigate = useContext(NavigateContext);
   const email = getContactUsEmail();
   const options = getContactOptions({
-    email,
-    whiteLabelId: getWhiteLabelId(),
+    emailHref: email ? buildSupportEmailUrl() : '',
+    telegramHref: buildSupportTelegramUrl(),
     unlocked,
   });
   if (options.length === 0) return null;

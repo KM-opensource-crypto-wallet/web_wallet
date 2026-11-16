@@ -38,7 +38,7 @@ const asChips = list =>
         .map(({id, title}) => ({id, title}))
     : [];
 
-const SupportChat = ({hidden = false}) => {
+const SupportChat = () => {
   const t = useTranslations('supportChat');
   const unlocked = useSelector(getIsVaultUnlocked);
   const [state, dispatch] = useReducer(chatReducer, initialState);
@@ -51,14 +51,10 @@ const SupportChat = ({hidden = false}) => {
   const pathname = usePathname();
   const params = useParams();
 
-  const visible = !hidden && !state.disabled;
-  // A hidden route closes the panel but keeps the conversation.
-  if (hidden && open) setOpen(false);
+  const visible = !state.disabled;
   const panelOpen = open && visible;
   const [hasOpened, setHasOpened] = useState(false);
-  const {bounce, teaser, dismissTeaser} = useLauncherAttention(
-    visible && !panelOpen && !hasOpened,
-  );
+  const {teaser} = useLauncherAttention(visible && !panelOpen && !hasOpened);
 
   // Lock: wipe the conversation (previous-value ref, as in AppRouting).
   useEffect(() => {
@@ -246,7 +242,7 @@ const SupportChat = ({hidden = false}) => {
         ref={launcherRef}
         aria-label={t('launcher')}
         aria-expanded={panelOpen}
-        className={`${styles.launcher} ${bounce ? styles.bounce : ''}`}
+        className={styles.launcher}
         onClick={handleToggle}>
         <ChatIcon />
       </button>
