@@ -31,6 +31,10 @@ import {
 } from 'dok-wallet-blockchain-networks/helper/walletConnectSession';
 import {showToast} from 'utils/toast';
 import WalletConnectModalHeader from 'components/WalletConnectModalHeader';
+import {
+  getWalletConnectVerifyStatus,
+  isRiskyVerifyStatus,
+} from 'dok-wallet-blockchain-networks/helper/walletConnectVerify';
 import WalletConnectChainRow from 'components/WalletConnectChainRow';
 
 const style = {
@@ -78,6 +82,9 @@ const WalletConnectRequestModal = props => {
   const allCoins = useSelector(selectAllCoins);
   const currentWallet = useSelector(selectCurrentWallet);
   const [chainData, setChainData] = useState([]);
+  // The tick belongs to one proposal: a different proposal starts unticked
+  // (this modal stays mounted across proposals).
+  const [acknowledgedProposalId, setAcknowledgedProposalId] = useState(null);
   const [unsupportedRequiredChains, setUnsupportedRequiredChains] = useState(
     [],
   );
@@ -87,6 +94,7 @@ const WalletConnectRequestModal = props => {
   const title = requestData?.name || '';
   const url = requestData?.url || '';
   const id = requestData?.id || '';
+  const verifyAcknowledged = !!id && acknowledgedProposalId === id;
   const sessionId = requestData?.sessionId || '';
   const relays = requestData?.relays || {};
 
@@ -137,6 +145,11 @@ const WalletConnectRequestModal = props => {
     unsupportedRequiredChains.length === 0 &&
     missingRequired.length === 0 &&
     Object.keys(namespaces).length > 0;
+  // A flagged or mismatched domain needs an explicit acknowledgement.
+  const isVerifyRisky = isRiskyVerifyStatus(
+    getWalletConnectVerifyStatus(requestData?.verifyContext).status,
+  );
+  const approveDisabled = !canApprove || (isVerifyRisky && !verifyAcknowledged);
   let errorText = '';
   if (unsupportedRequiredChains.length) {
     errorText = `The dApp requires ${unsupportedRequiredChains.join(
@@ -239,7 +252,16 @@ const WalletConnectRequestModal = props => {
       aria-describedby='modal-modal-description'>
       <Box sx={style}>
         <div className={styles.container}>
-          <WalletConnectModalHeader image={image} title={title} url={url} />
+          <WalletConnectModalHeader
+            image={image}
+            title={title}
+            url={url}
+            verifyContext={requestData?.verifyContext}
+            acknowledged={verifyAcknowledged}
+            onToggleAcknowledged={() =>
+              setAcknowledgedProposalId(prev => (prev === id ? null : id))
+            }
+          />
           <p className={styles.chainTitle}>{'Chains'}</p>
           {chainData.map((item, index) => (
             <div className={styles.itemView} key={item.key + index}>
@@ -303,9 +325,9 @@ const WalletConnectRequestModal = props => {
                 {'Reject'}
               </button>
               <button
-                disabled={!canApprove}
+                disabled={approveDisabled}
                 style={{
-                  backgroundColor: !canApprove
+                  backgroundColor: approveDisabled
                     ? 'var(--gray)'
                     : 'var(--background)',
                 }}

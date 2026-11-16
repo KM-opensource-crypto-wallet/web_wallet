@@ -619,6 +619,7 @@ const SendFunds = () => {
                       )}
                     </div>
                   </div>
+                  {/* Batch sending is paused.
                   {isEip7702SupportedChain(currentCoin?.chain_name) && (
                     <button
                       disabled={!isValid}
@@ -632,6 +633,7 @@ const SendFunds = () => {
                       <p className={s.buttonTitle}>Add to Batch</p>
                     </button>
                   )}
+                  */}
                   <button
                     disabled={!isValid}
                     className={s.button}

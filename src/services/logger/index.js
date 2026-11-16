@@ -122,6 +122,19 @@ export const setUserContext = masterClientId => {
   }
 };
 
+// What the user gives support: the full `user.id` set above, found in Sentry
+// with `user.id:<id>`. A random per-profile id the backend only stores, never
+// looks anything up by. Read back from the isolation scope (no module state),
+// so it also works on the crash screens outside the redux Provider.
+export const getSupportId = () => {
+  try {
+    const id = Sentry.getIsolationScope()?.getUser?.()?.id;
+    return id ? String(id) : '';
+  } catch (e) {
+    return '';
+  }
+};
+
 // Whitelabel identity for the current scope. In the browser this is the whole
 // session; on the server it is the current request (call it once per request
 // from the layout / route handler). Tags reach events, attributes reach logs.

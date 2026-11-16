@@ -1,6 +1,7 @@
 'use client';
 import {useEffect} from 'react';
 import {captureError} from 'services/logger';
+import ErrorSupportInfo from 'components/ErrorSupportInfo';
 
 // App Router boundary for render errors below the root layout. Next swallows
 // these, so they never reach Sentry's global handler without this report.
@@ -18,6 +19,7 @@ export default function Error({error, reset}) {
       <button type='button' onClick={() => reset()}>
         Try again
       </button>
+      <ErrorSupportInfo />
     </div>
   );
 }
