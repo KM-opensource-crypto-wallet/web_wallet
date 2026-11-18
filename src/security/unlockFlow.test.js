@@ -118,6 +118,7 @@ jest.mock('dok-wallet-blockchain-networks/redux/wallets/walletsSlice', () => {
   return {
     walletsSlice: slice,
     ...slice.actions,
+    repairWalletContracts: () => ({type: 'wallets/repairWalletContracts'}),
     RELOCK_OPTIONS: {MANUAL: 'MANUAL'},
   };
 });
