@@ -3,6 +3,7 @@ import {
   addBreadcrumb,
   attachDokApiLogging,
   captureError,
+  getSupportId,
   logger,
   setUserContext,
   setWhiteLabelContext,
@@ -111,6 +112,24 @@ describe('setUserContext', () => {
     setUserContext(null);
     expect(Sentry.setUser).toHaveBeenNthCalledWith(1, null);
     expect(Sentry.setUser).toHaveBeenNthCalledWith(2, null);
+  });
+});
+
+describe('getSupportId', () => {
+  it('returns the user id Sentry holds for this profile', () => {
+    Sentry.getIsolationScope.mockReturnValueOnce({
+      getUser: () => ({id: 'client-1'}),
+    });
+    expect(getSupportId()).toBe('client-1');
+  });
+
+  it('returns an empty string when no user is set or the SDK throws', () => {
+    Sentry.getIsolationScope.mockReturnValueOnce({getUser: () => undefined});
+    expect(getSupportId()).toBe('');
+    Sentry.getIsolationScope.mockImplementationOnce(() => {
+      throw new Error('sdk down');
+    });
+    expect(getSupportId()).toBe('');
   });
 });
 

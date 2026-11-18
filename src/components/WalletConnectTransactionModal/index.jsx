@@ -18,6 +18,7 @@ import {shallowEqual, useDispatch, useSelector} from 'react-redux';
 import {getWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
 import {selectWalletConnectTransactionData} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
 import {
+  isBatchDelegationExposed,
   selectLivePrivateKey,
   selectWalletConnectData,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
@@ -46,6 +47,14 @@ import {
   getEvmTxMaxFeeWei,
   reviewEvmWalletConnectTx,
 } from 'dok-wallet-blockchain-networks/helper/evmTxReview';
+import {
+  getWalletConnectVerifyStatus,
+  isRiskyVerifyStatus,
+} from 'dok-wallet-blockchain-networks/helper/walletConnectVerify';
+import {
+  EVM_MESSAGE_SIGN_METHODS,
+  reviewEvmSignMessage,
+} from 'dok-wallet-blockchain-networks/helper/evmSignReview';
 
 const style = {
   position: 'absolute',
@@ -304,6 +313,26 @@ const WalletConnectTransactionModal = props => {
     }
   }, [transactionData, walletData, evmReview]);
 
+  // personal_sign / eth_sign: any unreadable message (blind signing) needs an
+  // acknowledgement; a 32-byte one from a listed account that still has batch
+  // sending set up is not offered at all (the walletConnect thunk refuses too).
+  const signReview = useMemo(
+    () =>
+      EVM_MESSAGE_SIGN_METHODS.includes(method) && !isNonEVMChain(chainId)
+        ? reviewEvmSignMessage(getTransactionRequestData?.signTypeData)
+        : null,
+    [method, chainId, getTransactionRequestData],
+  );
+  const signerAddress =
+    getTransactionRequestData?.expectedSignerAddress || walletData?.address;
+  const selectIsSignerExposed = useCallback(
+    state => isBatchDelegationExposed(state, signerAddress),
+    [signerAddress],
+  );
+  const isSignerExposed = useSelector(selectIsSignerExposed);
+  const isSignBlocked = !!signReview?.digestSized && isSignerExposed;
+  const isOpaqueSign = !!signReview && !signReview.readable && !isSignBlocked;
+
   // Approving signs with the wallet key: the same password / biometric gate as
   // every other send applies (D2). The dApp request itself is executed by
   // approveRequest once the confirm modal succeeds.
@@ -381,10 +410,17 @@ const WalletConnectTransactionModal = props => {
   // Danger-level calls (unlimited approvals, operator grants, opaque or
   // malformed calldata, contract creation) need an explicit acknowledgement;
   // a malformed request can never be approved.
-  const needsAcknowledgement = evmReview?.risk?.level === 'danger';
+  // Each request carries its own Verify result; a flagged or mismatched
+  // domain needs the same acknowledgement as a dangerous call.
+  const isVerifyRisky = isRiskyVerifyStatus(
+    getWalletConnectVerifyStatus(transactionData?.verifyContext).status,
+  );
+  const needsAcknowledgement =
+    evmReview?.risk?.level === 'danger' || isVerifyRisky || isOpaqueSign;
   const approveDisabled =
     isBatchTooLarge ||
     !!evmReview?.error ||
+    isSignBlocked ||
     (needsAcknowledgement && !acknowledged);
 
   const BatchCallsView = () => {
@@ -446,6 +482,16 @@ const WalletConnectTransactionModal = props => {
 
     return (
       <div className={styles.contentContainerStyle}>
+        {(isSignBlocked || isOpaqueSign) && (
+          <div className={styles.dangerBanner}>
+            <GppMaybeOutlinedIcon sx={{fontSize: 18, color: '#e5484d'}} />
+            <p className={styles.dangerBannerText}>
+              {isSignBlocked
+                ? 'This account needs a quick update before it can sign this kind of request. Switch off batch sending from the Home screen, then try again.'
+                : 'This request asks you to sign an unreadable code, not a message. It could approve something you cannot see here. Only continue if you trust this site and know why it needs this.'}
+            </p>
+          </div>
+        )}
         <div className={styles.msgHeaderRow}>
           <p className={styles.chainTitle} style={{marginTop: 0}}>
             {'Message'}
@@ -499,7 +545,12 @@ const WalletConnectTransactionModal = props => {
         aria-describedby='modal-modal-description'>
         <Box sx={style}>
           <div className={styles.container}>
-            <WalletConnectModalHeader image={image} title={title} url={url} />
+            <WalletConnectModalHeader
+              image={image}
+              title={title}
+              url={url}
+              verifyContext={transactionData?.verifyContext}
+            />
             {method?.includes('wallet_sendCalls') ? (
               BatchCallsView()
             ) : isWalletConnectTransaction(method) ? (
@@ -568,6 +619,18 @@ const WalletConnectTransactionModal = props => {
               </div>
             ) : (
               MessageView()
+            )}
+            {needsAcknowledgement && !isWalletConnectTransaction(method) && (
+              <label className={styles.checkboxRow}>
+                <input
+                  type='checkbox'
+                  checked={acknowledged}
+                  onChange={e => setAcknowledged(e.target.checked)}
+                />
+                <span className={styles.checkboxText}>
+                  {'I understand the risk and want to continue'}
+                </span>
+              </label>
             )}
             <div className={styles.bottomView}>
               <div className={styles.rowView}>

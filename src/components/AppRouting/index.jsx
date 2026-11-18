@@ -45,6 +45,7 @@ import {getLockTime} from 'dok-wallet-blockchain-networks/redux/settings/setting
 import Loading from '../Loading';
 import {
   getWalletConnectDetails,
+  isSupportChatBrand,
   setWhiteLabelInfo,
 } from 'whitelabel/whiteLabelInfo';
 import {captchaRef} from 'utils/apiCaptcha';
@@ -52,6 +53,12 @@ import {
   GoogleReCaptchaProvider,
   useGoogleReCaptcha,
 } from 'react-google-recaptcha-v3';
+import dynamic from 'next/dynamic';
+
+// Own chunk (react-markdown, bip39 wordlist): fetched only for chat brands.
+const SupportChat = dynamic(() => import('components/SupportChat'), {
+  ssr: false,
+});
 
 const CaptchaSetup = () => {
   const {executeRecaptcha} = useGoogleReCaptcha();
@@ -401,6 +408,9 @@ function AppRouting({children, wlData}) {
           )}
         </div>
         <CoinSyncWidget />
+        {rountingDone && !disableMessage && isSupportChatBrand() ? (
+          <SupportChat />
+        ) : null}
         <ToastContainer
           position='bottom-right'
           draggable

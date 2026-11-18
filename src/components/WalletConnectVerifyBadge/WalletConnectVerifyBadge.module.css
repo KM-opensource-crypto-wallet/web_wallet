@@ -1,0 +1,49 @@
+.box {
+  margin: 8px 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--whiteOutline);
+}
+
+.riskyBox {
+  border-color: #e5484d;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.detail {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--gray);
+}
+
+.verified {
+  color: #2e9e5b;
+}
+
+.danger {
+  color: #e5484d;
+}
+
+.muted {
+  color: var(--gray);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--textColor);
+  cursor: pointer;
+}

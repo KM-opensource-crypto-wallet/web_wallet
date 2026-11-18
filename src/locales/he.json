@@ -22,5 +22,39 @@
     "showSeedPhrase": "הצגת המפתח הפרטי של הארנק",
     "termsAndConditions": "תנאי שימוש",
     "privacyPolicy": "תנאי פרטיות"
+  },
+  "supportChat": {
+    "launcher": "Open help chat",
+    "title": "Help",
+    "close": "Close help",
+    "send": "Send",
+    "greeting": "Hi! Pick a question below or type your own. I answer from {appName}'s help articles.",
+    "notice": "Never type your recovery phrase or password here. Your question is processed by an AI service to find the right help article.",
+    "teaser": "Need help? Ask me!",
+    "placeholder": "Type your question",
+    "newConversation": "New conversation",
+    "searching": "Looking that up for you…",
+    "searchingMore": "Tip: support will never ask for your recovery phrase or keys.",
+    "stillWorking": "Thanks for waiting, this is taking a little longer than usual.",
+    "notCovered": "Sorry, I couldn't find an answer to that in our help articles.",
+    "safetyLine": "Support will never ask for your recovery phrase or keys, and cannot recover funds.",
+    "secretBlocked": "That looks like a recovery phrase or private key, so it wasn't sent. Never share it with anyone, including support.",
+    "contactTitle": "You can contact support:",
+    "contactEmail": "Email:",
+    "contactTelegram": "Telegram",
+    "contactUs": "Contact Us page",
+    "related": "Related questions",
+    "redacted": "Message hidden because it looked like a secret.",
+    "typing": "Waiting for an answer",
+    "startersTitle": "Suggested questions",
+    "errors": {
+      "invalid": "Please shorten or rephrase your question.",
+      "rateLimited": "Too many questions. Please try again in a few minutes.",
+      "captcha": "We couldn't verify your browser. Please reload the page or try another browser.",
+      "unavailable": "Help is unavailable right now.",
+      "timeout": "This is taking too long. Please try again.",
+      "offline": "You're offline.",
+      "busy": "Typed questions are busy right now. The suggested questions above still work."
+    }
   }
 }
