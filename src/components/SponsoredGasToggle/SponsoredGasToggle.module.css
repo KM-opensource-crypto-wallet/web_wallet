@@ -1,0 +1,36 @@
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  margin-top: 14px;
+  margin-bottom: 2px;
+}
+
+.labelRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
+  padding-right: 8px;
+  cursor: pointer;
+}
+
+.text {
+  color: var(--font);
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 500;
+  margin-left: 12px;
+  flex: 1;
+}
+
+.infoBtn {
+  padding: 8px !important;
+}
+
+.infoIcon {
+  color: var(--gray);
+  font-size: 20px !important;
+}
