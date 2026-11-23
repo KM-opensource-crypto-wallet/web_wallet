@@ -30,6 +30,7 @@ import {
   isBitcoinChain,
   isEip7702SupportedChain,
   getSponsoredGasCoins,
+  isBatchSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
 import PageTitle from 'components/PageTitle';
 import SponsoredGasToggle from 'components/SponsoredGasToggle';
@@ -662,8 +663,7 @@ const SendFunds = () => {
                       )}
                     </div>
                   </div>
-                  {/* Batch sending is paused.
-                  {isEip7702SupportedChain(currentCoin?.chain_name) && (
+                  {isBatchSupportedChain(currentCoin?.chain_name) && (
                     <button
                       disabled={!isValid}
                       className={s.button}
@@ -676,7 +676,6 @@ const SendFunds = () => {
                       <p className={s.buttonTitle}>Add to Batch</p>
                     </button>
                   )}
-                  */}
                   <button
                     disabled={!isValid}
                     className={s.button}

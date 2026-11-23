@@ -217,7 +217,13 @@
   gap: 10px;
   cursor: pointer;
   margin-top: 16px;
-  padding: 4px 0;
+  padding: 4px 10px;
+}
+
+@media (min-width: 769px) {
+  .checkboxRow {
+    padding: 4px 20px;
+  }
 }
 
 .checkboxRow input {
