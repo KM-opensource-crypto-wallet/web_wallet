@@ -20,6 +20,7 @@ import {
   createIfNotExistsMasterClientId,
   hydrateWalletSecrets,
   reassignCurrentWalletIfHidden,
+  repairWalletContracts,
   resetCoinsToDefaultAddressForPrivacyMode,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {
@@ -125,6 +126,9 @@ const runPostUnlockThunks = dispatch => {
   dispatch(createIfNotExistsMasterClientId());
   dispatch(resetCoinsToDefaultAddressForPrivacyMode());
   dispatch(reassignCurrentWalletIfHidden());
+  // Coins that stored a tampered catalog contract (helper/contractRepairs.js);
+  // a no-op once repaired.
+  dispatch(repairWalletContracts());
 };
 
 // A failed unlock must not leave a half-open session behind (keys hydrated
