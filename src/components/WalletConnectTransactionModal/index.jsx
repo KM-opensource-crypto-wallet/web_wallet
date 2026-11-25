@@ -15,7 +15,7 @@ import {
   safelyJsonStringify,
 } from 'dok-wallet-blockchain-networks/helper';
 import {shallowEqual, useDispatch, useSelector} from 'react-redux';
-import {getWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
+import {rejectSessionRequest} from 'dok-wallet-blockchain-networks/service/walletconnect';
 import {selectWalletConnectTransactionData} from 'dok-wallet-blockchain-networks/redux/walletConnect/walletConnectSelectors';
 import {
   isBatchDelegationExposed,
@@ -339,18 +339,9 @@ const WalletConnectTransactionModal = props => {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const onPressReject = useCallback(() => {
     props?.onClose?.();
-    const connector = getWalletConnect();
-    if (connector) {
-      const response = {
-        id,
-        jsonrpc: '2.0',
-        error: {
-          code: 5000,
-          message: 'User rejected.',
-        },
-      };
-      connector.respondSessionRequest({topic, response});
-    }
+    // Fire and forget: it settles even when the request has already expired
+    // (an unawaited reply here was DOKWALLET-WALLET-WEB-1T).
+    rejectSessionRequest({id, topic});
     dispatch(clearWalletConnectTransactionData({id}));
   }, [dispatch, id, props, topic]);
 

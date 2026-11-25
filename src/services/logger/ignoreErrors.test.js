@@ -52,9 +52,29 @@ describe('ignoreErrors', () => {
     ).toBe(true);
   });
 
+  it("ignores a History another script froze before Next's router patched it", () => {
+    // DOKWALLET-WALLET-WEB-1G: one headless environment, no app frames.
+    expect(
+      matches(
+        "Cannot assign to read only property 'pushState' of object '#<History>'",
+      ),
+    ).toBe(true);
+    expect(
+      matches(
+        "Cannot assign to read only property 'replaceState' of object '#<History>'",
+      ),
+    ).toBe(true);
+  });
+
   it('does not ignore ordinary defects', () => {
     expect(
       matches("Cannot read properties of undefined (reading 'chain_name')"),
+    ).toBe(false);
+    // Same TypeError shape on app objects is a real bug.
+    expect(
+      matches(
+        "Cannot assign to read only property 'amount' of object '#<Object>'",
+      ),
     ).toBe(false);
     // Starts like the ignored fetch failure but is a real app error.
     expect(matches('Failed to fetch backup secret. Please sign in.')).toBe(

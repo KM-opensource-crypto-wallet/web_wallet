@@ -33,7 +33,7 @@ import {
 } from 'services/logger';
 import {initWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
 import {setIsWalletConnectInitialized} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
-import {hasLocaleCookie} from 'utils/localeCookie';
+import {hasLocaleCookie, resolveDefaultLocale} from 'utils/localeCookie';
 import {clearSkipLockScreen, shouldSkipLockScreen} from 'utils/lockScreen';
 import {
   clearWalletConnectStorageCache,
@@ -373,7 +373,9 @@ function AppRouting({children, wlData}) {
       try {
         const localeSetCheck = await isLocaleSet();
         if (!localeSetCheck) {
-          await setUserLocale(wlData.defaultLocale || 'en');
+          // setUserLocale refuses a malformed tag, which would repeat this
+          // round trip on every load.
+          await setUserLocale(resolveDefaultLocale(wlData.defaultLocale));
         }
       } catch (e) {
         logger.warn('locale.set_default_failed', {reason: e?.message});
