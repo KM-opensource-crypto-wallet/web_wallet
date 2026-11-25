@@ -96,6 +96,25 @@ export const findWalletsWithoutKeys = allWallets =>
     .filter(w => w?.clientId && !hasAnyKey(w))
     .map(w => w.clientId);
 
+// Counts for the missing_secrets event, never ids or secrets. A keyless
+// wallet the vault has no entry for points at a vault write that was lost or
+// overwritten (another tab); one the vault does hold points at hydrate
+// failing to restore it (DOKWALLET-WALLET-WEB-1F could not tell these apart).
+const describeMissingSecrets = (missing, payload, allWallets) => {
+  const vaultWallets = payload?.wallets || {};
+  const missingIds = new Set(missing);
+  return {
+    in_vault: missing.filter(clientId =>
+      Object.prototype.hasOwnProperty.call(vaultWallets, clientId),
+    ).length,
+    vault_wallets: Object.keys(vaultWallets).length,
+    state_wallets: (allWallets || []).length,
+    pk_imports: (allWallets || []).filter(
+      w => missingIds.has(w?.clientId) && w?.isImportWalletWithPrivateKey,
+    ).length,
+  };
+};
+
 // Once per page load: after that the in-memory slices are the freshest copy
 // (an idle-lock re-login must not roll them back to the throttled disk copy).
 let sealedRehydrated = false;
@@ -155,11 +174,16 @@ export const completeUnlock = async (dispatch, getState, payload, via) => {
       sealedRehydrated = true;
     }
     dispatch(hydrateWalletSecrets(payload));
-    const missing = findWalletsWithoutKeys(getState().wallets?.allWallets);
+    const allWallets = getState().wallets?.allWallets;
+    const missing = findWalletsWithoutKeys(allWallets);
     if (missing.length) {
       captureError(new Error('Wallets without secrets after unlock'), {
         tags: {area: 'vault', op: 'missing_secrets'},
-        extra: {count: missing.length, via},
+        extra: {
+          count: missing.length,
+          via,
+          ...describeMissingSecrets(missing, payload, allWallets),
+        },
       });
       throw new MissingSecretsError(missing);
     }

@@ -68,6 +68,54 @@ describe('describeClientDevice', () => {
   });
 });
 
+describe('automation', () => {
+  const HEADLESS_UA =
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/146.0.0.0 Safari/537.36';
+
+  it('marks a WebDriver-controlled browser', () => {
+    expect(
+      describeClientDevice({userAgent: UA.chromeLinux, webdriver: true})
+        .browser,
+    ).toEqual({name: 'Chrome', version: '127', automation: 'webdriver'});
+  });
+
+  it("marks headless Chrome by its user agent's own token", () => {
+    expect(describeClientDevice({userAgent: HEADLESS_UA}).browser).toEqual({
+      name: undefined,
+      version: undefined,
+      automation: 'headless',
+    });
+  });
+
+  it('adds nothing for a browser a person is using', () => {
+    expect(
+      describeClientDevice({userAgent: UA.chromeMac, webdriver: false}).browser,
+    ).toEqual({name: 'Chrome', version: '128'});
+  });
+
+  it('keeps the mark when Client Hints refine the browser', async () => {
+    const device = await refineClientDevice({
+      userAgent: UA.edgeWin,
+      webdriver: true,
+      userAgentData: {
+        platform: 'Windows',
+        brands: [{brand: 'Microsoft Edge', version: '127'}],
+        getHighEntropyValues: jest.fn().mockResolvedValue({
+          platformVersion: '15.0.0',
+          fullVersionList: [
+            {brand: 'Microsoft Edge', version: '127.0.2651.74'},
+          ],
+        }),
+      },
+    });
+    expect(device.browser).toEqual({
+      name: 'Edge',
+      version: '127.0.2651.74',
+      automation: 'webdriver',
+    });
+  });
+});
+
 describe('refineClientDevice', () => {
   it('upgrades Windows 10 to 11 and takes the full browser version', async () => {
     const device = await refineClientDevice({

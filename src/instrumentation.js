@@ -3,6 +3,7 @@ import {
   getWhiteLabelForHost,
   hostFromHeaderValue,
 } from './whitelabel/serverWhiteLabel';
+import {isMalformedRequestError} from './services/logger/requestFilters';
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -18,6 +19,18 @@ export async function register() {
 // host + the whitelabel the layout learned for it (`request.headers` is a
 // plain object in Next's onRequestError signature).
 export function onRequestError(error, request, context) {
+  // Scanner traffic Next rejected while decoding the request (see
+  // requestFilters.js). A log keeps it visible without an issue per probe;
+  // the route pattern, never the path, which can carry a wallet id.
+  if (isMalformedRequestError(error, request)) {
+    Sentry.logger.warn('request.rejected', {
+      reason: error.message,
+      method: request?.method,
+      route_type: context?.routeType,
+      route_path: context?.routePath,
+    });
+    return;
+  }
   const headers = request?.headers || {};
   const host = hostFromHeaderValue(headers['x-forwarded-host'] ?? headers.host);
   const known = getWhiteLabelForHost(host);

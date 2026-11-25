@@ -76,7 +76,22 @@ export const isExtensionOnlyError = event => {
   );
 };
 
+// Next's app router assigns history.pushState/replaceState on mount, which
+// throws only where another script already made them read-only. In a browser
+// that reports automation (clientDevice.js sets `browser.automation`) that
+// script is the harness (DOKWALLET-WALLET-WEB-1G); in a person's browser it is
+// an extension breaking navigation, which stays reported.
+const FROZEN_HISTORY =
+  /^Cannot assign to read only property '(pushState|replaceState)' of object '#<History>'$/;
+
+export const isAutomatedHistoryFreeze = event =>
+  Boolean(event?.contexts?.browser?.automation) &&
+  (event?.exception?.values || []).some(exception =>
+    FROZEN_HISTORY.test(exception?.value || ''),
+  );
+
 export const shouldDropEvent = event =>
   isUnsupportedBrowser(event) ||
   isNonBrowserRuntime(event) ||
-  isExtensionOnlyError(event);
+  isExtensionOnlyError(event) ||
+  isAutomatedHistoryFreeze(event);
