@@ -121,16 +121,16 @@ const TransactionDetails = () => {
   const transaction = recentTx
     ? {
         ...initialTransaction,
-        from: recentTx.from,
-        to: recentTx.to,
-        amount: recentTx.amount,
+        from: recentTx.from || initialTransaction?.from,
+        to: recentTx.to || initialTransaction?.to,
+        amount: recentTx.amount || initialTransaction?.amount,
         date: recentTx.blockTimestamp
           ? new Date(parseInt(recentTx.blockTimestamp, 16) * 1000).toISOString()
           : initialTransaction?.date,
         status: recentTx.status,
         link: recentTx.link,
         url: recentTx.url || initialTransaction?.url,
-        totalCourse: recentTx.totalCourse,
+        totalCourse: recentTx.totalCourse ?? initialTransaction?.totalCourse,
         blockNumber: recentTx.blockNumber,
         confirmations: recentTx.confirmations,
         input: recentTx.input,
@@ -151,19 +151,24 @@ const TransactionDetails = () => {
   }, [recentTx?.status]);
 
   const currentCoinRef = useRef(currentCoin);
+  const initialToAddress = initialTransaction?.to;
 
   const fetchTransaction = useCallback(async () => {
     setRefreshing(true);
     try {
       await dispatch(
-        fetchTransactionByHash({txHash, currentCoin: currentCoinRef.current}),
+        fetchTransactionByHash({
+          txHash,
+          currentCoin: currentCoinRef.current,
+          toAddress: initialToAddress,
+        }),
       ).unwrap();
     } catch (e) {
       console.error('Error refreshing transaction', e);
     } finally {
       setRefreshing(false);
     }
-  }, [dispatch, txHash]);
+  }, [dispatch, txHash, initialToAddress]);
 
   useEffect(() => {
     // Anonymous function: the react-hooks compiler lint flags setState calls
@@ -321,6 +326,7 @@ const TransactionDetails = () => {
                   src={transaction.nftImage}
                   alt='NFT'
                   fill
+                  sizes='120px'
                   style={{objectFit: 'cover', borderRadius: 12}}
                   onError={() => setNftImageError(true)}
                 />

@@ -80,6 +80,8 @@ const InfoRow = ({label, value}) => (
   </div>
 );
 
+const SMALLEST_SHOWN_FEE = new BigNumber('0.00001');
+
 // On EIP-1559 chains `fee` is the reserved maximum (gasLimit * maxFeePerGas);
 // what the sender actually pays is `estimatedFee` (gasLimit * (baseFee + tip)).
 // Non-1559 chains pay `fee` in full, so only that single row is shown. The
@@ -104,12 +106,18 @@ const FeeSummaryBox = ({
     const lowBn = new BigNumber(low);
     const highBn = new BigNumber(high);
     const top5 = new BigNumber(high).decimalPlaces(5, BigNumber.ROUND_UP);
+    if (top5.isFinite() && top5.lte(SMALLEST_SHOWN_FEE)) {
+      return `<= ${SMALLEST_SHOWN_FEE.toFixed()} ${feeSymbol}`;
+    }
     if (!lowBn.isFinite() || !highBn.isFinite() || lowBn.gte(highBn)) {
       return top5.isFinite()
         ? `${top5.toFixed()} ${feeSymbol}`
         : formatFee(high);
     }
-    const bottom = lowBn.decimalPlaces(5, BigNumber.ROUND_DOWN);
+    const bottom = BigNumber.max(
+      lowBn.decimalPlaces(5, BigNumber.ROUND_DOWN),
+      SMALLEST_SHOWN_FEE,
+    );
     const top = highBn.decimalPlaces(5, BigNumber.ROUND_UP);
     const places = Math.max(bottom.decimalPlaces(), top.decimalPlaces());
     return `${bottom.toFixed(places)} ~ ${top.toFixed(places)} ${feeSymbol}`;
