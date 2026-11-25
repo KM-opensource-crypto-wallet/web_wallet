@@ -41,10 +41,6 @@ export const ignoreErrors = [
   // the chunk-load failures above.
   /Event `Event` \(type=error\) captured as promise rejection/,
   /ResizeObserver loop/,
-  // Next's app router assigns history.pushState/replaceState on mount; this
-  // throws only where another script (headless harness, extension) already
-  // made them read-only. Neither the app nor the submodule touches History.
-  /^Cannot assign to read only property '(pushState|replaceState)' of object '#<History>'$/,
   // User choices and business rules thrown as errors by our own code.
   'transaction was cancelled',
   'User rejected.',

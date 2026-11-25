@@ -52,18 +52,19 @@ describe('ignoreErrors', () => {
     ).toBe(true);
   });
 
-  it("ignores a History another script froze before Next's router patched it", () => {
-    // DOKWALLET-WALLET-WEB-1G: one headless environment, no app frames.
+  it('leaves a read-only History to the environment-aware filter', () => {
+    // DOKWALLET-WALLET-WEB-1G is dropped only for automated browsers
+    // (eventFilters.isAutomatedHistoryFreeze); a person's browser reports it.
     expect(
       matches(
         "Cannot assign to read only property 'pushState' of object '#<History>'",
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       matches(
         "Cannot assign to read only property 'replaceState' of object '#<History>'",
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('does not ignore ordinary defects', () => {

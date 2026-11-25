@@ -1,4 +1,5 @@
 import {
+  isAutomatedHistoryFreeze,
   isExtensionOnlyError,
   isNonBrowserRuntime,
   isUnsupportedBrowser,
@@ -113,6 +114,61 @@ describe('isExtensionOnlyError', () => {
   });
 });
 
+describe('isAutomatedHistoryFreeze', () => {
+  // DOKWALLET-WALLET-WEB-1G: Next's router could not patch a History that
+  // another script had made read-only.
+  const frozen = (method, browser) => ({
+    contexts: {browser},
+    exception: {
+      values: [
+        {
+          type: 'TypeError',
+          value: `Cannot assign to read only property '${method}' of object '#<History>'`,
+        },
+      ],
+    },
+  });
+
+  it('drops it from a browser that reports automation', () => {
+    expect(
+      isAutomatedHistoryFreeze(
+        frozen('pushState', {name: 'Chrome', automation: 'webdriver'}),
+      ),
+    ).toBe(true);
+    expect(
+      isAutomatedHistoryFreeze(
+        frozen('replaceState', {name: undefined, automation: 'headless'}),
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps it from a browser a person is using (an extension broke navigation)', () => {
+    expect(
+      isAutomatedHistoryFreeze(frozen('pushState', {name: 'Chrome'})),
+    ).toBe(false);
+    expect(isAutomatedHistoryFreeze(frozen('pushState', undefined))).toBe(
+      false,
+    );
+  });
+
+  it('keeps other errors from automated browsers', () => {
+    expect(
+      isAutomatedHistoryFreeze({
+        contexts: {browser: {name: 'Chrome', automation: 'webdriver'}},
+        exception: {
+          values: [
+            {
+              type: 'TypeError',
+              value:
+                "Cannot assign to read only property 'amount' of object '#<Object>'",
+            },
+          ],
+        },
+      }),
+    ).toBe(false);
+  });
+});
+
 describe('shouldDropEvent', () => {
   it('combines the predicates', () => {
     expect(shouldDropEvent(withBrowser('Chrome', '79'))).toBe(true);
@@ -121,6 +177,19 @@ describe('shouldDropEvent', () => {
     ).toBe(true);
     expect(
       shouldDropEvent(withFrames([{filename: 'app:///inpage.bundle.js'}])),
+    ).toBe(true);
+    expect(
+      shouldDropEvent({
+        contexts: {browser: {name: 'Chrome', automation: 'webdriver'}},
+        exception: {
+          values: [
+            {
+              value:
+                "Cannot assign to read only property 'pushState' of object '#<History>'",
+            },
+          ],
+        },
+      }),
     ).toBe(true);
     expect(shouldDropEvent(withBrowser('Chrome', '120'))).toBe(false);
   });
