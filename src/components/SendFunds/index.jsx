@@ -29,8 +29,11 @@ import {
   validateNumberInInput,
   isBitcoinChain,
   isEip7702SupportedChain,
+  getSponsoredGasCoins,
+  isBatchSupportedChain,
 } from 'dok-wallet-blockchain-networks/helper';
 import PageTitle from 'components/PageTitle';
+import SponsoredGasToggle from 'components/SponsoredGasToggle';
 import s from './SendFunds.module.css';
 import {showToast} from 'src/utils/toast';
 import {setExchangeSuccess} from 'dok-wallet-blockchain-networks/redux/exchange/exchangeSlice';
@@ -156,6 +159,29 @@ const SendFunds = () => {
   const isMemoSupported = useMemo(() => {
     return isMemoSupportChain(currentCoin?.chain_name);
   }, [currentCoin?.chain_name]);
+
+  const sponsoredGasToken = useMemo(
+    () =>
+      currentCoin?.contractAddress
+        ? (getSponsoredGasCoins(
+            currentCoin?.chain_name,
+            currentWallet?.coins,
+          )[0] ?? null)
+        : null,
+    [
+      currentCoin?.chain_name,
+      currentCoin?.contractAddress,
+      currentWallet?.coins,
+    ],
+  );
+
+  useEffect(() => {
+    const currency = searchParams?.get('currency');
+    if (currency) {
+      dispatch(searchCoinFromCurrency({currency}));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // useEffect(() => {
   //   if (qrAddress) {
@@ -298,6 +324,9 @@ const SendFunds = () => {
             memo: values?.memo?.trim(),
             selectedUTXOs: transferData?.selectedUTXOs,
             selectedUTXOsValue: transferData?.selectedUTXOsValue,
+            payGasWithToken: !!sponsoredGasToken && !!values?.payGasWithToken,
+            gasTokenSymbol: sponsoredGasToken?.symbol ?? null,
+            gasTokenContractAddress: sponsoredGasToken?.contractAddress ?? null,
           }),
         );
         dispatch(
@@ -394,6 +423,7 @@ const SendFunds = () => {
                 )
               : '',
             memo: '',
+            payGasWithToken: false,
           }}
           validationSchema={validationSchemaSendFunds(
             availableAmount,
@@ -617,10 +647,23 @@ const SendFunds = () => {
                           )}
                         </div>
                       )}
+                      {!!sponsoredGasToken && (
+                        <div className={s.boxInputFull}>
+                          <SponsoredGasToggle
+                            tokenSymbol={sponsoredGasToken.symbol}
+                            checked={!!values?.payGasWithToken}
+                            onToggle={() =>
+                              setFieldValue(
+                                'payGasWithToken',
+                                !values?.payGasWithToken,
+                              )
+                            }
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
-                  {/* Batch sending is paused.
-                  {isEip7702SupportedChain(currentCoin?.chain_name) && (
+                  {isBatchSupportedChain(currentCoin?.chain_name) && (
                     <button
                       disabled={!isValid}
                       className={s.button}
@@ -633,7 +676,6 @@ const SendFunds = () => {
                       <p className={s.buttonTitle}>Add to Batch</p>
                     </button>
                   )}
-                  */}
                   <button
                     disabled={!isValid}
                     className={s.button}

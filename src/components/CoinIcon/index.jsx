@@ -12,6 +12,7 @@ const CoinIcon = ({item}) => {
           src={item.icon}
           alt={`${item.name || 'Token'} icon`}
           fill
+          sizes='39px'
           className={styles.imageStyle}
           style={{objectFit: 'contain'}}
           priority={false}

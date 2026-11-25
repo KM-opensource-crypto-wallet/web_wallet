@@ -72,8 +72,7 @@ import {VerifyInfoModal} from 'components/VerifyInfo';
 import TextField from '@mui/material/TextField';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-// Batch sending is paused.
-// import BatchTransactionBanner from 'components/BatchTransactionBanner';
+import BatchTransactionBanner from 'components/BatchTransactionBanner';
 import CoinSyncBanner from 'components/CoinSyncBanner';
 // import {
 //   setWalletConnectRequestModal,
@@ -274,9 +273,7 @@ const Home = () => {
       > */}
       <main className={classNames.container}>
         <div>
-          {/* Batch sending is paused.
           <BatchTransactionBanner />
-          */}
           <CoinSyncBanner />
           {!!newsMessage && (
             <div className={classNames.syncView}>
