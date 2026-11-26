@@ -33,7 +33,7 @@ import {
 } from 'services/logger';
 import {initWalletConnect} from 'dok-wallet-blockchain-networks/service/walletconnect';
 import {setIsWalletConnectInitialized} from 'dok-wallet-blockchain-networks/redux/extraData/extraDataSlice';
-import {hasLocaleCookie} from 'utils/localeCookie';
+import {hasLocaleCookie, resolveDefaultLocale} from 'utils/localeCookie';
 import {clearSkipLockScreen, shouldSkipLockScreen} from 'utils/lockScreen';
 import {
   clearWalletConnectStorageCache,
@@ -45,6 +45,7 @@ import {getLockTime} from 'dok-wallet-blockchain-networks/redux/settings/setting
 import Loading from '../Loading';
 import {
   getWalletConnectDetails,
+  isSupportChatBrand,
   setWhiteLabelInfo,
 } from 'whitelabel/whiteLabelInfo';
 import {captchaRef} from 'utils/apiCaptcha';
@@ -52,6 +53,12 @@ import {
   GoogleReCaptchaProvider,
   useGoogleReCaptcha,
 } from 'react-google-recaptcha-v3';
+import dynamic from 'next/dynamic';
+
+// Own chunk (react-markdown, bip39 wordlist): fetched only for chat brands.
+const SupportChat = dynamic(() => import('components/SupportChat'), {
+  ssr: false,
+});
 
 const CaptchaSetup = () => {
   const {executeRecaptcha} = useGoogleReCaptcha();
@@ -366,7 +373,9 @@ function AppRouting({children, wlData}) {
       try {
         const localeSetCheck = await isLocaleSet();
         if (!localeSetCheck) {
-          await setUserLocale(wlData.defaultLocale || 'en');
+          // setUserLocale refuses a malformed tag, which would repeat this
+          // round trip on every load.
+          await setUserLocale(resolveDefaultLocale(wlData.defaultLocale));
         }
       } catch (e) {
         logger.warn('locale.set_default_failed', {reason: e?.message});
@@ -401,6 +410,9 @@ function AppRouting({children, wlData}) {
           )}
         </div>
         <CoinSyncWidget />
+        {rountingDone && !disableMessage && isSupportChatBrand() ? (
+          <SupportChat />
+        ) : null}
         <ToastContainer
           position='bottom-right'
           draggable

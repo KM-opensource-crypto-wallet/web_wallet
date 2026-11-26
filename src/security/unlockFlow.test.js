@@ -118,6 +118,7 @@ jest.mock('dok-wallet-blockchain-networks/redux/wallets/walletsSlice', () => {
   return {
     walletsSlice: slice,
     ...slice.actions,
+    repairWalletContracts: () => ({type: 'wallets/repairWalletContracts'}),
     RELOCK_OPTIONS: {MANUAL: 'MANUAL'},
   };
 });
@@ -358,6 +359,69 @@ describe('web unlock flow', () => {
     expect(after.map(w => w.clientId)).toEqual(['w1', 'w2']);
     expect(after.some(w => w.phrase || w.coins?.some(c => c.privateKey))).toBe(
       false,
+    );
+  });
+
+  it('reports where keyless wallets went missing, as counts only', async () => {
+    // DOKWALLET-WALLET-WEB-1F could not tell a wallet the vault never got
+    // (lost write, two tabs) from one it has but hydrate failed to restore.
+    vault.lock();
+    __resetSealedForTests();
+    const {store} = require('redux/store');
+    const {
+      unlockWithPassword,
+      __resetUnlockFlowForTests,
+    } = require('security/unlockFlow');
+    const {
+      setWallets,
+    } = require('dok-wallet-blockchain-networks/redux/wallets/walletsSlice');
+    const {captureError} = require('services/logger');
+    // The vault holds w1 only; the sealed slice also lists a keyless wallet
+    // and a keyless private-key import.
+    await vault.unlockWithPassword('pw');
+    const stateKey = await vault.getStateKey();
+    const {writeSealed} = require('redux/storage/sealedStorage');
+    await writeSealed(
+      'persist:wallets',
+      buildPersistEnvelope({
+        allWallets: [
+          strippedWallet,
+          {clientId: 'w2', walletName: 'Ghost', coins: []},
+          {
+            clientId: 'w3',
+            walletName: 'Imported',
+            isImportWalletWithPrivateKey: true,
+            coins: [],
+          },
+        ],
+      }),
+      stateKey,
+    );
+    vault.lock();
+    __resetSealedForTests();
+    __resetUnlockFlowForTests();
+    store.dispatch(setWallets([]));
+    captureError.mockClear();
+
+    await expect(
+      store.dispatch(unlockWithPassword('pw')),
+    ).rejects.toMatchObject({code: 'missing_secrets', clientIds: ['w2', 'w3']});
+
+    expect(captureError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Wallets without secrets after unlock',
+      }),
+      {
+        tags: {area: 'vault', op: 'missing_secrets'},
+        extra: {
+          count: 2,
+          via: 'password',
+          in_vault: 0,
+          vault_wallets: 1,
+          state_wallets: 3,
+          pk_imports: 1,
+        },
+      },
     );
   });
 

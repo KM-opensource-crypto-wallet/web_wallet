@@ -475,6 +475,9 @@ const createEVMDeriveAddress = (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
+      // Handled here: an uncancelled worker ErrorEvent is re-reported to the
+      // page's window.onerror, a duplicate Sentry issue.
+      event.preventDefault();
       // Workers run outside the Sentry client; `event.error` is often absent
       // for worker ErrorEvents. Never attach the posted mnemonic payload.
       const error = event.error ?? new Error(event.message || 'worker error');
@@ -496,6 +499,9 @@ const createSolanaDeriveAddresses = async (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
+      // Handled here: an uncancelled worker ErrorEvent is re-reported to the
+      // page's window.onerror, a duplicate Sentry issue.
+      event.preventDefault();
       // Workers run outside the Sentry client; `event.error` is often absent
       // for worker ErrorEvents. Never attach the posted mnemonic payload.
       const error = event.error ?? new Error(event.message || 'worker error');
@@ -517,6 +523,9 @@ const createTronDeriveAddress = async (mnemonic, startingIndex) => {
     };
     worker.onerror = function (event) {
       worker.terminate();
+      // Handled here: an uncancelled worker ErrorEvent is re-reported to the
+      // page's window.onerror, a duplicate Sentry issue.
+      event.preventDefault();
       // Workers run outside the Sentry client; `event.error` is often absent
       // for worker ErrorEvents. Never attach the posted mnemonic payload.
       const error = event.error ?? new Error(event.message || 'worker error');

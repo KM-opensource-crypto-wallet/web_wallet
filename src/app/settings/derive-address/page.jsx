@@ -3,7 +3,7 @@
 import React from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
-  selectVisibleWallets,
+  selectDerivableWallets,
   selectCurrentWallet,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {
@@ -18,7 +18,9 @@ import {getAppIcon} from 'whitelabel/whiteLabelInfo';
 
 const DeriveAddress = () => {
   const currentWalletName = useSelector(selectCurrentWallet)?.walletName;
-  const visibleWallets = useSelector(selectVisibleWallets);
+  // Private-key imports have no recovery phrase to derive from (mobile hides
+  // them the same way).
+  const derivableWallets = useSelector(selectDerivableWallets);
   const dispatch = useDispatch();
 
   return (
@@ -29,7 +31,7 @@ const DeriveAddress = () => {
           Add or remove derive addresses for all EVM, SOL and TRX
         </p>
         <ul>
-          {visibleWallets.map(item => {
+          {derivableWallets.map(item => {
             return (
               <li className={s.walletBox} key={`dp_wallet_${item.clientId}`}>
                 <div className={s.walletList}>

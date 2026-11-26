@@ -75,6 +75,28 @@ const browserFromUserAgent = userAgent => {
   return {name: undefined, version: undefined};
 };
 
+// Browsers that announce they are driven by software: the W3C WebDriver flag
+// (set by Selenium, Puppeteer and Playwright sessions) or Chrome's headless
+// user-agent token. Added to the browser context only when present, so a
+// person's browser looks exactly as before.
+const automationOf = nav => {
+  if (nav?.webdriver === true) {
+    return 'webdriver';
+  }
+  if (
+    typeof nav?.userAgent === 'string' &&
+    /\bHeadlessChrome\//.test(nav.userAgent)
+  ) {
+    return 'headless';
+  }
+  return undefined;
+};
+
+const withAutomation = (browser, nav) => {
+  const automation = automationOf(nav);
+  return automation ? {...browser, automation} : browser;
+};
+
 const osFromUserAgent = userAgent => {
   for (const [name, pattern] of UA_OS) {
     const match = pattern.exec(userAgent);
@@ -104,7 +126,7 @@ export const describeClientDevice = nav => {
       typeof hints?.platform === 'string' && hints.platform
         ? {name: hints.platform, version: fromUa.os.version}
         : fromUa.os;
-    return {browser, os};
+    return {browser: withAutomation(browser, nav), os};
   } catch (e) {
     return empty();
   }
@@ -136,7 +158,7 @@ export const refineClientDevice = async nav => {
         ? values.platformVersion
         : undefined;
     return {
-      browser: full || base.browser,
+      browser: withAutomation(full || base.browser, nav),
       os: {
         name: base.os.name,
         version:

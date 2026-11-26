@@ -169,3 +169,42 @@ describe('addCustomDeriveAddressToWallet("zcash")', () => {
     ).toBe(account.address);
   });
 });
+
+describe('derive-address workers', () => {
+  // Stands in for the browser Worker: every job fails the way a throw inside
+  // a dedicated worker reaches the page, as an ErrorEvent at worker.onerror
+  // (`error` is usually absent there).
+  let preventDefault;
+  beforeEach(() => {
+    preventDefault = jest.fn();
+    global.Worker = class {
+      postMessage() {
+        this.onerror({
+          message:
+            "Uncaught TypeError: Cannot read properties of undefined (reading 'toLowerCase')",
+          error: undefined,
+          preventDefault,
+        });
+      }
+      terminate() {}
+    };
+  });
+  afterEach(() => {
+    delete global.Worker;
+  });
+
+  it.each(['ethereum', 'solana', 'tron'])(
+    'rejects on a %s worker error without letting the browser report it again',
+    async chain => {
+      const service = load(false);
+      await expect(
+        service.addDeriveAddresses(chain, ABANDON, 0),
+      ).rejects.toThrow(
+        "Cannot read properties of undefined (reading 'toLowerCase')",
+      );
+      // Uncancelled, the browser re-dispatches the error to window.onerror:
+      // DOKWALLET-WALLET-WEB-1S was the duplicate of 1R.
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+    },
+  );
+});

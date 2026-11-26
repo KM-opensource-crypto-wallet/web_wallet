@@ -52,9 +52,30 @@ describe('ignoreErrors', () => {
     ).toBe(true);
   });
 
+  it('leaves a read-only History to the environment-aware filter', () => {
+    // DOKWALLET-WALLET-WEB-1G is dropped only for automated browsers
+    // (eventFilters.isAutomatedHistoryFreeze); a person's browser reports it.
+    expect(
+      matches(
+        "Cannot assign to read only property 'pushState' of object '#<History>'",
+      ),
+    ).toBe(false);
+    expect(
+      matches(
+        "Cannot assign to read only property 'replaceState' of object '#<History>'",
+      ),
+    ).toBe(false);
+  });
+
   it('does not ignore ordinary defects', () => {
     expect(
       matches("Cannot read properties of undefined (reading 'chain_name')"),
+    ).toBe(false);
+    // Same TypeError shape on app objects is a real bug.
+    expect(
+      matches(
+        "Cannot assign to read only property 'amount' of object '#<Object>'",
+      ),
     ).toBe(false);
     // Starts like the ignored fetch failure but is a real app error.
     expect(matches('Failed to fetch backup secret. Please sign in.')).toBe(
