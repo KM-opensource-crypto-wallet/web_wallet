@@ -11,13 +11,18 @@ const MAX_DEPTH = 5;
 const JSON_SENSITIVE_PAIR_RE =
   /"(phrase|mnemonic|seed|seedPhrase|privateKey|private_key|privKey|extendedPrivateKey|xprv|wif|secret|password|passwd|pin|salt|authorization|accessToken|access_token|refreshToken)"\s*:\s*"(?:[^"\\]|\\.)*"/gi;
 // The same pairs inside JSON that was stringified again (`\"privateKey\":\"…\"`,
-// up to five escape levels): the delimiter's backslash run is captured and
-// reused. Inside the value every backslash run is consumed whole
-// (`(?=(\\+))\3`), so an escaped quote in the secret (a longer run) never
-// ends the match early. The opening run is capped at 31 backslashes, which
-// keeps the scan linear on long runs.
+// up to five escape levels). The value's closing quote has n backslashes
+// before it (n captured from the key, `\1`). Each stringify doubles a
+// backslash, so inside the value every escape has exactly one shape:
+//   [^\\"]          an ordinary character
+//   \1\1\\\\        an escaped backslash  (2n+2 backslashes)
+//   \1\1\\"         an escaped quote      (2n+1 backslashes and a quote)
+//   \1\\(?![\\"])   another escape such as \n or \uXXXX (n+1 backslashes)
+// Only one shape fits any position, so the scan never backtracks through
+// alternatives and stays linear, even on unterminated input; the opening run
+// is capped at 31 backslashes for the same reason.
 const ESCAPED_JSON_SENSITIVE_PAIR_RE =
-  /(\\{1,31})"(phrase|mnemonic|seed|seedPhrase|privateKey|private_key|privKey|extendedPrivateKey|xprv|wif|secret|password|passwd|pin|salt|authorization|accessToken|access_token|refreshToken)\1"\s*:\s*\1"(?:[^\\]|(?!\1")(?=(\\+))\3"?)*?\1"/gi;
+  /(\\{1,31})"(phrase|mnemonic|seed|seedPhrase|privateKey|private_key|privKey|extendedPrivateKey|xprv|wif|secret|password|passwd|pin|salt|authorization|accessToken|access_token|refreshToken)\1"\s*:\s*\1"(?:[^\\"]|\1\1\\\\|\1\1\\"|\1\\(?![\\"]))*?\1"/gi;
 // BIP32 / SLIP-132 extended private keys: mainnet xprv/yprv/zprv, testnet
 // tprv/uprv/vprv, plus the multisig Yprv/Zprv/Uprv/Vprv variants.
 const XPRV_RE = /\b[xyztuvYZUV]prv[1-9A-HJ-NP-Za-km-z]{100,112}\b/g;

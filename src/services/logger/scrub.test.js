@@ -129,6 +129,36 @@ describe('scrubString', () => {
     },
   );
 
+  it.each([
+    ['once', 2],
+    ['twice', 3],
+  ])(
+    'redacts a value ending in a backslash and the secret after it, JSON escaped %s',
+    (_label, stringifyCount) => {
+      let json = {
+        password: 'leaked-a\\',
+        secret: 'leaked-b',
+        chain: 'ethereum',
+      };
+      for (let i = 0; i < stringifyCount; i++) {
+        json = JSON.stringify(json);
+      }
+      const out = scrubString(json);
+      expect(out).not.toMatch(/leaked/);
+      expect(out).toContain('ethereum');
+    },
+  );
+
+  it('stays fast on an unterminated value with repeated escaped quotes', () => {
+    const bs = '\\';
+    const input = `${bs}"password${bs}":${bs}"${`${bs.repeat(3)}"`.repeat(
+      24,
+    )}incomplete`;
+    const started = Date.now();
+    scrubString(input);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
   it('stays fast on a long run of backslashes', () => {
     const started = Date.now();
     scrubString(`${'\\'.repeat(100000)}"password`);
