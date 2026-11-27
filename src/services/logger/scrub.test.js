@@ -149,6 +149,22 @@ describe('scrubString', () => {
     },
   );
 
+  it.each([
+    ['once', 2],
+    ['twice', 3],
+  ])(
+    'redacts a last field ending in a backslash, JSON escaped %s',
+    (_label, stringifyCount) => {
+      let json = {chain: 'ethereum', password: 'leaked-c\\'};
+      for (let i = 0; i < stringifyCount; i++) {
+        json = JSON.stringify(json);
+      }
+      const out = scrubString(json);
+      expect(out).not.toContain('leaked-c');
+      expect(out).toContain('ethereum');
+    },
+  );
+
   it('stays fast on an unterminated value with repeated escaped quotes', () => {
     const bs = '\\';
     const input = `${bs}"password${bs}":${bs}"${`${bs.repeat(3)}"`.repeat(
