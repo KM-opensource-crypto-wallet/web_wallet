@@ -96,6 +96,9 @@ const TransactionDetails = () => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [nftImageError, setNftImageError] = useState(false);
+  // What this page's own fetch returned; used only when the store has no
+  // copy on the selected coin, so the status still updates from the fetch.
+  const [fetchedTx, setFetchedTx] = useState(null);
   const statusRef = useRef(null);
   const routeStateData = useSelector(getRouteStateData);
   const [savedRouteTransaction] = useState(
@@ -113,10 +116,11 @@ const TransactionDetails = () => {
     currentCoin?.transactions?.find(t => t.link === txHash) ??
     (savedRouteTransaction?.link === txHash ? savedRouteTransaction : null);
 
-  const recentTx =
+  const reduxTx =
     reduxRecentTransaction?.data?.link === txHash
       ? reduxRecentTransaction?.data
       : null;
+  const recentTx = reduxTx || fetchedTx;
 
   const transaction = recentTx
     ? {
@@ -155,9 +159,13 @@ const TransactionDetails = () => {
   const fetchTransaction = useCallback(async () => {
     setRefreshing(true);
     try {
-      await dispatch(
+      const result = await dispatch(
         fetchTransactionByHash({txHash, currentCoin: currentCoinRef.current}),
       ).unwrap();
+      const data = result?.recentTransaction?.data;
+      if (data?.link === txHash) {
+        setFetchedTx(data);
+      }
     } catch (e) {
       console.error('Error refreshing transaction', e);
     } finally {

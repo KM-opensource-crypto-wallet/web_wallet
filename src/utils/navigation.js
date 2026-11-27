@@ -2,6 +2,7 @@ import {setRouteStateData} from 'dok-wallet-blockchain-networks/redux/extraData/
 import {
   selectCurrentCoin,
   selectCurrentWalletClientId,
+  selectUserCoins,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {getCoinSlug} from 'utils/common';
 import {coinRoutes, walletRoutes} from 'utils/routes';
@@ -39,7 +40,17 @@ export const MainNavigation = {
         if (params) {
           store.dispatch(setRouteStateData({[name]: params}));
         }
-        const coinSlug = getCoinSlug(selectCurrentCoin(store.getState()));
+        // Open the coin the transaction was sent from, not the selected one:
+        // a batch is confirmed outside /send/[coinSlug], so the selected coin
+        // can be any coin, while the send stores the tx on the batch's first
+        // item coin. The [coinSlug] layout makes the URL's coin current, so
+        // the page fetches and reads the tx on that same coin.
+        const state = store.getState();
+        const txCoinId = params.transaction.currentCoin?._id;
+        const txCoin =
+          txCoinId &&
+          selectUserCoins(state).find(coin => coin?._id === txCoinId);
+        const coinSlug = getCoinSlug(txCoin || selectCurrentCoin(state));
         navigatorRef(
           coinRoutes.transactionDetails(currentWalletClientId, coinSlug, link),
         );

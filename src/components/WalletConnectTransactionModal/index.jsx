@@ -141,8 +141,6 @@ const getMessageData = (method, message) => {
 };
 
 const COPIED_TITLE = 'Copied to clipboard';
-// Upper bound on wallet_sendCalls entries we render and allow approving.
-const MAX_BATCH_CALLS = 50;
 const WALLET_SEND_CALLS = 'wallet_sendCalls';
 
 const DetailRow = ({label, value}) => (
@@ -402,29 +400,19 @@ const WalletConnectTransactionModal = props => {
     batchReview?.level === 'danger' ||
     isVerifyRisky ||
     isOpaqueSign;
-  const batchCallsTotal = batchReview?.calls?.length || 0;
-  const isBatchTooLarge = batchCallsTotal > MAX_BATCH_CALLS;
   const approveDisabled =
-    isBatchTooLarge ||
     !!evmReview?.error ||
     !!batchReview?.error ||
     isSignBlocked ||
     (needsAcknowledgement && !acknowledged);
 
+  // A batch over BATCH_MAX_CALLS never gets here: service/walletconnect.js
+  // answers it with 5740 before any UI, and the review would list no calls.
   const BatchCallsView = () => {
-    const calls = (batchReview?.calls || []).slice(0, MAX_BATCH_CALLS);
+    const calls = batchReview?.calls || [];
     return (
       <div className={styles.contentContainerStyle}>
-        <p
-          className={styles.chainTitle}>{`Batch Calls (${batchCallsTotal})`}</p>
-        {isBatchTooLarge && (
-          <div className={styles.batchLimitWarning}>
-            <WarningAmberIcon sx={{fontSize: 16, color: 'var(--warning)'}} />
-            <p className={styles.batchLimitWarningText}>
-              {`This request contains ${batchCallsTotal} calls. Only the first ${MAX_BATCH_CALLS} are shown and the batch cannot be approved here.`}
-            </p>
-          </div>
-        )}
+        <p className={styles.chainTitle}>{`Batch Calls (${calls.length})`}</p>
         <div className={styles.scrollView}>
           {calls.map((call, index) => (
             <div key={index} className={styles.batchCallBox}>
