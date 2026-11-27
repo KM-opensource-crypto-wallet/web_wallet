@@ -56,6 +56,8 @@ import {
   EVM_MESSAGE_SIGN_METHODS,
   reviewEvmSignMessage,
 } from 'dok-wallet-blockchain-networks/helper/evmSignReview';
+import {reviewNonEvmSignMessage} from 'dok-wallet-blockchain-networks/helper/signMessageReview';
+import {reviewWalletConnectRequest} from 'dok-wallet-blockchain-networks/helper/walletConnectRequestReview';
 
 const style = {
   position: 'absolute',
@@ -84,11 +86,10 @@ function parseSolanaSignTransaction(txData) {
     if (!txData || typeof txData !== 'object') {
       throw new Error('Invalid transaction data provided');
     }
-    // Modern Solana requests carry no feePayer/pubkey (signAllTransactions
-    // sends only `transactions`), so read the fee payer from the tx itself.
+    // The fee payer is always read from the transaction itself, never from a
+    // feePayer / pubkey field the dApp supplies.
     const firstTx = txData.transaction ?? txData.transactions?.[0];
-    sender =
-      txData.feePayer || txData.pubkey || getSolanaFeePayer(firstTx) || sender;
+    sender = getSolanaFeePayer(firstTx) || sender;
     data = txData?.transaction
       ? txData?.transaction
       : Array.isArray(txData?.transactions)
@@ -311,16 +312,20 @@ const WalletConnectTransactionModal = props => {
     }
   }, [transactionData, walletData, evmReview, batchReview]);
 
-  // personal_sign / eth_sign: any unreadable message (blind signing) needs an
-  // acknowledgement; a 32-byte one from a listed account that still has batch
-  // sending set up is not offered at all (the walletConnect thunk refuses too).
-  const signReview = useMemo(
-    () =>
-      EVM_MESSAGE_SIGN_METHODS.includes(method) && !isNonEVMChain(chainId)
-        ? reviewEvmSignMessage(getTransactionRequestData?.signTypeData)
-        : null,
-    [method, chainId, getTransactionRequestData],
-  );
+  // personal_sign / eth_sign and the Solana, Polkadot, Tezos and Aptos
+  // sign-message methods: any unreadable message (blind signing) needs an
+  // acknowledgement; a 32-byte EVM one from a listed account that still has
+  // batch sending set up is not offered at all (the walletConnect thunk
+  // refuses too).
+  const signReview = useMemo(() => {
+    const signTypeData = getTransactionRequestData?.signTypeData;
+    if (isNonEVMChain(chainId)) {
+      return reviewNonEvmSignMessage(method, signTypeData);
+    }
+    return EVM_MESSAGE_SIGN_METHODS.includes(method)
+      ? reviewEvmSignMessage(signTypeData)
+      : null;
+  }, [method, chainId, getTransactionRequestData]);
   const signerAddress =
     getTransactionRequestData?.expectedSignerAddress || walletData?.address;
   const selectIsSignerExposed = useCallback(
@@ -330,6 +335,18 @@ const WalletConnectTransactionModal = props => {
   const isSignerExposed = useSelector(selectIsSignerExposed);
   const isSignBlocked = !!signReview?.digestSized && isSignerExposed;
   const isOpaqueSign = !!signReview && !signReview.readable && !isSignBlocked;
+  // Typed data (permits, orders, chain), PSBTs and non-EVM transactions:
+  // decoded rows, a risk level, and `blocked` for account takeovers.
+  const requestReview = useMemo(
+    () =>
+      reviewWalletConnectRequest({
+        method,
+        chainId,
+        signTypeData: getTransactionRequestData?.signTypeData,
+        walletAddress: walletData?.address,
+      }),
+    [method, chainId, getTransactionRequestData, walletData?.address],
+  );
 
   // Approving signs with the wallet key: the same password / biometric gate as
   // every other send applies (D2). The dApp request itself is executed by
@@ -399,11 +416,13 @@ const WalletConnectTransactionModal = props => {
     evmReview?.risk?.level === 'danger' ||
     batchReview?.level === 'danger' ||
     isVerifyRisky ||
-    isOpaqueSign;
+    isOpaqueSign ||
+    (requestReview?.level === 'danger' && !requestReview.blocked);
   const approveDisabled =
     !!evmReview?.error ||
     !!batchReview?.error ||
     isSignBlocked ||
+    !!requestReview?.blocked ||
     (needsAcknowledgement && !acknowledged);
 
   // A batch over BATCH_MAX_CALLS never gets here: service/walletconnect.js
@@ -464,6 +483,29 @@ const WalletConnectTransactionModal = props => {
             </p>
           </div>
         )}
+        {requestReview?.level === 'danger' && (
+          <div className={styles.dangerBanner}>
+            <GppMaybeOutlinedIcon sx={{fontSize: 18, color: '#e5484d'}} />
+            <p className={styles.dangerBannerText}>
+              {requestReview.reasons.join(' ')}
+            </p>
+          </div>
+        )}
+        {requestReview?.level === 'warn' && (
+          <div className={styles.batchLimitWarning}>
+            <WarningAmberIcon sx={{fontSize: 16, color: 'var(--warning)'}} />
+            <p className={styles.batchLimitWarningText}>
+              {requestReview.reasons.join(' ')}
+            </p>
+          </div>
+        )}
+        {requestReview?.rows?.map((row, index) => (
+          <MessageValueRow
+            key={`${row.label}-${index}`}
+            label={row.label}
+            value={row.value}
+          />
+        ))}
         <div className={styles.msgHeaderRow}>
           <p className={styles.chainTitle} style={{marginTop: 0}}>
             {'Message'}
