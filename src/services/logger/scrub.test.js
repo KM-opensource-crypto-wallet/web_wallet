@@ -65,6 +65,62 @@ describe('scrubString', () => {
     expect(out).toContain('"chain":"ethereum"');
   });
 
+  it('redacts a Solana base58 secret key', () => {
+    const key =
+      'DyXZZCSiBREJ8YZ5cULd7PVdKpbkhHvHJ7otbJmLJajJtRsyq1irMMqKimYeKvRmZ8Sc2qWLhKjYR4ekM8RSzkV';
+    expect(scrubString(`sk ${key} end`)).toBe('sk [REDACTED_KEY] end');
+  });
+
+  it('redacts a Stellar secret seed', () => {
+    const seed = 'SCZANGBA5YHTNYVVV4C3U252E2B6P6F5T3U6MM63WBSBZATAQI3EBTQ4';
+    expect(scrubString(`seed ${seed} end`)).toBe('seed [REDACTED_KEY] end');
+  });
+
+  it('redacts 128-character hex keys with and without 0x prefix', () => {
+    const hex128 = 'b'.repeat(128);
+    expect(scrubString(`key=${hex128}`)).toBe('key=[REDACTED_HEX]');
+    expect(scrubString(`key=0x${hex128}`)).toBe('key=[REDACTED_HEX]');
+  });
+
+  it('redacts a mnemonic that starts with a capital letter', () => {
+    expect(scrubString(`phrase: A${MNEMONIC.slice(1)}.`)).toBe(
+      'phrase: [REDACTED_MNEMONIC].',
+    );
+  });
+
+  it.each([
+    ['commas', ','],
+    ['commas and spaces', ', '],
+  ])('redacts a mnemonic separated by %s', (_label, separator) => {
+    const out = scrubString(`[${MNEMONIC.split(' ').join(separator)}]`);
+    expect(out).not.toContain('ability');
+    expect(out).toBe('[[REDACTED_MNEMONIC]]');
+  });
+
+  it.each([
+    ['once', 2],
+    ['twice', 3],
+  ])(
+    'redacts sensitive pairs inside JSON escaped %s',
+    (_label, stringifyCount) => {
+      let json = {privateKey: 'secret-value', chain: 'ethereum'};
+      for (let i = 0; i < stringifyCount; i++) {
+        json = JSON.stringify(json);
+      }
+      const out = scrubString(json);
+      expect(out).not.toContain('secret-value');
+      expect(out).toContain('ethereum');
+    },
+  );
+
+  it('leaves capitalised prose and comma lists alone', () => {
+    const messages = [
+      'Could not load the coin data from the server, retry later',
+      'Chains: bitcoin, ethereum, solana, polygon',
+    ];
+    messages.forEach(msg => expect(scrubString(msg)).toBe(msg));
+  });
+
   it('truncates very long strings', () => {
     const out = scrubString('x'.repeat(5000));
     expect(out.length).toBeLessThanOrEqual(1024 + 20);
