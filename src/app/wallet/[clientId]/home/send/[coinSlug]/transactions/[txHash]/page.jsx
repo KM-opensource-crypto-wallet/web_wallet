@@ -5,6 +5,7 @@ import {useParams} from 'next/navigation';
 import {
   selectCurrentCoin,
   selectCurrentCoinRecentTransaction,
+  selectUserCoins,
 } from 'dok-wallet-blockchain-networks/redux/wallets/walletsSelector';
 import {fetchTransactionByHash} from 'dok-wallet-blockchain-networks/redux/wallets/walletsSlice';
 import {getLocalCurrency} from 'dok-wallet-blockchain-networks/redux/settings/settingsSelectors';
@@ -31,7 +32,11 @@ import {
   StarIcon,
   VoteIcon,
 } from 'assets/images/icons';
-import {getCustomizePublicAddress} from 'dok-wallet-blockchain-networks/helper';
+import {
+  getBatchTransferItems,
+  getCustomizePublicAddress,
+} from 'dok-wallet-blockchain-networks/helper';
+import {decodeEvmCalldata} from 'dok-wallet-blockchain-networks/helper/evmCalldata';
 
 const STATUS_CONFIG = {
   SUCCESS: {label: 'Success', color: '#71C441'},
@@ -83,6 +88,7 @@ const TransactionDetails = () => {
   const txHash = decodeURIComponent(params.txHash);
   const dispatch = useDispatch();
   const currentCoin = useSelector(selectCurrentCoin);
+  const userCoins = useSelector(selectUserCoins);
   const localCurrency = useSelector(getLocalCurrency);
   const reduxRecentTransaction = useSelector(
     selectCurrentCoinRecentTransaction,
@@ -90,6 +96,9 @@ const TransactionDetails = () => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [nftImageError, setNftImageError] = useState(false);
+  // What this page's own fetch returned; used only when the store has no
+  // copy on the selected coin, so the status still updates from the fetch.
+  const [fetchedTx, setFetchedTx] = useState(null);
   const statusRef = useRef(null);
   const routeStateData = useSelector(getRouteStateData);
   const [savedRouteTransaction] = useState(
@@ -107,10 +116,11 @@ const TransactionDetails = () => {
     currentCoin?.transactions?.find(t => t.link === txHash) ??
     (savedRouteTransaction?.link === txHash ? savedRouteTransaction : null);
 
-  const recentTx =
+  const reduxTx =
     reduxRecentTransaction?.data?.link === txHash
       ? reduxRecentTransaction?.data
       : null;
+  const recentTx = reduxTx || fetchedTx;
 
   const transaction = recentTx
     ? {
@@ -127,6 +137,7 @@ const TransactionDetails = () => {
         totalCourse: recentTx.totalCourse,
         blockNumber: recentTx.blockNumber,
         confirmations: recentTx.confirmations,
+        input: recentTx.input,
         ...(recentTx.paymentType != null && {
           paymentType: recentTx.paymentType,
         }),
@@ -148,9 +159,13 @@ const TransactionDetails = () => {
   const fetchTransaction = useCallback(async () => {
     setRefreshing(true);
     try {
-      await dispatch(
+      const result = await dispatch(
         fetchTransactionByHash({txHash, currentCoin: currentCoinRef.current}),
       ).unwrap();
+      const data = result?.recentTransaction?.data;
+      if (data?.link === txHash) {
+        setFetchedTx(data);
+      }
     } catch (e) {
       console.error('Error refreshing transaction', e);
     } finally {
@@ -443,9 +458,12 @@ const TransactionDetails = () => {
   // ── Batch Transaction ────────────────────────────────────────────────────────
 
   if (isBatchTx) {
-    const batchItems = Array.isArray(transaction.transactionsData)
+    const batchItems = transaction.transactionsData?.length
       ? transaction.transactionsData
-      : [];
+      : getBatchTransferItems(transaction.input, {
+          coins: userCoins,
+          nativeSymbol: currentCoin?.chain_symbol || currentCoin?.symbol,
+        });
 
     return (
       <>
@@ -713,6 +731,8 @@ const TransactionDetails = () => {
   // ── Smart Contract ───────────────────────────────────────────────────────────
 
   if (isSmartContractTx) {
+    const contractCall = decodeEvmCalldata(transaction.input);
+    const hasValue = Number(transaction.amount) > 0;
     return (
       <>
         <PageTitle title={pageTitle} />
@@ -759,6 +779,28 @@ const TransactionDetails = () => {
                 <div className={s.row}>
                   <span className={s.rowLabel}>Contract</span>
                   <CopyRow value={transaction.to} />
+                </div>
+              </>
+            )}
+            {contractCall.kind === 'decoded' && (
+              <>
+                <div className={s.divider} />
+                <div className={s.row}>
+                  <span className={s.rowLabel}>Method</span>
+                  <span className={s.rowValue}>
+                    {`${contractCall.method} (${contractCall.standard})`}
+                  </span>
+                </div>
+              </>
+            )}
+            {hasValue && (
+              <>
+                <div className={s.divider} />
+                <div className={s.row}>
+                  <span className={s.rowLabel}>Value</span>
+                  <span className={s.rowValue}>
+                    {`${transaction.amount} ${currentCoin?.symbol || ''}`}
+                  </span>
                 </div>
               </>
             )}

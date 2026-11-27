@@ -208,6 +208,8 @@ describe('web store persistence guard', () => {
     store.dispatch({
       type: 'batchTransaction/addBatchTransaction/fulfilled',
       payload: {wallet_id: 'w1', chain_name: 'ethereum', transaction: tx},
+      // The reducer releases this addition's addsInFlight entry by requestId.
+      meta: {requestId: 'batch-add-1'},
     });
     store.dispatch({
       type: 'batchTransaction/initializeFilters/fulfilled',
