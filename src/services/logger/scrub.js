@@ -11,9 +11,13 @@ const MAX_DEPTH = 5;
 const JSON_SENSITIVE_PAIR_RE =
   /"(phrase|mnemonic|seed|seedPhrase|privateKey|private_key|privKey|extendedPrivateKey|xprv|wif|secret|password|passwd|pin|salt|authorization|accessToken|access_token|refreshToken)"\s*:\s*"(?:[^"\\]|\\.)*"/gi;
 // The same pairs inside JSON that was stringified again (`\"privateKey\":\"…\"`,
-// any escape depth): the backslash run is captured and reused.
+// up to five escape levels): the delimiter's backslash run is captured and
+// reused. Inside the value every backslash run is consumed whole
+// (`(?=(\\+))\3`), so an escaped quote in the secret (a longer run) never
+// ends the match early. The opening run is capped at 31 backslashes, which
+// keeps the scan linear on long runs.
 const ESCAPED_JSON_SENSITIVE_PAIR_RE =
-  /(\\+)"(phrase|mnemonic|seed|seedPhrase|privateKey|private_key|privKey|extendedPrivateKey|xprv|wif|secret|password|passwd|pin|salt|authorization|accessToken|access_token|refreshToken)\1"\s*:\s*\1"(?:(?!\1").)*?\1"/gi;
+  /(\\{1,31})"(phrase|mnemonic|seed|seedPhrase|privateKey|private_key|privKey|extendedPrivateKey|xprv|wif|secret|password|passwd|pin|salt|authorization|accessToken|access_token|refreshToken)\1"\s*:\s*\1"(?:[^\\]|(?!\1")(?=(\\+))\3"?)*?\1"/gi;
 // BIP32 / SLIP-132 extended private keys: mainnet xprv/yprv/zprv, testnet
 // tprv/uprv/vprv, plus the multisig Yprv/Zprv/Uprv/Vprv variants.
 const XPRV_RE = /\b[xyztuvYZUV]prv[1-9A-HJ-NP-Za-km-z]{100,112}\b/g;

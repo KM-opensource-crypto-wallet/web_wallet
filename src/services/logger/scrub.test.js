@@ -113,6 +113,28 @@ describe('scrubString', () => {
     },
   );
 
+  it.each([
+    ['once', 2],
+    ['twice', 3],
+  ])(
+    'redacts a value with an embedded quote inside JSON escaped %s',
+    (_label, stringifyCount) => {
+      let json = {password: 'abc"leaked-part', chain: 'ethereum'};
+      for (let i = 0; i < stringifyCount; i++) {
+        json = JSON.stringify(json);
+      }
+      const out = scrubString(json);
+      expect(out).not.toContain('leaked-part');
+      expect(out).toContain('ethereum');
+    },
+  );
+
+  it('stays fast on a long run of backslashes', () => {
+    const started = Date.now();
+    scrubString(`${'\\'.repeat(100000)}"password`);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
   it('leaves capitalised prose and comma lists alone', () => {
     const messages = [
       'Could not load the coin data from the server, retry later',
